@@ -1,6 +1,6 @@
 # Test case for MESH-SVS in point mode
 
-This folder contains a setup for a test of MESH-SVS in  point mode at the Col de Porte experimental catchment in the French Alps. Detailed instructions to configure the model in point mode are given [here](https://wiki.usask.ca/pages/viewpage.action?pageId=1716094475). 
+This folder contains a setup for a test of MESH-SVS in  point mode at the Col de Porte experimental catchment in the French Alps. Detailed instructions to configure and run the model in point mode are given [here](https://wiki.usask.ca/pages/viewpage.action?pageId=1716094475). 
 
 # Configuration files
 
