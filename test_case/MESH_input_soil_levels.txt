@@ -1,0 +1,7 @@
+      0.05      0.05 !> delz(1)/dl_svs(1)
+      0.05       0.1 !> delz(2)/dl_svs(2)
+       0.1       0.2 !> delz(3)/dl_svs(3)
+       0.2       0.4 !> delz(4)/dl_svs(4)
+       0.6       1.0 !> delz(5)/dl_svs(5)
+       1.0       2.0 !> delz(6)/dl_svs(6)
+       1.0       3.0 !> delz(7)/dl_svs(7)
