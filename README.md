@@ -1,4 +1,4 @@
-# MESH model with SVS 2.0 
+# MESH model with SVS 1.0 and 2.0 
 
 This repository contains the version of the MESH model that includes the land surface scheme SVS2. 
 
