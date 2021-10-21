@@ -8,7 +8,16 @@ Infomation about the compilation of MESH are provided in file README.txt. Severa
 
 To compile with ifort, execute the command `make ifort` in the main directory. A debug option is availalbe using the command: `make ifort debug`. 
 
-To compile with gfort, execute the command `make gfortran` in the main directory. A debug option is availalbe using the command: `make gfortran debug`. 
+To compile with gfortran, execute the command `make gfortran` in the main directory. A debug option is availalbe using the command: `make gfortran debug`. 
+
+**On GPSCC**
+Load the Intel compiler using the following commands: 
+
+```
+. ssmuse-sh -x comm/eccc/all/opt/intelcomp/intelpsxe-cluster-19.0.3.199
+. ssmuse-sh -x hpco/exp/openmpi/openmpi-3.1.2--hpcx-2.4.0-mofed-4.6--intel-19.0.3.199
+. ssmuse-sh -x hpco/exp/openmpi-setup/openmpi-setup-0.2
+```
 
 # General information
 
