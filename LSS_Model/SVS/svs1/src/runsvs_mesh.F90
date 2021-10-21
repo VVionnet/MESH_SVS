@@ -1012,38 +1012,38 @@ print*,vl(i)%n,vl(i)%niveaux,vl(i)%mul,vl(i)%mosaik
 
 
 
-ierr = 200
-!do i = 1, 26
+!ierr = 200
+!!do i = 1, 26
+!!write(code, *) i
+!!open(ierr, file = 'output/2V_' // trim(adjustl(code)) // '.txt')
+!!write(ierr, '(a)') '2V_' // trim(adjustl(code)) // ' '; ierr = ierr + 1
+!!end do
+!open(ierr, file = 'output/ACWF.txt'); write(ierr, '(a)') 'ACWF_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/AHFL.txt'); write(ierr, '(a)') 'AHFL_0 '; ierr = ierr + 1
+!do i = 1, nl_svs
 !write(code, *) i
-!open(ierr, file = 'output/2V_' // trim(adjustl(code)) // '.txt')
-!write(ierr, '(a)') '2V_' // trim(adjustl(code)) // ' '; ierr = ierr + 1
+!open(ierr, file = 'output/WSOL_' // trim(adjustl(code)) // '.txt')
+!write(ierr, '(a)') 'WSOL_' // trim(adjustl(code)) // ' '; ierr = ierr + 1
 !end do
-open(ierr, file = 'output/ACWF.txt'); write(ierr, '(a)') 'ACWF_0 '; ierr = ierr + 1
-open(ierr, file = 'output/AHFL.txt'); write(ierr, '(a)') 'AHFL_0 '; ierr = ierr + 1
-do i = 1, nl_svs
-write(code, *) i
-open(ierr, file = 'output/WSOL_' // trim(adjustl(code)) // '.txt')
-write(ierr, '(a)') 'WSOL_' // trim(adjustl(code)) // ' '; ierr = ierr + 1
-end do
-open(ierr, file = 'output/FL.txt'); write(ierr, '(a)') 'FL_0 '; ierr = ierr + 1
-open(ierr, file = 'output/FQ.txt'); write(ierr, '(a)') 'FQ_0 '; ierr = ierr + 1
-open(ierr, file = 'output/FV_1.txt'); write(ierr, '(a)') 'FV_1 '; ierr = ierr + 1
-open(ierr, file = 'output/EFLX.txt'); write(ierr, '(a)') 'EFLX_0 '; ierr = ierr + 1
-open(ierr, file = 'output/EG.txt'); write(ierr, '(a)') 'EG_0 '; ierr = ierr + 1
-open(ierr, file = 'output/ER.txt'); write(ierr, '(a)') 'ER_0 '; ierr = ierr + 1
-open(ierr, file = 'output/ETR.txt'); write(ierr, '(a)') 'ETR_0 '; ierr = ierr + 1
-open(ierr, file = 'output/FC_1.txt'); write(ierr, '(a)') 'FC_1 '; ierr = ierr + 1
-open(ierr, file = 'output/RSEF.txt'); write(ierr, '(a)') 'RSEF_0 '; ierr = ierr + 1
-open(ierr, file = 'output/Z0_1.txt'); write(ierr, '(a)') 'Z0_1 '; ierr = ierr + 1
-open(ierr, file = 'output/Z0HA.txt'); write(ierr, '(a)') 'Z0HA_0 '; ierr = ierr + 1
-open(ierr, file = 'output/Z0VH.txt'); write(ierr, '(a)') 'Z0VH_0 '; ierr = ierr + 1
-open(ierr, file = 'output/Z0VL.txt'); write(ierr, '(a)') 'Z0VL_0 '; ierr = ierr + 1
-open(ierr, file = 'output/ZH.txt'); write(ierr, '(a)') 'ZH_0 '; ierr = ierr + 1
-open(ierr, file = 'output/ZT_1.txt'); write(ierr, '(a)') 'ZT_1 '; ierr = ierr + 1
-open(ierr, file = 'output/ZU.txt'); write(ierr, '(a)') 'ZU_0 '; ierr = ierr + 1
-open(ierr, file = 'output/RSGR.txt'); write(ierr, '(a)') 'RSGR_0 '; ierr = ierr + 1
-open(ierr, file = 'output/RSVG.txt'); write(ierr, '(a)') 'RSVG_0 '; ierr = ierr + 1
-
+!open(ierr, file = 'output/FL.txt'); write(ierr, '(a)') 'FL_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/FQ.txt'); write(ierr, '(a)') 'FQ_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/FV_1.txt'); write(ierr, '(a)') 'FV_1 '; ierr = ierr + 1
+!open(ierr, file = 'output/EFLX.txt'); write(ierr, '(a)') 'EFLX_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/EG.txt'); write(ierr, '(a)') 'EG_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/ER.txt'); write(ierr, '(a)') 'ER_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/ETR.txt'); write(ierr, '(a)') 'ETR_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/FC_1.txt'); write(ierr, '(a)') 'FC_1 '; ierr = ierr + 1
+!open(ierr, file = 'output/RSEF.txt'); write(ierr, '(a)') 'RSEF_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/Z0_1.txt'); write(ierr, '(a)') 'Z0_1 '; ierr = ierr + 1
+!open(ierr, file = 'output/Z0HA.txt'); write(ierr, '(a)') 'Z0HA_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/Z0VH.txt'); write(ierr, '(a)') 'Z0VH_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/Z0VL.txt'); write(ierr, '(a)') 'Z0VL_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/ZH.txt'); write(ierr, '(a)') 'ZH_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/ZT_1.txt'); write(ierr, '(a)') 'ZT_1 '; ierr = ierr + 1
+!open(ierr, file = 'output/ZU.txt'); write(ierr, '(a)') 'ZU_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/RSGR.txt'); write(ierr, '(a)') 'RSGR_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/RSVG.txt'); write(ierr, '(a)') 'RSVG_0 '; ierr = ierr + 1
+!
 
 
     ! Prep SVS output files
@@ -1329,35 +1329,35 @@ open(ierr, file = 'output/RSVG.txt'); write(ierr, '(a)') 'RSVG_0 '; ierr = ierr 
         !> Copy bus variable.
         call runsvs_mesh_copy_bus_to_vs()
 
-ierr = 200
-!do i = 1, 26
-!write(ierr, *) busptr(vd%vegf%i)%ptr(((i - 1)*ni + 1):i*ni, trnch); ierr = ierr + 1
+!ierr = 200
+!!do i = 1, 26
+!!write(ierr, *) busptr(vd%vegf%i)%ptr(((i - 1)*ni + 1):i*ni, trnch); ierr = ierr + 1
+!!end do
+!write(ierr, *) busptr(vd%accevap%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%fvapliqaf%i)%ptr(:, trnch); ierr = ierr + 1
+!do i = 1, nl_svs
+!write(ierr, *) busptr(vd%wsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch); ierr = ierr + 1
 !end do
-write(ierr, *) busptr(vd%accevap%i)%ptr(:, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%fvapliqaf%i)%ptr(:, trnch); ierr = ierr + 1
-do i = 1, nl_svs
-write(ierr, *) busptr(vd%wsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch); ierr = ierr + 1
-end do
-write(ierr, *) busptr(vd%fl%i)%ptr(:, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%fq%i)%ptr(:, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%fv%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%eflux%i)%ptr(:, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%eg%i)%ptr(:, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%er%i)%ptr(:, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%etr%i)%ptr(:, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%fc%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%resaef%i)%ptr(:, trnch); ierr = ierr + 1
-
-
-write(ierr, *) busptr(vd%z0%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%z0ha%i)%ptr(:, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%z0mvh%i)%ptr(:, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%z0mvl%i)%ptr(:, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%ztsl%i)%ptr(:, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%z0t%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%zusl%i)%ptr(:, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%resagr%i)%ptr(:, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%resavg%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%fl%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%fq%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%fv%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%eflux%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%eg%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%er%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%etr%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%fc%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%resaef%i)%ptr(:, trnch); ierr = ierr + 1
+!
+!
+!write(ierr, *) busptr(vd%z0%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%z0ha%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%z0mvh%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%z0mvl%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%ztsl%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%z0t%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%zusl%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%resagr%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%resavg%i)%ptr(:, trnch); ierr = ierr + 1
 
 
         !> Transfer variables.

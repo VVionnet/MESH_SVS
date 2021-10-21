@@ -2,3 +2,5 @@
 *png
 output
 sa_mesh
+*.o
+*.mod
