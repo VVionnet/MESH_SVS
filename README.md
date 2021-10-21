@@ -4,20 +4,26 @@ This repository contains the version of the MESH model that includes the land su
 
 # Installation
 
+To get the code, use `git clone`:
+
+```
+git clone https://github.com/VVionnet/MESH_SVS.git
+```
+
 Infomation about the compilation of MESH are provided in file README.txt. Several compilers are supported (ifort, gfortran, ..).
 
 To compile with ifort, execute the command `make ifort` in the main directory. A debug option is availalbe using the command: `make ifort debug`. 
 
 To compile with gfortran, execute the command `make gfortran` in the main directory. A debug option is availalbe using the command: `make gfortran debug`. 
 
-**On GPSCC**
-Load the Intel compiler using the following commands: 
+On the ECCC collaboration server **GPSCC**, load the Intel compiler ifort using the following commands: 
 
 ```
 . ssmuse-sh -x comm/eccc/all/opt/intelcomp/intelpsxe-cluster-19.0.3.199
 . ssmuse-sh -x hpco/exp/openmpi/openmpi-3.1.2--hpcx-2.4.0-mofed-4.6--intel-19.0.3.199
 . ssmuse-sh -x hpco/exp/openmpi-setup/openmpi-setup-0.2
 ```
+and then compile the code with `make ifort`. 
 
 # General information
 
