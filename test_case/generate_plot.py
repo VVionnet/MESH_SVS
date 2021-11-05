@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 
 # Beginning and end date
-date_begp = '1994-9-1'
+date_begp = '2010-9-1'
 date_endp = '2014-9-1'
 
 # Min and max for temperature on y-axis
@@ -29,27 +29,27 @@ print('1')
 #ax3=fig.add_subplot(4,1,3)
 #ax4=fig.add_subplot(4,1,4)
 
-ax1.set_ylabel('SD (m)', fontsize=15)
+ax1.set_ylabel('SD (m)', fontsize=12)
 
 ax1.plot(ds.time.loc[dict(time=slice(date_begp,date_endp))].values,ds.snd_auto.loc[dict(time=slice(date_begp,date_endp))].values,'ko',label='Obs. (Auto)',linewidth=2.0)
 
 ax1.set_ylim([0,2.2])
 ax1.grid(True)
 
-ax2.set_ylabel('T 10 cm (K)', fontsize=15)
+ax2.set_ylabel('T 10 cm (K)', fontsize=12)
 
 ax2.plot(ds.time.loc[dict(time=slice(date_begp,date_endp))].values,ds.tsl.loc[dict(time=slice(date_begp,date_endp))].values[:,0]+273.15,'k-',label='Obs.',linewidth='2.0')
 ax2.axhline(273.15,color='darkgrey',ls='--')
 ax2.set_ylim([tmin,tmax])
 ax2.grid(True)
 
-ax3.set_ylabel('T 20 cm (K)', fontsize=15)
+ax3.set_ylabel('T 20 cm (K)', fontsize=12)
 ax3.plot(ds.time.loc[dict(time=slice(date_begp,date_endp))].values,ds.tsl.loc[dict(time=slice(date_begp,date_endp))].values[:,1]+273.15,'k-',label='Obs.',linewidth='2.0')
 ax3.axhline(273.15,color='darkgrey',ls='--')
 ax3.set_ylim([tmin,tmax])
 ax3.grid(True)
 
-ax4.set_ylabel('T 50 cm (K)', fontsize=15)
+ax4.set_ylabel('T 50 cm (K)', fontsize=12)
 ax4.plot(ds.time.loc[dict(time=slice(date_begp,date_endp))].values,ds.tsl.loc[dict(time=slice(date_begp,date_endp))].values[:,2]+273.15,'k-',label='Obs.',linewidth='2.0')
 ax4.axhline(273.15,color='darkgrey',ls='--')
 ax4.set_ylim([tmin,tmax])

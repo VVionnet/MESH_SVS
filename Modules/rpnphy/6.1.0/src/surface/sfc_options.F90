@@ -425,10 +425,10 @@ module sfc_options
    ! Option for the snowpack representation in SVS-2
 !                        'ES': Explicit snow scheme 
 !                        'CRO': Crocus
-   character(len=16) :: hsnowscheme = 'ES'
+   character(len=16) :: hsnowscheme = 'ES '
    namelist /surface_cfgs/ hsnowscheme
    character(len=*), parameter :: HSNOWSCHEME_OPT(2) = (/ &
-        'ES',  &
+        'ES ',  &
         'CRO'  &  
          /)
 
