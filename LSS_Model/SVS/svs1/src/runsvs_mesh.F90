@@ -35,6 +35,8 @@ module runsvs_mesh
     integer :: iout_soil = 150
     integer :: iout_snow_bulk = 151
     integer :: iout_snow_profile = 152
+    integer :: iout_energy_balance = 153
+
 
     !> SVS variables names for I/O (direct variables).
     character(len = *), parameter, public :: VN_SVS_DEGLAT = 'DEGLAT'
@@ -1087,6 +1089,10 @@ print*,vl(i)%n,vl(i)%niveaux,vl(i)%mul,vl(i)%mosaik
           write(iout_snow_profile, *)
        endif
 
+       open(iout_energy_balance, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs2_energy_balance_hourly.csv', action = 'write')
+       write(iout_energy_balance, FMT_CSV, advance = 'no') 'YEAR', 'JDAY', 'HOUR', 'MINS', 'NET RAD', 'LES', 'HFSA'
+       write(iout_energy_balance, *)
+
    endif
 
 
@@ -1433,6 +1439,14 @@ print*,vl(i)%n,vl(i)%niveaux,vl(i)%mul,vl(i)%mosaik
                         busptr(vd%tsnow_svs%i)%ptr(1:ni, trnch),busptr(vd%rsnows_acc%i)%ptr(:, trnch),  & 
                         busptr(vd%rainrate%i)%ptr(:, trnch),busptr(vd%snowrate%i)%ptr(:, trnch)
               write(iout_snow_bulk, *)
+
+              ! Write file containing energy balance outputs
+              write(iout_energy_balance, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
+              write(iout_energy_balance, FMT_CSV, advance = 'no') busptr(vd%rnetsa%i)%ptr(:, trnch), busptr(vd%les%i)%ptr(:, trnch), &
+                        busptr(vd%hfluxsa%i)%ptr(:, trnch)
+
+              write(iout_energy_balance, *)
+
 
               ! Write file containing  snow profile outputs every 3 hours. 
               if ( modulo(ic%now%hour,3) == 0 .and. svs_mesh%vs%lout_snowprofile ) then
