@@ -1012,7 +1012,7 @@ print*,vl(i)%n,vl(i)%niveaux,vl(i)%mul,vl(i)%mosaik
 
 
 
-!ierr = 200
+ierr = 200
 !!do i = 1, 26
 !!write(code, *) i
 !!open(ierr, file = 'output/2V_' // trim(adjustl(code)) // '.txt')
@@ -1038,9 +1038,9 @@ print*,vl(i)%n,vl(i)%niveaux,vl(i)%mul,vl(i)%mosaik
 !open(ierr, file = 'output/Z0HA.txt'); write(ierr, '(a)') 'Z0HA_0 '; ierr = ierr + 1
 !open(ierr, file = 'output/Z0VH.txt'); write(ierr, '(a)') 'Z0VH_0 '; ierr = ierr + 1
 !open(ierr, file = 'output/Z0VL.txt'); write(ierr, '(a)') 'Z0VL_0 '; ierr = ierr + 1
-!open(ierr, file = 'output/ZH.txt'); write(ierr, '(a)') 'ZH_0 '; ierr = ierr + 1
+open(ierr, file = 'output/ZH.txt'); write(ierr, '(a)') 'ZH_0 '; ierr = ierr + 1
 !open(ierr, file = 'output/ZT_1.txt'); write(ierr, '(a)') 'ZT_1 '; ierr = ierr + 1
-!open(ierr, file = 'output/ZU.txt'); write(ierr, '(a)') 'ZU_0 '; ierr = ierr + 1
+open(ierr, file = 'output/ZU.txt'); write(ierr, '(a)') 'ZU_0 '; ierr = ierr + 1
 !open(ierr, file = 'output/RSGR.txt'); write(ierr, '(a)') 'RSGR_0 '; ierr = ierr + 1
 !open(ierr, file = 'output/RSVG.txt'); write(ierr, '(a)') 'RSVG_0 '; ierr = ierr + 1
 !
@@ -1240,6 +1240,8 @@ print*,vl(i)%n,vl(i)%niveaux,vl(i)%mul,vl(i)%mosaik
         !> For constants.
         use tdpack_const, only: rgasd, grav, cappa, tcdk
 
+        use tdpack, only: fotvt
+
         type(ShedGridParams) :: shd
         type(fl_ids) :: fls
         type(clim_info) :: cm
@@ -1249,6 +1251,11 @@ print*,vl(i)%n,vl(i)%niveaux,vl(i)%mul,vl(i)%mosaik
 
         !> Local variables.
         integer i, idateo, ierr, j, k, istat
+
+        real :: tt,hu
+        real, dimension(il1:il2) :: tve
+        !real, dimension(il1:il2) :: tt
+        !real, dimension(il1:il2) :: hu
 
         !> Return if the process is not marked active.
         if (.not. svs_mesh%PROCESS_ACTIVE) return
@@ -1306,10 +1313,17 @@ print*,vl(i)%n,vl(i)%niveaux,vl(i)%mul,vl(i)%mosaik
         end if
         busptr(vd%pmoins%i)%ptr(:, trnch) = vs%tile%pres
 
+        ! Compute virtual tempertaure needed when computing forcing height
+        do i = il1,il2 
+             tt = busptr(vd%tmoins%i)%ptr(i, trnch)
+             hu = busptr(vd%humoins%i)%ptr(i, trnch)
+             tve(i) = FOTVT(tt,hu)   
+        end do  
+
         !> Update momentum and thermodynamic levels if using atmospheric forcing (not 'observed_forcing').
         if (.not. svs_mesh%vs%observed_forcing) then
-            svs_bus(a1(zusl):z1(zusl)) = -rgasd/grav*log(svs_mesh%vs%sigma_u)*busptr(vd%tmoins%i)%ptr(:, trnch)*0.98460888758311882  !*dat(ic%ts_count)
-            svs_bus(a1(ztsl):z1(ztsl)) = -rgasd/grav*log(svs_mesh%vs%sigma_t)*busptr(vd%tmoins%i)%ptr(:, trnch)* 0.98588055467306124 !*dat(ic%ts_count)
+            svs_bus(a1(zusl):z1(zusl)) = -rgasd/grav*log(svs_mesh%vs%sigma_u)*tve(:)  !*dat(ic%ts_count)
+            svs_bus(a1(ztsl):z1(ztsl)) = -rgasd/grav*log(svs_mesh%vs%sigma_t)*tve(:)  !*dat(ic%ts_count)
         end if
 
         !> Required to replace the calculation in 'phystepinit'.
@@ -1329,7 +1343,7 @@ print*,vl(i)%n,vl(i)%niveaux,vl(i)%mul,vl(i)%mosaik
         !> Copy bus variable.
         call runsvs_mesh_copy_bus_to_vs()
 
-!ierr = 200
+ierr = 200
 !!do i = 1, 26
 !!write(ierr, *) busptr(vd%vegf%i)%ptr(((i - 1)*ni + 1):i*ni, trnch); ierr = ierr + 1
 !!end do
@@ -1353,9 +1367,9 @@ print*,vl(i)%n,vl(i)%niveaux,vl(i)%mul,vl(i)%mosaik
 !write(ierr, *) busptr(vd%z0ha%i)%ptr(:, trnch); ierr = ierr + 1
 !write(ierr, *) busptr(vd%z0mvh%i)%ptr(:, trnch); ierr = ierr + 1
 !write(ierr, *) busptr(vd%z0mvl%i)%ptr(:, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%ztsl%i)%ptr(:, trnch); ierr = ierr + 1
+write(ierr, *) busptr(vd%ztsl%i)%ptr(:, trnch); ierr = ierr + 1
 !write(ierr, *) busptr(vd%z0t%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%zusl%i)%ptr(:, trnch); ierr = ierr + 1
+write(ierr, *) busptr(vd%zusl%i)%ptr(:, trnch); ierr = ierr + 1
 !write(ierr, *) busptr(vd%resagr%i)%ptr(:, trnch); ierr = ierr + 1
 !write(ierr, *) busptr(vd%resavg%i)%ptr(:, trnch); ierr = ierr + 1
 
