@@ -27,7 +27,7 @@ and then compile the code with `make ifort`.
 
 # General information
 
-Information about MESH are provided on the [MESH wiki](https://wiki.usask.ca/pages/viewpage.action?pageId=220332269). Specific information on the use of SVS 1.0 and 2.0 in MESH are detailed [here](https://wiki.usask.ca/pages/viewpage.action?pageId=1303674916). In particular, the instructions to configure the model in point mode are given [here](https://wiki.usask.ca/pages/viewpage.action?pageId=1716094475). 
+Information about MESH are provided on the [MESH wiki](https://wiki.usask.ca/pages/viewpage.action?pageId=220332269). Specific information on the use of SVS 1.0 and 2.0 in MESH are detailed [here](https://wiki.usask.ca/pages/viewpage.action?pageId=1303674916). In particular, the instructions to configure the model in point mode are given [here](https://wiki.usask.ca/display/MESH/How+to+configure+MESH-SVS+for+point+mode+%281D%29%2C+including+SVS2). 
 
 # Code organization
 * */Modules/rpnphy/6.1.0/src/surface* contains the codes of SVS 1.0 and 2.0 (including the code of the snowpack models Crocus and ES). 
