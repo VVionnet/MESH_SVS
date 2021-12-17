@@ -20,7 +20,11 @@ module runsvs_mesh
     use sfc_options
     use svs_configs
 
+    use str_mod, only: str_concat
+
     implicit none
+
+    character(len=1024) :: msg_S
 
     !> SVS constants.
     type runsvs_mesh_constants
@@ -547,6 +551,7 @@ module runsvs_mesh
 
     end subroutine
 
+
     subroutine runsvs_mesh_init(shd, fls, cm)
 
         !> For RPN/physics status.
@@ -716,6 +721,7 @@ kount_reset = 12
             vh_type = (/4, 5, 6, 7, 8, 9, 25, 26/)
         end if
 
+        ierr =0
         ! Initialize number of snow layers (for multilayer snowpack schemes in SVS2)
         if(svs_mesh%vs%schmsol=='SVS2') then 
              nsl  = svs_mesh%vs%nsl
@@ -727,6 +733,52 @@ kount_reset = 12
              hsnowrad =  svs_mesh%vs%hsnowrad
              hsnowfall =  svs_mesh%vs%hsnowfall
              hsnowhold =  svs_mesh%vs%hsnowhold
+
+             if (.not.any(hsnowscheme == hsnowscheme_opt)) then
+                 call str_concat(msg_S,hsnowscheme_opt ,', ')
+                 call print_error('hsnowscheme = '//trim(hsnowscheme)//' is not a valid option. Choose among: '//trim(msg_S))
+                 ierr = 1
+             endif
+             if (.not.any(hsnowcomp == hsnowcomp_opt)) then
+                 call str_concat(msg_S, hsnowcomp_opt,', ')
+                 call print_error('hsnowcomp = '//trim(hsnowcomp)//' is not a valid option. Choose among: '//trim(msg_S))
+                 ierr = 1
+             endif
+             if (.not.any(hsnowmetamo == hsnowmetamo_opt)) then
+                 call str_concat(msg_S, hsnowmetamo_opt,', ')
+                 call print_error('hsnowmetamo = '//trim(hsnowmetamo)//' is not a valid option. Choose among: '//trim(msg_S))
+                 ierr = 1
+             endif
+             if (.not.any(hsnowdrift_cro == hsnowdrift_cro_opt)) then
+                 call str_concat(msg_S, hsnowdrift_cro_opt,', ')
+                 call print_error('hsnowdrift_cro = '//trim(hsnowdrift_cro)//' is not a valid option. Choose among: '//trim(msg_S))
+                 ierr = 1
+             endif
+             if (.not.any(hsnowcond == hsnowcond_opt)) then
+                 call str_concat(msg_S, hsnowcond_opt,', ')
+                 call print_error('hsnowcond = '//trim(hsnowcond)//' is not a valid option. Choose among: '//trim(msg_S))
+                 ierr = 1
+             endif
+             if (.not.any(hsnowrad == hsnowrad_opt)) then
+                 call str_concat(msg_S, hsnowrad_opt,', ')
+                 call print_error('hsnowrad = '//trim(hsnowrad)//' is not a valid option. Choose among: '//trim(msg_S))
+                 ierr = 1
+             endif
+             if (.not.any(hsnowfall == hsnowfall_opt)) then
+                 call str_concat(msg_S, hsnowfall_opt,', ')
+                 call print_error('hsnowfall = '//trim(hsnowfall)//' is not a valid option. Choose among: '//trim(msg_S))
+                 ierr = 1
+             endif
+             if (.not.any(hsnowhold == hsnowhold_opt)) then
+                 call str_concat(msg_S, hsnowhold_opt,', ')
+                 call print_error('hsnowhold = '//trim(hsnowhold)//' is not a valid option. Choose among: '//trim(msg_S))
+                 ierr = 1
+             endif
+
+            if (ierr /= 0) then
+                call program_abort()
+            end if
+
         endif
 
         write(*, nml = surface_cfgs)
