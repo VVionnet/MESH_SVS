@@ -72,5 +72,6 @@ hsnowcond Y81     ! Option for the thermal conductivity scheme for Crocus
 hsnowhold B92     ! Option for the liquid water content scheme for Crocus
 hsnowcomp B92     ! Option for the compaction scheme for Crocus
 
-lout_snowprofile  .false.  ! Create output file containing detailed information on snowpack layering. 
+lout_snow_profile  .false.  ! Create output file containing detailed information on snowpack layering. 
+lout_snow_enbal  .false.    ! Create output file containing information about the snowpack energy and mass budget
 

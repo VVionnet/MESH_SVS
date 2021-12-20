@@ -1093,9 +1093,9 @@ ierr = 200
 !open(ierr, file = 'output/Z0HA.txt'); write(ierr, '(a)') 'Z0HA_0 '; ierr = ierr + 1
 !open(ierr, file = 'output/Z0VH.txt'); write(ierr, '(a)') 'Z0VH_0 '; ierr = ierr + 1
 !open(ierr, file = 'output/Z0VL.txt'); write(ierr, '(a)') 'Z0VL_0 '; ierr = ierr + 1
-open(ierr, file = 'output/ZH.txt'); write(ierr, '(a)') 'ZH_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/ZH.txt'); write(ierr, '(a)') 'ZH_0 '; ierr = ierr + 1
 !open(ierr, file = 'output/ZT_1.txt'); write(ierr, '(a)') 'ZT_1 '; ierr = ierr + 1
-open(ierr, file = 'output/ZU.txt'); write(ierr, '(a)') 'ZU_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/ZU.txt'); write(ierr, '(a)') 'ZU_0 '; ierr = ierr + 1
 !open(ierr, file = 'output/RSGR.txt'); write(ierr, '(a)') 'RSGR_0 '; ierr = ierr + 1
 !open(ierr, file = 'output/RSVG.txt'); write(ierr, '(a)') 'RSVG_0 '; ierr = ierr + 1
 !
@@ -1405,7 +1405,7 @@ open(ierr, file = 'output/ZU.txt'); write(ierr, '(a)') 'ZU_0 '; ierr = ierr + 1
         !> Copy bus variable.
         call runsvs_mesh_copy_bus_to_vs()
 
-ierr = 200
+!ierr = 200
 !!do i = 1, 26
 !!write(ierr, *) busptr(vd%vegf%i)%ptr(((i - 1)*ni + 1):i*ni, trnch); ierr = ierr + 1
 !!end do
@@ -1429,9 +1429,9 @@ ierr = 200
 !write(ierr, *) busptr(vd%z0ha%i)%ptr(:, trnch); ierr = ierr + 1
 !write(ierr, *) busptr(vd%z0mvh%i)%ptr(:, trnch); ierr = ierr + 1
 !write(ierr, *) busptr(vd%z0mvl%i)%ptr(:, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%ztsl%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%ztsl%i)%ptr(:, trnch); ierr = ierr + 1
 !write(ierr, *) busptr(vd%z0t%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%zusl%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%zusl%i)%ptr(:, trnch); ierr = ierr + 1
 !write(ierr, *) busptr(vd%resagr%i)%ptr(:, trnch); ierr = ierr + 1
 !write(ierr, *) busptr(vd%resavg%i)%ptr(:, trnch); ierr = ierr + 1
 
@@ -1514,8 +1514,8 @@ write(ierr, *) busptr(vd%zusl%i)%ptr(:, trnch); ierr = ierr + 1
                  ! Write file containing snow energy balance outputs
                   write(iout_snow_enbal, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
                   write(iout_snow_enbal, FMT_CSV, advance = 'no') busptr(vd%rnetsa%i)%ptr(:, trnch),busptr(vd%swnetsa%i)%ptr(:, trnch), &
-                       busptr(vd%lwnetsa%i)%ptr(:, trnch), busptr(vd%les%i)%ptr(:, trnch), busptr(vd%hfluxsa%i)%ptr(:, trnch), &
-                       busptr(vd%subldrifta%i)%ptr(:, trnch),busptr(vd%gfluxsa%i)%ptr(:, trnch),busptr(vd%hpsa%i)%ptr(:, trnch)
+                       busptr(vd%lwnetsa%i)%ptr(:, trnch), -1.0*busptr(vd%les%i)%ptr(:, trnch), -1.0*busptr(vd%hfluxsa%i)%ptr(:, trnch), &
+                       busptr(vd%subldrifta%i)%ptr(:, trnch), -1.0*busptr(vd%gfluxsa%i)%ptr(:, trnch),busptr(vd%hpsa%i)%ptr(:, trnch)
                   write(iout_snow_enbal, *)
               end if
 
