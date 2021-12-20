@@ -10,6 +10,7 @@ SUBROUTINE SNOW_SVS(  PSNOWSWE,PSNOWTEMP, PSNOWLIQ,PSNOWRHO,PSNOWALB,  &
                       PLW_RAD,PRR, PSR, PRHOA, PUREF,         &
                       PZREF, PALB, PD_G, PDZG,         &
                       PTHRUFAL, PGRNDFLUX,PRNSNOW,PHSNOW, PGFLUXSNOW,        &
+                      PSWNETSNOW, PLWNETSNOW,PSUBLDRIFT,                     &
                       PHPSNOW, PPSN,PZ0NAT, PZ0EFF, PZ0HNAT, &
                       PLES3L, PLEL3L, PEVAP, &
                       PZENITH, PLAT, PLON, PFOREST,      &
@@ -55,7 +56,7 @@ SUBROUTINE SNOW_SVS(  PSNOWSWE,PSNOWTEMP, PSNOWLIQ,PSNOWRHO,PSNOWALB,  &
 
 !
 USE MODD_CSTS,       ONLY : XTT, XPI, XDAY, XLMTT, XLSTT, XLVTT,XCI,XP00, XRD, XCPD,  &
-                                   XRHOLW
+                                   XRHOLW,XSTEFAN
 USE MODD_SNOW_PAR,   ONLY : XRHOSMAX_ES, XSNOWDMIN, XRHOSMIN_ES, XEMISSN 
 USE MODD_SURF_PAR,   ONLY : XUNDEF 
 USE MODD_PREP_SNOW,   ONLY : NIMPUR
@@ -165,6 +166,15 @@ REAL, DIMENSION(N), INTENT(INOUT)   :: PLES3L, PLEL3L, PEVAP, PGRNDFLUX
 !                                      PEVAP         = total evaporative flux from snow (kg/m2/s)
 !                                      PGRNDFLUX     = soil/snow interface heat flux (W/m2)
 !
+REAL, DIMENSION(N), INTENT(OUT)      :: PSWNETSNOW, PLWNETSNOW
+!                                      PSWNETSNOW = net shortwave radiation entering top of snowpack 
+!                                                  (W m-2) 
+!                                      PLWNETSNOW = net longwave radiation entering top of snowpack 
+!                                                  (W m-2) 
+!
+REAL, DIMENSION(N), INTENT(OUT)      :: PSUBLDRIFT
+!                                      PSUBLDRIFT    = rate of mass loss due to blowing snow sublimation (kg/m2/s)
+!
 !
 REAL, DIMENSION(N), INTENT(OUT)     :: PTHRUFAL
 !                                      PTHRUFAL  = rate that liquid water leaves snow pack: 
@@ -273,8 +283,6 @@ REAL, DIMENSION(SIZE(PTA),SIZE(PSNOWSWE,2))     :: ZSNOWHEAT, ZSNOWDZ, ZSCAP
 !                                      ZSNOWDZ   = Snow layer(s) thickness (m)
 !                                      ZSCAP      = Snow layer(s) heat capacity [J/(K m3)
 !
-REAL, DIMENSION(SIZE(PTA))       :: ZSNDRIFT
-!                                      ZSNDRIFT    = blowing snow sublimation (kg/m2/s)
 !
 REAL, DIMENSION(SIZE(PTA))       :: ZLVTT, ZLSTT ! = latent heats for hydrology
 !
@@ -328,7 +336,7 @@ INTEGER, DIMENSION(SIZE(PTA))      :: NMASK      ! indices correspondance betwee
 !
 LOGICAL, DIMENSION(SIZE(PTA))      :: LREMOVE_SNOW
 !
-REAL, DIMENSION(SIZE(PTA))         :: ZSWNET_N, ZSWNET_NS, ZLWNET_N
+REAL, DIMENSION(SIZE(PTA))         :: ZSWNET_NS
 !
 REAL, DIMENSION(SIZE(PPS))         :: ZSNOWMAK
 !
@@ -346,6 +354,9 @@ ZRRSFC(:)      = PRR(:)         ! so initialize here if SNOW3L not used:
 !
 ZFLSN_COR(:)   = 0.0
 PTHRUFAL(:)    = 0.0
+PSWNETSNOW(:)  = 0.0 
+PLWNETSNOW(:)  = 0.0 
+PSUBLDRIFT(:)    = 0.
 ZEVAPCOR(:)    = 0.0
 ZQS(:)         = XUNDEF
 !
@@ -427,7 +438,6 @@ ZEXNA(:)   = (PPS(:)/XP00)**(XRD/XCPD)
 ! We assume so far a flat terrain.
 ZDIRCOSZW(:) = 1.
 
-ZSNDRIFT(:)    = 0.
 
 ! Latente heats are initialized as in init_veg_pgdn.F90 from SURFEX
 ZLSTT(:)   = XLSTT
@@ -474,9 +484,7 @@ ZCHSNOW(:)    = 0.0
 !
 !
 !
-ZSWNET_N(:)       = 0.0 
 ZSWNET_NS(:)      = 0.0
-ZLWNET_N(:)       = 0.0
 
 
 ! - Snow and rain falling onto the ES grid space:
@@ -593,7 +601,7 @@ ZSOILCOND(:) = PSOILCONDZ(:)
     ZGSFCSNOW(:)        = 0.0
     ZDELHEATN(:)        = -ZSNOWH(:) /PTSTEP
     ZDELHEATN_SFC(:)    = -ZSNOWH1(:)/PTSTEP
-    ZSNOWSFCH(:)        = ZDELHEATN_SFC(:) - (ZSWNET_NS(:) + ZLWNET_N(:)    &
+    ZSNOWSFCH(:)        = ZDELHEATN_SFC(:) - (ZSWNET_NS(:) + PLWNETSNOW(:)    &
                            - PHSNOW(:) - PLES3L(:) - PLEL3L(:)) + ZGSFCSNOW(:)     &
                            - ZSNOWHMASS(:)/PTSTEP 
     ZGRNDFLUXN(:)       = (ZSNOWH(:)+ZSNOWHMASS(:))/PTSTEP + PGFLUXSNOW(:)
@@ -1001,6 +1009,8 @@ DO JJ=1,KSIZE1
 
    ZP_RRSNOW  (JJ) = ZRRSNOW  (JI)   
    ZP_SOILCOND(JJ) = ZSOILCOND(JI)
+
+   ZP_SNDRIFT(JJ)  = PSUBLDRIFT(JI)
  
    !  
    ZP_PEW_A_COEF(JJ) = ZPEW_A_COEF(JI)
@@ -1027,9 +1037,9 @@ DO JJ=1,KSIZE1
    ZP_LEL3L       (JJ) = PLEL3L       (JI)  
    ZP_EVAP        (JJ) = PEVAP        (JI)
    !
-   ZP_SWNETSNOW   (JJ) = ZSWNET_N   (JI) 
+   ZP_SWNETSNOW   (JJ) = PSWNETSNOW (JI) 
    ZP_SWNETSNOWS  (JJ) = ZSWNET_NS  (JI) 
-   ZP_LWNETSNOW   (JJ) = ZLWNET_N   (JI) 
+   ZP_LWNETSNOW   (JJ) = PLWNETSNOW (JI) 
 !
    ZP_SNOWMAK (JJ) = ZSNOWMAK  (JI)
 !  
@@ -1139,7 +1149,15 @@ IF (HSNOWSCHEME=='CRO') THEN
   ZP_GFLXCOR (:) = 0.0
   ZP_FLSN_COR(:) = 0.0
   ZP_SOILCOR (:) = 0.0
+
+! Compute net shortwave and longwave fluxes
+   
+  DO JJ=1,KSIZE2
+      ZP_SWNETSNOW(JI)  = ZP_SW_RAD(JI) *( 1 - ZP_SNOWALB(JI) )
+      ZP_LWNETSNOW(JI)  = ZP_RNSNOW(JI) -  ZP_SWNETSNOW(JI)
+  ENDDO
 !
+
  ELSE 
 !
   CALL SNOW3L(CSNOWRES, LMEB, CIMPLICIT_WIND,                   &
@@ -1163,6 +1181,9 @@ IF (HSNOWSCHEME=='CRO') THEN
               ZP_ZENITH, HSNOWDRIFT_ES, LSNOWDRIFT_SUBLIM  )
  ENDIF
 !
+
+
+
   IF(LMEB)THEN
 !
 ! - reverse transform: back to surface-relative
@@ -1328,9 +1349,10 @@ DO JJ=1,KSIZE1
   PEVAP        (JI)   = ZP_EVAP        (JJ)
   ZSOILCOR      (JI) = ZP_SOILCOR     (JJ)
   !
-  ZSWNET_N      (JI) = ZP_SWNETSNOW   (JJ)
-  ZSWNET_NS     (JI) = ZP_SWNETSNOWS  (JJ)
-  ZLWNET_N      (JI) = ZP_LWNETSNOW   (JJ)
+  PSWNETSNOW   (JI) = ZP_SWNETSNOW   (JJ)
+  ZSWNET_NS    (JI) = ZP_SWNETSNOWS  (JJ)
+  PLWNETSNOW   (JI) = ZP_LWNETSNOW   (JJ)
+  PSUBLDRIFT     (JI) = ZP_SNDRIFT(JJ)
 ENDDO
 !
 !

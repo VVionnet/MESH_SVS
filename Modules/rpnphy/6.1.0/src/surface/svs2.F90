@@ -137,9 +137,9 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 !
 !  for SVS2 only (to reorganise and clean some var)
    real,dimension(n) :: pct, pz0hnat, pz0, pzenith
-   real,dimension(n) :: pgrndflux, pgfluxsnow, phpsnow
+   real,dimension(n) :: pgfluxsnow
    real,dimension(n) :: pforest
-   real,dimension(n) :: pgrndflux_v, pgfluxsnow_v, phpsnow_v,pforest_v
+   real,dimension(n) :: pgfluxsnow_v,pforest_v
 
    real,dimension(n) :: prg_veg    ! Surface incoming shortwave radiation under high vegetation
    real,dimension(n) :: prat_veg   ! Surface incoming longwave radiation under high vegetation
@@ -260,18 +260,14 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
          CALL INI_CSTS
 
          DO I=1,N
-            PGRNDFLUX(I)=0.0
             PGFLUXSNOW(I)=0.0
-            PHPSNOW(I)=0.0
             IF(bus(x(SNOMA_SVS,I,1))>0.) THEN
                 bus(x(SNOAL,I,1))=0.8                
             ELSE
                 bus(x(SNOAL,I,1))=0.1                    
             ENDIF
             
-            PGRNDFLUX_V(I)=0.0
             PGFLUXSNOW_V(I)=0.0
-            PHPSNOW_V(I)=0.0
             IF(bus(x(SNOMA_SVS,I,1))>0.) THEN
                 bus(x(SNVAL,I,1))=0.8
                 
@@ -475,9 +471,9 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                          RAINRATE_MM, SNOWRATE_MM,                                       &
                          RHOA, bus(x(zusl,1,1)),  bus(x(ztsl,1,1)),             &
                          BUS(X(ALGR,1,1)), PD_G, PDZG,                          &
-                         bus(x(RSNOWSA,1,1)), PGRNDFLUX,bus(x(RNETSA,1,1)),bus(x(HFLUXSA,1,1)) , &
-                         PGFLUXSNOW, PHPSNOW,       &
-                         bus(x(PSNGRVL ,1,1)), PZ0,PZ0,PZ0HNAT, &
+                         bus(x(RSNOWSA,1,1)), bus(x(GFLUXSA,1,1)),bus(x(RNETSA,1,1)),bus(x(HFLUXSA,1,1)) , &
+                         PGFLUXSNOW,bus(x(SWNETSA,1,1)), bus(x(LWNETSA,1,1)), bus(x(SUBLDRIFTA,1,1)), &
+                         bus(x(HPSA ,1,1)),  bus(x(PSNGRVL ,1,1)), PZ0,PZ0,PZ0HNAT, &
                          LESNOFRAC, LESLNOFRAC, ESNOFRAC, PZENITH, &
                          bus(x (DLAT,1,1)), bus(x (DLON,1,1)),PFOREST,  N, NL_SVS)
       if (phy_error_L) return
@@ -506,9 +502,9 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                          RAINRATE_MM, SNOWRATE_MM,                                       &
                          RHOA, bus(x(zusl,1,1)),  bus(x(ztsl,1,1)),             &
                          BUS(X(ALGR,1,1)), PD_G, PDZG,                          &
-                         bus(x(RSNOWSV,1,1)), PGRNDFLUX_V,bus(x(RNETSV,1,1)) , bus(x(HFLUXSV ,1,1)), &
-                         PGFLUXSNOW_V, PHPSNOW_V,       &
-                         bus(x(PSNVHA ,1,1)), PZ0,PZ0,PZ0HNAT, &
+                         bus(x(RSNOWSV,1,1)), bus(x(GFLUXSV,1,1)),bus(x(RNETSV,1,1)) , bus(x(HFLUXSV ,1,1)), &
+                         PGFLUXSNOW_V,bus(x(SWNETSV,1,1)),bus(x(LWNETSV,1,1)),bus(x(SUBLDRIFTV,1,1)), &
+                         bus(x(HPSV ,1,1)),bus(x(PSNVHA ,1,1)), PZ0,PZ0,PZ0HNAT, &
                          LESVNOFRAC, LESVLNOFRAC, ESVNOFRAC,PZENITH, &
                          bus(x (DLAT,1,1)), bus(x (DLON,1,1)), PFOREST_V,  N, NL_SVS)
       if (phy_error_L) return
@@ -544,7 +540,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                   bus(x(TGROUND    ,1,1)) , bus(x(TGROUND,1,2)),   & 
                   bus(x(TVEGE      ,1,1)) , bus(x(TVEGE,1,2)),   &  
                   bus(x(TPSOIL    ,1,1)) , bus(x(TPSOILV,1,1)),    & 
-                  bus(x(TPERM     ,1,1)) , PGRNDFLUX, PGRNDFLUX_V, &  
+                  bus(x(TPERM     ,1,1)) , bus(x(GFLUXSA,1,1)), bus(x(GFLUXSV,1,1)), &  
                   DT                     , VMOD, VDIR, bus(x(DLAT,1,1)),   &   
                   zfsolis ,ALVA ,bus(x(laiva,1,1)),GAMVA ,     & 
                   BUS(x(ALGR,1,1))        , BUS(x(EMISGR,1,1)),    & 

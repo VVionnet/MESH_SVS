@@ -39,6 +39,7 @@ module runsvs_mesh
     integer :: iout_soil = 150
     integer :: iout_snow_bulk = 151
     integer :: iout_snow_profile = 152
+    integer :: iout_snow_enbal = 153
 
     !> SVS variables names for I/O (direct variables).
     character(len = *), parameter, public :: VN_SVS_DEGLAT = 'DEGLAT'
@@ -97,7 +98,8 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_SNOHIST_SVS = 'SNOHIST'
     character(len = *), parameter, public :: VN_SVS_TSNOW_SVS = 'TSNOW_SVS'
     character(len = *), parameter, public :: VN_SVS_WSNOW_SVS = 'WSNOW_SVS'
-    character(len = *), parameter, public :: VN_SVS_LOUT_SNOWPROFILE = 'LOUT_SNOWPROFILE' ! For svs2 only 
+    character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_PROFILE = 'LOUT_SNOW_PROFILE' ! For svs2 only 
+    character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_ENBAL = 'LOUT_SNOW_ENBAL' ! For svs2 only 
 
     !> SVS variables names for I/O (modifiers/special conditions).
     character(len = *), parameter, public :: VN_SVS_SAND_N = 'SAND_N'
@@ -178,7 +180,8 @@ module runsvs_mesh
         character(len = DEFAULT_FIELD_LENGTH) :: hsnowhold = 'B92'
         character(len = DEFAULT_FIELD_LENGTH) :: hsnowcomp = 'B92'
         logical :: lsnowdrift_sublim = .true.
-        logical :: lout_snowprofile = .false.
+        logical :: lout_snow_profile = .false.
+        logical :: lout_snow_enbal = .false.
     end type
 
     !* PROCESS_ACTIVE: Variable to enable SVS.
@@ -1121,7 +1124,14 @@ open(ierr, file = 'output/ZU.txt'); write(ierr, '(a)') 'ZU_0 '; ierr = ierr + 1
        write(iout_snow_bulk, FMT_CSV, advance = 'no') 'SNOMA', 'SNODP','SNODEN','SNOALB','WSNO','TSNO_SURF','RSNOW_AC','RAINRATE', 'SNOWRATE' 
        write(iout_snow_bulk, *)
 
-       if(svs_mesh%vs%lout_snowprofile) then 
+       if(svs_mesh%vs%lout_snow_enbal) then 
+           open(iout_snow_enbal, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs2_snow_enbal_hourly.csv', action = 'write')
+           write(iout_snow_enbal, FMT_CSV, advance = 'no') 'YEAR', 'JDAY', 'HOUR', 'MINS'
+           write(iout_snow_enbal, FMT_CSV, advance = 'no') 'SNO_RNET', 'SNO_SWNET','SNO_LWNET','SNO_LE','SNO_H','SNO_BSUBL','SNO_G', 'SNO_HRAIN'
+           write(iout_snow_enbal, *)
+       endif
+
+       if(svs_mesh%vs%lout_snow_profile) then 
           open(iout_snow_profile, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs2_snow_profile_hourly.csv', action = 'write')
           write(iout_snow_profile, FMT_CSV, advance = 'no') 'YEAR', 'JDAY', 'HOUR', 'MINS'
           do j = 1, nsl
@@ -1500,8 +1510,17 @@ write(ierr, *) busptr(vd%zusl%i)%ptr(:, trnch); ierr = ierr + 1
                         busptr(vd%rainrate%i)%ptr(:, trnch),busptr(vd%snowrate%i)%ptr(:, trnch)
               write(iout_snow_bulk, *)
 
+              if( svs_mesh%vs%lout_snow_enbal) then 
+                 ! Write file containing snow energy balance outputs
+                  write(iout_snow_enbal, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
+                  write(iout_snow_enbal, FMT_CSV, advance = 'no') busptr(vd%rnetsa%i)%ptr(:, trnch),busptr(vd%swnetsa%i)%ptr(:, trnch), &
+                       busptr(vd%lwnetsa%i)%ptr(:, trnch), busptr(vd%les%i)%ptr(:, trnch), busptr(vd%hfluxsa%i)%ptr(:, trnch), &
+                       busptr(vd%subldrifta%i)%ptr(:, trnch),busptr(vd%gfluxsa%i)%ptr(:, trnch),busptr(vd%hpsa%i)%ptr(:, trnch)
+                  write(iout_snow_enbal, *)
+              end if
+
               ! Write file containing  snow profile outputs every 3 hours. 
-              if ( modulo(ic%now%hour,3) == 0 .and. svs_mesh%vs%lout_snowprofile ) then
+              if ( modulo(ic%now%hour,3) == 0 .and. svs_mesh%vs%lout_snow_profile ) then
                 write(iout_snow_profile, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
                 do i = 1, nsl
                    write(iout_snow_profile, FMT_CSV, advance = 'no') &

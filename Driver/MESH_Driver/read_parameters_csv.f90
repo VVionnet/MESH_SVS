@@ -285,12 +285,20 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
                     p = 1
                     call assign_line_args(svs_mesh%vs%lsnowdrift_sublim, args(2), istat)
                 end if
-            case (VN_SVS_LOUT_SNOWPROFILE)
+            case (VN_SVS_LOUT_SNOW_PROFILE)
                 if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS' ) then
                     istat = istat + radix(istat)**pstat%INACTIVE
                 else
                     p = 1
-                    call assign_line_args(svs_mesh%vs%lout_snowprofile, args(2), istat)
+                    call assign_line_args(svs_mesh%vs%lout_snow_profile, args(2), istat)
+                end if
+
+            case (VN_SVS_LOUT_SNOW_ENBAL)
+                if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS' ) then
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    p = 1
+                    call assign_line_args(svs_mesh%vs%lout_snow_enbal, args(2), istat)
                 end if
 
             case (VN_SVS_SAND)
