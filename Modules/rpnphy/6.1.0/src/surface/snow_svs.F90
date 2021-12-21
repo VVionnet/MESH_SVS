@@ -121,8 +121,8 @@ REAL, DIMENSION(N), INTENT(OUT)     :: PGFLUXSNOW
 !
 REAL, DIMENSION(N), INTENT(IN)      :: PPSN,PLAT, PLON
 !                                      PPSN     = Snow cover fraction (total) 
-!                                      PLAT     = Latitude 
-!                                      PLON     = Longitude
+!                                      PLAT     = Latitude (in rad) 
+!                                      PLON     = Longitude (in rad)
 !
 REAL, DIMENSION(N), INTENT(IN)      :: PZ0NAT, PZ0EFF, PZ0HNAT
 !                                      PZ0EFF    = roughness length for momentum 
@@ -283,6 +283,9 @@ REAL, DIMENSION(SIZE(PTA),SIZE(PSNOWSWE,2))     :: ZSNOWHEAT, ZSNOWDZ, ZSCAP
 !                                      ZSNOWDZ   = Snow layer(s) thickness (m)
 !                                      ZSCAP      = Snow layer(s) heat capacity [J/(K m3)
 !
+REAL, DIMENSION(SIZE(PTA))     ::  ZLAT, ZLON
+!					ZLAT = Latitude (deg)
+!					ZLON = Longitude (deg)
 !
 REAL, DIMENSION(SIZE(PTA))       :: ZLVTT, ZLSTT ! = latent heats for hydrology
 !
@@ -459,6 +462,11 @@ TPTIME%TDATE%YEAR = ZYY
 TPTIME%TDATE%MONTH = ZMO
 TPTIME%TDATE%DAY = ZDD
 TPTIME%TIME = ZHH*3600.+ZMN*60+ZSEC
+
+! Convert latitude and longitude from rad to deg
+ZLAT(:) = PLAT(:)* 180./ACOS(-1.)
+ZLON(:) = PLON(:)* 180./ACOS(-1.)
+
 
 !###########################################################################################
 !########      End Initialization of variables for phasing with SVS
@@ -685,7 +693,7 @@ ZSOILCOND(:) = PSOILCONDZ(:)
         !
         IF (PSNOWTEMP(JJ,JWRK)<ZCHECK_TEMP) THEN
           WRITE(*,*) 'Suspicious low temperature :',PSNOWTEMP(JJ,JWRK)
-          WRITE(*,*) 'At point and location      :',JJ,'LAT=',PLAT(JJ),'LON=',PLON(JJ)
+          WRITE(*,*) 'At point and location      :',JJ,'LAT=',ZLAT(JJ),'LON=',ZLON(JJ)
           WRITE(*,*) 'At snow level / total layer:',JWRK,'/',INLVLS
           WRITE(*,*) 'SNOW MASS BUDGET (kg/m2/s) :',ZSNOW_MASS_BUDGET(JJ)
           WRITE(*,*) 'SWE BY LAYER      (kg/m2)  :',PSNOWSWE (JJ,1:INLVLS)
@@ -1020,8 +1028,8 @@ DO JJ=1,KSIZE1
    ZP_PET_B_COEF(JJ) = ZPET_B_COEF(JI)
    ZP_PEQ_B_COEF(JJ) = ZPEQ_B_COEF(JI)
    !
-   ZP_LAT  (JJ)      = PLAT(JI)
-   ZP_LON  (JJ)      = PLON(JI)
+   ZP_LAT  (JJ)      = ZLAT(JI)
+   ZP_LON  (JJ)      = ZLON(JI)
 
    ZP_ZENITH(JJ)     = PZENITH  (JI)
 
