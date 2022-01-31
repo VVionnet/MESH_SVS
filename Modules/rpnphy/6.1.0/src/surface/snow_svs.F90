@@ -1160,7 +1160,7 @@ IF (HSNOWSCHEME=='CRO') THEN
 
 ! Compute net shortwave and longwave fluxes
    
-  DO JJ=1,KSIZE2
+  DO JI=1,KSIZE1
       ZP_SWNETSNOW(JI)  = ZP_SW_RAD(JI) *( 1 - ZP_SNOWALB(JI) )
       ZP_LWNETSNOW(JI)  = ZP_RNSNOW(JI) -  ZP_SWNETSNOW(JI)
   ENDDO
