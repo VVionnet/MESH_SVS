@@ -174,6 +174,7 @@ REAL, DIMENSION(N), INTENT(OUT)      :: PSWNETSNOW, PLWNETSNOW
 !
 REAL, DIMENSION(N), INTENT(OUT)      :: PSUBLDRIFT
 !                                      PSUBLDRIFT    = rate of mass loss due to blowing snow sublimation (kg/m2/s)
+!                                                   (negative sign since it corresponds to a mass loss for the snow cover)
 !
 !
 REAL, DIMENSION(N), INTENT(OUT)     :: PTHRUFAL
@@ -570,10 +571,11 @@ ZSOILCOND(:) = PSOILCONDZ(:)
     ENDDO
   END DO
 !
-  LREMOVE_SNOW(:)=(ZSNOWD(:)<XSNOWDMIN*1.1)
+! Remove snow is activated when preexisting snow cover or new snow fall is ablated
+!
+  LREMOVE_SNOW(:)=((ZSNOWD(:)<XSNOWDMIN*1.1) .AND. (ZSNOW(:) >= XSNOWDMIN .OR. ZSNOWFALL(:) >= XSNOWDMIN)) 
 !
 !
-        
 !    To Conserve mass in ISBA without MEB, 
 !    EVAP must be weignted by the snow fraction
 !    in the calulation of THRUFAL
@@ -1360,7 +1362,7 @@ DO JJ=1,KSIZE1
   PSWNETSNOW   (JI) = ZP_SWNETSNOW   (JJ)
   ZSWNET_NS    (JI) = ZP_SWNETSNOWS  (JJ)
   PLWNETSNOW   (JI) = ZP_LWNETSNOW   (JJ)
-  PSUBLDRIFT     (JI) = ZP_SNDRIFT(JJ)
+  PSUBLDRIFT     (JI) = -1. * ZP_SNDRIFT(JJ) ! Make sure it has a negative sign (mass loss for the snow cover)
 ENDDO
 !
 !
