@@ -35,7 +35,7 @@ for ific,fic in enumerate(list_fic):
 	for nam in col:
 		ss = nam.split('_')
 		if(ss[-1].isnumeric()):
-			col_short.append(ss[:-1][0])
+			col_short.append('_'.join(ss[:-1]))
 		else:
 			col_short.append(nam)
 
