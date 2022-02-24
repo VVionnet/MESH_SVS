@@ -1345,6 +1345,67 @@ ierr = 200
         idateo = cmcdate_fromprint(time_run_now)
         jdateo = jdate_from_cmc(idateo)
 
+
+    ! Write SVS hourly outputs
+1010    format(9999(g15.7e2, ','))
+
+        if(svs_mesh%vs%schmsol=='SVS2') then
+
+           !if (ic%now%hour /= ic%next%hour) then !last time-step of hour
+           if (ic%now%mins ==0) then! Full hour
+
+              k=1 !>  Identity of the tile (offset relative to node-indexing).
+
+              ! Write file containing soil outputs
+              write(iout_soil, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
+              do i = 1, nl_svs
+                 write(iout_soil, FMT_CSV, advance = 'no') &
+                     busptr(vd%isoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) , &
+                     busptr(vd%wsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
+                     busptr(vd%tpsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
+                     busptr(vd%tpsoilv%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+              end do
+              write(iout_soil, *)
+
+              ! Write file containing bulk snow outputs
+              write(iout_snow_bulk, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
+              write(iout_snow_bulk, FMT_CSV, advance = 'no') busptr(vd%snoma%i)%ptr(:, trnch),busptr(vd%snodpl%i)%ptr(:, trnch), &
+                        busptr(vd%snoden%i)%ptr(:, trnch), busptr(vd%snoal%i)%ptr(:, trnch),busptr(vd%wsnow%i)%ptr(:, trnch), &                    
+                        busptr(vd%tsnow_svs%i)%ptr(1:ni, trnch),busptr(vd%rsnows_acc%i)%ptr(:, trnch),  & 
+                        busptr(vd%rainrate%i)%ptr(:, trnch),busptr(vd%snowrate%i)%ptr(:, trnch)
+              write(iout_snow_bulk, *)
+
+              if( svs_mesh%vs%lout_snow_enbal) then 
+                 ! Write file containing snow energy balance outputs
+                  write(iout_snow_enbal, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
+                  write(iout_snow_enbal, FMT_CSV, advance = 'no') busptr(vd%rnetsa%i)%ptr(:, trnch),busptr(vd%swnetsa%i)%ptr(:, trnch), &
+                       busptr(vd%lwnetsa%i)%ptr(:, trnch), -1.0*busptr(vd%les%i)%ptr(:, trnch), -1.0*busptr(vd%hfluxsa%i)%ptr(:, trnch), &
+                       busptr(vd%subldrifta%i)%ptr(:, trnch), -1.0*busptr(vd%gfluxsa%i)%ptr(:, trnch),busptr(vd%hpsa%i)%ptr(:, trnch)
+                  write(iout_snow_enbal, *)
+              end if
+
+              ! Write file containing  snow profile outputs every 3 hours. 
+              if ( modulo(ic%now%hour,3) == 0 .and. svs_mesh%vs%lout_snow_profile ) then
+                write(iout_snow_profile, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
+                do i = 1, nsl
+                   write(iout_snow_profile, FMT_CSV, advance = 'no') &
+                       busptr(vd%snoma_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) , &
+                       busptr(vd%snoden_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
+                       busptr(vd%snoage_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
+                       busptr(vd%snodiamopt_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) , &
+                       busptr(vd%snospheri_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
+                       busptr(vd%snohist_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
+                       busptr(vd%tsnow_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
+                       busptr(vd%wsnow_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+                end do
+                write(iout_snow_profile, *)
+
+              end if
+
+           end if
+
+        end if
+
         !> Reset the initialization periodically (at least daily).
         if (ic%ts_count == 1 .or. (ic%now%hour == kount_reset .and. ic%now%mins == 0)) then
             call runsvs_mesh_copy_vs_to_bus()
@@ -1408,6 +1469,8 @@ ierr = 200
 
         !> Required to replace the calculation in 'phystepinit'.
         busptr(vd%thetaa%i)%ptr(:, trnch) = svs_mesh%vs%sigma_t**(-cappa)*busptr(vd%tmoins%i)%ptr(:, trnch)
+
+
 
         !> Call SVS.
         if(svs_mesh%vs%schmsol=='SVS') then
@@ -1511,65 +1574,6 @@ ierr = 200
         end do
 
 
-    ! Write SVS hourly outputs
-1010    format(9999(g15.7e2, ','))
-
-        if(svs_mesh%vs%schmsol=='SVS2') then
-
-           !if (ic%now%hour /= ic%next%hour) then !last time-step of hour
-           if (ic%now%mins ==0) then! Full hour
-
-              k=1 !>  Identity of the tile (offset relative to node-indexing).
-
-              ! Write file containing soil outputs
-              write(iout_soil, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
-              do i = 1, nl_svs
-                 write(iout_soil, FMT_CSV, advance = 'no') &
-                     busptr(vd%isoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) , &
-                     busptr(vd%wsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                     busptr(vd%tpsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                     busptr(vd%tpsoilv%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
-              end do
-              write(iout_soil, *)
-
-              ! Write file containing bulk snow outputs
-              write(iout_snow_bulk, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
-              write(iout_snow_bulk, FMT_CSV, advance = 'no') busptr(vd%snoma%i)%ptr(:, trnch),busptr(vd%snodpl%i)%ptr(:, trnch), &
-                        busptr(vd%snoden%i)%ptr(:, trnch), busptr(vd%snoal%i)%ptr(:, trnch),busptr(vd%wsnow%i)%ptr(:, trnch), &                    
-                        busptr(vd%tsnow_svs%i)%ptr(1:ni, trnch),busptr(vd%rsnows_acc%i)%ptr(:, trnch),  & 
-                        busptr(vd%rainrate%i)%ptr(:, trnch),busptr(vd%snowrate%i)%ptr(:, trnch)
-              write(iout_snow_bulk, *)
-
-              if( svs_mesh%vs%lout_snow_enbal) then 
-                 ! Write file containing snow energy balance outputs
-                  write(iout_snow_enbal, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
-                  write(iout_snow_enbal, FMT_CSV, advance = 'no') busptr(vd%rnetsa%i)%ptr(:, trnch),busptr(vd%swnetsa%i)%ptr(:, trnch), &
-                       busptr(vd%lwnetsa%i)%ptr(:, trnch), -1.0*busptr(vd%les%i)%ptr(:, trnch), -1.0*busptr(vd%hfluxsa%i)%ptr(:, trnch), &
-                       busptr(vd%subldrifta%i)%ptr(:, trnch), -1.0*busptr(vd%gfluxsa%i)%ptr(:, trnch),busptr(vd%hpsa%i)%ptr(:, trnch)
-                  write(iout_snow_enbal, *)
-              end if
-
-              ! Write file containing  snow profile outputs every 3 hours. 
-              if ( modulo(ic%now%hour,3) == 0 .and. svs_mesh%vs%lout_snow_profile ) then
-                write(iout_snow_profile, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
-                do i = 1, nsl
-                   write(iout_snow_profile, FMT_CSV, advance = 'no') &
-                       busptr(vd%snoma_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) , &
-                       busptr(vd%snoden_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                       busptr(vd%snoage_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                       busptr(vd%snodiamopt_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) , &
-                       busptr(vd%snospheri_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                       busptr(vd%snohist_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                       busptr(vd%tsnow_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                       busptr(vd%wsnow_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
-                end do
-                write(iout_snow_profile, *)
-
-              end if
-
-           end if
-
-        end if
     end subroutine
 
     subroutine runsvs_mesh_finalize(shd, fls)

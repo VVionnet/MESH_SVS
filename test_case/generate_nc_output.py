@@ -73,6 +73,28 @@ for ific,fic in enumerate(list_fic):
 	else:
 		ref=xr.merge([ref,da])
 
+# List of cumulated variable that need to be reprocessed to handle the fact that they are reset to zero 
+# every day at 12 UTC by MESH-SVS (to mimic GEM-Hydro daily integration cycle)
+var_cum=['RSNOW_AC']
+
+for var in var_cum:
+	if var in ref.data_vars:
+		#Get the hourly increase from the cumulated values
+		ext = ref[var].diff(dim='time', label='upper')
+
+		# Extract data at 13 UTC 	
+		mm=ext.time.dt.hour==13
+		ref_var = ref[var][1:]
+		
+		# Adjust the houlry increase at 13 UTC
+		ext[mm] = ref_var[mm]
+
+		# Compute cumulated values
+		ext = ext.cumsum()
+
+		# Update value in NetCDf file so that the correct cumulated values is used. 
+		ref[var][1:] = ext[:]
+
 
 # functions and encoding info
 DEFAULT_ENCODING = {
