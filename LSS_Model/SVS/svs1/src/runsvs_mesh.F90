@@ -92,12 +92,12 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_SNVMA = 'SNVMA'
     character(len = *), parameter, public :: VN_SVS_SNOMA_SVS = 'SNOMA_ML'
     character(len = *), parameter, public :: VN_SVS_SNODEN_SVS = 'SNODEN_ML'
-    character(len = *), parameter, public :: VN_SVS_SNOAGE_SVS = 'SNOAGE'
-    character(len = *), parameter, public :: VN_SVS_SNODIAMOPT_SVS = 'SNODIAMOPT'
-    character(len = *), parameter, public :: VN_SVS_SNOSPHERI_SVS = 'SNOSPHERI'
-    character(len = *), parameter, public :: VN_SVS_SNOHIST_SVS = 'SNOHIST'
-    character(len = *), parameter, public :: VN_SVS_TSNOW_SVS = 'TSNOW_SVS'
-    character(len = *), parameter, public :: VN_SVS_WSNOW_SVS = 'WSNOW_SVS'
+    character(len = *), parameter, public :: VN_SVS_SNOAGE_SVS = 'SNOAGE_ML'
+    character(len = *), parameter, public :: VN_SVS_SNODIAMOPT_SVS = 'SNODOPT_ML'
+    character(len = *), parameter, public :: VN_SVS_SNOSPHERI_SVS = 'SNOSPH_ML'
+    character(len = *), parameter, public :: VN_SVS_SNOHIST_SVS = 'SNOHIST_ML'
+    character(len = *), parameter, public :: VN_SVS_TSNOW_SVS = 'TSNOW_ML'
+    character(len = *), parameter, public :: VN_SVS_WSNOW_SVS = 'WSNOW_ML'
     character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_PROFILE = 'LOUT_SNOW_PROFILE' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_ENBAL = 'LOUT_SNOW_ENBAL' ! For svs2 only 
 
@@ -1155,14 +1155,14 @@ ierr = 200
           do j = 1, nsl
               write(level, FMT_GEN) j
               write(iout_snow_profile, FMT_CSV, advance = 'no') &
-                            trim(VN_SVS_SNOMA_SVS) // trim(adjustl(level)), &
-                            trim(VN_SVS_SNODEN_SVS) // trim(adjustl(level)), &
-                            trim(VN_SVS_SNOAGE_SVS) // trim(adjustl(level)), &
-                            trim(VN_SVS_SNODIAMOPT_SVS) // trim(adjustl(level)), &
-                            trim(VN_SVS_SNOSPHERI_SVS) // trim(adjustl(level)), &
-                            trim(VN_SVS_SNOHIST_SVS) // trim(adjustl(level)), &
-                            trim(VN_SVS_TSNOW_SVS) // trim(adjustl(level)), &
-                            trim(VN_SVS_WSNOW_SVS) // trim(adjustl(level)) 
+                            trim(VN_SVS_SNOMA_SVS) // '_' // trim(adjustl(level)), &
+                            trim(VN_SVS_SNODEN_SVS) // '_' // trim(adjustl(level)), &
+                            trim(VN_SVS_SNOAGE_SVS) // '_' // trim(adjustl(level)), &
+                            trim(VN_SVS_SNODIAMOPT_SVS) // '_' // trim(adjustl(level)), &
+                            trim(VN_SVS_SNOSPHERI_SVS) // '_' // trim(adjustl(level)), &
+                            trim(VN_SVS_SNOHIST_SVS) // '_' // trim(adjustl(level)), &
+                            trim(VN_SVS_TSNOW_SVS) // '_' // trim(adjustl(level)), &
+                            trim(VN_SVS_WSNOW_SVS) // '_' // trim(adjustl(level)) 
           end do
           write(iout_snow_profile, *)
        endif
