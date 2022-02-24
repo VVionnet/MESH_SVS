@@ -667,7 +667,7 @@ module runsvs_mesh
         use_eff_surf_tq = .true.
         sl_func_stab = 'BELJAARS91'
         sl_z0ref = .true.
-        sl_lmin_soil = 10.0
+        sl_lmin_soil = -1.0
         sl_lmin_glacier = 10.0
         sl_lmin_water = 10.0
         sl_lmin_seaice = 10.0
@@ -1098,26 +1098,26 @@ ierr = 200
 !open(ierr, file = 'output/Z0VL.txt'); write(ierr, '(a)') 'Z0VL_0 '; ierr = ierr + 1
 !open(ierr, file = 'output/ZH.txt'); write(ierr, '(a)') 'ZH_0 '; ierr = ierr + 1
 !open(ierr, file = 'output/ZT_1.txt'); write(ierr, '(a)') 'ZT_1 '; ierr = ierr + 1
-open(ierr, file = 'output/ZU.txt'); write(ierr, '(a)') 'ZU_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/ZU.txt'); write(ierr, '(a)') 'ZU_0 '; ierr = ierr + 1
 !open(ierr, file = 'output/RSGR.txt'); write(ierr, '(a)') 'RSGR_0 '; ierr = ierr + 1
 !open(ierr, file = 'output/RSVG.txt'); write(ierr, '(a)') 'RSVG_0 '; ierr = ierr + 1
 !
-open(ierr, file = 'output/SNAL_0.txt'); write(ierr, '(a)') 'SNAL_0 '; ierr = ierr + 1
-open(ierr, file = 'output/SNDN_0.txt'); write(ierr, '(a)') 'SNDN_0 '; ierr = ierr + 1
-open(ierr, file = 'output/SNDP_0.txt'); write(ierr, '(a)') 'SNDP_0 '; ierr = ierr + 1
-open(ierr, file = 'output/SVAL_0.txt'); write(ierr, '(a)') 'SVAL_0 '; ierr = ierr + 1
-open(ierr, file = 'output/SVDN_0.txt'); write(ierr, '(a)') 'SVDN_0 '; ierr = ierr + 1
-open(ierr, file = 'output/SVDP_0.txt'); write(ierr, '(a)') 'SVDP_0 '; ierr = ierr + 1
-do i = 1, 2
-write(code, *) i
-open(ierr, file = 'output/TSN_' // trim(adjustl(code)) // '.txt')
-write(ierr, '(a)') 'TSN_' // trim(adjustl(code)) // ' '; ierr = ierr + 1
-end do
-do i = 1, 2
-write(code, *) i
-open(ierr, file = 'output/TSNV_' // trim(adjustl(code)) // '.txt')
-write(ierr, '(a)') 'TSNV_' // trim(adjustl(code)) // ' '; ierr = ierr + 1
-end do
+!open(ierr, file = 'output/SNAL_0.txt'); write(ierr, '(a)') 'SNAL_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/SNDN_0.txt'); write(ierr, '(a)') 'SNDN_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/SNDP_0.txt'); write(ierr, '(a)') 'SNDP_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/SVAL_0.txt'); write(ierr, '(a)') 'SVAL_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/SVDN_0.txt'); write(ierr, '(a)') 'SVDN_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/SVDP_0.txt'); write(ierr, '(a)') 'SVDP_0 '; ierr = ierr + 1
+!do i = 1, 2
+!write(code, *) i
+!open(ierr, file = 'output/TSN_' // trim(adjustl(code)) // '.txt')
+!write(ierr, '(a)') 'TSN_' // trim(adjustl(code)) // ' '; ierr = ierr + 1
+!end do
+!do i = 1, 2
+!write(code, *) i
+!open(ierr, file = 'output/TSNV_' // trim(adjustl(code)) // '.txt')
+!write(ierr, '(a)') 'TSNV_' // trim(adjustl(code)) // ' '; ierr = ierr + 1
+!end do
 
     ! Prep SVS output files
 
@@ -1374,12 +1374,11 @@ end do
             busptr(vd%snowrate%i)%ptr(:, trnch) = vs%tile%presno/1000.0
         else
             where (vs%tile%ta > tcdk)
-                busptr(vd%rainrate%i)%ptr(:, trnch) = vs%tile%pre!/1000.0
-                !busptr(vd%rainrate%i)%ptr(:, trnch) = vs%tile%pre!/1000.0
+                busptr(vd%rainrate%i)%ptr(:, trnch) = vs%tile%pre/1000.0
                 busptr(vd%snowrate%i)%ptr(:, trnch) = 0.0
             elsewhere
                 busptr(vd%rainrate%i)%ptr(:, trnch) = 0.0
-                busptr(vd%snowrate%i)%ptr(:, trnch) = vs%tile%pre!/1000.0
+                busptr(vd%snowrate%i)%ptr(:, trnch) = vs%tile%pre/1000.0
             end where
         end if
         busptr(vd%flusolis%i)%ptr(:, trnch) = vs%tile%fsin
@@ -1424,7 +1423,7 @@ end do
         !> Copy bus variable.
         call runsvs_mesh_copy_bus_to_vs()
 
-ierr = 200
+!ierr = 200
 !!do i = 1, 26
 !!write(ierr, *) busptr(vd%vegf%i)%ptr(((i - 1)*ni + 1):i*ni, trnch); ierr = ierr + 1
 !!end do
@@ -1450,21 +1449,21 @@ ierr = 200
 !write(ierr, *) busptr(vd%z0mvl%i)%ptr(:, trnch); ierr = ierr + 1
 !write(ierr, *) busptr(vd%ztsl%i)%ptr(:, trnch); ierr = ierr + 1
 !write(ierr, *) busptr(vd%z0t%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%zusl%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%zusl%i)%ptr(:, trnch); ierr = ierr + 1
 !write(ierr, *) busptr(vd%resagr%i)%ptr(:, trnch); ierr = ierr + 1
 !write(ierr, *) busptr(vd%resavg%i)%ptr(:, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%snoal%i)%ptr(:, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%snoden%i)%ptr(:, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%snodpl%i)%ptr(:, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%snval%i)%ptr(:, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%snvden%i)%ptr(:, trnch); ierr = ierr + 1
-write(ierr, *) busptr(vd%snvdp%i)%ptr(:, trnch); ierr = ierr + 1
-do i = 1, 2
-write(ierr, *) busptr(vd%tsnow%i)%ptr(((i - 1)*ni + 1):i*ni, trnch); ierr = ierr + 1
-end do
-do i = 1, 2
-write(ierr, *) busptr(vd%tsnowveg%i)%ptr(((i - 1)*ni + 1):i*ni, trnch); ierr = ierr + 1
-end do
+!write(ierr, *) busptr(vd%snoal%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%snoden%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%snodpl%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%snval%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%snvden%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%snvdp%i)%ptr(:, trnch); ierr = ierr + 1
+!do i = 1, 2
+!write(ierr, *) busptr(vd%tsnow%i)%ptr(((i - 1)*ni + 1):i*ni, trnch); ierr = ierr + 1
+!end do
+!do i = 1, 2
+!write(ierr, *) busptr(vd%tsnowveg%i)%ptr(((i - 1)*ni + 1):i*ni, trnch); ierr = ierr + 1
+!end do
 
 
         !> Transfer variables.
