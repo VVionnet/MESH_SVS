@@ -487,7 +487,8 @@ module runsvs_mesh
             svs_bus(a1(snoden):z1(snoden)) = 0.0
             svs_bus(a1(snoal):z1(snoal)) = 0.0
             svs_bus(a1(wsnow):z1(wsnow)) = 0.0
-            svs_bus(a2(tsnow, 0):z2(tsnow, 1)) = 0.0
+            svs_bus(a2(tsnow, 0):z2(tsnow, 0)) = 0.0
+            svs_bus(a2(tsnow, 1):z2(tsnow, 1)) = 0.0
           end where
           if (allocated(svs_mesh%vs%snvdp)) svs_bus(a1(snvdp):z1(snvdp)) = svs_mesh%vs%snvdp
           if (allocated(svs_mesh%vs%snvden)) svs_bus(a1(snvden):z1(snvden)) = svs_mesh%vs%snvden
@@ -500,8 +501,10 @@ module runsvs_mesh
             svs_bus(a1(snvden):z1(snvden)) = 0.0
             svs_bus(a1(snval):z1(snval)) = 0.0
             svs_bus(a1(wsnv):z1(wsnv)) = 0.0
-            svs_bus(a2(tsnowveg, 0):z2(tsnowveg, 1)) = 0.0
+            svs_bus(a2(tsnowveg, 0):z2(tsnowveg, 0)) = 0.0
+            svs_bus(a2(tsnowveg, 1):z2(tsnowveg, 1)) = 0.0
           end where
+
 
         else if(svs_mesh%vs%schmsol=='SVS2') then
             do i = 1, svs_mesh%vs%nsl
@@ -664,7 +667,7 @@ module runsvs_mesh
         use_eff_surf_tq = .true.
         sl_func_stab = 'BELJAARS91'
         sl_z0ref = .true.
-        sl_lmin_soil = -1
+        sl_lmin_soil = -1.0
         sl_lmin_glacier = 10.0
         sl_lmin_water = 10.0
         sl_lmin_seaice = 10.0
@@ -1099,7 +1102,22 @@ ierr = 200
 !open(ierr, file = 'output/RSGR.txt'); write(ierr, '(a)') 'RSGR_0 '; ierr = ierr + 1
 !open(ierr, file = 'output/RSVG.txt'); write(ierr, '(a)') 'RSVG_0 '; ierr = ierr + 1
 !
-
+!open(ierr, file = 'output/SNAL_0.txt'); write(ierr, '(a)') 'SNAL_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/SNDN_0.txt'); write(ierr, '(a)') 'SNDN_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/SNDP_0.txt'); write(ierr, '(a)') 'SNDP_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/SVAL_0.txt'); write(ierr, '(a)') 'SVAL_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/SVDN_0.txt'); write(ierr, '(a)') 'SVDN_0 '; ierr = ierr + 1
+!open(ierr, file = 'output/SVDP_0.txt'); write(ierr, '(a)') 'SVDP_0 '; ierr = ierr + 1
+!do i = 1, 2
+!write(code, *) i
+!open(ierr, file = 'output/TSN_' // trim(adjustl(code)) // '.txt')
+!write(ierr, '(a)') 'TSN_' // trim(adjustl(code)) // ' '; ierr = ierr + 1
+!end do
+!do i = 1, 2
+!write(code, *) i
+!open(ierr, file = 'output/TSNV_' // trim(adjustl(code)) // '.txt')
+!write(ierr, '(a)') 'TSNV_' // trim(adjustl(code)) // ' '; ierr = ierr + 1
+!end do
 
     ! Prep SVS output files
 
@@ -1434,6 +1452,18 @@ ierr = 200
 !write(ierr, *) busptr(vd%zusl%i)%ptr(:, trnch); ierr = ierr + 1
 !write(ierr, *) busptr(vd%resagr%i)%ptr(:, trnch); ierr = ierr + 1
 !write(ierr, *) busptr(vd%resavg%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%snoal%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%snoden%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%snodpl%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%snval%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%snvden%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) busptr(vd%snvdp%i)%ptr(:, trnch); ierr = ierr + 1
+!do i = 1, 2
+!write(ierr, *) busptr(vd%tsnow%i)%ptr(((i - 1)*ni + 1):i*ni, trnch); ierr = ierr + 1
+!end do
+!do i = 1, 2
+!write(ierr, *) busptr(vd%tsnowveg%i)%ptr(((i - 1)*ni + 1):i*ni, trnch); ierr = ierr + 1
+!end do
 
 
         !> Transfer variables.
