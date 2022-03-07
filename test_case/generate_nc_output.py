@@ -87,7 +87,7 @@ for var in var_cum:
 		ref_var = ref[var][1:]
 		
 		# Adjust the houlry increase at 13 UTC
-		ext[mm] = ref_var[mm]
+		ext.loc[dict(time=ext.time[mm])] = ref_var[mm].values
 
 		# Compute cumulated values
 		ext = ext.cumsum()
