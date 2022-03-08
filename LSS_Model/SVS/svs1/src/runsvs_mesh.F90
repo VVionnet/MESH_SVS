@@ -35,11 +35,18 @@ module runsvs_mesh
             5.0, 0.1, 0.1, 0.1, 1.75, 0.5 /)
     end type
 
-    !> SVS output
+    !> SVS2 output
     integer :: iout_soil = 150
     integer :: iout_snow_bulk = 151
     integer :: iout_snow_profile = 152
     integer :: iout_snow_enbal = 153
+
+    !> SVS1 output
+    integer :: iout_svs1_soil = 160
+    integer :: iout_svs1_snow = 161
+    !integer :: iout_snow_profile = 152
+    !integer :: iout_snow_enbal = 153
+
 
     !> SVS variables names for I/O (direct variables).
     character(len = *), parameter, public :: VN_SVS_DEGLAT = 'DEGLAT'
@@ -1167,6 +1174,29 @@ ierr = 200
           write(iout_snow_profile, *)
        endif
 
+   else if(svs_mesh%vs%schmsol=='SVS') then
+
+       open(iout_svs1_soil, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs1_soil_hourly.csv', action = 'write')
+       write(iout_svs1_soil, FMT_CSV, advance = 'no') 'YEAR', 'JDAY', 'HOUR', 'MINS'
+       do j = 1, nl_svs
+           write(level, FMT_GEN) j
+           write(iout_svs1_soil, FMT_CSV, advance = 'no') &
+                            trim(VN_SVS_ISOIL) // '_' // trim(adjustl(level)), &
+                            trim(VN_SVS_WSOIL) // '_' // trim(adjustl(level))
+       end do
+       write(iout_svs1_soil, FMT_CSV, advance = 'no') 'TGROUND_1','TGROUND_2','TVEG_1','TVEG_2'
+       write(iout_svs1_soil, *)
+
+       open(iout_svs1_snow, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs1_snow_bulk_hourly.csv', action = 'write')
+       write(iout_svs1_snow, FMT_CSV, advance = 'no') 'YEAR', 'JDAY', 'HOUR', 'MINS'
+       write(iout_svs1_snow, FMT_CSV, advance = 'no') 'SNOMA', 'SNODP','SNODEN','SNOALB','WSNO','TSNO_1','TSNO_2'
+       write(iout_svs1_snow, FMT_CSV, advance = 'no') 'SNVMA', 'SNVDP','SNVDEN','SNVALB','WSNV','TSNV_1','TSNV_2'
+       write(iout_svs1_snow, *)
+
+
+
+
+
    endif
 
 
@@ -1401,6 +1431,34 @@ ierr = 200
                 write(iout_snow_profile, *)
 
               end if
+
+           end if
+
+        else if(svs_mesh%vs%schmsol=='SVS') then
+
+           if (ic%now%mins ==0) then! Full hour
+
+              k=1 !>  Identity of the tile (offset relative to node-indexing).
+
+              ! Write file containing soil outputs
+              write(iout_svs1_soil, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
+              do i = 1, nl_svs
+                 write(iout_svs1_soil, FMT_CSV, advance = 'no') &
+                     busptr(vd%isoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) , &
+                     busptr(vd%wsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+              end do
+              write(iout_svs1_soil, FMT_CSV, advance = 'no') busptr(vd%tground%i)%ptr(1:ni, trnch),busptr(vd%tground%i)%ptr((ni+1):2*ni, trnch),busptr(vd%tvege%i)%ptr(1:ni, trnch),busptr(vd%tvege%i)%ptr(ni+1:2*ni, trnch)
+              write(iout_svs1_soil, *)
+
+              ! Write file containing bulk snow outputs
+              write(iout_svs1_snow, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
+              write(iout_svs1_snow, FMT_CSV, advance = 'no') busptr(vd%snoma%i)%ptr(:, trnch),busptr(vd%snodpl%i)%ptr(:, trnch), &
+                        busptr(vd%snoden%i)%ptr(:, trnch), busptr(vd%snoal%i)%ptr(:, trnch),busptr(vd%wsnow%i)%ptr(:, trnch), &                    
+                        busptr(vd%tsnow%i)%ptr(1:ni, trnch),busptr(vd%tsnow%i)%ptr((ni+1):2*ni, trnch)
+              write(iout_svs1_snow, FMT_CSV, advance = 'no') busptr(vd%snvma%i)%ptr(:, trnch),busptr(vd%snvdp%i)%ptr(:, trnch), &
+                        busptr(vd%snvden%i)%ptr(:, trnch), busptr(vd%snval%i)%ptr(:, trnch),busptr(vd%wsnv%i)%ptr(:, trnch), &                    
+                        busptr(vd%tsnowveg%i)%ptr(1:ni, trnch),busptr(vd%tsnowveg%i)%ptr((ni+1):2*ni, trnch)
+              write(iout_svs1_snow, *)
 
            end if
 
