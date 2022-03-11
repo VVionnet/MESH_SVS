@@ -100,6 +100,8 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_WSNOW_SVS = 'WSNOW_ML'
     character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_PROFILE = 'LOUT_SNOW_PROFILE' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_ENBAL = 'LOUT_SNOW_ENBAL' ! For svs2 only 
+    character(len = *), parameter, public :: VN_SVS_NPROFILE_DAY = 'NPROFILE_DAY' ! For svs2 only 
+
 
     !> SVS variables names for I/O (modifiers/special conditions).
     character(len = *), parameter, public :: VN_SVS_SAND_N = 'SAND_N'
@@ -182,6 +184,7 @@ module runsvs_mesh
         logical :: lsnowdrift_sublim = .true.
         logical :: lout_snow_profile = .false.
         logical :: lout_snow_enbal = .false.
+        integer :: nprofile_day = 4 !
     end type
 
     !* PROCESS_ACTIVE: Variable to enable SVS.
@@ -1330,7 +1333,7 @@ ierr = 200
         character(len = 14) time_run_now
 
         !> Local variables.
-        integer i, idateo, ierr, j, k, istat
+        integer i, idateo, ierr, j, k, istat, nfreq
 
         real :: tt,hu
         real, dimension(il1:il2) :: tve
@@ -1384,8 +1387,10 @@ ierr = 200
                   write(iout_snow_enbal, *)
               end if
 
-              ! Write file containing  snow profile outputs every 3 hours. 
-              if ( modulo(ic%now%hour,3) == 0 .and. svs_mesh%vs%lout_snow_profile ) then
+              ! Write file containing  snow profile outputs
+              ! The frequqncy depends on the value of nprofile_day that can be modifid by the user
+              nfreq = 24/svs_mesh%vs%nprofile_day
+              if ( modulo(ic%now%hour,nfreq) == 0 .and. svs_mesh%vs%lout_snow_profile ) then
                 write(iout_snow_profile, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
                 do i = 1, nsl
                    write(iout_snow_profile, FMT_CSV, advance = 'no') &
