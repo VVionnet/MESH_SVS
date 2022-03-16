@@ -147,7 +147,7 @@ INC_DIRS+=-I$(DIR_REPO)/Modules/rpnphy/6.1.0/src/base \
 	-I$(DIR_REPO)/Modules/rpnphy/6.1.0/src/surface
 OBJECTS+=phy_status.o phy_typedef_mod.o phybus.o phygridmap.o bvstrip.o phygetvarlist.o phygetindx.o phygetmetaplus.o sfclayer_funcs.o sfclayer_mod.o sfc_options.o compz0.o sfcbus_mod.o svs_configs.o
 OBJECTS+=cnv_options.o phy_options.o splitst.o physeterror.o gesdict.o sfc_businit.o timing_start.o lacs.o interpveg.o aggcovernat.o inicover.o coherence.o inisoili.o aggveghigh.o aggveglow.o veglowhigh_ccilceco.o inicover_svs_ccilceco.o veglowhigh.o inicover_svs.o inisoili_svs.o initown.o inisurf.o radcons.o equivmount.o timing_stop.o inichamp.o iniptsurf.o copybus.o
-OBJECTS+=suncos.o soili_svs.o vegi_svs.o drag_svs.o snow_alone.o snow_veg.o ebudget_svs.o watdrn_.o soil_fluxes.o hydro_svs.o phtsyn_svs_ccilceco.o phtsyn_svs.o update_svs.o fillagg.o svs.o
+OBJECTS+=suncos.o soili_svs.o vegi_svs.o drag_svs.o snow_alone.o snow_canopy_svs.o snow_veg.o ebudget_svs.o watdrn_.o soil_fluxes.o hydro_svs.o phtsyn_svs_ccilceco.o phtsyn_svs.o update_svs.o fillagg.o svs.o
 #OBJECTS+=phy_status.o phy_typedef_mod.o phybus.o phygridmap.o \
 #	bvstrip.o phygetvarlist.o phygetindx.o phygetmetaplus.o \
 #	sfclayer_funcs.o sfclayer_mod.o sfc_options.o compz0.o \

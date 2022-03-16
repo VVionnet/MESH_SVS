@@ -339,6 +339,11 @@ module sfc_options
         'CCILCECO '   &
         /)
 
+
+   !# If .true., SVS simulates interception of snow by canopy, sublimation and inloading of intercepted snow
+   logical           :: lsnow_canopy_svs = .false.
+   namelist /surface_cfgs/ lsnow_canopy_svs
+
    !# Emissivity for water
    !# * '_constant_' : A fixed floating point value used as a constant
    character(len=16) :: water_emiss = '1.'

@@ -14,9 +14,9 @@
 !CANADA, H9P 1J3; or send e-mail to service.rpn@ec.gc.ca
 !-------------------------------------- LICENCE END --------------------------------------
       SUBROUTINE VEGI_SVS ( RG, T, TVEG, HU, PS, &
-           WD , RGL, LAI, LAIH, RSMIN, GAMMA, WWILT, WFC, &   
+           WD , RGL, LAI, LAIH,Z0MVH, RSMIN, GAMMA, WWILT, WFC, &   
            SUNCOS, DRZ, D50, D95, PSNGRVL, VEGH, VEGL, RS, SKYVIEW, VTR, &    
-           FCD, ACROOT, WRMAX, N  )
+           FCD, ACROOT, WRMAX, VEGH_HEIGHT, N  )
 !
         use tdpack
         use svs_configs
@@ -29,7 +29,8 @@
       REAL SUNCOS(N), LAIH(N), PSNGRVL(N), VEGH(N), VEGL(N)
       REAL RGL(N), LAI(N), RSMIN(N), GAMMA(N), WWILT(N,NL_SVS)
       REAL WFC(N,NL_SVS), RS(N), SKYVIEW(N), VTR(N), DRZ(N)
-      REAL D50(N), D95(N), ACROOT(N,NL_SVS) , WRMAX(N)  
+      REAL D50(N), D95(N), ACROOT(N,NL_SVS) , WRMAX(N) , Z0MVH(N)
+      REAL VEGH_HEIGHT(I) 
 !
 !Author
 !          S. Belair, M.Abrahamowicz,S.Z.Husain (June 2015)
@@ -66,6 +67,8 @@
 ! PSNGRVL  fraction of the bare soil or low veg. covered by snow
 ! VEGH     fraction of HIGH vegetation
 ! VEGL     fraction of LOW vegetation
+! Z0MVH    Local roughness associated with HIGH vegetation only (no
+!          orography)
 !      
 !          - Output -
 ! RS       Surface or stomatal resistance
@@ -74,6 +77,7 @@
 ! FCD(NL_SVS)  Root fraction within soil layer (NL_SVS soil layers)
 ! ACROOT(NL_SVS) Active fraction of roots (0-1) in the soil layer
 ! WRMAX    Max volumetric water content retained on vegetation
+! VEGH_HEIGHT Height of high vegetation
 !
 !
       INTEGER I, K
@@ -229,6 +233,16 @@
              SKYVIEW(I) = EXP( -1.0 * LAIH(I) )
 !
 !
+!
+!*       7. BIS     VEGETATION HEIGHT (HIGH VEG ONLY)
+!               ------------------------------
+!
+!
+!                 Derived from the momentum lenght for high vegetation (consistent with GenPHYSX)
+!                 VEGH_HEIGHT = 10 * Z0MVH 
+!                 Note that other land surface models use VEGH_HEIGHT = 3/2 * 
+!
+             VEGH_HEIGHT(I) = 10. * Z0MVH(I)
 !
 !*       8.     MAXIMUM VOLUMETRIC WATER CONTENT RETAINED ON VEGETATION (m3/m3)
 !               ------------------------------

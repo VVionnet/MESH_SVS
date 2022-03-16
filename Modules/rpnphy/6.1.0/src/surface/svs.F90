@@ -24,7 +24,7 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    use sfcbus_mod
    use sfc_options, only: atm_external, atm_tplus, radslope, jdateo, &
         use_photo, nclass, zu, zt, sl_Lmin_soil, VAMIN, svs_local_z0m, &
-        vf_type
+        vf_type, lsnow_canopy_svs
    use svs_configs
    implicit none
 !!!#include <arch_specific.hf>
@@ -123,10 +123,11 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
    real,dimension(n) :: alva, cg, cvpa, del, dwaterdt
    real,dimension(n) :: esnofrac, esvnofrac, eva, gamva, hrsurf
-   real,dimension(n) :: leff, lesnofrac, lesvnofrac, rainrate_mm
-   real,dimension(n) :: rgla, rhoa, snowrate_mm, stom_rs, stomra
+   real,dimension(n) :: leff, lesnofrac, lesvnofrac, rainrate_mm,rainrate_mm_veg 
+   real,dimension(n) :: rgla, rhoa, snowrate_mm, stom_rs, stomra,snowrate_mm_veg
    real,dimension(n) :: suncosa, sunother1, sunother2, sunother3
    real,dimension(n) :: sunother4, trad, tva, vdir, vmod, vmod_lmin, wrmax, wvegt
+   real,dimension(n) :: vegh_height
 ! 
    real, dimension(n,nl_svs) :: isoilt, wsoilt
 !
@@ -297,7 +298,7 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            BUS(x(WSOIL ,1,1)),  &
            RGLA                ,  &   
            bus(x(LAIVA  ,1,1))     , bus(x(LAIVH   ,1,1)),   &  
-           STOMRA,     &
+           BUS(x(Z0MVH  ,1,1)), STOMRA,     &
            GAMVA, bus(x(WWILT   ,1,1)),      &
            bus(x(WFC     ,1,1)), SUNCOSA,     &
            bus(x(ROOTDP     ,1,1)),  bus(x(D50   ,1,1)),    &
@@ -305,7 +306,7 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            BUS(x(VEGH   ,1,1)), BUS(x(VEGL   ,1,1)), &
            bus(x(RST     ,1,1)),     &
            bus(x(SKYVIEW ,1,1)), bus(x(VEGTRANS,1,1)),   &   
-           bus(x(frootd   ,1,1)), bus(x(acroot ,1,1)), WRMAX, N)
+           bus(x(frootd   ,1,1)), bus(x(acroot ,1,1)), VEGH_HEIGHT,  WRMAX, N)
 
       IF(KOUNT.EQ.1) then
          DO I=1,N
@@ -347,6 +348,7 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       if (phy_error_L) return
 
 
+
       CALL SNOW_ALONE ( bus(x(TSNOW,1,1)), bus(x(TSNOW,1,2)),  &     
                      bus(x(SNORO,1,1)),    &   
                      bus(x(SNOAL,1,1)), bus(x(WSNOW,1,1)),  &     
@@ -369,7 +371,34 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                      bus(x (DLAT,1,1)), bus(x(PSNGRVL ,1,1)), N)     
       if (phy_error_L) return
 !    
-!
+
+      IF(LSNOW_CANOPY_SVS) THEN
+
+          CALL SNOW_CANOPY_SVS(tt, bus(x(TDIAG     ,1,1)),hu, RHOA,ps,           &
+                              bus(x(UDIAG     ,1,1)), bus(x(VDIAG   ,1,1)),zfsolis,   & 
+                              rainrate_mm,snowrate_mm, bus(x(SNCMA     ,1,1)),  &
+                              bus(x(LESC     ,1,1)),bus(x(LESCAF     ,1,1)),    &
+                              BUS(x(LAIVH  ,1,1)), vegh_height,BUS(x(VEGH   ,1,1)),    &
+                              rainrate_mm_veg,snowrate_mm_veg   ,               &
+                              DT, N) 
+
+        !  DO I=1,N
+        !    rainrate_mm_veg(i) = rainrate_mm(i) 
+        !    snowrate_mm_veg(i) = snowrate_mm(i) 
+        !  ENDDO
+
+
+      ELSE 
+      
+         ! Rainfall and snowfall rate below high-vegetation are not impacted by the presence of high-vegetation  
+          DO I=1,N
+            rainrate_mm_veg(i) = rainrate_mm(i) 
+            snowrate_mm_veg(i) = snowrate_mm(i) 
+          ENDDO
+
+          
+      ENDIF
+
       CALL SNOW_VEG ( bus(x(TSNOWVEG  ,1,1)), bus(x(TSNOWVEG,1,2)),  &  
                      bus(x(SNVRO     ,1,1)),   & 
                      bus(x(SNVAL     ,1,1)), bus(x(WSNV    ,1,1)),   & 
@@ -378,8 +407,8 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                      ps , VMOD, VDIR, RHOA,   &  
                      zthetaa,    &
                      zfsolis, bus(x(FDSI    ,1,1)),  &  
-                     hu , rainrate_mm,  &  
-                     snowrate_mm, tt,  &  
+                     hu , rainrate_mm_veg,  &  
+                     snowrate_mm_veg, tt,  &  
                      bus(x(TDIAG     ,1,1)),     &
                      bus(x(UDIAG     ,1,1)), bus(x(VDIAG   ,1,1)),   & 
                      BUS(x(VEGH   ,1,1)) ,   & 

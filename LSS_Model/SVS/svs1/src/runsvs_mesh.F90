@@ -44,6 +44,8 @@ module runsvs_mesh
     !> SVS1 output
     integer :: iout_svs1_soil = 160
     integer :: iout_svs1_snow = 161
+    integer :: iout_svs1_snow_cano = 162
+
     !integer :: iout_snow_profile = 152
     !integer :: iout_snow_enbal = 153
 
@@ -107,6 +109,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_WSNOW_SVS = 'WSNOW_ML'
     character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_PROFILE = 'LOUT_SNOW_PROFILE' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_ENBAL = 'LOUT_SNOW_ENBAL' ! For svs2 only 
+    character(len = *), parameter, public :: VN_SVS_LSNOW_CANOPY_SVS = 'LSNOW_CANOPY_SVS' ! For svs1 only 
 
     !> SVS variables names for I/O (modifiers/special conditions).
     character(len = *), parameter, public :: VN_SVS_SAND_N = 'SAND_N'
@@ -160,6 +163,7 @@ module runsvs_mesh
         real, dimension(:), allocatable :: snvden
         real, dimension(:), allocatable :: snval
         real, dimension(:), allocatable :: wsnv
+        real, dimension(:), allocatable :: sncma
         real, dimension(:), allocatable :: tperm ! For svs2 only
         integer :: nsl = 12 ! For svs2 only
         real, dimension(:,:), allocatable :: snoma_svs 
@@ -189,6 +193,8 @@ module runsvs_mesh
         logical :: lsnowdrift_sublim = .true.
         logical :: lout_snow_profile = .false.
         logical :: lout_snow_enbal = .false.
+        logical :: lsnow_canopy_svs = .false.
+
     end type
 
     !* PROCESS_ACTIVE: Variable to enable SVS.
@@ -511,7 +517,9 @@ module runsvs_mesh
             svs_bus(a2(tsnowveg, 0):z2(tsnowveg, 0)) = 0.0
             svs_bus(a2(tsnowveg, 1):z2(tsnowveg, 1)) = 0.0
           end where
-
+          if(svs_mesh%vs%lsnow_canopy_svs) then
+                if (allocated(svs_mesh%vs%sncma))  svs_bus(a1(sncma):z1(sncma)) = svs_mesh%vs%sncma
+          end if
 
         else if(svs_mesh%vs%schmsol=='SVS2') then
             do i = 1, svs_mesh%vs%nsl
@@ -734,6 +742,11 @@ kount_reset = 12
             vh_type = (/4, 5, 6, 7, 8, 9, 25, 26/)
         end if
 
+        ! Activate or not the snow interception module in SVS1
+        if(svs_mesh%vs%schmsol=='SVS') then
+                lsnow_canopy_svs = svs_mesh%vs%lsnow_canopy_svs
+        endif
+
         ierr =0
         ! Initialize number of snow layers (for multilayer snowpack schemes in SVS2)
         if(svs_mesh%vs%schmsol=='SVS2') then 
@@ -840,7 +853,10 @@ kount_reset = 12
         call runsvs_mesh_append_phyentvar('snvden')
         call runsvs_mesh_append_phyentvar('snval')
         call runsvs_mesh_append_phyentvar('wsnv')
-        if(svs_mesh%vs%schmsol=='SVS') then
+        if(svs_mesh%vs%schmsol=='SVS' .and. svs_mesh%vs%lsnow_canopy_svs) then
+            call runsvs_mesh_append_phyentvar('sncma')
+        endif
+        if(svs_mesh%vs%schmsol=='SVS2') then
              call runsvs_mesh_append_phyentvar('tpsoil')
              call runsvs_mesh_append_phyentvar('tpsoilv')
              call runsvs_mesh_append_phyentvar('tperm')
@@ -1193,8 +1209,12 @@ ierr = 200
        write(iout_svs1_snow, FMT_CSV, advance = 'no') 'SNVMA', 'SNVDP','SNVDEN','SNVALB','WSNV','TSNV_1','TSNV_2'
        write(iout_svs1_snow, *)
 
-
-
+       if(svs_mesh%vs%lsnow_canopy_svs) then 
+             open(iout_svs1_snow_cano, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs1_snow_cano_hourly.csv', action = 'write')
+             write(iout_svs1_snow_cano, FMT_CSV, advance = 'no') 'YEAR', 'JDAY', 'HOUR', 'MINS'
+             write(iout_svs1_snow_cano, FMT_CSV, advance = 'no') 'SNCMA', 'LESC','LESCAF'
+             write(iout_svs1_snow_cano, *)
+       end if
 
 
    endif
@@ -1278,13 +1298,16 @@ ierr = 200
             svs_mesh%vs%tsnowveg(:, i + 1) = svs_bus(a2(tsnowveg, i):z2(tsnowveg, i))
         end do
 
+        if(svs_mesh%vs%schmsol=='SVS' .and. svs_mesh%vs%lsnow_canopy_svs) then 
+               if (.not. allocated(svs_mesh%vs%sncma)) allocate(svs_mesh%vs%sncma(ni))
+               svs_mesh%vs%sncma = svs_bus(a1(sncma):z1(sncma))
+        end if
+
         if(svs_mesh%vs%schmsol=='SVS2') then 
             if (.not. allocated(svs_mesh%vs%tpsoil)) allocate(svs_mesh%vs%tpsoil(ni, nl_svs))
             if (.not. allocated(svs_mesh%vs%tpsoilv)) allocate(svs_mesh%vs%tpsoilv(ni, nl_svs))
             if (.not. allocated(svs_mesh%vs%tperm)) allocate(svs_mesh%vs%tperm(ni))
 
-           ! if (.not. allocated(svs_mesh%vs%snoage_svs)) write(*,*) 'Alloc age'
-           ! if (.not. allocated(svs_mesh%vs%snoma_svs)) write(*,*) 'Alloc mass'
 
             if (.not. allocated(svs_mesh%vs%snoage_svs)) allocate(svs_mesh%vs%snoage_svs(ni,svs_mesh%vs%nsl))
             if (.not. allocated(svs_mesh%vs%snodiamopt_svs)) allocate(svs_mesh%vs%snodiamopt_svs(ni,svs_mesh%vs%nsl))
@@ -1459,6 +1482,13 @@ ierr = 200
                         busptr(vd%snvden%i)%ptr(:, trnch), busptr(vd%snval%i)%ptr(:, trnch),busptr(vd%wsnv%i)%ptr(:, trnch), &                    
                         busptr(vd%tsnowveg%i)%ptr(1:ni, trnch),busptr(vd%tsnowveg%i)%ptr((ni+1):2*ni, trnch)
               write(iout_svs1_snow, *)
+
+              if(svs_mesh%vs%lsnow_canopy_svs) then
+                  write(iout_svs1_snow_cano, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
+                  write(iout_svs1_snow_cano, FMT_CSV, advance = 'no') busptr(vd%sncma%i)%ptr(:, trnch),busptr(vd%lesc%i)%ptr(:, trnch), &
+                      busptr(vd%lescaf%i)%ptr(:, trnch)
+                  write(iout_svs1_snow_cano, *)
+              end if
 
            end if
 

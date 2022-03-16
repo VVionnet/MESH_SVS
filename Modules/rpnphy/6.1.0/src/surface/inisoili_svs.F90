@@ -115,6 +115,7 @@ subroutine inisoili_svs(ni, trnch)
    Do i = 1 , ni
       Do k = 1, nl_svs
          do kk = 1 , nl_stp
+
             
             zwsat  (i,k)  = zwsat  (i,k) + wsat_geo  (i,kk)  * weights( k , kk)
             zwwilt (i,k)  = zwwilt (i,k) + wwilt_geo (i,kk)  * weights( k , kk)
