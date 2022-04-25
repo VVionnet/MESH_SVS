@@ -309,6 +309,16 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
                     call assign_line_args(svs_mesh%vs%nprofile_day, args(2), istat)
                 end if
 
+            case (VN_SVS_LSOIL_FREEZING_SVS1)
+                if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS2' ) then
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    p = 1
+                    call assign_line_args(svs_mesh%vs%lsoil_freezing_svs1, args(2), istat)
+                end if
+
+
+
             case (VN_SVS_SAND)
                 if (.not. svs_mesh%PROCESS_ACTIVE) then
                     istat = istat + radix(istat)**pstat%INACTIVE

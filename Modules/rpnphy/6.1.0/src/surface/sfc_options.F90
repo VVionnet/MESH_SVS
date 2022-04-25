@@ -287,6 +287,10 @@ module sfc_options
         'SOILGRIDS' &
         /)
 
+   !# If .true., SVS simulates soil freezing and thawing and its impact on hydrology
+   logical           :: lsoil_freezing_svs1 = .false.
+   namelist /surface_cfgs/ lsoil_freezing_svs1 
+
    !# Use snow albedo "I6" directly if .true.;
    !# Use snow age "XA" to calculate snow albedo if .false.
    logical           :: snoalb_anl  = .true.
