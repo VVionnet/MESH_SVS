@@ -36,6 +36,17 @@ SUBROUTINE HYDRO_SVS ( DT, &
 
   REAL DT, W
 
+  INTEGER KFICE ! Option for the correction factor for hydraulic conductivity
+  !    0: Correction factor taken from Zhang and Gray (1997). Same as CLASS 3.6
+  !    1: Impedance factor taken from SURFEX (Boone et al., 2000)
+  !    3: No modification of hydraulic conductivity in presence of ice 
+
+  INTEGER WAT_REDIS ! Option for the redistribution of water in case of over-saturation after the soil_fluxes solver
+  !    0: Default param:
+  !    1: New param:  - in case of vertical redistribution, liquid water that flows to the next layer is limited by 
+  !                       the effective porosity. Any water in excess is added to the lateral flow
+  !                   - harmonic mean of the hydraulic conductivity  
+
   ! input
   real, dimension(n)        :: eg, er, etr, rr, impervu
   real, dimension(n)        :: psn, psnvh, vegh, vegl
@@ -146,13 +157,17 @@ SUBROUTINE HYDRO_SVS ( DT, &
 
   ! local arrays
 
+  real                        :: fice
 
   real, dimension(n,nl_svs)   :: delzvec
-  real, dimension(n,nl_svs)   :: asatfc, wsatc, asat0, grkefl
+  real, dimension(n,nl_svs)   :: asatfc, wsatc, asat0, grkefl, ksatmean
   real, dimension(n,nl_svs)   :: etr_grid
-  real, dimension(n)          :: asat1, basflw, satsfc, subflw , pg
+  real, dimension(n)          :: asat1, basflw, satsfc, subflw , pg, rveg
 
   real, dimension(n)          :: wrt_vl,wrt_vh,rveg_vl,rveg_vh
+  real                        :: wat_down
+  real, dimension(n,nl_svs-1) :: diag
+
   ! For the Runge-Kutta method
   real, dimension(n,nl_svs)   :: wd_rk, dwd_rk1, dwd_rk2, dwd_rk3, dwd_rk4
   real, dimension(n,nl_svs)   :: over_rk1, over_rk2, over_rk3, over_rk4
@@ -170,6 +185,20 @@ SUBROUTINE HYDRO_SVS ( DT, &
      ENDDO
      F(I,NL_SVS+1)=0.
   ENDDO
+
+  ! Option for soil freezing
+  !    0: Correction factor taken from Zhang and Gray (1997). Same as CLASS 3.6
+  !    1: Impedance factor taken from SURFEX (Boone et al., 2000)
+  !    3: No modification of hydraulic conductivity in presence of ice 
+  KFICE = 0
+
+  !
+  ! Option for the redistribution of water in case of over-saturation after the soil_fluxes solver
+  !    0: Default param:
+  !    1: New param:  - in case of vertical redistribution, liquid water that flows to the next layer is limited by 
+  !                       the effective porosity. Any water in excess is added to the lateral flow
+  !                   - harmonic mean of the hydraulic conductivity  
+  WAT_REDIS = 1
   !
   !-------------------------------------
   !   1.        EVOLUTION OF THE EQUVALENT WATER CONTENT Wr
@@ -314,7 +343,16 @@ SUBROUTINE HYDRO_SVS ( DT, &
         DELZVEC(I,K)=DELZ(K)
 
         !Adjust ksat and wsat for presence of ice
-        KSATC(I,K)=KSAT(I,K)*(1.0-MAX(0.0,MIN((WSAT(I,K)-CRITWATER)/WSAT(I,K),WF(I,K)/WSAT(I,K))))**2. 
+        IF(KFICE==0) THEN
+            FICE = (1.0-MAX(0.0,MIN((WSAT(I,K)-CRITWATER)/WSAT(I,K),WF(I,K)/WSAT(I,K))))**2.
+        ELSE IF (KFICE ==1) THEN    
+            FICE =  EXP(LOG(10.0)*(-6*WF(I,K)/(WF(I,K)+WD(I,K))))
+        ELSE IF (KFICE ==3) THEN    
+            FICE = 1.   
+        ELSE
+            FICE = 1.   
+        ENDIF 
+        KSATC(I,K) = KSAT(I,K)*FICE
         WSATC(I,K)= MAX((WSAT(I,K)-WF(I,K)-0.00001), CRITWATER)
 
         ! Calculate parameters needed for WATDRAIN
@@ -470,15 +508,43 @@ SUBROUTINE HYDRO_SVS ( DT, &
         ELSEIF (WDT(I,K).GT.WSATC(I,K))  THEN
 
            IF (K.NE.KHYD) THEN
-              ! excess water removal via a combination of a downward and a lateral flux
+
+              IF(WAT_REDIS==1) THEN
+                    IF(K.NE.NL_SVS) THEN 
+                         KSATMEAN(I,K)=KSATC(I,K)*KSATC(I,K+1)*(DELZ(K)+&
+                          DELZ(K+1))/(KSATC(I,K)*DELZ(K+1)+KSATC(I,K+1)*DELZ(K))
+                    ELSE
+                      KSATMEAN(I,K) = KSATC(I,K)
+                    ENDIF
+              ELSE 
+                      KSATMEAN(I,K) = KSATC(I,K)
+              ENDIF    
+	      ! excess water removal via a combination of a downward and a lateral flux
               ! fraction of excess water going into layer below
-              W = KSATC(I,K)/(KSATC(I,K)+GRKEFL(I,K)*DELZ(K))
+              !VV W = KSATC(I,K)/(KSATC(I,K)+GRKEFL(I,K)*DELZ(K))
+              W = KSATMEAN(I,K)/(KSATMEAN(I,K)+GRKEFL(I,K)*DELZ(K))
+
+              IF(WAT_REDIS==1) THEN
+                  ! Downward liquid water flux is limited to avoid the saturation of the layer below  
+                  IF(K.NE.NL_SVS) THEN   
+                     WAT_DOWN = MIN(W*(WDT(I,K)-WSATC(I,K))*DELZ(K),  &
+                                   MAX(0.,(WSATC(I,K+1)-WDT(I,K+1))*DELZ(K+1)) )
+                  ELSE
+                     WAT_DOWN = W*(WDT(I,K)-WSATC(I,K))*DELZ(K)
+                  ENDIF
+              ELSE
+                  WAT_DOWN = W*(WDT(I,K)-WSATC(I,K))*DELZ(K)
+              ENDIF
+
               ! adding this fraction of excess water to the layer below
-              F(I,K+1)=F(I,K+1)+W*(WDT(I,K)-WSATC(I,K))*DELZ(K)
+              !VV F(I,K+1)=F(I,K+1)+W*(WDT(I,K)-WSATC(I,K))*DELZ(K)
+              F(I,K+1)=F(I,K+1)+ WAT_DOWN
               ! the rest of the excess water goes to lateral flow
-              LATFLW(I,K)=(1.0-W)*(WDT(I,K)-WSATC(I,K))*DELZ(K)
+              !VV LATFLW(I,K)=(1.0-W)*(WDT(I,K)-WSATC(I,K))*DELZ(K)
+              LATFLW(I,K) = (WDT(I,K)-WSATC(I,K))*DELZ(K) - WAT_DOWN
               ! if we are in the last soil layer, soil water content of the layer below cannot be updated
-              IF(K.NE.NL_SVS) WDT(I,K+1)=WDT(I,K+1)+W*(WDT(I,K)-WSATC(I,K))*DELZ(K)/DELZ(K+1)
+              !VV IF(K.NE.NL_SVS) WDT(I,K+1)=WDT(I,K+1)+W*(WDT(I,K)-WSATC(I,K))*DELZ(K)/DELZ(K+1)
+              IF(K.NE.NL_SVS)  WDT(I,K+1)=WDT(I,K+1)+WAT_DOWN/DELZ(K+1)
            ELSEIF (K.EQ.KHYD) THEN
               ! excess water removal via lateral flow
               LATFLW(I,K)=(WDT(I,K)-WSATC(I,K))*DELZ(K)
@@ -529,7 +595,7 @@ SUBROUTINE HYDRO_SVS ( DT, &
   DO I=1,N
      !        TODO
      do k=1,nl_svs
-        WFT(I,K) = 0.0
+        WFT(I,K) = WF(I,K)   
      enddo
   END DO
   !

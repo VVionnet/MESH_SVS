@@ -24,7 +24,7 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    use sfcbus_mod
    use sfc_options, only: atm_external, atm_tplus, radslope, jdateo, &
         use_photo, nclass, zu, zt, sl_Lmin_soil, VAMIN, svs_local_z0m, &
-        vf_type
+        vf_type,lsoil_freezing_svs1
    use svs_configs
    implicit none
 !!!#include <arch_specific.hf>
@@ -111,6 +111,7 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    real,pointer,dimension(:) :: zzusl
    real,pointer,dimension(:) :: zztsl
 
+
 !
 !
 
@@ -127,6 +128,7 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    real,dimension(n) :: rgla, rhoa, snowrate_mm, stom_rs, stomra
    real,dimension(n) :: suncosa, sunother1, sunother2, sunother3
    real,dimension(n) :: sunother4, trad, tva, vdir, vmod, vmod_lmin, wrmax, wvegt
+   real,dimension(n) :: wsaturc1
 ! 
    real, dimension(n,nl_svs) :: isoilt, wsoilt
 !
@@ -287,7 +289,8 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            BUS(x(PSNVH  ,1,1)), BUS(x(PSNVHA ,1,1)), &  
            ALVA, BUS(x(LAIVA  ,1,1)), CVPA, EVA, BUS(x(Z0HA ,1,1)),&
            BUS(x(Z0MVG,1,1)), RGLA, STOMRA,   &
-           GAMVA, N)
+           GAMVA, N,    &
+           BUS(x(SOILHCAPZ,1,1)), BUS(x(SOILCONDZ,1,1)), BUS(x(CONDDRY   ,1,1)), BUS(x(CONDSLD  ,1,1)) )
 !
 !     
 
@@ -446,6 +449,24 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       if (phy_error_L) return
 !
 !
+      IF(LSOIL_FREEZING_SVS1) THEN
+
+              ! Optional activation of soil freezing
+
+              CALL SOIL_FREEZING(DT, &
+                bus(x(tpsoil   ,1,1)),bus(x(vegl    ,1,1)),&
+                bus(x(vegh    ,1,1)), bus(x(psngrvl ,1,1)),&
+                bus(x(psnvha  ,1,1)), bus(x(soilcondz,1,1)), &
+                bus( x(soilhcapz,1,1)), &
+                bus(x(tground, 1,1)), &
+                bus(x(wsoil   ,1,1)) , bus(x(isoil   ,1,1)), &
+                bus(x(snoro   ,1,1)) , bus(x(snodpl   ,1,1)), &
+                bus(x(tsnow   ,1,2)) ,  &
+                bus(x(snvro   ,1,1)) , bus(x(snvdp   ,1,1)), &
+                bus(x(tsnowveg   ,1,2)) ,bus(x(tperm, 1,1)),   &
+                bus(x(wunfrz, 1,1)), &
+                N )
+      ENDIF
 
       CALL HYDRO_SVS ( DT,      & 
            bus(x(eg      ,1,1)), bus(x(er      ,1,1)),&

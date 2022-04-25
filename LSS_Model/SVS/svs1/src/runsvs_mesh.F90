@@ -740,7 +740,6 @@ kount_reset = 12
                 lsoil_freezing_svs1 = svs_mesh%vs%lsoil_freezing_svs1
         endif
 
-
         ierr =0
         ! Initialize number of snow layers (for multilayer snowpack schemes in SVS2)
         if(svs_mesh%vs%schmsol=='SVS2') then 

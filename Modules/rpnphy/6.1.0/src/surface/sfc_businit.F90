@@ -97,14 +97,20 @@ subroutine sfc_businit(moyhr,ni,nk)
         tground, tsa, tsnavg, tsnow, tsnowveg, &
         tsvavg, tvege,  vegh, vegl, vegtrans, vgctem, &
         watflow, wsoilm, wfcdp, wfcint, wsnv, &
-        z0ha, z0hbg, z0hvg, z0mland, z0mlanden, z0mvg, z0mvh, z0mvhen, z0mvl
+        z0ha, z0hbg, z0hvg, z0mland, z0mlanden, z0mvg, z0mvh, z0mvhen, z0mvl, &
+        conddry, condsld, quartz, rhosoil, soilhcapz, soilcondz, &
+        tperm, tpsoil
+
+   !--------   Speficic parameter FOR SVS -----------------
+
+   integer :: wunfrz
 
    !--------   Speficic parameter FOR SVS 2 -----------------
    character(len=2) :: ns
-   integer :: conddry, condsld, legv,qaf, quartz,    &
+   integer :: legv,qaf,    &
         hpsa,hpsv, gfluxsa, gfluxsv,        &
         lwnetsa, lwnetsv,        &
-        qgr, qgv, qveg, resagrv, rhosoil,        &
+        qgr, qgv, qveg, resagrv,        &
         rsnows_acc, rsnowsv_acc, skyviewa, &
         snoage_svs, snoagev_svs,  &
         snodiamopt_svs, snodiamoptv_svs, &
@@ -112,11 +118,10 @@ subroutine sfc_businit(moyhr,ni,nk)
         snohist_svs,snohistv_svs,   &
         snoma_svs, snomav_svs, &
         snoden_svs, snodenv_svs,   &
-        soilhcapz, soilcondz,   &
         subldrifta, subldriftv,     &
         swnetsa, swnetsv,        &
         taf, &
-        tperm, tpsoil, tpsoilv, &
+        tpsoilv, &
         tsnow_svs,tsnowv_svs,   &
         vaf, vegtransa, vgheight, &
         wsnow_svs,wsnowv_svs
@@ -304,6 +309,8 @@ subroutine sfc_businit(moyhr,ni,nk)
       PHYVAR3D1(clay,         'VN=clay         ;ON=J2  ;VD=percentage of clay in soil                     ;VS=A*'//nstpl//';VB=p0        ;MIN=0')
       PHYVAR3D1(clayen,       'VN=clayen       ;ON=2H  ;VD=perc. of clay in soil (E)                      ;VS=A*'//nstel//';VB=e1;IN=J2  ;MIN=0')
       PHYVAR3D1(co2i1,        'VN=co2i1        ;ON=CO3 ;VD=CO2 CONCENTRATION   CTEM                       ;VS=A*9          ;VB=p0')
+      PHYVAR3D1(conddry,      'VN=conddry      ;ON=CDRY;VD=dry thermal conductivity for soil              ;VS=A*'//ngl//'          ;VB=p0')
+      PHYVAR3D1(condsld,      'VN=condsld      ;ON=CSLD;VD=thermal conductivity for soil solids           ;VS=A*'//ngl//'          ;VB=p0')   
       PHYVAR2D1(cveg,         'VN=cveg         ;ON=CV  ;VD=thermal coefficient for canopy                                    ;VB=p0')
       PHYVAR2D1(cvh,          'VN=cvh          ;ON=CVH ;VD=thermal coefficient for canopy of high veg                        ;VB=p0')
       PHYVAR2D1(cvl,          'VN=cvl          ;ON=CVL ;VD=thermal coefficient for canopy of low veg                         ;VB=p0')
@@ -363,6 +370,7 @@ subroutine sfc_businit(moyhr,ni,nk)
       PHYVAR2D1(psngrvl,      'VN=psngrvl      ;ON=PSGL;VD=frac. of bare soil &/or low veg. cov. by snow                     ;VB=v0')
       PHYVAR2D1(psnvh,        'VN=psnvh        ;ON=PSVH;VD=fraction of high vegetation covered by snow                       ;VB=p0')
       PHYVAR2D1(psnvha,       'VN=psnvha       ;ON=PSVA;VD=frac. of high veg. covered by snow from atm.                      ;VB=p0')
+      PHYVAR3D1(quartz,       'VN=quartz       ;ON=QRTZ;VD=quartz contain of the soil layer               ;VS=A*'//ngl//'  ;VB=p0') 
       PHYVAR2D1(rcctem,       'VN=rcctem       ;ON=RCC ;VD=stomatal resistance CTEM                                          ;VB=p0')
       PHYVAR2D1(resagr,       'VN=resagr       ;ON=RSGR;VD=aerodynamic resistance over bare ground                           ;VB=p0')
       PHYVAR2D1(resavg,       'VN=resavg       ;ON=RSVG;VD=aerodynamic resistance over veget.                                ;VB=p0')
@@ -395,6 +403,8 @@ subroutine sfc_businit(moyhr,ni,nk)
       PHYVAR2D1(snvdp,        'VN=snvdp        ;ON=SVDP;VD=snow-under-high-veg depth                                         ;VB=p1')
       PHYVAR2D1(snvma,        'VN=snvma        ;ON=SVM ;VD=snow-under-high-veg mass                                          ;VB=p0')
       PHYVAR2D1(snvro,        'VN=snvro        ;ON=SVDR;VD=snow-under-high-veg relative density                              ;VB=p0')
+      PHYVAR3D1(soilhcapz,    'VN=soilhcapz    ;ON=SLCA;VD=soil heat capacity                             ;VS=A*'//ngl//'  ;VB=p0')         
+      PHYVAR3D1(soilcondz,    'VN=soilcondz    ;ON=SLCO;VD=soil heat conductivity                         ;VS=A*'//ngl//'  ;VB=p0')  
       PHYVAR2D1(stomrvh,      'VN=stomrvh      ;ON=RSVH;VD=min. stomatal resistance for high vegetation                      ;VB=p0')
       PHYVAR2D1(stomrvl,      'VN=stomrvl      ;ON=RSVL;VD=min. stomatal resistance for low vegetation                       ;VB=p0')
       PHYVAR3D1(svs_wta,      'VN=svs_wta      ;ON=SVSW;VD=weight for svs used in aggregation **FROM SPACE;VS=A*5            ;VB=p0')
@@ -404,6 +414,8 @@ subroutine sfc_businit(moyhr,ni,nk)
       PHYVAR3D1(tsnow,        'VN=tsnow        ;ON=TSN ;VD=snow-low-veg/bare-grnd skin and mean temp.     ;VS=A*2            ;VB=p1')
       PHYVAR3D1(tsnowveg,     'VN=tsnowveg     ;ON=TSNV;VD=snow-under-high-veg skin and mean temp.        ;VS=A*2            ;VB=p1')
       PHYVAR2D1(tsvavg,       'VN=tsvavg       ;ON=ATSV;VD=snow-under-high-veg avg temp. for melt/freez                      ;VB=p0')
+      PHYVAR2D1(tperm,        'VN=tperm        ;ON=TPRD;VD=constant deep soil temperature                                    ;VB=p0')
+      PHYVAR3D1(tpsoil,       'VN=tpsoil       ;ON=TGRD;VD=soil temperature profil                        ;VS=A*'//ngl//'  ;VB=p1')
       PHYVAR3D1(tvege,        'VN=tvege        ;ON=TVG ;VD=skin and mean vegetation temp.                 ;VS=A*2            ;VB=p1')
       PHYVAR3D1(vegdati,      'VN=vegdati      ;ON=SPAR;VD=sparsness of each vegtation class                 ;VS=A*26        ;VB=p0')
       PHYVAR3D1(vegf_evol,    'VN=vegf_evol    ;ON=VFEV;VD=vegetation fraction * vegdat: actual veg. fraction;VS=A*26        ;VB=p0')
@@ -424,6 +436,7 @@ subroutine sfc_businit(moyhr,ni,nk)
       PHYVAR3D1(wsoil,        'VN=wsoil        ;ON=WSOL;VD=soil volm water content per layer              ;VS=A*'//ngl//'  ;VB=p1')
       PHYVAR2D1(wsoilm,       'VN=wsoilm       ;ON=WSLM;VD=mean soil volm watr cont for the whole column                     ;VB=p0')
       PHYVAR2D1(wveg,         'VN=wveg         ;ON=WVEG;VD=water retained on the vegetation                                  ;VB=p1        ;MIN=0')
+      PHYVAR3D1(wunfrz,       'VN=wunfrz       ;ON=WUFR;VD=unfrozen residual liquid water content           ;VS=A*'//ngl//'  ;VB=p1')
       PHYVAR3D1(wwilt,        'VN=wwilt        ;ON=WWLT;VD=vol. water cont. at wilting pt.                ;VS=A*'//ngl//'  ;VB=p0')
       PHYVAR2D1(z0ha,         'VN=z0ha         ;ON=Z0HA;VD=thermal roughness for snowless veg.                               ;VB=p0')
       PHYVAR2D1(z0hbg,        'VN=z0hbg        ;ON=ZTBG;VD=thermal roughness for bare ground in SVS                          ;VB=p0')
@@ -526,7 +539,7 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR2D1(rcctem,       'VN=rcctem       ;ON=RCC ;VD=stomatal resistance CTEM                                          ;VB=p0')
       PHYVAR2D1(resagr,       'VN=resagr       ;ON=RSGR;VD=aerodynamic resistance over bare ground                           ;VB=p0')
       PHYVAR2D1(resagrv,      'VN=resagrv      ;ON=RSGV;VD=aerodynamic resistance over soil under vege.                     ;VB=p0')
-      PHYVAR2D1(resavg,       'VN=resavg       ;ON=RSVG;VD=aerodynamic resistance over veget.                                ;VB=p0')
+      PHYVAR2D1(resavg,       'VN=resavg       ;ON=RSVG;VD=aerodynamic rnesistance over veget.                                ;VB=p0')
       PHYVAR2D1(resasa,       'VN=resasa       ;ON=RSSA;VD=aerodynamic resistance for snow on bg/low veg                     ;VB=p0')
       PHYVAR2D1(resasv,       'VN=resasv       ;ON=RSSV;VD=aerodynamic resistance for snow under high veg                    ;VB=p0')
       PHYVAR2D1(resaef,       'VN=resaef       ;ON=RSEF;VD=effective aerodynamic resistance for SVS land tile                ;VB=p0')

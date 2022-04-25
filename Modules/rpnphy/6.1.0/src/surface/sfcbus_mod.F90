@@ -462,6 +462,7 @@ module sfcbus_mod
       SFCVAR(wsnv, 'wsnv')
       SFCVAR(wsoil, 'wsoil')
       SFCVAR(wsoilm, 'wsoilm')
+      SFCVAR(wunfrz, 'wunfrz')
       SFCVAR(wveg, 'wveg')
       SFCVAR(wwilt, 'wwilt')
       SFCVAR(xcent, 'xcent')
