@@ -9,8 +9,8 @@
 !> Basin information.
 !> Only a single column (single point) for point mode.
 !> npoints   ----- 1
-deglat          5.77 !degrees
-deglng         45.30 !degrees
+deglat         45.30  !degrees
+deglng         5.77 !degrees
 
 !> Forcing configuration.
 observed_forcing      height !height: uses heights directly.
@@ -26,6 +26,10 @@ draindens       50.0 !m m**-2
 ! > Select land surface scheme
 schmsol  SVS
 
+! Soil freezing scheme 
+lsoil_freezing_svs1  .true.    ! Activate soil freezing and thawing in SVS1 
+tperm      280.0 ! (Deep soil temperature)
+
 !> Soils.
 soiltext                 NIL !NIL: required to use soil_levels.txt as-is
 !> By default, values for 3 layers are required and only read. The values of the third layer are applied to all deeper layers.
@@ -38,9 +42,11 @@ sand            60.0    60.0    60.0 !%
 clay            30.0    30.0    30.0 !%
 wsoil          0.083   0.086   0.098 !vol. content
 isoil            0.0     0.0     0.0 !vol. content
+tpsoil          280.0   280.0   280.0! K to be used only when the soil freezing scheme is activated
 !> Special values not tied to soil layer scheme.
 !> nlayers   ----- 1 ----- 2
 tground       284.8  284.8 !Kelvin, only 2 values for svs1
+
 
 !> Vegetation canopies.
 !> Map land cover to the most appropriate land cover in SVS.

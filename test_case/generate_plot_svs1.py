@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 
 
 # Beginning and end date
-date_begp = '2010-9-1'
-date_endp = '2014-9-1'
+date_begp = '2000-1-1'
+date_endp = '2010-9-1'
 
 # Min and max for temperature on y-axis
 tmin =265
@@ -18,6 +18,8 @@ tmax=300
 # Read Observations using xarray
 ds = xr.open_dataset('obs_insitu_cdp_1994_2014.nc')
 print('read obs')
+
+pdb.set_trace()
 
 #fig=plt.figure(figsize=(5,10))
 
@@ -56,7 +58,7 @@ ax4.set_ylim([tmin,tmax])
 ax4.grid(True)
 
 #Extract model data
-mod = xr.open_dataset('output/out_svs.nc')
+mod = xr.open_dataset('output/out_svs1.nc')
 
 ax1.plot(mod.time.loc[dict(time=slice(date_begp,date_endp))].values,mod['SNODP'].loc[dict(time=slice(date_begp,date_endp))].values,label='Obs. (Auto)',linewidth=2.0,ls='solid',color='red',alpha=0.8)
 
@@ -70,7 +72,7 @@ t50cm = (mod['TPSOIL'].loc[dict(time=slice(date_begp,date_endp))].values[:,3]+2*
 ax4.plot(mod.time.loc[dict(time=slice(date_begp,date_endp))].values,t50cm,label='Obs. (Auto)',linewidth=2.0,ls='solid',color='red',alpha=0.8)
 
 
-namePlot='Eval_CDP_'+date_begp+'_'+date_endp+'.png'
+namePlot='Eval_CDP_svs1_'+date_begp+'_'+date_endp+'.png'
 plt.savefig(namePlot,format="png",bbox_inches = "tight")
 
 fig, (ax1, ax2, ax3,) = plt.subplots(3, 1, sharex=True)
@@ -101,16 +103,16 @@ ax3.axhline(273.15,color='darkgrey',ls='--')
 ax3.set_ylim([245,275])
 ax3.grid(True)
 
-mod = xr.open_dataset('output/out_svs.nc')
+mod = xr.open_dataset('output/out_svs1.nc')
 
 ax1.plot(mod.time.loc[dict(time=slice(date_begp,date_endp))].values,mod['SNODP'].loc[dict(time=slice(date_begp,date_endp))].values,label='Obs. (Auto)',linewidth=2.0,ls='solid',color='red',alpha=0.8)
 
-ax2.plot(mod.time.loc[dict(time=slice(date_begp,date_endp))].values,mod['SNOMA'].loc[dict(time=slice(date_begp,date_endp))].values,label='Obs. (Auto)',linewidth=2.0,ls='solid',color='red',alpha=0.8)
+ax2.plot(mod.time.loc[dict(time=slice(date_begp,date_endp))].values,mod['SNOMA'].loc[dict(time=slice(date_begp,date_endp))].values+mod['WSNO'].loc[dict(time=slice(date_begp,date_endp))].values,label='Obs. (Auto)',linewidth=2.0,ls='solid',color='red',alpha=0.8)
 
-ax3.plot(mod.time.loc[dict(time=slice(date_begp,date_endp))].values,mod['TSNO_SURF'].loc[dict(time=slice(date_begp,date_endp))].values,label='Obs. (Auto)',linewidth=2.0,ls='solid',color='red',alpha=0.8)
+ax3.plot(mod.time.loc[dict(time=slice(date_begp,date_endp))].values,mod['TSNO'].loc[dict(time=slice(date_begp,date_endp),snow_layer=0)].values,label='Obs. (Auto)',linewidth=2.0,ls='solid',color='red',alpha=0.8)
 
 
-namePlot='Eval_CDP_snow_'+date_begp+'_'+date_endp+'.png'
+namePlot='Eval_CDP_snow_svs1_'+date_begp+'_'+date_endp+'.png'
 plt.savefig(namePlot,format="png",bbox_inches = "tight")
 plt.show()
 

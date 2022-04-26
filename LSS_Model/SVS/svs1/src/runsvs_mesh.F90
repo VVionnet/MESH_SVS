@@ -79,9 +79,9 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_SNVDEN = 'SNVDEN'
     character(len = *), parameter, public :: VN_SVS_SNVAL = 'SNVAL'
     character(len = *), parameter, public :: VN_SVS_WSNV = 'WSNV'
-    character(len = *), parameter, public :: VN_SVS_TPSOIL = 'TPSOIL' ! For svs2 only 
+    character(len = *), parameter, public :: VN_SVS_TPSOIL = 'TPSOIL' ! For svs2  and svs1 (with soil freezing)
     character(len = *), parameter, public :: VN_SVS_TPSOILV = 'TPSOILV'! For svs2 only
-    character(len = *), parameter, public :: VN_SVS_TPERM = 'TPERM' ! For svs2 only 
+    character(len = *), parameter, public :: VN_SVS_TPERM = 'TPERM' ! For svs2 only  and svs1 (with soil freezing)
     character(len = *), parameter, public :: VN_SVS_NSL = 'NSL' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_HSNOWSCHEME = 'HSNOWSCHEME' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_HSNOWDRIFT_CRO = 'HSNOWDRIFT_CRO' ! For svs2 only 
@@ -118,7 +118,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_TVEGE_N = 'TVEGE_N'
     character(len = *), parameter, public :: VN_SVS_TSNOW_N = 'TSNOW_N'
     character(len = *), parameter, public :: VN_SVS_TSNOWVEG_N = 'TSNOWVEG_N'
-    character(len = *), parameter, public :: VN_SVS_TPSOIL_N = 'TPSOIL_N' ! For svs2 only
+    character(len = *), parameter, public :: VN_SVS_TPSOIL_N = 'TPSOIL_N' ! For svs2  and svs1 (with soil freezing)
     character(len = *), parameter, public :: VN_SVS_TPSOILV_N = 'TPSOILV_N' ! For svs2 only
 
 
@@ -140,7 +140,7 @@ module runsvs_mesh
         real, dimension(:, :), allocatable :: clay
         real, dimension(:, :), allocatable :: wsoil
         real, dimension(:, :), allocatable :: isoil
-        real, dimension(:, :), allocatable :: tpsoil ! For svs2 only
+        real, dimension(:, :), allocatable :: tpsoil ! For svs2 and svs1 (with soil freezing)
         real, dimension(:, :), allocatable :: tpsoilv ! For svs2 only
         integer :: kthermal = 2
         real, dimension(:, :), allocatable :: tground
@@ -480,6 +480,14 @@ module runsvs_mesh
            if (allocated(svs_mesh%vs%tperm)) svs_bus(a1(tperm):z1(tperm)) = svs_mesh%vs%tperm
         endif
 
+        if(svs_mesh%vs%schmsol=='SVS' .and. svs_mesh%vs%lsoil_freezing_svs1) then
+           do i = 1, nl_svs
+                if (allocated(svs_mesh%vs%tpsoil))  svs_bus(a2(tpsoil, i - 1):z2(tpsoil, i - 1)) = svs_mesh%vs%tpsoil(:, i)
+           end do
+           if (allocated(svs_mesh%vs%tperm)) svs_bus(a1(tperm):z1(tperm)) = svs_mesh%vs%tperm
+        endif
+
+
         if (allocated(svs_mesh%vs%wveg)) svs_bus(a1(wveg):z1(wveg)) = svs_mesh%vs%wveg
 
         ! Snow initialisation
@@ -692,7 +700,7 @@ module runsvs_mesh
         z0ttype = 'DEACU12'
         salty_qsat = .true.
         urban_params_new = .true.
-kount_reset = 12
+        kount_reset = 12
 
         !> Update the number of active surface layers for the physics bus.
 !        nagrege = nsurf + 1
@@ -848,8 +856,9 @@ kount_reset = 12
         call runsvs_mesh_append_phyentvar('wsnv')
         if(svs_mesh%vs%schmsol=='SVS' .and. svs_mesh%vs%lsoil_freezing_svs1) then
             call runsvs_mesh_append_phyentvar('tpsoil')
+            call runsvs_mesh_append_phyentvar('tperm')
         endif
-        if(svs_mesh%vs%schmsol=='SVS') then
+        if(svs_mesh%vs%schmsol=='SVS2') then
              call runsvs_mesh_append_phyentvar('tpsoil')
              call runsvs_mesh_append_phyentvar('tpsoilv')
              call runsvs_mesh_append_phyentvar('tperm')
@@ -1043,6 +1052,13 @@ print*,vl(i)%n,vl(i)%niveaux,vl(i)%mul,vl(i)%mosaik
             if(svs_mesh%vs%schmsol=='SVS') then
                 write(line, "('SOIL TEMPERATURE: ', 2f8.3)") svs_bus(a1(tground)), svs_bus(a1(tground) + ni)
                 call print_message(line)
+                if(svs_mesh%vs%lsoil_freezing_svs1) then
+                   call print_message('             Soil profile ')
+                   do i = 1, nl_svs ! permeable layers
+                      write(line, "(' LAYER ', i3, ': ', 999(f8.3, 1x))") i, svs_bus(a2(tpsoil, i - 1))
+                      call print_message(line)
+                   end do
+                endif
             else if(svs_mesh%vs%schmsol=='SVS2') then
                call print_message('             Bare ground/low veg    High veg.')
                do i = 1, nl_svs ! permeable layers
@@ -1295,9 +1311,11 @@ ierr = 200
 
         if(svs_mesh%vs%schmsol=='SVS' .and. svs_mesh%vs%lsoil_freezing_svs1) then 
                if (.not. allocated(svs_mesh%vs%tpsoil)) allocate(svs_mesh%vs%tpsoil(ni, nl_svs))
-              do i = 1, nl_svs
-                 svs_mesh%vs%tpsoil(:, i) = svs_bus(a2(tpsoil, i - 1):z2(tpsoil, i - 1))
-              end do
+               do i = 1, nl_svs
+                  svs_mesh%vs%tpsoil(:, i) = svs_bus(a2(tpsoil, i - 1):z2(tpsoil, i - 1))
+               end do
+               if (.not. allocated(svs_mesh%vs%tperm)) allocate(svs_mesh%vs%tperm(ni))
+               svs_mesh%vs%tperm = svs_bus(a1(tperm):z1(tperm ))
         end if
 
         if(svs_mesh%vs%schmsol=='SVS2') then 

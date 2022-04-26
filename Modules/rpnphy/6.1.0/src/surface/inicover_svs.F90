@@ -403,7 +403,6 @@ subroutine inicover_svs(kount, ni, trnch)
          
       endif
 
-
       call aggveghigh(PTR1D(vegf), rgldat, rgldat, PTR1D(rglvh), &
            PTR1D(dlat), ni, nclass)
       call aggveghigh(PTR1D(vegf), gammadat , gammadat, PTR1D(gamvh), &

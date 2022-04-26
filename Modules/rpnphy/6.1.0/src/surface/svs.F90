@@ -259,7 +259,7 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       endif 
 
 !
-!
+!     
 
       CALL SOILI_SVS( BUS(x(WSOIL ,1,1)), &
            BUS(x(ISOIL  ,1,1)), &  
