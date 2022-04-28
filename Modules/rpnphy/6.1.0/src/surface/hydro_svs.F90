@@ -19,7 +19,7 @@ SUBROUTINE HYDRO_SVS ( DT, &
      WSAT, KSAT, PSISAT, BCOEF, FBCOF, WFCINT, GRKEF, &
      SNM, SVM, WR, WRT, WD, WDT, WF, WFT, &
      KSATC, KHC, PSI, GRKSAT, WFCDP, &
-     F, LATFLW, RUNOFF, WATPND, MAXPND, N)
+     F, LATFLW, RUNOFF, N,  WATPND, MAXPND)
   !
   use sfc_options
   use svs_configs
@@ -62,7 +62,8 @@ SUBROUTINE HYDRO_SVS ( DT, &
   real, dimension(n)        :: wfcdp
   real, dimension(n,nl_svs+1):: f
   real, dimension(n,nl_svs) :: latflw
-  real, dimension(n)        :: runoff, watpnd, maxpnd
+  real, dimension(n)        :: runoff 
+  real, dimension(n),optional :: watpnd, maxpnd
 
   !
   !Author

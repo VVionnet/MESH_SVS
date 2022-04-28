@@ -27,7 +27,7 @@ draindens       50.0 !m m**-2
 schmsol  SVS
 
 ! Soil freezing scheme 
-lsoil_freezing_svs1  .true.    ! Activate soil freezing and thawing in SVS1 
+lsoil_freezing_svs1  .false.    ! Activate soil freezing and thawing in SVS1 
 tperm      280.0 ! (Deep soil temperature K)
 
 ! Water ponding scheme

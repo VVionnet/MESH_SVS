@@ -535,8 +535,8 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            bus(x(psi     ,1,1)), bus(x(grksat  ,1,1)),&
            bus(x(wfcdp   ,1,1)), bus(x(watflow ,1,1)),&
            bus(x(latflw  ,1,1)), &
-           bus(x(runofftot ,1,indx_soil)), bus(x(watpond ,1,1)), &
-           bus(x(maxpond ,1,1)), N)
+           bus(x(runofftot ,1,indx_soil)), N,  bus(x(watpond ,1,1)), &
+           bus(x(maxpond ,1,1)))
 
 
 
