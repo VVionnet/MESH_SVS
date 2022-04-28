@@ -19,7 +19,7 @@ SUBROUTINE HYDRO_SVS ( DT, &
      WSAT, KSAT, PSISAT, BCOEF, FBCOF, WFCINT, GRKEF, &
      SNM, SVM, WR, WRT, WD, WDT, WF, WFT, &
      KSATC, KHC, PSI, GRKSAT, WFCDP, &
-     F, LATFLW, RUNOFF, N)
+     F, LATFLW, RUNOFF, WATPND, MAXPND, N)
   !
   use sfc_options
   use svs_configs
@@ -62,7 +62,7 @@ SUBROUTINE HYDRO_SVS ( DT, &
   real, dimension(n)        :: wfcdp
   real, dimension(n,nl_svs+1):: f
   real, dimension(n,nl_svs) :: latflw
-  real, dimension(n)        :: runoff
+  real, dimension(n)        :: runoff, watpnd, maxpnd
 
   !
   !Author
@@ -167,6 +167,8 @@ SUBROUTINE HYDRO_SVS ( DT, &
   real, dimension(n)          :: wrt_vl,wrt_vh,rveg_vl,rveg_vh
   real                        :: wat_down
   real, dimension(n,nl_svs-1) :: diag
+
+  real, dimension(n)          :: abstract
 
   ! For the Runge-Kutta method
   real, dimension(n,nl_svs)   :: wd_rk, dwd_rk1, dwd_rk2, dwd_rk3, dwd_rk4
@@ -377,12 +379,28 @@ SUBROUTINE HYDRO_SVS ( DT, &
 
   DO I=1,N
      !use ksat to calculate runoff (mm/s)
-     RUNOFF(I) = MAX( (SATSFC(I)*PG(I)+(1-SATSFC(I))*MAX(PG(I)-KSATC(I,1)*1000.,0.0)) , 0.0 )             
+     RUNOFF(I) = MAX( (SATSFC(I)*PG(I)+(1-SATSFC(I))*MAX(PG(I)-KSATC(I,1)*1000.,0.0)) , 0.0 )   
+
+! EG_code related to ponding of water
+     IF (lwater_ponding_svs1) THEN
+        abstract(I) = min( RUNOFF(I)*DT , (maxpnd(I)-watpnd(I))*1000.0 )
+        RUNOFF(I) = RUNOFF(I) - abstract(I)/DT
+     ELSE
+        abstract(I) = 0.0
+     END IF
+          
      ! assuming that 33% of urban cover is totally impervious (RUNOFF = PG over impervious surface)
      RUNOFF(I) = RUNOFF(I) * (1. - IMPERVU(I) ) + PG(I) * IMPERVU(I)        
      ! remove runoff from the ampount of water reaching the ground
-     PG(I) = PG(I) - RUNOFF(I)              ! (mm/s)
+     PG(I) = PG(I) - RUNOFF(I) - ( (1. - IMPERVU(I)) * abstract(I)/DT )           ! (mm/s)
      RUNOFF(I) = RUNOFF(I)*DT
+
+     IF (lwater_ponding_svs1) THEN
+        ! update amount of ponding water
+        watpnd(I) = watpnd(I) + (1. - IMPERVU(I) ) * abstract(I) / 1000.0
+
+     ENDIF 
+
   END DO
 
 

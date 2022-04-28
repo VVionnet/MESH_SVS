@@ -24,7 +24,7 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    use sfcbus_mod
    use sfc_options, only: atm_external, atm_tplus, radslope, jdateo, &
         use_photo, nclass, zu, zt, sl_Lmin_soil, VAMIN, svs_local_z0m, &
-        vf_type,lsoil_freezing_svs1
+        vf_type,lsoil_freezing_svs1,lwater_ponding_svs1,critwater
    use svs_configs
    implicit none
 !!!#include <arch_specific.hf>
@@ -111,6 +111,14 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    real,pointer,dimension(:) :: zzusl
    real,pointer,dimension(:) :: zztsl
 
+   real,pointer,dimension(:) :: zslop
+   real,pointer,dimension(:) :: wsatur1
+   real,pointer,dimension(:) :: isoil1
+   real,pointer,dimension(:) :: wsoil1
+   real,pointer,dimension(:) :: zwatpond
+   real,pointer,dimension(:) :: zmaxpond
+   real,pointer,dimension(:) :: zvegh
+   real,pointer,dimension(:) :: zvegl
 
 !
 !
@@ -137,7 +145,7 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       real,pointer,dimension(:) :: zfsolis
 !     
       integer yy, mo, dd, hh, mn, sec
-      REAL HZ, HZ0, JULIEN
+      REAL HZ, HZ0, JULIEN, transfer
 
       integer(INT64), parameter :: MU_JDATE_HALFDAY = 43200    
 !
@@ -170,6 +178,16 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       zzusl    (1:n) => bus( x(zusl,1,1)         : )
       zztsl    (1:n) => bus( x(ztsl,1,1)         : )
 
+      wsatur1  (1:n) => bus( x(wsat,1,1)         : )
+      isoil1   (1:n) => bus( x(isoil,1,1)        : )
+      zwatpond (1:n) => bus( x(watpond,1,1)      : )
+      zmaxpond (1:n) => bus( x(maxpond,1,1)      : )
+      wsoil1   (1:n) => bus( x(wsoil,1,1)        : )
+      zslop    (1:n) => bus( x(slop,1,1)        : )
+      zvegh    (1:n) => bus( x(vegh,1,1)        : )
+      zvegl    (1:n) => bus( x(vegl,1,1)        : )
+
+
       if (atm_tplus) then
          hu       (1:n) => bus( x(huplus,1,nk)      : )
          ps       (1:n) => bus( x(pplus,1,1)        : )
@@ -185,8 +203,6 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
          uu       (1:n) => bus( x(umoins,1,nk)      : )
          vv       (1:n) => bus( x(vmoins,1,nk)      : )
       endif
-
-
 
 
 !  
@@ -231,6 +247,18 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
 
       ENDDO
+
+
+      IF(lwater_ponding_svs1 .and. kount==1) THEN
+          DO I=1,N
+!           EG: Adjust max. ponding depth according to bare ground fraction: consider 10mm over bare ground
+	    zmaxpond(I) = zmaxpond(I) * (zvegh(I)+zvegl(I)) + 0.01 * (1.-zvegh(I)-zvegl(I))
+!	    EG: Adjust max. ponding depth according to slope
+            zmaxpond(I) = max(0.0,zmaxpond(I)*(1.0E-10)**zslop(I))
+         END DO
+      ENDIF
+
+
 !
 !******************************************************************
 !                  SVS SUBROUTINES START HERE
@@ -259,6 +287,26 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       endif 
 
 !
+! EG CODE RELATED TO PONDING OPTION
+      IF (lwater_ponding_svs1) then
+          DO I=1,N
+             
+             wsaturc1(I)= max((wsatur1(I)-isoil1(I)-0.00001), CRITWATER)
+            ! write(*,*)  'Satu', wsaturc1(I),zwatpond(I)
+            ! write(*,*)  'Soil',isoil1(I),wsoil1(I)
+             if (wsoil1(I).lt.wsaturc1(I).and.zwatpond(I).gt.0.0) then 
+               transfer = min(zwatpond(I),(wsaturc1(I)-wsoil1(I))*dl_svs(1))
+               wsoil1(I) = wsoil1(I) + transfer / dl_svs(1)
+               zwatpond(I) = zwatpond(I) - transfer
+             endif
+          ENDDO
+      ELSE
+         DO I=1,N
+            zwatpond(I)= 0.0
+         ENDDO
+      END IF
+! END EG CODE RELATED TO PONDING OPTION
+
 !     
 
       CALL SOILI_SVS( BUS(x(WSOIL ,1,1)), &
@@ -487,7 +535,8 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            bus(x(psi     ,1,1)), bus(x(grksat  ,1,1)),&
            bus(x(wfcdp   ,1,1)), bus(x(watflow ,1,1)),&
            bus(x(latflw  ,1,1)), &
-           bus(x(runofftot ,1,indx_soil)), N)
+           bus(x(runofftot ,1,indx_soil)), bus(x(watpond ,1,1)), &
+           bus(x(maxpond ,1,1)), N)
 
 
 

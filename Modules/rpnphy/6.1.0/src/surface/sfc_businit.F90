@@ -103,7 +103,7 @@ subroutine sfc_businit(moyhr,ni,nk)
 
    !--------   Speficic parameter FOR SVS -----------------
 
-   integer :: wunfrz
+   integer :: wunfrz,watpond,maxpond
 
    !--------   Speficic parameter FOR SVS 2 -----------------
    character(len=2) :: ns
@@ -363,6 +363,7 @@ subroutine sfc_businit(moyhr,ni,nk)
       PHYVAR2D1(lesv,         'VN=lesv         ;ON=LSV ;VD=latent heat flux over snow-under-veg                              ;VB=v0')
       PHYVAR2D1(letr,         'VN=letr         ;ON=LT  ;VD=latent heat of evapotransp.                                       ;VB=v0')
       PHYVAR2D1(lev,          'VN=lev          ;ON=LV  ;VD=latent heat flux over vegetation                                  ;VB=v0')
+      PHYVAR2D1(maxpond,      'VN=maxpond      ;ON=MAXP;VD=maximum depth[m] of ponded water at surface                       ;VB=p0')
       PHYVAR2D1(melts,        'VN=melts        ;ON=MLTS;VD=accum. snow melting (kg/m2)                                       ;VB=p0')
       PHYVAR2D1(meltsr,       'VN=meltsr       ;ON=MLTR;VD=accum. snow melting due to rain (kg/m2)                           ;VB=p0')
       PHYVAR3D1(psi,          'VN=psi          ;ON=PSI ;VD=soil water suction                             ;VS=A*'//ngl//'  ;VB=p0')
@@ -425,6 +426,7 @@ subroutine sfc_businit(moyhr,ni,nk)
       PHYVAR2D1(vegtrans,     'VN=vegtrans     ;ON=VGTR;VD=transmissivity of tall vegetation                                 ;VB=p0')
       PHYVAR3D1(vgctem,       'VN=vgctem       ;ON=VGCT;VD=CTEM vegetation type fractions                 ;VS=A*9          ;VB=p0')
       PHYVAR3D1(watflow,      'VN=watflow      ;ON=WFL ;VD=waterflow between layers                       ;VS=A*'//nglp1//';VB=p0')
+      PHYVAR2D1(watpond,      'VN=watpond      ;ON=WPON;VD=depth of water (m) ponding at the surface                           ;VB=p0')
       PHYVAR3D1(wfc,          'VN=wfc          ;ON=WFC ;VD=vol. water content at field cap.               ;VS=A*'//ngl//'  ;VB=p0')
       PHYVAR2D1(wfcdp,        'VN=wfcdp        ;ON=WFCD;VD=vol. water content at field cap. at lowst layer                   ;VB=p0')
       PHYVAR3D1(wfcint,       'VN=wfcint       ;ON=WFCI;VD=water content at field capacity along slope    ;VS=A*'//ngl//'  ;VB=p0')

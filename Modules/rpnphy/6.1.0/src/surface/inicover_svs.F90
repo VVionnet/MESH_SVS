@@ -73,7 +73,7 @@ subroutine inicover_svs(kount, ni, trnch)
       REAL RSMINDAT(NCLASS)
       REAL LAIDAT(NCLASS), VEGDAT(NCLASS),EMISDAT(NCLASS) 
       REAL CVDAT(NCLASS), RGLDAT(NCLASS), GAMMADAT(NCLASS)
-      REAL Z0MDAT(NCLASS)
+      REAL Z0MDAT(NCLASS), MAXPDAT(NCLASS)
 !
       DATA ALDAT/ &
                      0.13   , 0.70   , 0.13   , 0.14   , 0.12   , &
@@ -122,6 +122,13 @@ subroutine inicover_svs(kount, ni, trnch)
                     -99.    , -99.   , -99.   , -99.   , 1.00   , & 
                      1.00   , -99.   , 4.00   , 0.00   , -99.   , & 
                     -99.    / 
+      DATA MAXPDAT/ &
+                     0.00   , 0.00   , 0.00   , 0.10   , 0.10   , &
+                     0.10   , 0.10   , 0.10   , 0.10   , 0.05   , &
+                     0.05   , 0.05   , 0.05   , 0.05   , 0.05  , &
+                     0.05   , 0.05   , 0.05   , 0.05   , 0.005  , &
+                     0.005  , 0.05   , 0.05   , 0.05   , 0.10   , &
+                     0.10   /
       DATA VEGDAT/ &
                      0.00   , 0.00   , 0.00   , 0.90   , 0.99   , & 
                      0.90   , 0.90   , 0.99   , 0.90   , 0.50   , & 
@@ -362,6 +369,8 @@ subroutine inicover_svs(kount, ni, trnch)
       call aggcovernat(PTR1D(vegf), d50dat, d50dat , PTR1D(d50), &
            PTR1D(dlat), ni, nclass)
       call aggcovernat(PTR1D(vegf), d95dat, d95dat , PTR1D(d95), &
+           PTR1D(dlat), ni, nclass)
+      call aggcovernat(PTR1D(vegf), maxpdat, maxpdat , PTR1D(maxpond), &
            PTR1D(dlat), ni, nclass)
 
       do i=1,ni

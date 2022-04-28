@@ -357,8 +357,7 @@
            ! Update liquid water content
            WSOIL(I,K) = WC(I,K) - ISOIL(I,K)
 
-
-           !IF(K==1) write(*,*) K,,TSOIL(I,K), WSOIL(I,K), ISOIL(I,K), WSOIL(I,K)+ISOIL(I,K)
+           
          !  write(*,*) K,TSOIL(I,K), WSOIL(I,K), ISOIL(I,K), WSOIL(I,K)+ISOIL(I,K)
         ENDDO
       ENDDO

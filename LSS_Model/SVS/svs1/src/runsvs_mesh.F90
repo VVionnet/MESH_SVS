@@ -78,6 +78,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_SNVDP = 'SNVDP'
     character(len = *), parameter, public :: VN_SVS_SNVDEN = 'SNVDEN'
     character(len = *), parameter, public :: VN_SVS_SNVAL = 'SNVAL'
+    character(len = *), parameter, public :: VN_SVS_WATPOND = 'WATPOND' !  For svs1 (with water ponding)
     character(len = *), parameter, public :: VN_SVS_WSNV = 'WSNV'
     character(len = *), parameter, public :: VN_SVS_TPSOIL = 'TPSOIL' ! For svs2  and svs1 (with soil freezing)
     character(len = *), parameter, public :: VN_SVS_TPSOILV = 'TPSOILV'! For svs2 only
@@ -106,6 +107,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_ENBAL = 'LOUT_SNOW_ENBAL' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_NPROFILE_DAY = 'NPROFILE_DAY' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LSOIL_FREEZING_SVS1 = 'LSOIL_FREEZING_SVS1' ! For svs1 only 
+    character(len = *), parameter, public :: VN_SVS_LWATER_PONDING_SVS1 = 'LWATER_PONDING_SVS1' ! For svs1 only 
 
     !> SVS variables names for I/O (modifiers/special conditions).
     character(len = *), parameter, public :: VN_SVS_SAND_N = 'SAND_N'
@@ -158,6 +160,7 @@ module runsvs_mesh
         real, dimension(:), allocatable :: snvdp
         real, dimension(:), allocatable :: snvden
         real, dimension(:), allocatable :: snval
+        real, dimension(:), allocatable :: watpond
         real, dimension(:), allocatable :: wsnv
         real, dimension(:), allocatable :: tperm ! For svs2 only
         integer :: nsl = 12 ! For svs2 only
@@ -190,6 +193,7 @@ module runsvs_mesh
         logical :: lout_snow_enbal = .false.
         integer :: nprofile_day = 4 !
         logical :: lsoil_freezing_svs1 = .false.
+        logical :: lwater_ponding_svs1 = .false.
     end type
 
     !* PROCESS_ACTIVE: Variable to enable SVS.
@@ -487,6 +491,9 @@ module runsvs_mesh
            if (allocated(svs_mesh%vs%tperm)) svs_bus(a1(tperm):z1(tperm)) = svs_mesh%vs%tperm
         endif
 
+        if(svs_mesh%vs%schmsol=='SVS' .and. svs_mesh%vs%lwater_ponding_svs1) then
+           if (allocated(svs_mesh%vs%watpond)) svs_bus(a1(watpond):z1(watpond)) = svs_mesh%vs%watpond
+        endif
 
         if (allocated(svs_mesh%vs%wveg)) svs_bus(a1(wveg):z1(wveg)) = svs_mesh%vs%wveg
 
@@ -748,6 +755,11 @@ module runsvs_mesh
                 lsoil_freezing_svs1 = svs_mesh%vs%lsoil_freezing_svs1
         endif
 
+        ! Activate or not the water ponding module in SVS1
+        if(svs_mesh%vs%schmsol=='SVS') then
+                lwater_ponding_svs1 = svs_mesh%vs%lwater_ponding_svs1
+        endif
+
         ierr =0
         ! Initialize number of snow layers (for multilayer snowpack schemes in SVS2)
         if(svs_mesh%vs%schmsol=='SVS2') then 
@@ -858,6 +870,10 @@ module runsvs_mesh
             call runsvs_mesh_append_phyentvar('tpsoil')
             call runsvs_mesh_append_phyentvar('tperm')
         endif
+        if(svs_mesh%vs%schmsol=='SVS' .and. svs_mesh%vs%lwater_ponding_svs1) then
+            call runsvs_mesh_append_phyentvar('watpond')
+        endif
+
         if(svs_mesh%vs%schmsol=='SVS2') then
              call runsvs_mesh_append_phyentvar('tpsoil')
              call runsvs_mesh_append_phyentvar('tpsoilv')
