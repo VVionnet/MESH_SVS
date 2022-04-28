@@ -35,11 +35,15 @@ module runsvs_mesh
             5.0, 0.1, 0.1, 0.1, 1.75, 0.5 /)
     end type
 
-    !> SVS output
+    !> SVS2 output
     integer :: iout_soil = 150
     integer :: iout_snow_bulk = 151
     integer :: iout_snow_profile = 152
     integer :: iout_snow_enbal = 153
+
+    !> SVS1 output
+    integer :: iout_svs1_soil = 160
+    integer :: iout_svs1_snow = 161
 
     !> SVS variables names for I/O (direct variables).
     character(len = *), parameter, public :: VN_SVS_DEGLAT = 'DEGLAT'
@@ -74,10 +78,11 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_SNVDP = 'SNVDP'
     character(len = *), parameter, public :: VN_SVS_SNVDEN = 'SNVDEN'
     character(len = *), parameter, public :: VN_SVS_SNVAL = 'SNVAL'
+    character(len = *), parameter, public :: VN_SVS_WATPOND = 'WATPOND' !  For svs1 (with water ponding)
     character(len = *), parameter, public :: VN_SVS_WSNV = 'WSNV'
-    character(len = *), parameter, public :: VN_SVS_TPSOIL = 'TPSOIL' ! For svs2 only 
+    character(len = *), parameter, public :: VN_SVS_TPSOIL = 'TPSOIL' ! For svs2  and svs1 (with soil freezing)
     character(len = *), parameter, public :: VN_SVS_TPSOILV = 'TPSOILV'! For svs2 only
-    character(len = *), parameter, public :: VN_SVS_TPERM = 'TPERM' ! For svs2 only 
+    character(len = *), parameter, public :: VN_SVS_TPERM = 'TPERM' ! For svs2 only  and svs1 (with soil freezing)
     character(len = *), parameter, public :: VN_SVS_NSL = 'NSL' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_HSNOWSCHEME = 'HSNOWSCHEME' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_HSNOWDRIFT_CRO = 'HSNOWDRIFT_CRO' ! For svs2 only 
@@ -101,7 +106,8 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_PROFILE = 'LOUT_SNOW_PROFILE' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_ENBAL = 'LOUT_SNOW_ENBAL' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_NPROFILE_DAY = 'NPROFILE_DAY' ! For svs2 only 
-
+    character(len = *), parameter, public :: VN_SVS_LSOIL_FREEZING_SVS1 = 'LSOIL_FREEZING_SVS1' ! For svs1 only 
+    character(len = *), parameter, public :: VN_SVS_LWATER_PONDING_SVS1 = 'LWATER_PONDING_SVS1' ! For svs1 only 
 
     !> SVS variables names for I/O (modifiers/special conditions).
     character(len = *), parameter, public :: VN_SVS_SAND_N = 'SAND_N'
@@ -114,7 +120,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_TVEGE_N = 'TVEGE_N'
     character(len = *), parameter, public :: VN_SVS_TSNOW_N = 'TSNOW_N'
     character(len = *), parameter, public :: VN_SVS_TSNOWVEG_N = 'TSNOWVEG_N'
-    character(len = *), parameter, public :: VN_SVS_TPSOIL_N = 'TPSOIL_N' ! For svs2 only
+    character(len = *), parameter, public :: VN_SVS_TPSOIL_N = 'TPSOIL_N' ! For svs2  and svs1 (with soil freezing)
     character(len = *), parameter, public :: VN_SVS_TPSOILV_N = 'TPSOILV_N' ! For svs2 only
 
 
@@ -136,7 +142,7 @@ module runsvs_mesh
         real, dimension(:, :), allocatable :: clay
         real, dimension(:, :), allocatable :: wsoil
         real, dimension(:, :), allocatable :: isoil
-        real, dimension(:, :), allocatable :: tpsoil ! For svs2 only
+        real, dimension(:, :), allocatable :: tpsoil ! For svs2 and svs1 (with soil freezing)
         real, dimension(:, :), allocatable :: tpsoilv ! For svs2 only
         integer :: kthermal = 2
         real, dimension(:, :), allocatable :: tground
@@ -154,6 +160,7 @@ module runsvs_mesh
         real, dimension(:), allocatable :: snvdp
         real, dimension(:), allocatable :: snvden
         real, dimension(:), allocatable :: snval
+        real, dimension(:), allocatable :: watpond
         real, dimension(:), allocatable :: wsnv
         real, dimension(:), allocatable :: tperm ! For svs2 only
         integer :: nsl = 12 ! For svs2 only
@@ -185,6 +192,8 @@ module runsvs_mesh
         logical :: lout_snow_profile = .false.
         logical :: lout_snow_enbal = .false.
         integer :: nprofile_day = 4 !
+        logical :: lsoil_freezing_svs1 = .false.
+        logical :: lwater_ponding_svs1 = .false.
     end type
 
     !* PROCESS_ACTIVE: Variable to enable SVS.
@@ -475,6 +484,17 @@ module runsvs_mesh
            if (allocated(svs_mesh%vs%tperm)) svs_bus(a1(tperm):z1(tperm)) = svs_mesh%vs%tperm
         endif
 
+        if(svs_mesh%vs%schmsol=='SVS' .and. svs_mesh%vs%lsoil_freezing_svs1) then
+           do i = 1, nl_svs
+                if (allocated(svs_mesh%vs%tpsoil))  svs_bus(a2(tpsoil, i - 1):z2(tpsoil, i - 1)) = svs_mesh%vs%tpsoil(:, i)
+           end do
+           if (allocated(svs_mesh%vs%tperm)) svs_bus(a1(tperm):z1(tperm)) = svs_mesh%vs%tperm
+        endif
+
+        if(svs_mesh%vs%schmsol=='SVS' .and. svs_mesh%vs%lwater_ponding_svs1) then
+           if (allocated(svs_mesh%vs%watpond)) svs_bus(a1(watpond):z1(watpond)) = svs_mesh%vs%watpond
+        endif
+
         if (allocated(svs_mesh%vs%wveg)) svs_bus(a1(wveg):z1(wveg)) = svs_mesh%vs%wveg
 
         ! Snow initialisation
@@ -687,7 +707,7 @@ module runsvs_mesh
         z0ttype = 'DEACU12'
         salty_qsat = .true.
         urban_params_new = .true.
-kount_reset = 12
+        kount_reset = 12
 
         !> Update the number of active surface layers for the physics bus.
 !        nagrege = nsurf + 1
@@ -729,6 +749,16 @@ kount_reset = 12
             vl_type = (/10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 23/)
             vh_type = (/4, 5, 6, 7, 8, 9, 25, 26/)
         end if
+
+        ! Activate or not the soil freezing module in SVS1
+        if(svs_mesh%vs%schmsol=='SVS') then
+                lsoil_freezing_svs1 = svs_mesh%vs%lsoil_freezing_svs1
+        endif
+
+        ! Activate or not the water ponding module in SVS1
+        if(svs_mesh%vs%schmsol=='SVS') then
+                lwater_ponding_svs1 = svs_mesh%vs%lwater_ponding_svs1
+        endif
 
         ierr =0
         ! Initialize number of snow layers (for multilayer snowpack schemes in SVS2)
@@ -836,7 +866,15 @@ kount_reset = 12
         call runsvs_mesh_append_phyentvar('snvden')
         call runsvs_mesh_append_phyentvar('snval')
         call runsvs_mesh_append_phyentvar('wsnv')
-        if(svs_mesh%vs%schmsol=='SVS') then
+        if(svs_mesh%vs%schmsol=='SVS' .and. svs_mesh%vs%lsoil_freezing_svs1) then
+            call runsvs_mesh_append_phyentvar('tpsoil')
+            call runsvs_mesh_append_phyentvar('tperm')
+        endif
+        if(svs_mesh%vs%schmsol=='SVS' .and. svs_mesh%vs%lwater_ponding_svs1) then
+            call runsvs_mesh_append_phyentvar('watpond')
+        endif
+
+        if(svs_mesh%vs%schmsol=='SVS2') then
              call runsvs_mesh_append_phyentvar('tpsoil')
              call runsvs_mesh_append_phyentvar('tpsoilv')
              call runsvs_mesh_append_phyentvar('tperm')
@@ -1030,6 +1068,13 @@ print*,vl(i)%n,vl(i)%niveaux,vl(i)%mul,vl(i)%mosaik
             if(svs_mesh%vs%schmsol=='SVS') then
                 write(line, "('SOIL TEMPERATURE: ', 2f8.3)") svs_bus(a1(tground)), svs_bus(a1(tground) + ni)
                 call print_message(line)
+                if(svs_mesh%vs%lsoil_freezing_svs1) then
+                   call print_message('             Soil profile ')
+                   do i = 1, nl_svs ! permeable layers
+                      write(line, "(' LAYER ', i3, ': ', 999(f8.3, 1x))") i, svs_bus(a2(tpsoil, i - 1))
+                      call print_message(line)
+                   end do
+                endif
             else if(svs_mesh%vs%schmsol=='SVS2') then
                call print_message('             Bare ground/low veg    High veg.')
                do i = 1, nl_svs ! permeable layers
@@ -1170,6 +1215,35 @@ ierr = 200
           write(iout_snow_profile, *)
        endif
 
+
+   else if(svs_mesh%vs%schmsol=='SVS') then
+
+       open(iout_svs1_soil, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs1_soil_hourly.csv', action = 'write')
+       write(iout_svs1_soil, FMT_CSV, advance = 'no') 'YEAR', 'JDAY', 'HOUR', 'MINS'
+       do j = 1, nl_svs
+           write(level, FMT_GEN) j
+           write(iout_svs1_soil, FMT_CSV, advance = 'no') &
+                            trim(VN_SVS_ISOIL) // '_' // trim(adjustl(level)), &
+                            trim(VN_SVS_WSOIL) // '_' // trim(adjustl(level))
+       end do
+       if(svs_mesh%vs%lsoil_freezing_svs1) then 
+          do j = 1, nl_svs
+             write(level, FMT_GEN) j
+             write(iout_svs1_soil, FMT_CSV, advance = 'no') &
+                            trim(VN_SVS_TPSOIL) // '_' // trim(adjustl(level))
+         end do
+       endif
+
+       write(iout_svs1_soil, FMT_CSV, advance = 'no') 'TGROUND_1','TGROUND_2','TVEG_1','TVEG_2'
+       write(iout_svs1_soil, *)
+
+       open(iout_svs1_snow, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs1_snow_bulk_hourly.csv', action = 'write')
+       write(iout_svs1_snow, FMT_CSV, advance = 'no') 'YEAR', 'JDAY', 'HOUR', 'MINS'
+       write(iout_svs1_snow, FMT_CSV, advance = 'no') 'SNOMA', 'SNODP','SNODEN','SNOALB','WSNO','TSNO_1','TSNO_2'
+       write(iout_svs1_snow, FMT_CSV, advance = 'no') 'SNVMA', 'SNVDP','SNVDEN','SNVALB','WSNV','TSNV_1','TSNV_2'
+       write(iout_svs1_snow, *)
+
+
    endif
 
 
@@ -1250,6 +1324,15 @@ ierr = 200
         do i = 0, 1
             svs_mesh%vs%tsnowveg(:, i + 1) = svs_bus(a2(tsnowveg, i):z2(tsnowveg, i))
         end do
+
+        if(svs_mesh%vs%schmsol=='SVS' .and. svs_mesh%vs%lsoil_freezing_svs1) then 
+               if (.not. allocated(svs_mesh%vs%tpsoil)) allocate(svs_mesh%vs%tpsoil(ni, nl_svs))
+               do i = 1, nl_svs
+                  svs_mesh%vs%tpsoil(:, i) = svs_bus(a2(tpsoil, i - 1):z2(tpsoil, i - 1))
+               end do
+               if (.not. allocated(svs_mesh%vs%tperm)) allocate(svs_mesh%vs%tperm(ni))
+               svs_mesh%vs%tperm = svs_bus(a1(tperm):z1(tperm ))
+        end if
 
         if(svs_mesh%vs%schmsol=='SVS2') then 
             if (.not. allocated(svs_mesh%vs%tpsoil)) allocate(svs_mesh%vs%tpsoil(ni, nl_svs))
@@ -1408,6 +1491,44 @@ ierr = 200
               end if
 
            end if
+
+       else if(svs_mesh%vs%schmsol=='SVS') then
+
+           if (ic%now%mins ==0) then! Full hour
+
+              k=1 !>  Identity of the tile (offset relative to node-indexing).
+
+              ! Write file containing soil outputs
+              write(iout_svs1_soil, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
+              do i = 1, nl_svs
+                 write(iout_svs1_soil, FMT_CSV, advance = 'no') &
+                     busptr(vd%isoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) , &
+                     busptr(vd%wsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+              end do
+              if(svs_mesh%vs%lsoil_freezing_svs1) then
+                 do i = 1, nl_svs
+                    write(iout_svs1_soil, FMT_CSV, advance = 'no') &
+                       busptr(vd%tpsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+                 end do
+              end if 
+              write(iout_svs1_soil, FMT_CSV, advance = 'no') busptr(vd%tground%i)%ptr(1:ni, trnch),busptr(vd%tground%i)%ptr((ni+1):2*ni, trnch),busptr(vd%tvege%i)%ptr(1:ni, trnch),busptr(vd%tvege%i)%ptr(ni+1:2*ni, trnch)
+              write(iout_svs1_soil, *)
+
+              ! Write file containing bulk snow outputs
+              write(iout_svs1_snow, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
+              write(iout_svs1_snow, FMT_CSV, advance = 'no') busptr(vd%snoma%i)%ptr(:, trnch),busptr(vd%snodpl%i)%ptr(:, trnch), &
+                        busptr(vd%snoden%i)%ptr(:, trnch), busptr(vd%snoal%i)%ptr(:, trnch),busptr(vd%wsnow%i)%ptr(:, trnch), &                    
+                        busptr(vd%tsnow%i)%ptr(1:ni, trnch),busptr(vd%tsnow%i)%ptr((ni+1):2*ni, trnch)
+              write(iout_svs1_snow, FMT_CSV, advance = 'no') busptr(vd%snvma%i)%ptr(:, trnch),busptr(vd%snvdp%i)%ptr(:, trnch), &
+                        busptr(vd%snvden%i)%ptr(:, trnch), busptr(vd%snval%i)%ptr(:, trnch),busptr(vd%wsnv%i)%ptr(:, trnch), &                    
+                        busptr(vd%tsnowveg%i)%ptr(1:ni, trnch),busptr(vd%tsnowveg%i)%ptr((ni+1):2*ni, trnch)
+              write(iout_svs1_snow, *)
+
+
+           end if
+
+
+
 
         end if
 

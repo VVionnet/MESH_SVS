@@ -5,11 +5,14 @@ import xarray as xr
 import numpy as np
 
 
+# Land surface scheme : select among svs1 and svs2
+lss = 'svs1'
+
 # Go to exp directory
 os.chdir('output')
 
 # Get list of files containing SVS outputs
-list_fic = glob.glob('svs2*.csv')
+list_fic = glob.glob(lss+'*.csv')
 
 for ific,fic in enumerate(list_fic):
 
@@ -53,15 +56,24 @@ for ific,fic in enumerate(list_fic):
 			da_sel = da_int[lvar]  # Extract relevant data
 
 			nlayer = len(da_sel)
-			lis_layer = np.arange(0,nlayer)
-			yy=np.zeros((len(da_sel.time),nlayer))
 
-			da_var = xr.DataArray(yy,coords={'time':da_sel.time,fic_type+'_layer':lis_layer},dims=('time',fic_type+'_layer'))
+			if(nlayer>1):
+				lis_layer = np.arange(0,nlayer)
+				yy=np.zeros((len(da_sel.time),nlayer))
 
-			for ilayer,var_sel in enumerate(lvar):
-				da_var[:,ilayer] = da_sel[var_sel].values
-			da_var.name = var
-			da_var.to_dataset()
+				if(var in ['TGROUND','TVEG']):
+					name_layer = 'fr_layer'
+				else:
+					name_layer = fic_type+'_layer'
+				da_var = xr.DataArray(yy,coords={'time':da_sel.time,name_layer:lis_layer},dims=('time',name_layer))
+
+				for ilayer,var_sel in enumerate(lvar):
+					da_var[:,ilayer] = da_sel[var_sel].values
+				da_var.name = var
+				da_var.to_dataset()
+			else: 
+				da_var = da_sel 
+
 
 			if(ivar ==0):
 				da=da_var
@@ -113,5 +125,5 @@ def generate_encodings(data):
 
 # Write netcdf   
 encoding = generate_encodings(ref) 
-netcdf_file_out = 'out_svs.nc'
+netcdf_file_out = 'out_'+lss+'.nc'
 ref.to_netcdf(netcdf_file_out)
