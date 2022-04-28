@@ -1,12 +1,15 @@
-from argparse import ArgumentParser
 import os,shutil,pdb,glob
 import pandas as pd
 import xarray as xr
 import numpy as np
+import sys
 
+
+if len(sys.argv) != 2:
+    raise ValueError('Requires one argument [svs1 or svs2]')
 
 # Land surface scheme : select among svs1 and svs2
-lss = 'svs1'
+lss = sys.argv[-1]
 
 # Go to exp directory
 os.chdir('output')
