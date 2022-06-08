@@ -110,6 +110,7 @@ subroutine sfc_businit(moyhr,ni,nk)
    integer :: legv,qaf,    &
         hpsa,hpsv, gfluxsa, gfluxsv,        &
         lwnetsa, lwnetsv,        &
+        esa, esv, &
         qgr, qgv, qveg, resagrv,        &
         rsnows_acc, rsnowsv_acc, skyviewa, &
         snoage_svs, snoagev_svs,  &
@@ -488,6 +489,8 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR2D1(emisvl,       'VN=emisvl       ;ON=EMVL;VD=emissivity of low vegetation                                      ;VB=p0')
       PHYVAR2D1(er,           'VN=er           ;ON=ER  ;VD=evapo rate from leaves(no frac)                                   ;VB=v0')
       PHYVAR2D1(etr,          'VN=etr          ;ON=ETR ;VD=evapotranspiration rate (no frac)                                 ;VB=v0')
+      PHYVAR2D1(esa,          'VN=esa          ;ON=ESA ;VD=total evaporative rate (subl+evap) from snow over lv/ bg  (no frac);VB=v0')
+      PHYVAR2D1(esv,          'VN=esv          ;ON=ESV ;VD=total evaporative rate (subl+evap) from snow under hv   (no frac) ;VB=v0')      
       PHYVAR2D1(evergreen,    'VN=evergreen    ;ON=EVER;VD=frac. of high veg. that is evergreen                              ;VB=p0')
       PHYVAR3D1(fbcof,        'VN=fbcof        ;ON=3G  ;VD=parameter derived from bcoef                   ;VS=A*'//ngl//'  ;VB=p0')
       PHYVAR3D1(frootd,       'VN=frootd       ;ON=FRTD;VD=deep soil layer root density                   ;VS=A*'//ngl//'  ;VB=p0')

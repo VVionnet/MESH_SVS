@@ -126,7 +126,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    integer i,j,m, masklat50(n)
 
    real,dimension(n) :: alva, cg, cvpa, del, dwaterdt
-   real,dimension(n) :: esnofrac, esvnofrac, eva, gamva, hrsurf
+   real,dimension(n) :: eva, gamva, hrsurf
    real,dimension(n) :: leff, lesnofrac, lesvnofrac, rainrate_mm
    real,dimension(n) :: leslnofrac, lesvlnofrac
    real,dimension(n) :: rgla, rhoa, snowrate_mm, stom_rs, stomra, rpp
@@ -474,7 +474,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                          bus(x(RSNOWSA,1,1)), bus(x(GFLUXSA,1,1)),bus(x(RNETSA,1,1)),bus(x(HFLUXSA,1,1)) , &
                          PGFLUXSNOW,bus(x(SWNETSA,1,1)), bus(x(LWNETSA,1,1)), bus(x(SUBLDRIFTA,1,1)), &
                          bus(x(HPSA ,1,1)),  bus(x(PSNGRVL ,1,1)), PZ0,PZ0,PZ0HNAT, &
-                         LESNOFRAC, LESLNOFRAC, ESNOFRAC, PZENITH, &
+                         LESNOFRAC, LESLNOFRAC, bus(x(ESA,1,1)), PZENITH, &
                          bus(x (DLAT,1,1)), bus(x (DLON,1,1)),PFOREST,  N, NL_SVS)
       if (phy_error_L) return
 
@@ -505,7 +505,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                          bus(x(RSNOWSV,1,1)), bus(x(GFLUXSV,1,1)),bus(x(RNETSV,1,1)) , bus(x(HFLUXSV ,1,1)), &
                          PGFLUXSNOW_V,bus(x(SWNETSV,1,1)),bus(x(LWNETSV,1,1)),bus(x(SUBLDRIFTV,1,1)), &
                          bus(x(HPSV ,1,1)),bus(x(PSNVHA ,1,1)), PZ0,PZ0,PZ0HNAT, &
-                         LESVNOFRAC, LESVLNOFRAC, ESVNOFRAC,PZENITH, &
+                         LESVNOFRAC, LESVLNOFRAC, bus(x(ESV,1,1)),PZENITH, &
                          bus(x (DLAT,1,1)), bus(x (DLON,1,1)), PFOREST_V,  N, NL_SVS)
       if (phy_error_L) return
 
@@ -555,11 +555,11 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                   bus(x(RESAGR,1,1)), bus(x(RESAVG,1,1)),   &        
                   bus(x(RESASA,1,1)), bus(x(RESASV,1,1)) ,bus(x(RESAGRV,1,1)), &
                   bus(x(RNETSA     ,1,1)) , bus(x(HFLUXSA,1,1)),   &   
-                  LESLNOFRAC, LESNOFRAC        , ESNOFRAC,   &   
+                  LESLNOFRAC, LESNOFRAC        , bus(x(ESA,1,1)),   &   
                   bus(x(SNOAL      ,1,1)) ,    &  
                   bus(x(TSNOW_SVS  ,1,1)) ,    &  
                   bus(x(RNETSV     ,1,1)) , bus(x(HFLUXSV ,1,1)),   &   
-                  LESVLNOFRAC, LESVNOFRAC              , ESVNOFRAC,    &    
+                  LESVLNOFRAC, LESVNOFRAC              , bus(x(ESV,1,1)),    &    
                   bus(x(SNVAL      ,1,1)) ,    &  
                   bus(x(TSNOWV_SVS ,1,1)) ,   &   
                   bus(x(VEGH       ,1,1)) , bus(x(VEGL   ,1,1)), bus(x(VGHEIGHT   ,1,1)),  &   

@@ -131,6 +131,8 @@ module sfcbus_mod
       SFCVAR(en, 'en')
       SFCVAR(er, 'er')
       SFCVAR(etr, 'etr')
+      SFCVAR(esa, 'esv')
+      SFCVAR(esv, 'esa')
       SFCVAR(evergreen, 'evergreen')
       SFCVAR(fbcof, 'fbcof')
       SFCVAR(fc, 'fc')
