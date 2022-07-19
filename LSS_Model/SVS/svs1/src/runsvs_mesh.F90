@@ -1193,7 +1193,7 @@ ierr = 200
        if(svs_mesh%vs%lout_snow_enbal) then 
            open(iout_snow_enbal, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs2_snow_enbal_hourly.csv', action = 'write')
            write(iout_snow_enbal, FMT_CSV, advance = 'no') 'YEAR', 'JDAY', 'HOUR', 'MINS'
-           write(iout_snow_enbal, FMT_CSV, advance = 'no') 'SNO_RNET', 'SNO_SWNET','SNO_LWNET','SNO_LE','SNO_H','SNO_BSUBL','SNO_G', 'SNO_HRAIN'
+           write(iout_snow_enbal, FMT_CSV, advance = 'no') 'SNO_RNET', 'SNO_SWNET','SNO_LWNET','SNO_LE','SNO_H','SNO_BSUBL','SNO_G', 'SNO_HRAIN', 'SUBLIM_LV'
            write(iout_snow_enbal, *)
        endif
 
@@ -1466,7 +1466,7 @@ ierr = 200
                   write(iout_snow_enbal, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
                   write(iout_snow_enbal, FMT_CSV, advance = 'no') busptr(vd%rnetsa%i)%ptr(:, trnch),busptr(vd%swnetsa%i)%ptr(:, trnch), &
                        busptr(vd%lwnetsa%i)%ptr(:, trnch), -1.0*busptr(vd%les%i)%ptr(:, trnch), -1.0*busptr(vd%hfluxsa%i)%ptr(:, trnch), &
-                       busptr(vd%subldrifta%i)%ptr(:, trnch), -1.0*busptr(vd%gfluxsa%i)%ptr(:, trnch),busptr(vd%hpsa%i)%ptr(:, trnch)
+                       busptr(vd%subldrifta%i)%ptr(:, trnch), -1.0*busptr(vd%gfluxsa%i)%ptr(:, trnch), busptr(vd%hpsa%i)%ptr(:, trnch), busptr(vd%esa%i)%ptr(:, trnch)
                   write(iout_snow_enbal, *)
               end if
 
