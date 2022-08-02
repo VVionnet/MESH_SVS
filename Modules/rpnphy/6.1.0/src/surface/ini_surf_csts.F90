@@ -62,6 +62,8 @@ USE MODD_SNOW_PAR,  ONLY : XEMISSN, XANSMIN, XANSMAX,          &
                            XRHOTHRESHOLD_ICE, XZ0ICEZ0SNOW,    &
                            XVAGING_NOGLACIER, XVAGING_GLACIER, &
                            XPERCENTAGEPORE,                    &
+                           XPERCENTAGEPORE_FRZ,                &
+                           XPERCENTAGEPORE_ICE,                &                           
                            LMEBREC,                            &
                            XANSFRACMEL, XTEMPANS, XANSMINMEB,  &
                            XIMPUR_WET, XIMPUR_DRY,          &
@@ -112,8 +114,9 @@ REAL(KIND=JPRB) :: ZHOOK_HANDLE
 !VV NAMELIST/NAM_SURF_SNOW_CSTS/ XZ0ICEZ0SNOW, XRHOTHRESHOLD_ICE,          &
 !VV                              XALBICE1, XALBICE2, XALBICE3,             &
 !VV                              XVAGING_NOGLACIER, XVAGING_GLACIER,       &
-!VV                              XPERCENTAGEPORE,XVVISC3,X_RI_MAX,         &
-!VV                              XIMPUR_WET, XIMPUR_DRY, XPSR_SNOWMAK,  &
+!VV                              XPERCENTAGEPORE, XPERCENTAGEPORE_FRZ,     &
+!VV                              XVVISC3,X_RI_MAX,                         &
+!VV                              XIMPUR_WET, XIMPUR_DRY, XPSR_SNOWMAK,     &
 !VV                              XRHO_SNOWMAK, XPTA_SEUIL,                 &
 !VV                              XPR_A, XPR_B, XPT, XTIMESNOWMAK,          &
 !VV                              XPP_D1, XPP_D2, XPP_D3, XPP_H1,           &
@@ -269,6 +272,8 @@ XVAGING_GLACIER   = 900.
 
 ! percentage of the total pore volume to compute the max liquid water holding capacity   !Pahaut 1976
 XPERCENTAGEPORE = 0.05
+XPERCENTAGEPORE_FRZ = 1.
+XPERCENTAGEPORE_ICE = 0.5
 !
 ! Snow viscosity coefficient
 XVVISC3= 0.023

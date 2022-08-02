@@ -772,6 +772,7 @@ module runsvs_mesh
              hsnowrad =  svs_mesh%vs%hsnowrad
              hsnowfall =  svs_mesh%vs%hsnowfall
              hsnowhold =  svs_mesh%vs%hsnowhold
+             hsnowmetamo =  svs_mesh%vs%hsnowmetamo
 
              if (.not.any(hsnowscheme == hsnowscheme_opt)) then
                  call str_concat(msg_S,hsnowscheme_opt ,', ')

@@ -480,7 +480,7 @@ IF (LHOOK) CALL DR_HOOK('MODE_SNOW3L:SNOW3LHOLD_0D',1,ZHOOK_HANDLE)
 END FUNCTION SNOW3LHOLD_0D
 
 !####################################################################
-      FUNCTION SNOWCROHOLD_3D(PSNOWRHO,PSNOWLIQ,PSNOWDZ) RESULT(PWHOLDMAX)
+      FUNCTION SNOWCROHOLD_3D(PSNOWRHO,PSNOWLIQ,PSNOWDZ, PPERCENTAGEPORE) RESULT(PWHOLDMAX)
 !
 !!    PURPOSE
 !!    -------
@@ -488,7 +488,6 @@ END FUNCTION SNOW3LHOLD_0D
 !     snow layer(s).
 !
 USE MODD_CSTS,     ONLY : XRHOLW,XRHOLI
-USE MODD_SNOW_PAR, ONLY : XPERCENTAGEPORE
 !
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 USE PARKIND1  ,ONLY : JPRB
@@ -498,6 +497,7 @@ IMPLICIT NONE
 !*      0.1    declarations of arguments
 !
 REAL, DIMENSION(:,:,:), INTENT(IN)                 :: PSNOWDZ, PSNOWLIQ, PSNOWRHO
+REAL, INTENT(IN) :: PPERCENTAGEPORE
 !
 REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2),SIZE(PSNOWRHO,3)) :: PWHOLDMAX
 REAL(KIND=JPRB) :: ZHOOK_HANDLE
@@ -520,12 +520,12 @@ REAL(KIND=JPRB) :: ZHOOK_HANDLE
 
 
 IF (LHOOK) CALL DR_HOOK('MODE_SNOW3L:SNOWCROHOLD_3D',0,ZHOOK_HANDLE)
-PWHOLDMAX(:,:,:) = XPERCENTAGEPORE/XRHOLI * (PSNOWDZ * (XRHOLI-PSNOWRHO) + PSNOWLIQ*XRHOLW)
+PWHOLDMAX(:,:,:) = PPERCENTAGEPORE/XRHOLI * (PSNOWDZ * (XRHOLI-PSNOWRHO) + PSNOWLIQ*XRHOLW)
 IF (LHOOK) CALL DR_HOOK('MODE_SNOW3L:SNOWCROHOLD_3D',1,ZHOOK_HANDLE)
 !
 END FUNCTION SNOWCROHOLD_3D
 !####################################################################
-      FUNCTION SNOWCROHOLD_2D(PSNOWRHO,PSNOWLIQ,PSNOWDZ) RESULT(PWHOLDMAX)
+      FUNCTION SNOWCROHOLD_2D(PSNOWRHO,PSNOWLIQ,PSNOWDZ,PPERCENTAGEPORE) RESULT(PWHOLDMAX)
 !
 !!    PURPOSE
 !!    -------
@@ -533,7 +533,6 @@ END FUNCTION SNOWCROHOLD_3D
 !     snow layer(s).
 !
 USE MODD_CSTS,     ONLY : XRHOLW,XRHOLI
-USE MODD_SNOW_PAR, ONLY : XPERCENTAGEPORE
 !
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 USE PARKIND1  ,ONLY : JPRB
@@ -543,6 +542,7 @@ IMPLICIT NONE
 !*      0.1    declarations of arguments
 !
 REAL, DIMENSION(:,:), INTENT(IN)                   :: PSNOWDZ, PSNOWRHO, PSNOWLIQ
+REAL, INTENT(IN) :: PPERCENTAGEPORE
 !
 REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2)) :: PWHOLDMAX
 REAL(KIND=JPRB) :: ZHOOK_HANDLE
@@ -564,14 +564,14 @@ REAL(KIND=JPRB) :: ZHOOK_HANDLE
 ! porosity.
 
 IF (LHOOK) CALL DR_HOOK('MODE_SNOW3L:SNOWCROHOLD_2D',0,ZHOOK_HANDLE)
-PWHOLDMAX(:,:) = XPERCENTAGEPORE/XRHOLI * (PSNOWDZ * (XRHOLI-PSNOWRHO) + PSNOWLIQ*XRHOLW)
+PWHOLDMAX(:,:) = PPERCENTAGEPORE/XRHOLI * (PSNOWDZ * (XRHOLI-PSNOWRHO) + PSNOWLIQ*XRHOLW)
 IF (LHOOK) CALL DR_HOOK('MODE_SNOW3L:SNOWCROHOLD_2D',1,ZHOOK_HANDLE)
 !
 END FUNCTION SNOWCROHOLD_2D
 !####################################################################
 !####################################################################
 !####################################################################
-      FUNCTION SNOWCROHOLD_1D(PSNOWRHO,PSNOWLIQ,PSNOWDZ) RESULT(PWHOLDMAX)
+      FUNCTION SNOWCROHOLD_1D(PSNOWRHO,PSNOWLIQ,PSNOWDZ,PPERCENTAGEPORE) RESULT(PWHOLDMAX)
 !
 !!    PURPOSE
 !!    -------
@@ -579,7 +579,6 @@ END FUNCTION SNOWCROHOLD_2D
 !     snow layer(s).
 !
 USE MODD_CSTS,     ONLY : XRHOLW,XRHOLI
-USE MODD_SNOW_PAR, ONLY : XPERCENTAGEPORE
 !
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 USE PARKIND1  ,ONLY : JPRB
@@ -589,6 +588,7 @@ IMPLICIT NONE
 !*      0.1    declarations of arguments
 !
 REAL, DIMENSION(:), INTENT(IN)                     :: PSNOWDZ, PSNOWRHO, PSNOWLIQ
+REAL, INTENT(IN) :: PPERCENTAGEPORE
 !
 REAL, DIMENSION(SIZE(PSNOWRHO))                    :: PWHOLDMAX
 REAL(KIND=JPRB) :: ZHOOK_HANDLE
@@ -610,12 +610,12 @@ REAL(KIND=JPRB) :: ZHOOK_HANDLE
 ! porosity.
 
 IF (LHOOK) CALL DR_HOOK('MODE_SNOW3L:SNOWCROHOLD_1D',0,ZHOOK_HANDLE)
-PWHOLDMAX(:) = XPERCENTAGEPORE/XRHOLI * (PSNOWDZ * (XRHOLI-PSNOWRHO) + PSNOWLIQ*XRHOLW)
+PWHOLDMAX(:) = PPERCENTAGEPORE/XRHOLI * (PSNOWDZ * (XRHOLI-PSNOWRHO) + PSNOWLIQ*XRHOLW)
 IF (LHOOK) CALL DR_HOOK('MODE_SNOW3L:SNOWCROHOLD_1D',1,ZHOOK_HANDLE)
 !
 END FUNCTION SNOWCROHOLD_1D
 !####################################################################
-      FUNCTION SNOWCROHOLD_0D(PSNOWRHO,PSNOWLIQ,PSNOWDZ) RESULT(PWHOLDMAX)
+      FUNCTION SNOWCROHOLD_0D(PSNOWRHO,PSNOWLIQ,PSNOWDZ,PPERCENTAGEPORE) RESULT(PWHOLDMAX)
 !
 !!    PURPOSE
 !!    -------
@@ -633,6 +633,7 @@ IMPLICIT NONE
 !*      0.1    declarations of arguments
 !
 REAL, INTENT(IN)        :: PSNOWDZ, PSNOWRHO, PSNOWLIQ
+REAL, INTENT(IN) :: PPERCENTAGEPORE
 !
 REAL                    :: PWHOLDMAX
 REAL(KIND=JPRB) :: ZHOOK_HANDLE
@@ -654,7 +655,7 @@ REAL(KIND=JPRB) :: ZHOOK_HANDLE
 ! porosity.
 
 IF (LHOOK) CALL DR_HOOK('MODE_SNOW3L:SNOWCROHOLD_0D',0,ZHOOK_HANDLE)
-PWHOLDMAX = XPERCENTAGEPORE/XRHOLI * (PSNOWDZ * (XRHOLI-PSNOWRHO) + PSNOWLIQ*XRHOLW)
+PWHOLDMAX = PPERCENTAGEPORE/XRHOLI * (PSNOWDZ * (XRHOLI-PSNOWRHO) + PSNOWLIQ*XRHOLW)
 IF (LHOOK) CALL DR_HOOK('MODE_SNOW3L:SNOWCROHOLD_0D',1,ZHOOK_HANDLE)
 !
 END FUNCTION SNOWCROHOLD_0D
@@ -3136,7 +3137,7 @@ END SUBROUTINE SNOW3LTRANSF
 !####################################################################
 !####################################################################
 SUBROUTINE SNOWCROTHRM(PSNOWRHO,PSCOND,PSNOWTEMP,PPS,PSNOWLIQ, &
-                       HSNOWCOND                  )
+                       HSNOWCOND)
 !
 !!    PURPOSE
 !!    -------
@@ -3152,7 +3153,8 @@ SUBROUTINE SNOWCROTHRM(PSNOWRHO,PSCOND,PSNOWTEMP,PPS,PSNOWLIQ, &
 USE MODD_CSTS, ONLY : XP00, XCONDI, XRHOLW
 USE MODD_SNOW_PAR, ONLY : XSNOWTHRMCOND1, XSNOWTHRMCOND2, XSNOWTHRMCOND_AVAP, &
                           XSNOWTHRMCOND_BVAP, XSNOWTHRMCOND_CVAP, XVRKZ6, &
-                          XSNOWTHRMCOND_C11_1, XSNOWTHRMCOND_C11_2, XSNOWTHRMCOND_C11_3
+                          XSNOWTHRMCOND_C11_1, XSNOWTHRMCOND_C11_2, XSNOWTHRMCOND_C11_3,&
+                          XTHRMCOND_ICE, XTHRMCOND_WATER
 !
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 USE PARKIND1  ,ONLY : JPRB
@@ -3176,6 +3178,8 @@ IF (LHOOK) CALL DR_HOOK('SNOWCROTHRM',0,ZHOOK_HANDLE)
 !
 ! 1. Snow thermal conductivity
 ! ----------------------------
+!
+! For now, nothing special in case of freezing rain --> ask Louis.
 !
 IF ( HSNOWCOND=='Y81') THEN
   DO JST = 1,SIZE(PSNOWRHO,2)
@@ -3323,6 +3327,283 @@ PSNOWGRAN2F = ZGRAN2
 
 END SUBROUTINE CONVERTFROMDIAMOPT
 !####################################################################
+!####################################################################
+
+!####################################################################
+!####################################################################
+SUBROUTINE CONVERT2DIAMOPTB21(PSNOWGRAN1I,PSNOWGRAN2I,PDIAMOPT,PSPHERI)
+!
+!!    PURPOSE
+!!    -------
+!!    Metamorphism can be based on (diam_opt,sphericity) or (dendricity,sphericity)/(sphericity,grain size)
+!!    Change the variable from (dendricity,sphericity)/(sphericity,grain size) to (diam_opt,sphericity)
+!!    There is an other subroutine for the reverse conversion.
+!!
+!!    METHOD
+!!    -------
+!!    Based on C. Carmagnola 2012 and work from M. Lafaysse in in snowcro_diag.F90
+!!
+!!    AUTHOR
+!!    ------
+!!    M. Fructus  * Meteo-France *   09/2018
+!!    M. Lafaysse * Meteo-France *   04/2022 --> modified from new formalism of M. Baron
+!
+USE MODD_SNOW_METAMO, ONLY : XUEPSI, XVDIAM6, XVDIAM1, XVGRAN1
+!
+IMPLICIT NONE
+!
+!
+!*      1    declarations of arguments
+!
+REAL, INTENT(IN)      :: PSNOWGRAN1I,PSNOWGRAN2I
+REAL, INTENT(OUT)     :: PDIAMOPT,PSPHERI
+!
+!*      3    convert
+!
+IF (PSNOWGRAN1I < -XUEPSI) THEN
+    !* Dendritic case => dendricity, sphericity to Diam_opt, sphericity
+    PDIAMOPT = XVDIAM6 * ( PSNOWGRAN1I/XVGRAN1 * (- PSNOWGRAN2I/XVGRAN1 +3.) + 4. - PSNOWGRAN2I/XVGRAN1)
+    PSPHERI = PSNOWGRAN2I/XVGRAN1
+ELSE
+    !* Non dendritic case => sphericity, size of grains to Diam_opt, sphericity
+    PSPHERI = PSNOWGRAN1I/XVGRAN1
+    ! B21 formulation
+    PDIAMOPT = (PSNOWGRAN2I * (PSPHERI + 1.) + XVDIAM1 * (1. - PSPHERI)) / 2.
+ENDIF
+!
+END SUBROUTINE CONVERT2DIAMOPTB21
+!####################################################################
+!####################################################################
+SUBROUTINE CONVERTFROMDIAMOPTB21(PDIAMOPT,PSPHERI,PSNOWGRAN1,PSNOWGRAN2)
+!
+!!    PURPOSE
+!!    -------
+!!    Metamorphism can be based on (diam_opt,sphericity) or (dendricity,sphericity)/(sphericity,grain size)
+!!    Change the variable from (diam_opt,sphericity) to (dendricity,sphericity)/(sphericity,grain size)
+!!    There is an other subroutine for the reverse conversion.
+!!
+!!    METHOD
+!!    -------
+!!    Based on C. Carmagnola 2012 and work from M. Lafaysse in snowcro_diag.F90
+!!
+!!    AUTHOR
+!!    ------
+!!    M. Fructus  * Meteo-France *   09/2018
+!!    M. Lafaysse * Meteo-France *   04/2022 --> modified from new formalism of M. Baron
+!
+USE MODD_SNOW_METAMO, ONLY : XUEPSI, XVDIAM6, XVDIAM1, XVGRAN1
+!
+IMPLICIT NONE
+!
+!
+!*      1    declarations of arguments
+!
+REAL, INTENT(IN)      :: PDIAMOPT, PSPHERI
+REAL, INTENT(OUT)     :: PSNOWGRAN1, PSNOWGRAN2
+
+!
+!
+!*      3    convert
+!
+IF (PDIAMOPT<XVDIAM6*(4.-PSPHERI)-XUEPSI) THEN
+    !* Dendritic snow => conversion Diam_opt, sphericity to dendricity, sphericity
+    PSNOWGRAN1 = -XVGRAN1 * MAX(0.,MIN(1.,(PDIAMOPT/XVDIAM6 -4. + PSPHERI)/(PSPHERI-3.)))
+    PSNOWGRAN2 = XVGRAN1 * PSPHERI
+ELSE
+    !* non dendritic snow => conversion Diam_opt, sphericity to sphericity, size of grains
+    PSNOWGRAN1 = XVGRAN1 * PSPHERI
+    !
+    ! B21 formulation
+    PSNOWGRAN2=(2*PDIAMOPT+XVDIAM1*(PSPHERI-1))/(PSPHERI+1)
+!
+ENDIF
+
+END SUBROUTINE CONVERTFROMDIAMOPTB21
+!####################################################################
+!####################################################################
+
+SUBROUTINE CHECK_DENDRITIC(PDIAMOPT,PSPHERI,PDENDRITIC)
+!
+!!    PURPOSE
+!!    -------
+!!
+!!    RETURN TRUE IF SNOW IS DENDRITIC, FALSE OTHERWISE
+!!
+!!    METHOD
+!!    -------
+!!    Based on C. Carmagnola 2012 and work from M. Laffaysse
+!!
+!!    AUTHOR
+!!    ------
+!!    A. HADDJERI 03.2021
+!!    modified : 04/2021 Matthieu Baron => mise en accord avec les conditions dans les routines de métamorphisme
+!!
+!
+
+USE MODD_SNOW_METAMO, ONLY : XVDIAM6, XUEPSI !10E-4, 1e-8
+
+IMPLICIT NONE
+
+REAL, INTENT(IN)::PDIAMOPT,PSPHERI
+LOGICAL,INTENT(OUT):: PDENDRITIC
+
+!VARIABLE LOCALE
+
+PDENDRITIC=( PDIAMOPT<XVDIAM6*(4-PSPHERI)-XUEPSI )
+
+END SUBROUTINE CHECK_DENDRITIC
+!####################################################################
+!####################################################################
+SUBROUTINE GETDENDRICITY(PDIAMOPT,PSPHERI,PDENDRITIC)
+    !
+    !!    PURPOSE
+    !!    -------
+    !!
+    !!    Return dendricity value of snow according to input diamopt and sphericity
+    !!
+    !!    METHOD
+    !!    -------
+    !!    Based on C. Carmagnola 2012 and work from M. Laffaysse
+    !!
+    !!         /!\  (some equation in C. Carmagnola 2012 wrong )
+    !!         /!\ -> https://opensource.umr-cnrm.fr/issues/1659 <-
+    !!
+    !!    AUTHOR
+    !!    ------
+    !!    A. HADDJERI 03.2021
+    !!
+    !
+
+    !! USE MODE_SNOW3L, ONLY : CHECK_DENDRITIC
+    USE MODD_SNOW_METAMO, ONLY : XVDIAM6 !10E-4
+
+    IMPLICIT NONE
+
+    REAL, INTENT(IN)::PDIAMOPT,PSPHERI
+    REAL,INTENT(OUT):: PDENDRITIC
+
+    !VARIABLE LOCALE
+    LOGICAL             ::CHECKDENDRI
+    CHECKDENDRI=.FALSE.
+CALL CHECK_DENDRITIC(PDIAMOPT,PSPHERI,CHECKDENDRI)
+    write(*,*)'CHECKDENDRI',CHECKDENDRI
+    IF (CHECKDENDRI)THEN
+        PDENDRITIC=((PDIAMOPT/XVDIAM6)-4+PSPHERI)/(PSPHERI-3)
+        ELSE
+            !RETURN NON DENDRITIC CASE ERROR FONCTION GETDENDITIC ON NON DENDRICTIC SNOW
+            Write(*,*) 'NON DENDRITIC CASE ERROR FONCTION GETDENDITIC ON NON DENDRICTIC SNOW'
+            Write(*,*) 'ERROR IN GETDENDRICITY in mode_snow3l.f90'
+    END IF
+
+END SUBROUTINE GETDENDRICITY
+
+!####################################################################
+!####################################################################
+SUBROUTINE GETGRAINSIZE(PDIAMOPT,PSPHERI,PGRAINSIZE,HSNOWMETAMO)
+    !
+    !!    PURPOSE
+    !!    -------
+    !!
+    !!    Return GRAIN SIZE value of snow according to input diamopt and sphericity
+    !!
+    !!    METHOD
+    !!    -------
+    !!    Based on C. Carmagnola 2012 and work from M. Laffaysse
+    !!
+    !!         /!\  (some equation in C. Carmagnola 2012 wrong )
+    !!         /!\ -> https://opensource.umr-cnrm.fr/issues/1659 <-
+    !!
+    !!    AUTHOR
+    !!    ------
+    !!    A. HADDJERI 03.2021
+    !!
+    !
+
+    !!USE MODE_SNOW3L, ONLY : CHECK_DENDRITIC
+
+    USE MODD_SNOW_METAMO, ONLY : XVDIAM6, XVDIAM1, XUEPSI !10E-4, 4.E-4, 1E-8
+
+    IMPLICIT NONE
+
+    REAL, INTENT(IN)::PDIAMOPT,PSPHERI
+    CHARACTER(3), INTENT(IN)::HSNOWMETAMO
+    !                      HSNOWMETAMO = metamorphism option
+    REAL,INTENT(OUT):: PGRAINSIZE
+
+    !VARIABLE LOCALE
+    LOGICAL             ::CHECKDENDRI
+    CHECKDENDRI=.FALSE.
+
+    CALL CHECK_DENDRITIC(PDIAMOPT,PSPHERI,CHECKDENDRI)
+    !write(*,*)'CHECKDENDRI',CHECKDENDRI
+    IF(CHECKDENDRI)THEN
+            !ERROR NON DENDRICTIC GRAIN SIZE FORMULA APPLIED ON DENDRITIC CASE
+            write(*,*) 'ERROR NON DENDRICTIC GRAIN SIZE FORMULA APPLIED ON DENDRITIC CASE'
+            Write(*,*) 'ERROR IN GETGRAINSIZE in mode_snow3l.f90'
+    ELSEIF (HSNOWMETAMO=='B21') THEN   
+            !formulation proposed by M.Baron, used only when the associated metamorphism laws are used    
+        PGRAINSIZE=(2*PDIAMOPT+XVDIAM1*(PSPHERI-1))/(PSPHERI+1)
+      
+    ELSE
+       ! inversion of the formula giving the optical diameter as a function of spher and grain size ( see Vionnet 2012 )
+       IF (PDIAMOPT - XVDIAM1 * (1.+PSPHERI) >= 0) THEN
+         PGRAINSIZE  = 2.*PDIAMOPT/(1+  PSPHERI)
+       ELSEIF (ABS(PSPHERI)< XUEPSI) THEN
+         PGRAINSIZE = 2. * XVDIAM1
+       ELSE
+         PGRAINSIZE = (1./PSPHERI)*(PDIAMOPT-XVDIAM1*(1-PSPHERI))
+
+        !pheri =0 (PDIAMOPT-XVDIAM1*(1-PSPHERI))= presque 0 donc la division est enorme 
+        !il faut demander comment se comporte le shema en cas de sphericité erroné
+        !1.8947094806867713E-007/2.2250738585072014E-308=========_8.515265564972881e+300
+      END IF
+    END IF
+
+END SUBROUTINE GETGRAINSIZE
+
+SUBROUTINE GETGRAINSIZE_B21(PDIAMOPT,PSPHERI,PGRAINSIZE)
+    !
+    !!    PURPOSE
+    !!    -------
+    !!
+    !!    Return GRAIN SIZE value of snow according to input diamopt and sphericity,
+    !!
+    !!    METHOD
+    !!    -------
+    !!    Dendritic snow : Formula published in Carmagnola et al. 2014
+    !!    Non-dendritic snow : proposition by M.Baron, in coherency with strong gradient metamorphism proposed by Carmagnola et al.
+    !! 2014
+    !!    AUTHOR
+    !!    ------
+    !!    M. BARON 04/2021
+    !!
+    !
+
+    !!USE MODE_SNOW3L, ONLY : CHECK_DENDRITIC
+
+    USE MODD_SNOW_METAMO, ONLY : XVDIAM6, XVDIAM1, XUEPSI !10E-4, 4.E-4, 1E-8
+
+    IMPLICIT NONE
+
+    REAL, INTENT(IN)::PDIAMOPT,PSPHERI
+    !                 PDIAMOPT = optical diameter (m)
+    !                 PSPHERI = sphericity
+    REAL,INTENT(OUT):: PGRAINSIZE
+    !                  PGRAINSIZE = grain size (m)
+    !VARIABLE LOCALE
+    LOGICAL             ::CHECKDENDRI
+    CHECKDENDRI=.FALSE.
+
+    CALL CHECK_DENDRITIC(PDIAMOPT,PSPHERI,CHECKDENDRI)
+    !write(*,*)'CHECKDENDRI',CHECKDENDRI
+    IF(CHECKDENDRI)THEN
+            PGRAINSIZE=0. ! dendritic case, gs not defined
+    ELSE   
+            !formulation proposed by M.Baron, used only when the associated metamorphism laws are used    
+      PGRAINSIZE=(2*PDIAMOPT+XVDIAM1*(PSPHERI-1))/(PSPHERI+1)
+    ENDIF
+  END SUBROUTINE GETGRAINSIZE_B21
+ 
 
 END MODULE MODE_SNOW3L
 
