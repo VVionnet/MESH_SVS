@@ -86,7 +86,9 @@ REAL, SAVE      :: XVAGING_NOGLACIER, XVAGING_GLACIER
 
 ! percentage of the total pore volume to compute the max liquid water holding capacity
 REAL, SAVE      :: XPERCENTAGEPORE
-
+REAL, SAVE      :: XPERCENTAGEPORE_FRZ
+REAL, SAVE      :: XPERCENTAGEPORE_ICE
+!
 ! Height (m) of aged snow in glacier case (allows Pn=1)
 !
 REAL, SAVE       :: XHGLA
@@ -289,6 +291,9 @@ REAL, PARAMETER :: XVRKZ6 = 1.88
 REAL, PARAMETER :: XSNOWTHRMCOND_C11_1 = 2.5E-6   ! (W m5 K-1 kg-2)
 REAL, PARAMETER :: XSNOWTHRMCOND_C11_2 = -1.23E-4 ! (W m2 K-1 km-1)
 REAL, PARAMETER :: XSNOWTHRMCOND_C11_3 = 0.024    ! (W m-1 K-1) 
+! Thermal conductivity of ice and water at 273K (for freezing rain)
+REAL, PARAMETER :: XTHRMCOND_ICE = 2.22    ! [W/(m K)]
+REAL, PARAMETER :: XTHRMCOND_WATER = 0.561    ! [W/(m K)]
 !--------------------------------------------------------------------------------
 ! ISBA-ES CROCUS (Pahaut 1976): snowfall density coefficients:
 !

@@ -5,7 +5,7 @@ import numpy as np
 
 
 # Open Netcdf file from MESH-SVS
-mod = xr.open_dataset('output/out_svs.nc')
+mod = xr.open_dataset('output/out_svs2.nc')
 
 # Select time when profiles are defined
 mask_undef = np.isnan(mod.SNOMA_ML.values[:,0]) # Identify date when profiles are not defined
