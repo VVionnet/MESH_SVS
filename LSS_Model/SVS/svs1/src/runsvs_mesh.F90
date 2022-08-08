@@ -1432,6 +1432,15 @@ ierr = 200
         idateo = cmcdate_fromprint(time_run_now)
         jdateo = jdate_from_cmc(idateo)
 
+        !> Reset the initialization periodically (at least daily).
+        if (ic%ts_count == 1 .or. (ic%now%hour == kount_reset .and. ic%now%mins == 0)) then
+            call runsvs_mesh_copy_vs_to_bus()
+            kount = 0
+            call inichamp4(kount, trnch, ni, nk)
+        end if
+
+        !> Increment 'kount'.
+        kount = kount + 1
 
     ! Write SVS hourly outputs
 1010    format(9999(g15.7e2, ','))
@@ -1533,15 +1542,6 @@ ierr = 200
 
         end if
 
-        !> Reset the initialization periodically (at least daily).
-        if (ic%ts_count == 1 .or. (ic%now%hour == kount_reset .and. ic%now%mins == 0)) then
-            call runsvs_mesh_copy_vs_to_bus()
-            kount = 0
-            call inichamp4(kount, trnch, ni, nk)
-        end if
-
-        !> Increment 'kount'.
-        kount = kount + 1
 
         !> Update 'lmin' if active (greater than zero).
         if (lmo_winter > 0.0) then
