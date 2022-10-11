@@ -542,13 +542,25 @@ module sfc_options
    ! Option for the compaction scheme for Crocus
    !   HSNOWCOMP=B92 default Crocus from Brun et al. 1992 or Vionnet et al. 2012 (Default in SVS2)
    !   HSNOWCOMP=S14 use the settling param of Schleef et al. (2014) for fresh snow (less than 2 days) 
-   !   HSNOWCOMP=T11 param of snow viscosity from Teufelsbauer (2011)
+   !   HSNOWCOMP=T11 param of snow viscosity from Teufelsbauer (2011)   
    character(len=16) :: hsnowcomp = 'B92'
    namelist /surface_cfgs/ hsnowcomp
    character(len=*), parameter :: HSNOWCOMP_OPT(3) = (/ &
         'B92',  &
         'S14',  &  
         'T11'   &  
+         /)
+
+   ! Option for the turbulent fluxes in Crocus
+!    HSNOWRES = 'DEF' = Default: Louis (ISBA: Noilhan and Mahfouf 1996)
+!    HSNOWRES = 'RIL' = Limit Richarson number under very stable conditions (currently testing)
+!    HSNOWRES = 'M98'  = Martin et Lejeune 1998 : older computation for turbulent fluxes coefficents in Crocus   
+   character(len=16) :: hsnowres = 'RIL'
+   namelist /surface_cfgs/ hsnowres
+   character(len=*), parameter :: HSNOWRES_OPT(3) = (/ &
+        'DEF',  &
+        'RIL',  &  
+        'M98'   &  
          /)
 
 

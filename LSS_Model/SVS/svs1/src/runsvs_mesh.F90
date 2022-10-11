@@ -92,6 +92,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_HSNOWCOND = 'HSNOWCOND' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_HSNOWCOMP = 'HSNOWCOMP' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_HSNOWHOLD = 'HSNOWHOLD' ! For svs2 only 
+    character(len = *), parameter, public :: VN_SVS_HSNOWRES = 'HSNOWRES' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LSNOWDRIFT_SUBLIM = 'LSNOWDRIFT_SUBLIM' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_SNOMA = 'SNOMA'
     character(len = *), parameter, public :: VN_SVS_SNVMA = 'SNVMA'
@@ -188,6 +189,7 @@ module runsvs_mesh
         character(len = DEFAULT_FIELD_LENGTH) :: hsnowcond = 'Y81'
         character(len = DEFAULT_FIELD_LENGTH) :: hsnowhold = 'B92'
         character(len = DEFAULT_FIELD_LENGTH) :: hsnowcomp = 'B92'
+        character(len = DEFAULT_FIELD_LENGTH) :: hsnowres = 'RIL'
         logical :: lsnowdrift_sublim = .true.
         logical :: lout_snow_profile = .false.
         logical :: lout_snow_enbal = .false.
@@ -773,6 +775,7 @@ module runsvs_mesh
              hsnowfall =  svs_mesh%vs%hsnowfall
              hsnowhold =  svs_mesh%vs%hsnowhold
              hsnowmetamo =  svs_mesh%vs%hsnowmetamo
+             hsnowres =  svs_mesh%vs%hsnowres
 
              if (.not.any(hsnowscheme == hsnowscheme_opt)) then
                  call str_concat(msg_S,hsnowscheme_opt ,', ')
@@ -812,6 +815,12 @@ module runsvs_mesh
              if (.not.any(hsnowhold == hsnowhold_opt)) then
                  call str_concat(msg_S, hsnowhold_opt,', ')
                  call print_error('hsnowhold = '//trim(hsnowhold)//' is not a valid option. Choose among: '//trim(msg_S))
+                 ierr = 1
+             endif
+
+             if (.not.any(hsnowres == hsnowres_opt)) then
+                 call str_concat(msg_S, hsnowres_opt,', ')
+                 call print_error('hsnowhold = '//trim(hsnowres)//' is not a valid option. Choose among: '//trim(msg_S))
                  ierr = 1
              endif
 

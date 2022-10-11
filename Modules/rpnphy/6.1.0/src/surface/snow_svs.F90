@@ -246,10 +246,6 @@ REAL, DIMENSION(SIZE(PTA))          :: ZEXNS,ZEXNA,ZDIRCOSZW
 LOGICAL     :: LMEB                ! Activate the Multi-Energy Budget Option present in SURFEX (set to FALSE since snow-vegeation
                                    ! interactions is handle differently in SVS)
 
-!
-CHARACTER(LEN=3)    :: CSNOWRES    ! ! type of sfc resistance
-!                                     DEFAULT=RIL in SVS to limit Ri number
-!                                      for very stable conditions
 
 CHARACTER(LEN=3)   :: CIMPLICIT_WIND   ! wind implicitation option
 !                                                  ! 'OLD' = direct
@@ -399,7 +395,6 @@ INLVLG          = MIN(SIZE(PD_G(:,:),2),SIZE(PTG(:,:),2))
 !###########################################################################################
 LMEB=.FALSE.
 
-CSNOWRES='RIL'
 CIMPLICIT_WIND = 'NEW'
 CSNOWZREF='CST'
 
@@ -1132,7 +1127,7 @@ ENDIF
 ! Call ISBA-SNOW3L model:  
 !  
 IF (HSNOWSCHEME=='CRO') THEN 
-      CALL SNOWCRO(CSNOWRES, TPTIME, LMEB, LGLACIER, CIMPLICIT_WIND,    &
+      CALL SNOWCRO(HSNOWRES, TPTIME, LMEB, LGLACIER, CIMPLICIT_WIND,    &
                 ZP_PEW_A_COEF, ZP_PEW_B_COEF, ZP_PET_A_COEF, ZP_PEQ_A_COEF,   &
                 ZP_PET_B_COEF, ZP_PEQ_B_COEF, ZP_SNOWSWE, ZP_SNOWRHO,         &
                 ZP_SNOWHEAT, ZP_SNOWALB, ZP_SNOWDIAMOPT, ZP_SNOWSPHERI,          &
@@ -1170,7 +1165,7 @@ IF (HSNOWSCHEME=='CRO') THEN
 
  ELSE 
 !
-  CALL SNOW3L(CSNOWRES, LMEB, CIMPLICIT_WIND,                   &
+  CALL SNOW3L(HSNOWRES, LMEB, CIMPLICIT_WIND,                   &
              ZP_PEW_A_COEF, ZP_PEW_B_COEF,                                 &
              ZP_PET_A_COEF, ZP_PEQ_A_COEF,ZP_PET_B_COEF, ZP_PEQ_B_COEF,    &
              ZP_SNOWSWE, ZP_SNOWRHO, ZP_SNOWHEAT, ZP_SNOWALB,              &
