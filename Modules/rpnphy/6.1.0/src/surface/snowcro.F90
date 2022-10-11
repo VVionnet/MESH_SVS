@@ -3022,7 +3022,6 @@ PEMIST(:) = XEMISSN
 ! by defining a maximum Richarson number for stable
 ! conditions:
 !
-write(*,*) 'RES',HSNOWRES
 IF ( HSNOWRES=='RIL' ) THEN
   DO JJ=1,SIZE(ZRI)
     ZRI(JJ) = MIN( X_RI_MAX, ZRI(JJ) )
