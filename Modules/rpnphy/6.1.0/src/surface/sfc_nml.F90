@@ -404,6 +404,12 @@ contains
                return
             endif
 
+             if (.not.any(hsnowres == HSNOWRES_OPT)) then
+               call str_concat(msg_S, HSNOWRES_OPT,', ')
+               call msg(MSG_ERROR,'(sfc_nml_check) hsnowfall = '//trim(hsnowres)//' : Should be one of: '//trim(msg_S))
+               return
+            endif           
+
             if (.not.any(hsnowhold == HSNOWHOLD_OPT)) then
                call str_concat(msg_S, HSNOWHOLD_OPT,', ')
                call msg(MSG_ERROR,'(sfc_nml_check) hsnowhold = '//trim(hsnowhold)//' : Should be one of: '//trim(msg_S))

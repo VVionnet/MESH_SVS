@@ -56,7 +56,7 @@ SUBROUTINE SNOW_SVS(  PSNOWSWE,PSNOWTEMP, PSNOWLIQ,PSNOWRHO,PSNOWALB,  &
 
 !
 USE MODD_CSTS,       ONLY : XTT, XPI, XDAY, XLMTT, XLSTT, XLVTT,XCI,XP00, XRD, XCPD,  &
-                                   XRHOLW,XSTEFAN
+                                   XRHOLW,XSTEFAN, XG
 USE MODD_SNOW_PAR,   ONLY : XRHOSMAX_ES, XSNOWDMIN, XRHOSMIN_ES, XEMISSN 
 USE MODD_SURF_PAR,   ONLY : XUNDEF 
 USE MODD_PREP_SNOW,   ONLY : NIMPUR
@@ -246,10 +246,6 @@ REAL, DIMENSION(SIZE(PTA))          :: ZEXNS,ZEXNA,ZDIRCOSZW
 LOGICAL     :: LMEB                ! Activate the Multi-Energy Budget Option present in SURFEX (set to FALSE since snow-vegeation
                                    ! interactions is handle differently in SVS)
 
-!
-CHARACTER(LEN=3)    :: CSNOWRES    ! ! type of sfc resistance
-!                                     DEFAULT=RIL in SVS to limit Ri number
-!                                      for very stable conditions
 
 CHARACTER(LEN=3)   :: CIMPLICIT_WIND   ! wind implicitation option
 !                                                  ! 'OLD' = direct
@@ -327,6 +323,9 @@ REAL, DIMENSION(SIZE(PTA))  :: ZUSTARSNOW, ZCDSNOW, ZCHSNOW, ZRI,ZEMISNOW
 REAL, DIMENSION(SIZE(PTA))        :: ZQS
 !                                      ZQS = surface humidity (kg/kg)
 
+REAL, DIMENSION(SIZE(PTA))        :: ZPA
+!                                      ZQS = air pressure at the atmospheric forcing level (Pa)
+
 INTEGER                           :: ZYY, ZMO, ZDD, ZHH, ZMN, ZSEC
 !
 !###########################################################################################
@@ -399,7 +398,6 @@ INLVLG          = MIN(SIZE(PD_G(:,:),2),SIZE(PTG(:,:),2))
 !###########################################################################################
 LMEB=.FALSE.
 
-CSNOWRES='RIL'
 CIMPLICIT_WIND = 'NEW'
 CSNOWZREF='CST'
 
@@ -435,9 +433,12 @@ WHERE(PSNOWSWE(:,:)>0.)
                    - XLMTT*PSNOWRHO(:,:) ) + XLMTT*XRHOLW*PSNOWLIQ(:,:)  
 END WHERE
 
-! Compute Exner funtion. So far we use the same atmopheric pressure. See if both pressure are available in SVS (as done in coupling_isban.f90)
+! Compute Exner function at the surface 
 ZEXNS(:)   = (PPS(:)/XP00)**(XRD/XCPD)
-ZEXNA(:)   = (PPS(:)/XP00)**(XRD/XCPD)
+
+! Compute pressure at the height of the atmospheric focring and get Exner function at this height
+ZPA(:) = PPS(:)- PRHOA(:)*PZREF(:)*XG
+ZEXNA(:)   = (ZPA(:)/XP00)**(XRD/XCPD)
 
 ! We assume so far a flat terrain.
 ZDIRCOSZW(:) = 1.
@@ -1132,7 +1133,7 @@ ENDIF
 ! Call ISBA-SNOW3L model:  
 !  
 IF (HSNOWSCHEME=='CRO') THEN 
-      CALL SNOWCRO(CSNOWRES, TPTIME, LMEB, LGLACIER, CIMPLICIT_WIND,    &
+      CALL SNOWCRO(HSNOWRES, TPTIME, LMEB, LGLACIER, CIMPLICIT_WIND,    &
                 ZP_PEW_A_COEF, ZP_PEW_B_COEF, ZP_PET_A_COEF, ZP_PEQ_A_COEF,   &
                 ZP_PET_B_COEF, ZP_PEQ_B_COEF, ZP_SNOWSWE, ZP_SNOWRHO,         &
                 ZP_SNOWHEAT, ZP_SNOWALB, ZP_SNOWDIAMOPT, ZP_SNOWSPHERI,          &
@@ -1170,7 +1171,7 @@ IF (HSNOWSCHEME=='CRO') THEN
 
  ELSE 
 !
-  CALL SNOW3L(CSNOWRES, LMEB, CIMPLICIT_WIND,                   &
+  CALL SNOW3L(HSNOWRES, LMEB, CIMPLICIT_WIND,                   &
              ZP_PEW_A_COEF, ZP_PEW_B_COEF,                                 &
              ZP_PET_A_COEF, ZP_PEQ_A_COEF,ZP_PET_B_COEF, ZP_PEQ_B_COEF,    &
              ZP_SNOWSWE, ZP_SNOWRHO, ZP_SNOWHEAT, ZP_SNOWALB,              &

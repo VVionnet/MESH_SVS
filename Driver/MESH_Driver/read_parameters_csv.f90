@@ -260,6 +260,13 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
                     p = 1
                     call assign_line_args(svs_mesh%vs%hsnowmetamo, args(2), istat)
                 end if
+            case (VN_SVS_HSNOWRES)
+                if (.not. svs_mesh%PROCESS_ACTIVE  .or. svs_mesh%vs%schmsol=='SVS') then
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    p = 1
+                    call assign_line_args(svs_mesh%vs%hsnowres, args(2), istat)
+                end if                
             case (VN_SVS_HSNOWRAD)
                 if (.not. svs_mesh%PROCESS_ACTIVE  .or. svs_mesh%vs%schmsol=='SVS') then
                     istat = istat + radix(istat)**pstat%INACTIVE

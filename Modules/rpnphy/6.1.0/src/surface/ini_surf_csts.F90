@@ -76,15 +76,17 @@ USE MODD_SNOW_PAR,  ONLY : XEMISSN, XANSMIN, XANSMAX,          &
                            XSCAVEN_COEF
 USE MODD_SNOW_METAMO, ONLY : XVVISC3
 !
+USE MODD_SURF_ATM, ONLY: XRIMAX,LALDTHRES,XCISMIN, XVMODMIN
+
 !VV #ifndef CROCUS_EXT
 !VV USE MODI_GET_LUOUT
 !VV USE MODI_OPEN_NAMELIST
 !VV USE MODI_CLOSE_NAMELIST
 !VV USE MODE_POS_SURF
 !VV !
-!VV USE MODD_REPROD_OPER,  ONLY : XEVERG_RSMIN, XEVERG_VEG, &
-!VV                                    CDGAVG, CIMPLICIT_WIND,   &
-!VV                                    CQSAT, CCHARNOCK, CDGDIF
+ USE MODD_REPROD_OPER,  ONLY : XEVERG_RSMIN, XEVERG_VEG, &
+                                    CDGAVG, CIMPLICIT_WIND,   &
+                                    CQSAT, CCHARNOCK, CDGDIF
 !VV USE MODI_TEST_NAM_VAR_SURF
 !VV !
 !VV #endif
@@ -296,6 +298,15 @@ XIMPUR_WET(3:5)=0. ! Other types of impurities deposition of with precipitation 
 
 XSCAVEN_COEF=(/0.0,0.0,0.,0.,0./) 
 
+
+
+! VV Add init needed for the externalized version of Crocus
+XRIMAX=0.2
+LALDTHRES = .FALSE. 
+XCISMIN = 0. ! Not used when LALDTHRES = .FALSE.
+XVMODMIN  = 0. ! Not used when LALDTHRES = .FALSE.
+
+
 !VV #ifndef CROCUS_EXT
 !VV !-------------------------------------------------------------------------------
 !VV !
@@ -330,10 +341,12 @@ XSCAVEN_COEF=(/0.0,0.0,0.,0.,0./)
 !VV ! * wind implicitation option
 !VV !
 !VV CIMPLICIT_WIND = 'NEW'
-!VV !
-!VV ! * qsat computation
-!VV !
-!VV CQSAT = 'NEW'
+
+!
+! * qsat computation
+!
+CQSAT = 'NEW'
+
 !VV !
 !VV ! * Charnock parameter
 !VV !
