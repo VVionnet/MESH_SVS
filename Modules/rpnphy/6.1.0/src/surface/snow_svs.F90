@@ -56,7 +56,7 @@ SUBROUTINE SNOW_SVS(  PSNOWSWE,PSNOWTEMP, PSNOWLIQ,PSNOWRHO,PSNOWALB,  &
 
 !
 USE MODD_CSTS,       ONLY : XTT, XPI, XDAY, XLMTT, XLSTT, XLVTT,XCI,XP00, XRD, XCPD,  &
-                                   XRHOLW,XSTEFAN
+                                   XRHOLW,XSTEFAN, XG
 USE MODD_SNOW_PAR,   ONLY : XRHOSMAX_ES, XSNOWDMIN, XRHOSMIN_ES, XEMISSN 
 USE MODD_SURF_PAR,   ONLY : XUNDEF 
 USE MODD_PREP_SNOW,   ONLY : NIMPUR
@@ -323,6 +323,9 @@ REAL, DIMENSION(SIZE(PTA))  :: ZUSTARSNOW, ZCDSNOW, ZCHSNOW, ZRI,ZEMISNOW
 REAL, DIMENSION(SIZE(PTA))        :: ZQS
 !                                      ZQS = surface humidity (kg/kg)
 
+REAL, DIMENSION(SIZE(PTA))        :: ZPA
+!                                      ZQS = air pressure at the atmospheric forcing level (Pa)
+
 INTEGER                           :: ZYY, ZMO, ZDD, ZHH, ZMN, ZSEC
 !
 !###########################################################################################
@@ -430,9 +433,12 @@ WHERE(PSNOWSWE(:,:)>0.)
                    - XLMTT*PSNOWRHO(:,:) ) + XLMTT*XRHOLW*PSNOWLIQ(:,:)  
 END WHERE
 
-! Compute Exner funtion. So far we use the same atmopheric pressure. See if both pressure are available in SVS (as done in coupling_isban.f90)
+! Compute Exner function at the surface 
 ZEXNS(:)   = (PPS(:)/XP00)**(XRD/XCPD)
-ZEXNA(:)   = (PPS(:)/XP00)**(XRD/XCPD)
+
+! Compute pressure at the height of the atmospheric focring and get Exner function at this height
+ZPA(:) = PPS(:)- PRHOA(:)*PZREF(:)*XG
+ZEXNA(:)   = (ZPA(:)/XP00)**(XRD/XCPD)
 
 ! We assume so far a flat terrain.
 ZDIRCOSZW(:) = 1.
