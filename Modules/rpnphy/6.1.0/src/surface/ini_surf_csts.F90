@@ -269,7 +269,7 @@ XFREQ_GRO = 0
 XRHOTHRESHOLD_ICE = 850.
 !
 ! Parameters for ageing effect on albedo
-XVAGING_NOGLACIER = 60.
+XVAGING_NOGLACIER = 900.
 XVAGING_GLACIER   = 900.
 
 ! percentage of the total pore volume to compute the max liquid water holding capacity   !Pahaut 1976
