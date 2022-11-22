@@ -615,7 +615,8 @@ ZSNOWTEMP(:,:) = 0.
 GSNOWFALL(:) = .FALSE.
 ! Detection of freezing rain
 DO JJ = 1,SIZE(ZSNOW)
-  GFRZRAIN(JJ) = (PTA(JJ) < XTT) .AND. (PRR(JJ)*PTSTEP > XUEPSI)
+  !VV GFRZRAIN(JJ) = (PTA(JJ) < XTT) .AND. (PRR(JJ)*PTSTEP > XUEPSI)
+  GFRZRAIN(JJ) = .FALSE.
 END DO
 INLVLS_USE(:) = 0
 DO JST = 1,SIZE(PSNOWSWE(:,:),2)
@@ -1139,6 +1140,23 @@ IF (GCRODEBUGDETAILSPRINT) THEN
                            HSNOWMETAMO)
 ENDIF
 !***************************************DEBUG OUT********************************************
+!
+! Update snow heat content (J/m2) using dry density with new temperatures to appropriately check
+! the full snow cover disappearance with SNOWCROGONE
+! Introduced by M Lafaysse 28/10/2022 to solve a bug with no detection of vanishing snow
+!
+DO JST = 1, IMAX_USE
+  DO JJ = 1,SIZE(ZSNOW)
+    IF (JST <= INLVLS_USE(JJ)) THEN
+      ZSCAP(JJ,JST) = ( PSNOWRHO(JJ,JST) - &
+                      PSNOWLIQ(JJ,JST) * XRHOLW / PSNOWDZ(JJ,JST)) * XCI
+      PSNOWHEAT(JJ,JST) = PSNOWDZ(JJ,JST) * &
+                        ( ZSCAP(JJ,JST)*(ZSNOWTEMP(JJ,JST)-XTT) - XLMTT*PSNOWRHO(JJ,JST) ) + &
+                        XLMTT * XRHOLW * PSNOWLIQ(JJ,JST) 
+    ENDIF
+  ENDDO  !  end loop snow layers
+ENDDO    ! end loop grid points
+!
 !
 !*       8.     Surface fluxes
 !               --------------
@@ -3550,12 +3568,8 @@ DO JST = 1,IMAX_USE
       !
       ! Melt snow if excess energy and snow available:
       ! Phase change (J/m2)
-!VV      ZPHASE(JJ,JST) = MIN( PSCAP(JJ,JST) * MAX(0.0,PSNOWTEMP(JJ,JST)-XTT) * PSNOWDZ(JJ,JST), &
-!VV                           MAX(0.0,ZSNOWLWE(JJ,JST)-PSNOWLIQ(JJ,JST)) * XLMTT * XRHOLW ) 
-!VV   Modification to run Crocus in single precision mode
       ZPHASE(JJ,JST) = MIN( PSCAP(JJ,JST) * MAX(0.0,PSNOWTEMP(JJ,JST)-XTT) * PSNOWDZ(JJ,JST), &
-                           MAX(0.0,ZSNOWLWE(JJ,JST)-PSNOWLIQ(JJ,JST)) * XLMTT * XRHOLW-      &
-                               XUEPSI_SMP * XLMTT * PSNOWRHO(JJ,JST))
+                           MAX(0.0,ZSNOWLWE(JJ,JST)-PSNOWLIQ(JJ,JST)) * XLMTT * XRHOLW ) 
       !
       ! Update snow liq water content and temperature if melting:
       ! liquid water available for next layer from melting of snow
@@ -3563,14 +3577,17 @@ DO JST = 1,IMAX_USE
       ZSNOWMELT(JJ,JST) = ZPHASE(JJ,JST) / (XLMTT*XRHOLW)
       !
       ! Cool off snow layer temperature due to melt:
-      ZSNOWTEMP(JJ,JST) = PSNOWTEMP(JJ,JST) - ZPHASE(JJ,JST) / (PSCAP(JJ,JST)*PSNOWDZ(JJ,JST))
+      IF(ZPHASE(JJ,JST)>0.) THEN
+               ZSNOWTEMP(JJ,JST)=XTT
+       ELSE 
+                ZSNOWTEMP(JJ,JST) = PSNOWTEMP(JJ,JST)
+       ENDIF
+     !  ZSNOWTEMP(JJ,JST) = PSNOWTEMP(JJ,JST) - ZPHASE(JJ,JST) / (PSCAP(JJ,JST)*PSNOWDZ(JJ,JST))
+
       !
       ! Difference with ISBA_ES: ZMELTXS should never be different of 0.
       ! because of the introduction of the tests in SNOWCROLAYER_GONE
-!VV      PSNOWTEMP(JJ,JST) =  ZSNOWTEMP(JJ,JST)
-!VV      PSNOWTEMP(JJ,JST) =  ZSNOWTEMP(JJ,JST)
-!VV Modification to allow model run in single precision
-      PSNOWTEMP(JJ,JST) = MIN(ZSNOWTEMP(JJ,JST),XTT)      
+      PSNOWTEMP(JJ,JST) =  ZSNOWTEMP(JJ,JST)
       !
       !
       ! Loss of snowpack depth: (m) and liquid equiv (m):
@@ -3598,8 +3615,7 @@ ENDDO   ! loop JST active snow layers
 ! The control below should be suppressed after further tests
 DO JST = 1,IMAX_USE
   DO JJ = 1,SIZE(PSNOWDZ,1)  
-!VV     IF (JST <= KNLVLS_USE(JJ) .AND. PSNOWTEMP(JJ,JST)-XTT > XUEPSI) THEN
-     IF (JST <= KNLVLS_USE(JJ) .AND. PSNOWTEMP(JJ,JST)-XTT > XUEPSI_SMP*XTT) THEN ! Modification for single precision
+     IF (JST <= KNLVLS_USE(JJ) .AND. PSNOWTEMP(JJ,JST)-XTT > XUEPSI) THEN
        WRITE(*,*) 'pb dans MELT PSNOWTEMP(JJ,JST) >XTT:', JJ,JST, PSNOWTEMP(JJ,JST)
        CALL ABOR1_SFX('SNOWCRO: pb dans MELT')
      ENDIF
@@ -4852,8 +4868,7 @@ DO JJ = 1,SIZE(PSNOW(:))
 !Snowmaking option 2014/01/28 : calculation of snowmaking rate, =0 if no snowmaking (PSNOWMAK(jj)=0), =XPSR_SNOWMAK otherwise
   IF (OSNOWMAK_BOOL) ZPSR_SNOWMAK(JJ) = PSNOWMAK(JJ)*XRHO_SNOWMAK/PTSTEP
 !
-!VV  IF (PSR(JJ)>XUEPSI .OR. PBLOWSNW(JJ,1) > XUEPSI  .OR. ZPSR_SNOWMAK(JJ) > XUEPSI) THEN
-   IF (PSR(JJ)>XUEPSI_SMP*500./PTSTEP .OR. PBLOWSNW(JJ,1) > XUEPSI  .OR. ZPSR_SNOWMAK(JJ) > XUEPSI) THEN
+  IF (PSR(JJ)>XUEPSI .OR. PBLOWSNW(JJ,1) > XUEPSI  .OR. ZPSR_SNOWMAK(JJ) > XUEPSI) THEN
     !    
     ! newly fallen snow characteristics:
     !Case of new snowfall on a previously snow-free surface 
@@ -4884,8 +4899,7 @@ DO JJ = 1,SIZE(PSNOW(:))
     
     PSNOWHMASS(JJ) = (PSR(JJ)+PBLOWSNW(JJ,1)+ZPSR_SNOWMAK(JJ))*&
                     (XCI*(ZSNOWTEMP(JJ)-XTT)-XLMTT)*PTSTEP  !20160211
-!VV    IF (PSR(JJ)>XUEPSI) THEN 
-    IF (PSR(JJ)>XUEPSI_SMP*500./PTSTEP) THEN !VV Modification for single precision
+    IF (PSR(JJ)>XUEPSI) THEN 
       !
       !! Cluzet et al 2016
       !! implementation of different parametrical options for fresh snow density.
@@ -5053,9 +5067,7 @@ ELSE
   ZANSMAX(:) = XANSMAX
 ENDIF
 !
-!VV WHERE( GSNOWFALL(:) .AND. ABS(PSNOW(:)-ZSNOWFALL(:))< XUEPSI )
-! VV Modification for single precision
-WHERE( GSNOWFALL(:) .AND. ABS(PSNOW(:)-ZSNOWFALL(:))< XUEPSI_SMP)
+WHERE( GSNOWFALL(:) .AND. ABS(PSNOW(:)-ZSNOWFALL(:))< XUEPSI )
   PSNOWALB(:) = ZANSMAX(:)
 END WHERE
 !
@@ -5379,8 +5391,7 @@ DO JJ = 1,SIZE(PSNOW(:))
   !
   IF ( .NOT.GSNOWFALL(JJ) .OR. KNLVLS_USE(JJ)<INLVLSMIN+3 ) CYCLE ! go to next point 
   !
-!VV  IF( ABS( PSNOWDZN(JJ,KNLVLS_USE(JJ)) - PSNOWDZ(JJ,KNLVLS_USE(JJ)) ) > XUEPSI ) CYCLE ! go to next point 
-  IF( ABS( PSNOWDZN(JJ,KNLVLS_USE(JJ)) - PSNOWDZ(JJ,KNLVLS_USE(JJ)) ) > XUEPSI_SMP ) CYCLE ! go to next point
+  IF( ABS( PSNOWDZN(JJ,KNLVLS_USE(JJ)) - PSNOWDZ(JJ,KNLVLS_USE(JJ)) ) > XUEPSI ) CYCLE ! go to next point 
   !
   ! bottom layer
   IF( PSNOWDZN(JJ,KNLVLS_USE(JJ))<XDZMIN_TOP ) THEN ! case shallow bottom layer
@@ -5395,8 +5406,7 @@ DO JJ = 1,SIZE(PSNOW(:))
     DO JST =KMAX_USE-1,4,-1
       IF (JST <=KNLVLS_USE(JJ)-1) THEN
         !
-!VV        IF ( ABS( PSNOWDZN(JJ,JST) - PSNOWDZ(JJ,JST) ) > XUEPSI ) EXIT ! old/new grid differ ==> go to next grid point
-        IF ( ABS( PSNOWDZN(JJ,JST) - PSNOWDZ(JJ,JST) ) > XUEPSI_SMP ) EXIT ! old/new grid differ ==> go to next grid point
+        IF ( ABS( PSNOWDZN(JJ,JST) - PSNOWDZ(JJ,JST) ) > XUEPSI ) EXIT ! old/new grid differ ==> go to next grid point
         !
         IF ( PSNOWDZN(JJ,JST)> 0.001 ) CYCLE
         !
@@ -5428,8 +5438,7 @@ ENDDO ! end grid loops for checking shallow layers
 !
 DO JJ = 1,SIZE(PSNOW(:))
   !
-!VV  IF ( ABS( SUM( PSNOWDZN(JJ,1:KNLVLS_USE(JJ)) ) - PSNOW(JJ) ) > XUEPSI ) THEN
-  IF ( ABS( SUM( PSNOWDZN(JJ,1:KNLVLS_USE(JJ)) ) - PSNOW(JJ) ) > XUEPSI_SMP * MAX(1.0, PSNOW(JJ))) THEN
+  IF ( ABS( SUM( PSNOWDZN(JJ,1:KNLVLS_USE(JJ)) ) - PSNOW(JJ) ) > XUEPSI ) THEN
     !
     WRITE(*,*) 'error in grid resizing', JJ, KNLVLS_USE(JJ), SUM( PSNOWDZN(JJ,1:KNLVLS_USE(JJ)) ),  &
                                          PSNOW(JJ), SUM( PSNOWDZN(JJ,1:KNLVLS_USE(JJ)) )-PSNOW(JJ), &
@@ -5564,7 +5573,7 @@ SUBROUTINE SNOWNLGRIDFRESH_1D (KJ,PSNOW,PSNOWDZ,PSNOWDZN,                  &
 !!      E. Brun           * Meteo-France *
 !!
 !
-USE MODD_SNOW_PAR, ONLY : XD1,XD2,XD3,XX,XVALB5,XVALB6
+USE MODD_SNOW_PAR, ONLY : XD1,XD2,XD3,XX,XVALB5,XVALB6,XSNOWDMIN 
 USE MODE_SNOW3L, ONLY : GET_MASS_HEAT
 !
 IMPLICIT NONE
@@ -5638,17 +5647,15 @@ DO JST = 1,INLVLS_NEW
   ZPSNOW_NEW = ZPSNOW_NEW + PSNOWDZN(JST)
 ENDDO
 !
-!VV IF ( ABS( ZPSNOW_NEW - PSNOWDZF )<XUEPSI ) THEN
-IF ( ABS( ZPSNOW_NEW - PSNOWDZF )<XUEPSI_SMP * MAX(PSNOWDZF,1.) ) THEN
+IF ( ABS( ZPSNOW_NEW - PSNOWDZF )<XUEPSI ) THEN
   INLVLS_OLD = 0
 ELSE
   ! Old total snowdepth
   DO JST = 1,SIZE(PSNOWRHO)
-!VV    IF ( PSNOWDZ(JST)>=XUEPSI_SMP ) THEN
     IF ( PSNOWDZ(JST)>=XUEPSI ) THEN
       ZPSNOW_OLD = ZPSNOW_OLD + PSNOWDZ(JST)
-!VV      IF ( ABS( ZPSNOW_NEW - PSNOWDZF - ZPSNOW_OLD )<XUEPSI ) THEN
-      IF ( ABS( ZPSNOW_NEW - PSNOWDZF - ZPSNOW_OLD )<XUEPSI_SMP *MAX(ZPSNOW_OLD, 1.0 )) THEN              
+      !write(*,*) JST,PSNOWDZ(JST),ZPSNOW_OLD,ABS( ZPSNOW_NEW - PSNOWDZF - ZPSNOW_OLD )
+      IF ( ABS( ZPSNOW_NEW - PSNOWDZF - ZPSNOW_OLD )<XUEPSI ) THEN
         INLVLS_OLD = JST
       ENDIF
     ENDIF
@@ -6161,8 +6168,7 @@ DO JJ=1,SIZE(PSNOWRHO,1)  ! loop on gridpoints
       !
       IF ( PSCAP(JJ,JST) * MAX( 0.0, PSNOWTEMP(JJ,JST)-XTT ) * PSNOWDZ(JJ,JST) >=  &
            ( ( ZSNOWLWE-PSNOWLIQ(JJ,JST) ) * XLMTT * XRHOLW ) - & 
-!VV           XUEPSI * XLMTT * PSNOWRHO(JJ,JST) ) THEN
-           1.2*XUEPSI_SMP * XLMTT * PSNOWRHO(JJ,JST) ) THEN
+           XUEPSI * XLMTT * PSNOWRHO(JJ,JST) ) THEN
         !
         IF ( JST==KNLVLS_USE(JJ) ) THEN
           ID_1 = JST-1

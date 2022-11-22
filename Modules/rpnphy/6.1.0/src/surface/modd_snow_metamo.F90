@@ -82,7 +82,8 @@ REAL, PARAMETER                 :: XNSPH2 = 38.
 REAL, PARAMETER                 :: XNSPH3 = 50.
 REAL, PARAMETER                 :: XNSPH4 = 90.
 !
-REAL, PARAMETER                 :: XUEPSI = MAX(1.E-8,EPSILON(XUEPSI))
+!REAL, PARAMETER                 :: XUEPSI = MAX(1.E-8,EPSILON(XUEPSI))
+REAL, PARAMETER                 :: XUEPSI = 1.E-6
 REAL, PARAMETER                 :: XUEPSI_SMP = 1.E-6
 REAL, PARAMETER                 :: XEPSI = 1.E-8
 REAL, PARAMETER                 :: XUPOURC = 100.

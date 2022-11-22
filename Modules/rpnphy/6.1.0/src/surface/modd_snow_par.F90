@@ -204,7 +204,8 @@ REAL, PARAMETER       :: XSNOWCRITD = 0.03  ! (m)
 ! ISBA-ES Minimum total snow depth for thermal calculations. 
 ! Used to prevent numerical problems as snow becomes vanishingly thin. 
 !
-REAL, PARAMETER      :: XSNOWDMIN = 0.000001  ! (m)
+!REAL, PARAMETER      :: XSNOWDMIN = 0.000001  ! (m)
+REAL, PARAMETER      :: XSNOWDMIN = 0.0001  ! (m)
 !
 !Coefficients for Morin impurities model
 ! (unitless)

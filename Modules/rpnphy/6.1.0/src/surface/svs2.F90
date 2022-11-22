@@ -492,6 +492,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 !     WARNING VV : just for technical tests at the moment
 !     Snow-vegetation interactions need to be fully rewritten in SVS-2 
 !
+
       CALL SNOW_SVS(   bus(x(SNOMAV_SVS,1,1)), bus(x(TSNOWV_SVS,1,1)), bus(x(WSNOWV_SVS,1,1)),    &
                          bus(x(SNODENV_SVS,1,1)), bus(x(SNVAL,1,1)),bus(x(SNOAGEV_SVS,1,1)),    &
                          bus(x(SNODIAMOPTV_SVS,1,1)), bus(x(SNOSPHERIV_SVS,1,1)),bus(x(SNOHISTV_SVS,1,1)),   &
@@ -506,7 +507,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                          PGFLUXSNOW_V,bus(x(SWNETSV,1,1)),bus(x(LWNETSV,1,1)),bus(x(SUBLDRIFTV,1,1)), &
                          bus(x(HPSV ,1,1)),bus(x(PSNVHA ,1,1)), PZ0,PZ0,PZ0HNAT, &
                          LESVNOFRAC, LESVLNOFRAC, bus(x(ESV,1,1)),PZENITH, &
-                         bus(x (DLAT,1,1)), bus(x (DLON,1,1)), PFOREST_V,  N, NL_SVS)
+                         bus(x (DLAT,1,1)), bus(x (DLON,1,1)), PFOREST_V, N, NL_SVS)
       if (phy_error_L) return
 
 ! Compute snow diagnostics for hydro and outputs
