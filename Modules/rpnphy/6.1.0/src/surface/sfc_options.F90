@@ -449,17 +449,19 @@ module sfc_options
    !       'DFLT': falling snow falls as purely dendritic
    !       'GA01': Gallee et al 2001
    !       'VI13': Vionnet et al 2013 (Default in SVS2)
-   !       'R21': Royer et al 2021 (Increase in Maximum Density)
+   !       'R21_ROMax': Royer et al 2021 (Increase in Maximum Density)
    !       'R21_Wind': Royer et al 2021 (Increase in Wind_Effect)
+   !       'R21': Royer et al 2021 (Increase in Max Density and Wind Effect)
    character(len=16) :: hsnowdrift_cro = 'VI13'
    namelist /surface_cfgs/ hsnowdrift_cro
-   character(len=*), parameter :: HSNOWDRIFT_CRO_OPT(6) = (/ &
+   character(len=*), parameter :: HSNOWDRIFT_CRO_OPT(7) = (/ &
         'NONE',  &
         'DFLT',  &
         'GA01',  &  
         'VI13',  &
-        'R21',   &
-        'R21_Wind' &  
+        'R21_ROMax', &
+        'R21_Wind', &
+        'R21' &  
          /)
 
    ! Option for the snowdrift scheme for ES: Mechanical transformation of snow grain and compaction 
