@@ -109,7 +109,7 @@ REAL, SAVE       :: XZ0HSN
 REAL, SAVE       :: XZ0ICEZ0SNOW
 !
 ! Vegetation height for reduction in snow compaction (Royer 2021 & Lackner 2022)
-REAL, SAVE       :: SNOW_VEG_H
+! REAL, SAVE       :: SNOW_VEG_H
 !
 ! Snow Melt timescale with D95 (s): needed to prevent time step 
 ! dependence of melt when snow fraction < unity.
@@ -203,6 +203,10 @@ REAL, PARAMETER       :: XRHOSMAX_R21 = 600.   ! (kg m-3)
 !
 REAL, PARAMETER       :: XRHOSMIN_ES =  50.  ! (kg m-3)
 REAL, PARAMETER       :: XRHOSMAX_ES = 750.  ! (kg m-3)
+!
+! Height of basal vegetation for Royer 2021
+!
+REAL, PARAMETER       :: SNOW_VEG_H = 0.1   ! (kg m-3)
 !
 ! ISBA-ES Critical snow depth at which snow grid thicknesses constant
 !

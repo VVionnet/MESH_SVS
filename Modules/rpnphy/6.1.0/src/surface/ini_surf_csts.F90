@@ -74,6 +74,7 @@ USE MODD_SNOW_PAR,  ONLY : XEMISSN, XANSMIN, XANSMAX,          &
                            XTIMESNOWMAK,                       &
                            XPROD_SCHEME, XSM_END, XFREQ_GRO,   & !Grooming and Snowmaking option by P.Spandre 20160211
                            XSCAVEN_COEF
+!
 USE MODD_SNOW_METAMO, ONLY : XVVISC3
 !
 USE MODD_SURF_ATM, ONLY: XRIMAX,LALDTHRES,XCISMIN, XVMODMIN
@@ -232,6 +233,9 @@ XTAU_SMELT = 300.
 !
 ! Roughness length ratio between ice and snow
 XZ0ICEZ0SNOW = 10.
+!
+! Vegetation height to reduce snow compaction (Royer 2021 & Lackner 2022)
+!SNOW_VEG_H = 0.1
 !
 ! 3 bands spectral albedo for glacier ice (CROCUS)
 ! Default values from Lejeune et al 2009 (Zongo, Bolivia)
