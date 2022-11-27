@@ -146,7 +146,7 @@ USE MODD_TYPE_DATE_SURF, ONLY: DATE_TIME
 USE MODD_CSTS, ONLY : XTT, XRHOLW, XLMTT,XLSTT,XLVTT, XCL, XCI, XPI, XRHOLI
 USE MODD_SNOW_PAR, ONLY : XZ0ICEZ0SNOW, XRHOTHRESHOLD_ICE, XPERCENTAGEPORE, &
                           XPERCENTAGEPORE_FRZ, XPERCENTAGEPORE_ICE, XIMPUR_EFOLD, &
-                          XIMPUR_DRY,XIMPUR_WET,XRHO_SNOWMAK, XPSR_SNOWMAK
+                          XIMPUR_DRY,XIMPUR_WET,XRHO_SNOWMAK, XPSR_SNOWMAK, SNOW_VEG_H
 USE MODD_SNOW_METAMO
 USE MODD_SURF_PAR, ONLY : XUNDEF
 USE MODD_PREP_SNOW, ONLY : NIMPUR
@@ -361,6 +361,7 @@ REAL, DIMENSION(:,:), INTENT(INOUT)    :: PBLOWSNW !  Properties of deposited bl
                                        !    'R21': Royer et al 2021 (Increase in Maximum Density and Wind Effect)
                                        !    'R21_Wind': Royer et al 2021 (Increase in Wind_Effect)
                                        !    'R21_ROMax': Royer et al 2021 (Increase in Maximum Density)
+                                       !    'R21_Veg' : Royer et al 2021 (Turn off snowdrift scheme for veg)
 LOGICAL, INTENT(IN)                    :: OSNOWDRIFT_SUBLIM ! activate sublimation during drift
 REAL, DIMENSION (:), INTENT(IN)        ::  PSNOWMAK        ! Snowmaking thickness (m)
 LOGICAL, INTENT(IN)                    :: OSNOWCOMPACT_BOOL, OSNOWMAK_BOOL, OSNOWTILLER, &
@@ -404,63 +405,63 @@ LOGICAL, INTENT(IN)                    :: OATMORAD ! activate atmotartes scheme
                                        ! reference height is constant or variable from the snow surface
                                        ! HSNOWZREF='CST' constant reference height from the snow surface
                                        ! HSNOWZREF='VAR' variable reference height from the snow surface (i.e. constant from the ground)
-                                       !-----------------------                                         
-!
-!*      0.2    declarations of local variables
-!
-REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2))        :: ZSNOWSSA_BEFORE, ZSNOWSSA_AFTER,ZSNOWDSSA
-REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2),NIMPUR) :: ZSNOWIMP_DENSITY !impurities density (kg/m^3) (npoints,nlayer,ntypes_impurities)
-REAL, DIMENSION(SIZE(PSNOWRHO,1))                         :: IMPUR_NORM !impurities content (g) (npoints,nlayer,ntypes_impurities)
-!
+                                       !----------------------- 
+! 
+!* 0.2 declarations of local variables 
+! 
+REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2))        :: ZSNOWSSA_BEFORE, ZSNOWSSA_AFTER,ZSNOWDSSA 
+REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2),NIMPUR) :: ZSNOWIMP_DENSITY !impurities density (kg/m^3) (npoints,nlayer,ntypes_impurities) 
+REAL, DIMENSION(SIZE(PSNOWRHO,1))                         :: IMPUR_NORM !impurities content (g) (npoints,nlayer,ntypes_impurities) 
+! 
 REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2))        :: ZSNOWTEMP, ZSCAP, ZSNOWDZN, ZSCOND, ZRADSINK 
-!                                                         ZSNOWTEMP  = Snow layer(s) averaged temperature (K)
-!                                                         ZSCAP      = Snow layer(s) heat capacity [J/(K m3)]
-!                                                         ZSNOWDZN   = Updated snow layer thicknesses (m)
-!                                                         ZSCOND     = Snow layer(s) thermal conducivity [W/(m K)]
-!                                                         ZRADSINK   = Snow solar Radiation source terms (W/m2)
-!
+!                                                         ZSNOWTEMP = Snow layer(s) averaged temperature (K) 
+!                                                         ZSCAP = Snow layer(s) heat capacity [J/(K m3)] 
+!                                                         ZSNOWDZN = Updated snow layer thicknesses (m) 
+!                                                         ZSCOND = Snow layer(s) thermal conducivity [W/(m K)] 
+!                                                         ZRADSINK = Snow solar Radiation source terms (W/m2) 
+! 
 REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2))        :: ZWHOLDMAX 
-REAL, DIMENSION(SIZE(PSNOWRHO,1),JPNBANDS_ATM)            :: ZSNOWALB_SP
-REAL, DIMENSION(SIZE(PSNOWRHO,1),JPNBANDS_ATM)            :: ZSPEC_DIR, ZSPEC_DIF
-!
-!For now these values are constant
-REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2))        :: ZSNOWG0 ! asymmetry parameter of snow grains at nr=1.3 and at non absorbing wavelengths (no unit) (npoints,nlayer)
-REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2))        :: ZSNOWY0 ! Value of y of snow grains at nr=1.3 (no unit
-REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2))        :: ZSNOWW0 ! Value of W of snow grains at nr=1.3 (no unit)
-REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2))        :: ZSNOWB0 ! absorption enhancement parameter of snow grains at nr=1.3 and at non absorbing wavelengths (no unit)
-!
-!spectral albedo (3 bands for now) :: ready to output if necessary
-REAL, DIMENSION(SIZE(PSNOWRHO,1),3) :: ZSPECTRALALBEDO
+REAL, DIMENSION(SIZE(PSNOWRHO,1),JPNBANDS_ATM)            :: ZSNOWALB_SP 
+REAL, DIMENSION(SIZE(PSNOWRHO,1),JPNBANDS_ATM)            :: ZSPEC_DIR, ZSPEC_DIF 
+! 
+!For now these values are constant 
+REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2)) :: ZSNOWG0 ! asymmetry parameter of snow grains at nr=1.3 and at non absorbing wavelengths (no unit) (npoints,nlayer) 
+REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2)) :: ZSNOWY0 ! Value of y of snow grains at nr=1.3 (no unit) 
+REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2)) :: ZSNOWW0 ! Value of W of snow grains at nr=1.3 (no unit) 
+REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2)) :: ZSNOWB0 ! absorption enhancement parameter of snow grains at nr=1.3 and at non absorbing wavelengths (no unit) 
+! 
+!spectral albedo (3 bands for now) :: ready to output if necessary 
+REAL, DIMENSION(SIZE(PSNOWRHO,1),3) :: ZSPECTRALALBEDO 
 !  
-REAL, DIMENSION(SIZE(PTA))          :: ZSNOWBIS
-!                                      ZSNOWBIS      = Total snow depth after snowfall  
-!
+REAL, DIMENSION(SIZE(PTA))          :: ZSNOWBIS 
+!                                      ZSNOWBIS = Total snow depth after snowfall 
+! 
 REAL, DIMENSION(SIZE(PTA))          :: ZSNOW, ZSFCFRZ, ZTSTERM1, ZTSTERM2, ZCT, ZRA, ZSNOWTEMPO1 
-!                                      ZSNOW      = Total snow depth (m)
-!                                      ZCT        = inverse of the product of snow heat capacity
-!                                                   and layer thickness [(m2 K)/J]
-!                                      ZRA        = Surface aerodynamic resistance
-!                                      ZTSTERM1,ZTSTERM2 = Surface energy budget coefficients
-!                                      
-!                                      ZSNOWTEMPO1= value of uppermost snow temperature
-!                                                   before time integration (K)
-!
-REAL, DIMENSION(SIZE(PTA))          :: ZRSRA, ZDQSAT, ZQSAT, ZRADXS, ZLIQHEATXS, ZGRNDFLUXI, ZPSN3L
-!                                      ZRSRA    = air density over aerodynamic resistance
-!                                      ZDQSAT   = derrivative of saturation specific humidity
-!                                      ZQSAT    = saturation specific humidity
-!                                      ZRADXS   = shortwave radiation absorbed by soil surface
-!                                                 (for thin snow sover) (W m-2)
-!                                      ZLIQHEATXS = excess snowpack heating for vanishingly thin
-!                                                 snow cover: add energy to snow/ground heat
-!                                                 flux (W m-2)
-!                                      ZGRNDFLUXI= for the case where the ground flux is imposed,
-!                                                  this is the actual imposed value.
-!                                      ZPSN3L    = snow fraction: different use if MEB "on".
-!                                                  In this case, it is only used for Tg update
-!                                                  since only this variable has a sub-grid relevance.
-!
-REAL, DIMENSION(SIZE(PTA))          :: ZUSTAR2_IC, ZTA_IC, ZQA_IC, &
+!                                      ZSNOW = Total snow depth (m) 
+!                                      ZCT = inverse of the product of snow heat capacity 
+!                                            and layer thickness [(m2 K)/J] 
+!                                      ZRA = Surface aerodynamic resistance 
+!                                      ZTSTERM1,ZTSTERM2 = Surface energy budget coefficients 
+!  
+!                                      ZSNOWTEMPO1= value of uppermost snow temperature 
+!                                      before time integration (K) 
+! 
+REAL, DIMENSION(SIZE(PTA)) :: ZRSRA, ZDQSAT, ZQSAT, ZRADXS, ZLIQHEATXS, ZGRNDFLUXI, ZPSN3L 
+!                             ZRSRA = air density over aerodynamic resistance 
+!                             ZDQSAT = derrivative of saturation specific humidity 
+!                             ZQSAT = saturation specific humidity 
+!                             ZRADXS = shortwave radiation absorbed by soil surface 
+!                                      (for thin snow sover) (W m-2) 
+!                             ZLIQHEATXS = excess snowpack heating for vanishingly thin 
+!                                          snow cover: add energy to snow/ground heat 
+!                                          flux (W m-2) 
+!                             ZGRNDFLUXI= for the case where the ground flux is imposed, 
+!                                         this is the actual imposed value. 
+!                             ZPSN3L = snow fraction: different use if MEB "on". 
+!                                      In this case, it is only used for Tg update 
+!                                      since only this variable has a sub-grid relevance. 
+! 
+REAL, DIMENSION(SIZE(PTA)) :: ZUSTAR2_IC, ZTA_IC, ZQA_IC, &
                                        ZPET_A_COEF_T, ZPEQ_A_COEF_T, ZPET_B_COEF_T, ZPEQ_B_COEF_T  
 !                                      ZUSTAR2_IC    = implicit lowest atmospheric level friction (m2/s2)
 !                                      ZTA_IC        = implicit lowest atmospheric level air temperature
@@ -881,13 +882,12 @@ IF (GCRODEBUGDETAILSPRINT) THEN
                            PSNOWDZ(IDEBUG,:),PSNOWRHO(IDEBUG,:),   &
                            PSNOWLIQ(IDEBUG,:),PSNOWHEAT(IDEBUG,:),PSNOWDIAMOPT(IDEBUG,:),&
                            PSNOWSPHERI(IDEBUG,:),PSNOWHIST(IDEBUG,:),PSNOWAGE(IDEBUG,:),&
-                           HSNOWMETAMO )
-ENDIF
-!***************************************DEBUG OUT**********************************************
-!       
-!*       5.1    Snow Compaction and Metamorphism due to snow drift
-!               ---------------
-PSNDRIFT(:) = 0.0
+                           HSNOWMETAMO ) 
+ENDIF 
+! ***************************************DEBUG OUT********************************************** 
+!  
+!* 5.1 Snow Compaction and Metamorphism due to snow drift 
+!      --------------- 
 
 IF (HSNOWDRIFT  .NE. 'NONE') THEN
   CALL SNOWDRIFT(PTSTEP, PVMOD, PSNOWRHO,PSNOWDZ, ZSNOW, HSNOWMETAMO,                      &
@@ -1683,7 +1683,8 @@ REAL, DIMENSION(:,:), INTENT(INOUT) :: PSNOWAGE, PSNOWSWE  ! Age and SWE of snow
 !
 REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2)) :: ZSNOWRHO2,    &! work snow density UNIT : kg m-3
                                                       ZVISCOSITY,   &! Snow viscosity UNIT : N m-2 s (= Pa s)
-                                                      ZSMASS,       &!overburden mass for a given layer UNIT : kg m-2 
+                                                      ZSMASS,       &!overburden mass for a given layer UNIT : kg m-2
+                                                      ZSNOW_JST,    &!Snow layer height (Royer et al 2021) 
                                                       ZSMASSCOEFF    ! Coefficient for extra pressure due to grooming (p.s 20150721)
 !
 REAL,PARAMETER     :: PPK=0.18
@@ -1722,13 +1723,14 @@ ZSMASS(:,1) = 0.5 * PSNOWDZ(:,1) * PSNOWRHO(:,1)  ! overburden of half the mass 
 !
 ! 2. Compaction/Settling
 ! ----------------------
-! Calculate the height of each snow layer / Royer 2021 Modification
-!DO JJ = 1,SIZE(PSNOW)
-!   ZSNOW(JJ,1) = PSNOW(JJ) - 0.5*PSNOWDZ(JJ,1)
-!   DO JST=2, INVLS_USE(JJ)
-!      ZSNOW_JST(JJ,JST) = ZSNOW_JST(JJ,JST-1) - 0.5 * (PSNOWDZ(JJ,JST-1) + PSNOWDZ(JJ,JST))
-!   ENDDO
-!ENDDO
+DO JJ = 1,SIZE(PSNOW)
+  !
+  ! Calculate height of each snow layer (Royer 2021)
+    ZSNOW_JST(JJ,1) = PSNOW(JJ) - 0.5*PSNOWDZ(JJ,1)
+    DO JST=2,INLVLS_USE(JJ)
+      ZSNOW_JST(JJ,JST) = ZSNOW_JST(JJ,JST-1) - 0.5 * (PSNOWDZ(JJ,JST-1) + PSNOWDZ(JJ,JST))
+  ENDDO
+ENDDO
 !
 IF ((HSNOWCOMP=="S14")) THEN 
   DO JST = 1,IMAX_USE
@@ -1765,8 +1767,8 @@ ELSE
     ENDDO
   ENDDO
 ENDIF 
-
-
+!
+!
 DO JST = 1,IMAX_USE
   DO JJ = 1,SIZE(PSNOW)
   !
@@ -1802,6 +1804,15 @@ DO JST = 1,IMAX_USE
         ENDIF
         !
       ENDIF
+      !
+    ! Increase snow viscosity for snow layer height <= vegetation threshold / M. Barrere
+    IF (HSNOWCOMP == 'R21_Veg') THEN
+       IF ( PSNOWLIQ(JJ,JST)<=XUEPSI ) THEN ! only for dry snow layers
+        IF ( ZSNOW_JST(JJ,JST) <= SNOW_VEG_H ) THEN
+           ZVISCOSITY(JJ,JST) = 100. * ZVISCOSITY(JJ,JST)
+        ENDIF
+       ENDIF
+    ENDIF
       !
       ! Calculate new snow snow density: compaction from weight/over-burden
       ZSNOWRHO2(JJ,JST) = PSNOWRHO(JJ,JST) + PSNOWRHO(JJ,JST) * PTSTEP * &
@@ -4598,6 +4609,7 @@ CHARACTER(4), INTENT(IN)            :: HSNOWDRIFT        ! Snowdrift scheme :
                                       !    'R21': Royer et al 2021 (Increase in Maximum Density and Wind Effect)
                                       !    'R21_Wind': Royer et al 2021 (Increase in Wind_Effect)
                                       !    'R21_ROMax': Royer et al 2021 (Increase in Maximum Density)
+                                      !    'R21_Veg' : Royer et al 2021 (Turn off snowdrift scheme for vegetation)
 !
 CHARACTER(3), INTENT(IN)              :: HSNOWFALL   ! snowfall density scheme Cluzet et al 2016
 CHARACTER(3), INTENT(IN)              :: HSNOWMETAMO ! metamorphism scheme
@@ -5898,7 +5910,8 @@ REAL, DIMENSION(:), INTENT(OUT)     :: PSNDRIFT !blowing snow sublimation (kg/m2
 !
 !*      0.2    declarations of local variables
 !
-REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2)) :: ZSNOWRHO2
+REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2)) :: ZSNOWRHO2, &
+                                                      ZSNOW_JST  ! Snow layer height (m) Royer et al 2021
 REAL, DIMENSION(SIZE(PSNOWRHO,1)                 ) :: ZSNOWDZ1
 !
 REAL, DIMENSION(SIZE(PSNOWRHO,1))   :: ZQSATI, ZFF ! QS wrt ice, gust speed
@@ -5949,8 +5962,15 @@ END IF
 !
 ! 1. Computation of drift and induced settling and metamorphism
 ! ------------------
-!
-DO JJ=1, SIZE(PSNOW)
+DO JJ = 1,SIZE(PSNOW)
+  !
+  IF (HSNOWCOMP == 'R21_Veg') THEN
+    ! Calculate the height of each snow layer (Royer et al 2021)
+    ZSNOW_JST(JJ,1) = PSNOW(JJ) - 0.5*PSNOWDZ(JJ,1)
+    DO JST=2, INLVLS_USE(JJ)
+       ZSNOW_JST(JJ,JST) = ZSNOW_JST(JJ,JST-1) - 0.5 * (PSNOWDZ(JJ,JST-1) + PSNOWDZ(JJ,JST))
+   ENDDO
+  ENDIF
   !
   ! gust speed at 5m above the snowpack
   ! Computed from PVMOD at PUREF (m) assuming a log profile in the SBL 
@@ -5995,6 +6015,11 @@ DO JJ=1, SIZE(PSNOW)
       !      
       ! computation of drift index supposing no overburden snow
       ZRDRIFT = ZRMOB - ( XVDRIFT1 * EXP( -XVDRIFT2*ZFF(JJ) ) - 1.)
+      IF (HSNOWCOMP == "R21_Veg") THEN 
+        IF (ZSNOW_JST(JJ,JST) <= SNOW_VEG_H) THEN
+             ZRDRIFT = 0.
+        ENDIF
+      ENDIF
       ! modif_EB exit loop if there is no drift
       IF ( ZRDRIFT<=0. ) EXIT
       !    

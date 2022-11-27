@@ -108,6 +108,9 @@ REAL, SAVE       :: XZ0HSN
 ! Roughness length ratio between ice and snow
 REAL, SAVE       :: XZ0ICEZ0SNOW
 !
+! Vegetation height for reduction in snow compaction (Royer 2021 & Lackner 2022)
+REAL, SAVE       :: SNOW_VEG_H
+!
 ! Snow Melt timescale with D95 (s): needed to prevent time step 
 ! dependence of melt when snow fraction < unity.
 !
