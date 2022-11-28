@@ -363,7 +363,6 @@ REAL, DIMENSION(:,:), INTENT(INOUT)    :: PBLOWSNW !  Properties of deposited bl
                                        !    'R21': Royer et al 2021 (Increase in Maximum Density and Wind Effect)
                                        !    'R21_Wind': Royer et al 2021 (Increase in Wind_Effect)
                                        !    'R21_ROMax': Royer et al 2021 (Increase in Maximum Density)
-                                       !    'R21_Veg' : Royer et al 2021 (Turn off snowdrift scheme for veg)
 !
 LOGICAL, INTENT(IN)                    :: OSNOWDRIFT_SUBLIM ! activate sublimation during drift
 REAL, DIMENSION (:), INTENT(IN)        ::  PSNOWMAK        ! Snowmaking thickness (m)
@@ -4613,7 +4612,6 @@ CHARACTER(4), INTENT(IN)            :: HSNOWDRIFT        ! Snowdrift scheme :
                                       !    'R21': Royer et al 2021 (Increase in Maximum Density and Wind Effect)
                                       !    'R21_Wind': Royer et al 2021 (Increase in Wind_Effect)
                                       !    'R21_ROMax': Royer et al 2021 (Increase in Maximum Density)
-                                      !    'R21_Veg' : Royer et al 2021 (Turn off snowdrift scheme for vegetation)
 !
 CHARACTER(3), INTENT(IN)              :: HSNOWFALL   ! snowfall density scheme Cluzet et al 2016
 CHARACTER(3), INTENT(IN)              :: HSNOWMETAMO ! metamorphism scheme

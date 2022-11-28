@@ -452,7 +452,6 @@ module sfc_options
    !       'R21_ROMax': Royer et al 2021 (Increase in Maximum Density)
    !       'R21_Wind': Royer et al 2021 (Increase in Wind_Effect)
    !       'R21': Royer et al 2021 (Increase in Max Density and Wind Effect)
-   !       'R21_Veg': Royer et al 2021 (Turn off snowdrift scheme for vegetation)
    character(len=16) :: hsnowdrift_cro = 'VI13'
    namelist /surface_cfgs/ hsnowdrift_cro
    character(len=*), parameter :: HSNOWDRIFT_CRO_OPT(7) = (/ &
@@ -556,7 +555,7 @@ module sfc_options
    !   HSNOWCOMP=B92 default Crocus from Brun et al. 1992 or Vionnet et al. 2012 (Default in SVS2)
    !   HSNOWCOMP=S14 use the settling param of Schleef et al. (2014) for fresh snow (less than 2 days) 
    !   HSNOWCOMP=T11 param of snow viscosity from Teufelsbauer (2011)
-   !   HSNOWCOMP=R21_Veg Reduction in snow compaction due to basal vegetation (Royer 2021 & Lackner 2022)   
+   !   HSNOWCOMP=R21 Reduction in snow compaction due to basal vegetation (Royer 2021 & Lackner 2022)   
    character(len=16) :: hsnowcomp = 'B92'
    namelist /surface_cfgs/ hsnowcomp
    character(len=*), parameter :: HSNOWCOMP_OPT(4) = (/ &
