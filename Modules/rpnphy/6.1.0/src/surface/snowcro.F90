@@ -146,14 +146,14 @@ USE MODD_TYPE_DATE_SURF, ONLY: DATE_TIME
 USE MODD_CSTS, ONLY : XTT, XRHOLW, XLMTT,XLSTT,XLVTT, XCL, XCI, XPI, XRHOLI
 USE MODD_SNOW_PAR, ONLY : XZ0ICEZ0SNOW, XRHOTHRESHOLD_ICE, XPERCENTAGEPORE, &
                           XPERCENTAGEPORE_FRZ, XPERCENTAGEPORE_ICE, XIMPUR_EFOLD, &
-                          XIMPUR_DRY,XIMPUR_WET,XRHO_SNOWMAK, XPSR_SNOWMAK
+                          XIMPUR_DRY,XIMPUR_WET,XRHO_SNOWMAK, XPSR_SNOWMAK, SNOW_VEG_H
 USE MODD_SNOW_METAMO
 USE MODD_SURF_PAR, ONLY : XUNDEF
 USE MODD_PREP_SNOW, ONLY : NIMPUR
 USE MODD_CONST_TARTES, ONLY:  XPSNOWG0, XPSNOWY0, XPSNOWW0, XPSNOWB0,NPNBANDS
 USE MODD_CONST_ATM, ONLY: JPNBANDS_ATM
 !
-USE MODD_SNOW_PAR, ONLY: SNOW_VEG_H
+!USE MODD_SNOW_PAR, ONLY: SNOW_VEG_H
 !
 USE MODE_SNOW3L
 USE MODE_TARTES, ONLY : SNOWCRO_TARTES, SURFACE_IMPURITY_REPARTITION
@@ -364,6 +364,7 @@ REAL, DIMENSION(:,:), INTENT(INOUT)    :: PBLOWSNW !  Properties of deposited bl
                                        !    'R21_Wind': Royer et al 2021 (Increase in Wind_Effect)
                                        !    'R21_ROMax': Royer et al 2021 (Increase in Maximum Density)
                                        !    'R21_Veg' : Royer et al 2021 (Turn off snowdrift scheme for veg)
+!
 LOGICAL, INTENT(IN)                    :: OSNOWDRIFT_SUBLIM ! activate sublimation during drift
 REAL, DIMENSION (:), INTENT(IN)        ::  PSNOWMAK        ! Snowmaking thickness (m)
 LOGICAL, INTENT(IN)                    :: OSNOWCOMPACT_BOOL, OSNOWMAK_BOOL, OSNOWTILLER, &
@@ -1809,10 +1810,10 @@ DO JST = 1,IMAX_USE
       ENDIF
       !
     ! Increase snow viscosity for snow layer height <= vegetation threshold / M. Barrere
-    IF (HSNOWCOMP == 'R21_Veg') THEN
+    IF (HSNOWCOMP == 'R21') THEN
        IF ( PSNOWLIQ(JJ,JST)<=XUEPSI ) THEN ! only for dry snow layers
         IF ( ZSNOW_JST(JJ,JST) <= SNOW_VEG_H ) THEN
-           ZVISCOSITY(JJ,JST) = 100. * ZVISCOSITY(JJ,JST)
+           ZVISCOSITY(JJ,JST) = 10. * ZVISCOSITY(JJ,JST)
         ENDIF
        ENDIF
     ENDIF
@@ -5967,7 +5968,7 @@ END IF
 ! ------------------
 DO JJ = 1,SIZE(PSNOW)
   !
-  IF (HSNOWCOMP == 'R21_Veg') THEN
+  IF (HSNOWCOMP == 'R21') THEN
     ! Calculate the height of each snow layer (Royer et al 2021)
     ZSNOW_JST(JJ,1) = PSNOW(JJ) - 0.5*PSNOWDZ(JJ,1)
     DO JST=2, INLVLS_USE(JJ)
@@ -6018,7 +6019,7 @@ DO JJ = 1,SIZE(PSNOW)
       !      
       ! computation of drift index supposing no overburden snow
       ZRDRIFT = ZRMOB - ( XVDRIFT1 * EXP( -XVDRIFT2*ZFF(JJ) ) - 1.)
-      IF (HSNOWDRIFT == 'VI13') THEN 
+      IF (HSNOWCOMP == 'R21') THEN 
         IF (ZSNOW_JST(JJ,JST) < SNOW_VEG_H) THEN
              ZRDRIFT = 0.
         ENDIF
@@ -6148,9 +6149,9 @@ DO JJ = 1,SIZE(PSNOW)
 !
 ! Compaction of total snowpack depth
 !
-!DO JJ = 1,SIZE(PSNOWDZ,1)
- ! PSNOW(JJ) = SUM( PSNOWDZ(JJ,1:KNLVLS_USE(JJ)) )
-!ENDDO
+DO JJ = 1,SIZE(PSNOWDZ,1)
+  PSNOW(JJ) = SUM( PSNOWDZ(JJ,1:KNLVLS_USE(JJ)) )
+ENDDO
 !
 IF (LHOOK) CALL DR_HOOK('SNOWCRO:SNOWDRIFT',1,ZHOOK_HANDLE)
 !

@@ -455,15 +455,14 @@ module sfc_options
    !       'R21_Veg': Royer et al 2021 (Turn off snowdrift scheme for vegetation)
    character(len=16) :: hsnowdrift_cro = 'VI13'
    namelist /surface_cfgs/ hsnowdrift_cro
-   character(len=*), parameter :: HSNOWDRIFT_CRO_OPT(8) = (/ &
+   character(len=*), parameter :: HSNOWDRIFT_CRO_OPT(7) = (/ &
         'NONE',  &
         'DFLT',  &
         'GA01',  &  
         'VI13',  &
         'R21_ROMax', &
         'R21_Wind', &
-        'R21', &
-        'R21_Veg' &  
+        'R21' &  
          /)
 
    ! Option for the snowdrift scheme for ES: Mechanical transformation of snow grain and compaction 
@@ -564,7 +563,7 @@ module sfc_options
         'B92',  &
         'S14',  &  
         'T11',  &
-        'R21_Veg'   &
+        'R21'   &
          /)
 
    ! Option for the turbulent fluxes in Crocus
