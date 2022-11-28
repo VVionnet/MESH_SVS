@@ -459,9 +459,9 @@ module sfc_options
         'DFLT',  &
         'GA01',  &  
         'VI13',  &
-        'R21_ROMax', &
+        'R21', &
         'R21_Wind', &
-        'R21' &  
+        'R21_ROMax' &  
          /)
 
    ! Option for the snowdrift scheme for ES: Mechanical transformation of snow grain and compaction 

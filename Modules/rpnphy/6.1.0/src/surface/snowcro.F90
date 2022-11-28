@@ -5003,7 +5003,7 @@ DO JJ = 1,SIZE(PSNOW(:))
                       ( ZCOEF + ( 1.- ZCOEF ) * &
                                 ( 3.*PSNOWSPHERIF(JJ) + 4.*(1.-PSNOWSPHERIF(JJ)) ) )
 !
-    ELSE IF (HSNOWDRIFT=='VI13' .OR. HSNOWDRIFT== 'R21' .OR. HSNOWDRIFT=='R21_Wind' .OR. HSNOWDRIFT=='R21_ROMax') THEN
+    ELSE IF ((HSNOWDRIFT=='VI13') .OR. (HSNOWDRIFT== 'R21') .OR. (HSNOWDRIFT=='R21_Wind') .OR. (HSNOWDRIFT=='R21_ROMax')) THEN
 !          3rd Option : parameterization of Vionnet et al (2013) that allows
 !       simulatneous snow transport and snowfall for wind speed higher than 6 m/s
       !PSNOWSPHERIF(JJ) = MIN(MAX(0.14/4.*(ZWIND_GRAIN(JJ)-2.)+0.5,0.5),0.9)
@@ -6056,13 +6056,15 @@ DO JJ = 1,SIZE(PSNOW)
  ENDDO      !
       ZQS_EFFECT    = MIN( 3., MAX( 0.,ZQS )/XQS_REF ) * ZRT
       IF (HSNOWDRIFT=='R21_Wind' .OR. HSNOWDRIFT=='R21') THEN
-        ZQS_EFFECT   = MIN( 3., MAX( 0.,ZQS )/XQS_REF ) * ZRT
         ZWIND_EFFECT = XCOEF_EFFECT_R21 * ZRT
-        ZDRIFT_EFFECT(JJ,JST) = ( ZQS_EFFECT + ZWIND_EFFECT ) * PTSTEP / XCOEF_FF / XVTIME
+      ELSE
+        ZWIND_EFFECT = XCOEF_EFFECT * ZRT
+      ENDIF
+      ZDRIFT_EFFECT(JJ,JST) = ( ZQS_EFFECT + ZWIND_EFFECT ) * PTSTEP / XCOEF_FF / XVTIME
       ! WRITE(*,*) 'ZQS_EFFECT,ZWIND_EFFECT,ZDRIFT_EFFECT:',ZQS_EFFECT,ZWIND_EFFECT,ZDRIFT_EFFECT
       !
       ! settling by wind transport only in case of not too dense snow
-      ELSE IF (HSNOWDRIFT=='R21_ROMax' .OR. HSNOWDRIFT=='R21') THEN 
+      IF (HSNOWDRIFT=='R21_ROMax' .OR. HSNOWDRIFT=='R21') THEN 
           IF( PSNOWRHO(JJ,JST) < XVROMAX_R21 ) THEN 
                 ZDRO = ZDRIFT_EFFECT(JJ,JST) * ( XVROMAX_R21 - PSNOWRHO(JJ,JST) )
                 PSNOWRHO(JJ,JST) = MIN( XVROMAX_R21 , PSNOWRHO(JJ,JST) + ZDRO )
