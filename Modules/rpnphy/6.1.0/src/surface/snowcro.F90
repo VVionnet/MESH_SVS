@@ -360,9 +360,9 @@ REAL, DIMENSION(:,:), INTENT(INOUT)    :: PBLOWSNW !  Properties of deposited bl
                                        !    'DFLT': falling snow falls as purely dendritic
                                        !    'GA01': Gallee et al 2001
                                        !    'VI13': Vionnet et al 2013
-                                       !    'R21': Royer et al 2021 (Increase in Maximum Density and Wind Effect)
-                                       !    'R21_Wind': Royer et al 2021 (Increase in Wind_Effect)
-                                       !    'R21_ROMax': Royer et al 2021 (Increase in Maximum Density)
+                                       !    'R21F': Royer et al 2021 (Full effects: Increase in Maximum Density and Wind Effect)
+                                       !    'R21W': Royer et al 2021 (Increase in Wind_Effect)
+                                       !    'R21R': Royer et al 2021 (Increase in Maximum Density)
 !
 LOGICAL, INTENT(IN)                    :: OSNOWDRIFT_SUBLIM ! activate sublimation during drift
 REAL, DIMENSION (:), INTENT(IN)        ::  PSNOWMAK        ! Snowmaking thickness (m)
@@ -1809,9 +1809,11 @@ DO JST = 1,IMAX_USE
       ENDIF
       !
     ! Increase snow viscosity for snow layer height <= vegetation threshold / M. Barrere
-    IF (HSNOWCOMP == 'R21') THEN
-       IF ( PSNOWLIQ(JJ,JST)<=XUEPSI ) THEN ! only for dry snow layers
-        IF ( ZSNOW_JST(JJ,JST) <= SNOW_VEG_H ) THEN
+    IF (HSNOWCOMP == 'R21' .OR. HSNOWCOMP == 'R2V' ) THEN
+       IF ( PSNOWLIQ(JJ,JST)<=XUEPSI .AND. SNOW_VEG_H > 0. ) THEN ! only for dry snow layers when shrubs are present (SNOW_VEG_H>0.)
+        IF(ZSNOW_JST(JJ,JST) <= MIN(0.1,SNOW_VEG_H)) THEN
+           ZVISCOSITY(JJ,JST) = 100. * ZVISCOSITY(JJ,JST)
+        ELSE IF ( ZSNOW_JST(JJ,JST) <= SNOW_VEG_H ) THEN
            ZVISCOSITY(JJ,JST) = 10. * ZVISCOSITY(JJ,JST)
         ENDIF
        ENDIF
@@ -5966,12 +5968,12 @@ END IF
 ! ------------------
 DO JJ = 1,SIZE(PSNOW)
   !
-  IF (HSNOWCOMP == 'R21') THEN
+  IF (HSNOWCOMP == 'R21' .OR. HSNOWCOMP == 'R2D') THEN
     ! Calculate the height of each snow layer (Royer et al 2021)
     ZSNOW_JST(JJ,1) = PSNOW(JJ) - 0.5*PSNOWDZ(JJ,1)
-    DO JST=2, INLVLS_USE(JJ)
+    DO JST=2, KNLVLS_USE(JJ)
        ZSNOW_JST(JJ,JST) = ZSNOW_JST(JJ,JST-1) - 0.5 * (PSNOWDZ(JJ,JST-1) + PSNOWDZ(JJ,JST))
-   ENDDO
+    ENDDO
   ENDIF
   !
   ! gust speed at 5m above the snowpack
@@ -6017,8 +6019,8 @@ DO JJ = 1,SIZE(PSNOW)
       !      
       ! computation of drift index supposing no overburden snow
       ZRDRIFT = ZRMOB - ( XVDRIFT1 * EXP( -XVDRIFT2*ZFF(JJ) ) - 1.)
-      IF (HSNOWCOMP == 'R21') THEN 
-        IF (ZSNOW_JST(JJ,JST) < SNOW_VEG_H) THEN
+      IF (HSNOWCOMP == 'R21' .OR. HSNOWCOMP == 'R2D') THEN 
+        IF (ZSNOW_JST(JJ,JST) <= SNOW_VEG_H) THEN
              ZRDRIFT = 0.
         ENDIF
       ENDIF
@@ -6050,10 +6052,8 @@ DO JJ = 1,SIZE(PSNOW)
         PSNDRIFT(JJ) = (ZSNOWDZ1(JJ)-PSNOWDZ(JJ,JST))*PSNOWRHO(JJ,JST)/PTSTEP
       ELSE
         ZQS = 0.
-        END IF
       END IF
-   ENDDO
- ENDDO      !
+      !
       ZQS_EFFECT    = MIN( 3., MAX( 0.,ZQS )/XQS_REF ) * ZRT
       IF (HSNOWDRIFT=='R21_Wind' .OR. HSNOWDRIFT=='R21') THEN
         ZWIND_EFFECT = XCOEF_EFFECT_R21 * ZRT
@@ -6137,11 +6137,11 @@ DO JJ = 1,SIZE(PSNOW)
         ! 
       ENDIF
       !     
-    !ENDIF
+    ENDIF
     !
-  ! ENDDO  ! snow layers loop
+  ENDDO  ! snow layers loop
   !
-! ENDDO    ! grid points loop
+ENDDO    ! grid points loop
 !
 !
 ! 2. Update total snow depth:

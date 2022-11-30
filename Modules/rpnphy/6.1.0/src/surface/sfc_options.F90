@@ -449,9 +449,9 @@ module sfc_options
    !       'DFLT': falling snow falls as purely dendritic
    !       'GA01': Gallee et al 2001
    !       'VI13': Vionnet et al 2013 (Default in SVS2)
-   !       'R21_ROMax': Royer et al 2021 (Increase in Maximum Density)
-   !       'R21_Wind': Royer et al 2021 (Increase in Wind_Effect)
-   !       'R21': Royer et al 2021 (Increase in Max Density and Wind Effect)
+   !       'R21R': Royer et al 2021 (Increase in Maximum Density)
+   !       'R21W': Royer et al 2021 (Increase in Wind_Effect)
+   !       'R21F': Royer et al 2021 (Increase in Max Density and Wind Effect)
    character(len=16) :: hsnowdrift_cro = 'VI13'
    namelist /surface_cfgs/ hsnowdrift_cro
    character(len=*), parameter :: HSNOWDRIFT_CRO_OPT(7) = (/ &
@@ -459,9 +459,9 @@ module sfc_options
         'DFLT',  &
         'GA01',  &  
         'VI13',  &
-        'R21', &
-        'R21_Wind', &
-        'R21_ROMax' &  
+        'R21F', &
+        'R21W', &
+        'R21R' &  
          /)
 
    ! Option for the snowdrift scheme for ES: Mechanical transformation of snow grain and compaction 
@@ -555,14 +555,18 @@ module sfc_options
    !   HSNOWCOMP=B92 default Crocus from Brun et al. 1992 or Vionnet et al. 2012 (Default in SVS2)
    !   HSNOWCOMP=S14 use the settling param of Schleef et al. (2014) for fresh snow (less than 2 days) 
    !   HSNOWCOMP=T11 param of snow viscosity from Teufelsbauer (2011)
-   !   HSNOWCOMP=R21 Reduction in snow compaction due to basal vegetation (Royer 2021 & Lackner 2022)   
+   !   HSNOWCOMP=R21 Reduction in snow compaction due to basal vegetation and no snowdrift below veg height (Royer 2021 & Lackner 2022)   
+   !   HSNOWCOMP=R2V Reduction in snow compaction due to basal vegetation only  (Royer 2021 & Lackner 2022) 
+   !   HSNOWCOMP=R2D No snowdrift below veg height (Royer 2021)
    character(len=16) :: hsnowcomp = 'B92'
    namelist /surface_cfgs/ hsnowcomp
-   character(len=*), parameter :: HSNOWCOMP_OPT(4) = (/ &
+   character(len=*), parameter :: HSNOWCOMP_OPT(6) = (/ &
         'B92',  &
         'S14',  &  
         'T11',  &
-        'R21'   &
+        'R21',   &
+        'R2V',  &
+        'R2D'   &
          /)
 
    ! Option for the turbulent fluxes in Crocus
