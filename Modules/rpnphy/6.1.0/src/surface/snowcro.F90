@@ -6013,14 +6013,17 @@ DO JJ = 1,SIZE(PSNOW)
       ENDIF      
       !
       ! correction in case of former wet snow
-      IF ( PSNOWHIST(JJ,JST) >= 2. ) ZRMOB = MIN(ZRMOB, XVMOB4)
+      !IF ( PSNOWHIST(JJ,JST) >= 2. ) ZRMOB = MIN(ZRMOB, XVMOB4)
       !      
       ! computation of drift index supposing no overburden snow
-      ZRDRIFT = ZRMOB - ( XVDRIFT1 * EXP( -XVDRIFT2*ZFF(JJ) ) - 1.)
-      IF (HSNOWCOMP == 'R21') THEN 
-        IF (ZSNOW_JST(JJ,JST) < SNOW_VEG_H) THEN
+      IF (HSNOWCOMP == 'B92' .OR. HSNOWCOMP == 'S14' .OR. HSNOWCOMP == 'T11') THEN
+         IF ( PSNOWHIST(JJ,JST) >= 2. ) ZRMOB = MIN(ZRMOB, XVMOB4) 
+           ZRDRIFT = ZRMOB - ( XVDRIFT1 * EXP( -XVDRIFT2*ZFF(JJ) ) - 1.)
+         ENDIF
+      ELSEIF (HSNOWCOMP == 'R21') THEN
+            IF (ZSNOW_JST(JJ,JST) < SNOW_VEG_H) THEN
              ZRDRIFT = 0.
-        ENDIF
+            !ENDIF
       ENDIF
       ! modif_EB exit loop if there is no drift
       IF ( ZRDRIFT<=0. ) EXIT
