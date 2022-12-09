@@ -4611,9 +4611,9 @@ CHARACTER(4), INTENT(IN)            :: HSNOWDRIFT        ! Snowdrift scheme :
                                       !    'DFLT': falling snow falls as purely dendritic
                                       !    'GA01': Gallee et al 2001
                                       !    'VI13': Vionnet et al 2013
-                                      !    'R21': Royer et al 2021 (Increase in Maximum Density and Wind Effect)
-                                      !    'R21_Wind': Royer et al 2021 (Increase in Wind_Effect)
-                                      !    'R21_ROMax': Royer et al 2021 (Increase in Maximum Density)
+                                      !    'R21F': Royer et al 2021 (Increase in Maximum Density and Wind Effect)
+                                      !    'R21W': Royer et al 2021 (Increase in Wind_Effect)
+                                      !    'R21R': Royer et al 2021 (Increase in Maximum Density)
 !
 CHARACTER(3), INTENT(IN)              :: HSNOWFALL   ! snowfall density scheme Cluzet et al 2016
 CHARACTER(3), INTENT(IN)              :: HSNOWMETAMO ! metamorphism scheme
@@ -5005,7 +5005,7 @@ DO JJ = 1,SIZE(PSNOW(:))
                       ( ZCOEF + ( 1.- ZCOEF ) * &
                                 ( 3.*PSNOWSPHERIF(JJ) + 4.*(1.-PSNOWSPHERIF(JJ)) ) )
 !
-    ELSE IF ((HSNOWDRIFT=='VI13') .OR. (HSNOWDRIFT== 'R21') .OR. (HSNOWDRIFT=='R21W') .OR. (HSNOWDRIFT=='R21R')) THEN
+    ELSE IF ((HSNOWDRIFT=='VI13') .OR. (HSNOWDRIFT== 'R21F') .OR. (HSNOWDRIFT=='R21W') .OR. (HSNOWDRIFT=='R21R')) THEN
 !          3rd Option : parameterization of Vionnet et al (2013) that allows
 !       simulatneous snow transport and snowfall for wind speed higher than 6 m/s
       !PSNOWSPHERIF(JJ) = MIN(MAX(0.14/4.*(ZWIND_GRAIN(JJ)-2.)+0.5,0.5),0.9)
@@ -6015,20 +6015,15 @@ DO JJ = 1,SIZE(PSNOW)
       ENDIF      
       !
       ! correction in case of former wet snow
-      !IF ( PSNOWHIST(JJ,JST) >= 2. ) ZRMOB = MIN(ZRMOB, XVMOB4)
+      IF ( PSNOWHIST(JJ,JST) >= 2. ) ZRMOB = MIN(ZRMOB, XVMOB4)
       !      
       ! computation of drift index supposing no overburden snow
-      IF (HSNOWCOMP == 'B92' .OR. HSNOWCOMP == 'S14' .OR. HSNOWCOMP == 'T11') THEN
-         IF ( PSNOWHIST(JJ,JST) >= 2. ) ZRMOB = MIN(ZRMOB, XVMOB4) 
-           ZRDRIFT = ZRMOB - ( XVDRIFT1 * EXP( -XVDRIFT2*ZFF(JJ) ) - 1.)
-         ENDIF
-      ELSEIF (HSNOWCOMP == 'R21') THEN
-            IF (ZSNOW_JST(JJ,JST) < SNOW_VEG_H) THEN
+      !
       ZRDRIFT = ZRMOB - ( XVDRIFT1 * EXP( -XVDRIFT2*ZFF(JJ) ) - 1.)
       IF (HSNOWCOMP == 'R21' .OR. HSNOWCOMP == 'R2D') THEN 
         IF (ZSNOW_JST(JJ,JST) <= SNOW_VEG_H) THEN
              ZRDRIFT = 0.
-            !ENDIF
+        ENDIF
       ENDIF
       ! modif_EB exit loop if there is no drift
       IF ( ZRDRIFT<=0. ) EXIT
@@ -6061,7 +6056,7 @@ DO JJ = 1,SIZE(PSNOW)
       END IF
       !
       ZQS_EFFECT    = MIN( 3., MAX( 0.,ZQS )/XQS_REF ) * ZRT
-      IF (HSNOWDRIFT=='R21_Wind' .OR. HSNOWDRIFT=='R21') THEN
+      IF (HSNOWDRIFT=='R21W' .OR. HSNOWDRIFT=='R21F') THEN
         ZWIND_EFFECT = XCOEF_EFFECT_R21 * ZRT
       ELSE
         ZWIND_EFFECT = XCOEF_EFFECT * ZRT
@@ -6070,8 +6065,8 @@ DO JJ = 1,SIZE(PSNOW)
       ! WRITE(*,*) 'ZQS_EFFECT,ZWIND_EFFECT,ZDRIFT_EFFECT:',ZQS_EFFECT,ZWIND_EFFECT,ZDRIFT_EFFECT
       !
       ! settling by wind transport only in case of not too dense snow
-      IF (HSNOWDRIFT=='R21_ROMax' .OR. HSNOWDRIFT=='R21') THEN 
-          IF( PSNOWRHO(JJ,JST) < XVROMAX_R21 ) THEN 
+      IF (HSNOWDRIFT=='R21R' .OR. HSNOWDRIFT=='R21F') THEN 
+          IF( PSNOWRHO(JJ,JST) <= XVROMAX_R21 ) THEN 
                 ZDRO = ZDRIFT_EFFECT(JJ,JST) * ( XVROMAX_R21 - PSNOWRHO(JJ,JST) )
                 PSNOWRHO(JJ,JST) = MIN( XVROMAX_R21 , PSNOWRHO(JJ,JST) + ZDRO )
                 PSNOWDZ (JJ,JST) = PSNOWDZ(JJ,JST) * ZSNOWRHO2(JJ,JST) / PSNOWRHO(JJ,JST)

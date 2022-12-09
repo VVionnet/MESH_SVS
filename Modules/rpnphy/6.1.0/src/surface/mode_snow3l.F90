@@ -3218,9 +3218,12 @@ ELSEIF(HSNOWCOND == 'S97') THEN
   DO JST = 1,SIZE(PSNOWRHO,2)
     !
     DO JJ = 1,SIZE(PSNOWRHO,1)
+      IF (PSNOWRHO(JJ,JST) <= 156) THEN
       PSCOND(JJ,JST) = XSNOWTHRMCOND_S97_1 + XSNOWTHRMCOND_S97_2 * (PSNOWRHO(JJ,JST)/1000)
+    ELSE
       PSCOND(JJ,JST) = XSNOWTHRMCOND_S97_3 + XSNOWTHRMCOND_S97_4 * (PSNOWRHO(JJ,JST)/1000) +&
-                       XSNOWTHRMCOND_S97_5 * (PSNOWRHO(JJ,JST)/1000) * (PSNOWRHO(JJ,JST)/1000)   
+                       XSNOWTHRMCOND_S97_5 * (PSNOWRHO(JJ,JST)/1000) * (PSNOWRHO(JJ,JST)/1000)
+    ENDIF   
     ! In older versions, snow thermal conductivity is annihilated in presence of liquid water.
     ! We decided to remove this incorrect parameterization (May 2016)
      !    
