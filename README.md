@@ -16,12 +16,10 @@ To compile with ifort, execute the command `make ifort` in the main directory. A
 
 To compile with gfortran, execute the command `make gfortran` in the main directory. A debug option is availalbe using the command: `make gfortran debug`. 
 
-On the ECCC collaboration server **GPSCC**, load the Intel compiler ifort using the following commands: 
+On the ECCC collaboration server **GPSCC**, load the Intel compiler ifort using the following command: 
 
 ```
-. ssmuse-sh -x comm/eccc/all/opt/intelcomp/intelpsxe-cluster-19.0.3.199
-. ssmuse-sh -x hpco/exp/openmpi/openmpi-3.1.2--hpcx-2.4.0-mofed-4.6--intel-19.0.3.199
-. ssmuse-sh -x hpco/exp/openmpi-setup/openmpi-setup-0.2
+. r.load.dot /fs/ssm/eccc/mrd/rpn/code-tools/ENV/cdt-1.5.7-inteloneapi-2022.1.2
 ```
 and then compile the code with `make ifort`. 
 
