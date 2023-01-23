@@ -341,8 +341,8 @@ REAL, PARAMETER :: XSNOWFALL_C_SN_P75 =  26.0  ! kg/(m7/2 s1/2)
 
 ! Coefficients for R21 (Royer et al., 2021)
 REAL, PARAMETER :: XSNOWFALL_A_SN_R21 = 109.0 ! kg/m3
-REAL, PARAMETER :: XSNOWFALL_B_SN_R21 =   6.0 ! kg/(m3 K)
-REAL, PARAMETER :: XSNOWFALL_C_SN_R21 =  52.0 ! kg/(m7/2 s1/2) different from Brun 89 (*2)
+REAL, PARAMETER :: XSNOWFALL_B_SN_R21 =   9.0 ! kg/(m3 K)
+REAL, PARAMETER :: XSNOWFALL_C_SN_R21 =  32.5 ! kg/(m7/2 s1/2) different from Brun 89 (*2)
 
 ! Coefficients for L22 (Lackner et al., 2022)
 REAL, PARAMETER :: XSNOWFALL_A_SN_L22 = 218.0 ! kg/m3 different from Brun 89 (*2)
@@ -424,7 +424,7 @@ REAL, PARAMETER :: XVSIZEMIN = 3.E-4 !  minimum size decrease
 ! on en tient compte egalement pour diminuer la duree de l'effet
 REAL, PARAMETER :: XCOEF_FF = 1.25 ! coefficient for gust diagnosis from average wind 
 REAL, PARAMETER :: XCOEF_EFFECT = 1.0 ! coefficient for impact on density du drift
-REAL, PARAMETER :: XCOEF_EFFECT_R21 = 3.0 ! increase in coefficient for impact on density due
+REAL, PARAMETER :: XCOEF_EFFECT_R21 = 1.5 ! increase in coefficient for impact on density due
 ! to drift to account for high Arctic wind speeds
 REAL, PARAMETER :: XQS_REF = 2.E-5 ! valeur de reference de ZQS pour effet neige
 !
