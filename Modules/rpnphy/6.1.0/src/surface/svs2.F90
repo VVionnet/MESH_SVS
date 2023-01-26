@@ -475,7 +475,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                          PGFLUXSNOW,bus(x(SWNETSA,1,1)), bus(x(LWNETSA,1,1)), bus(x(SUBLDRIFTA,1,1)), &
                          bus(x(HPSA ,1,1)),  bus(x(PSNGRVL ,1,1)), PZ0,PZ0,PZ0HNAT, &
                          LESNOFRAC, LESLNOFRAC, bus(x(ESA,1,1)), PZENITH, &
-                         bus(x (DLAT,1,1)), bus(x (DLON,1,1)),PFOREST,  N, NL_SVS)
+                         bus(x (DLAT,1,1)), bus(x (DLON,1,1)),PFOREST,bus(x(SNOTYPE_SVS,1,1))  , &
+                         N, NL_SVS)
       if (phy_error_L) return
 
 !     Prepare radiation for snow under high veg --> Impact of vegetation on incoming SW and LW 
@@ -506,7 +507,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                          PGFLUXSNOW_V,bus(x(SWNETSV,1,1)),bus(x(LWNETSV,1,1)),bus(x(SUBLDRIFTV,1,1)), &
                          bus(x(HPSV ,1,1)),bus(x(PSNVHA ,1,1)), PZ0,PZ0,PZ0HNAT, &
                          LESVNOFRAC, LESVLNOFRAC, bus(x(ESV,1,1)),PZENITH, &
-                         bus(x (DLAT,1,1)), bus(x (DLON,1,1)), PFOREST_V,  N, NL_SVS)
+                         bus(x (DLAT,1,1)), bus(x (DLON,1,1)), PFOREST_V,bus(x(SNOTYPEV_SVS,1,1)), &
+                         N, NL_SVS)
       if (phy_error_L) return
 
 ! Compute snow diagnostics for hydro and outputs
