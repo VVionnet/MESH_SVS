@@ -325,6 +325,8 @@ module sfcbus_mod
       SFCVAR(snospheriv_svs,'snospheriv_svs')
       SFCVAR(snohist_svs,'snohist_svs')
       SFCVAR(snohistv_svs,'snohistv_svs')
+      SFCVAR(snotype_svs,'snotype_svs')
+      SFCVAR(snotypev_svs,'snotypev_svs')
       SFCVAR(snoma_svs,'snoma_svs') 
       SFCVAR(snomav_svs,'snomav_svs')
       SFCVAR(snoden_svs,'snoden_svs') 

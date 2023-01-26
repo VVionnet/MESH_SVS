@@ -14,7 +14,7 @@ SUBROUTINE SNOW_SVS(  PSNOWSWE,PSNOWTEMP, PSNOWLIQ,PSNOWRHO,PSNOWALB,  &
                       PHPSNOW, PPSN,PZ0NAT, PZ0EFF, PZ0HNAT, &
                       PLES3L, PLEL3L, PEVAP, &
                       PZENITH, PLAT, PLON, PFOREST,      &
-                      !N , NSL, NSOIL)
+                      PSNOWTYPE, & !N , NSL, NSOIL)
                       N ,  NSOIL)
 !     ######################################################################################
 !
@@ -66,6 +66,7 @@ USE MU_JDATE_MOD,    ONLY: MU_JS2YMDHMS
 !
 USE MODI_SNOW3L
 USE MODI_SNOWCRO
+USE MODI_SNOWCRO_DIAG
 !
 ! Namelist containing the options of the snowpack schemes. 
 use sfc_options
@@ -110,6 +111,9 @@ REAL, DIMENSION(N,NSL), INTENT(INOUT) :: PSNOWDIAMOPT  ! Snow grain characterist
 REAL, DIMENSION(N,NSL), INTENT(INOUT) :: PSNOWSPHERI  ! Snow grain characteristic
                                                      !  PSNOWSPHERI is the sphericity
 REAL, DIMENSION(N,NSL), INTENT(INOUT) :: PSNOWHIST   ! Historical variables in Crocus metamorphism scheme
+
+REAL, DIMENSION(N,NSL), INTENT(OUT) :: PSNOWTYPE   ! Diagnostic snow grain type in Crocus 
+
 !
 REAL, DIMENSION(N), INTENT(INOUT)   :: PRNSNOW, PHSNOW,PHPSNOW 
 !                                      PHPSNOW       = heat release from rainfall (W/m2)
@@ -492,6 +496,8 @@ ZUSTARSNOW(:) = 0.0
 ZCDSNOW(:)    = 0.0
 ZCHSNOW(:)    = 0.0
 !
+! Initialize diagnostic to default value
+PSNOWTYPE(:,:)= XUNDEF
 !
 !
 ZSWNET_NS(:)      = 0.0
@@ -837,6 +843,7 @@ REAL, DIMENSION(KSIZE1)        :: ZP_PSN
 REAL, DIMENSION(KSIZE1)        :: ZP_PSN_GFLXCOR
 REAL, DIMENSION(KSIZE1)        :: ZP_WORK
 !
+! Declare output diagnostics
 REAL, DIMENSION(KSIZE1,KSIZE2) :: ZP_SNOWDEND
 REAL, DIMENSION(KSIZE1,KSIZE2) :: ZP_SNOWSPHER
 REAL, DIMENSION(KSIZE1,KSIZE2) :: ZP_SNOWSIZE
@@ -847,6 +854,7 @@ REAL, DIMENSION(KSIZE1,KSIZE2) :: ZP_SNOWSHEAR
 REAL, DIMENSION(KSIZE1,KSIZE2) :: ZP_ACC_RAT
 REAL, DIMENSION(KSIZE1,KSIZE2) :: ZP_NAT_RAT
 !
+REAL, DIMENSION(KSIZE1) :: ZP_SNDPT_12H
 REAL, DIMENSION(KSIZE1) :: ZP_SNDPT_1DY
 REAL, DIMENSION(KSIZE1) :: ZP_SNDPT_3DY
 REAL, DIMENSION(KSIZE1) :: ZP_SNDPT_5DY
@@ -868,6 +876,9 @@ REAL, DIMENSION(KSIZE1) :: ZP_NAT_LEV
 REAL, DIMENSION(KSIZE1) :: ZP_PRO_SUP_TYP
 REAL, DIMENSION(KSIZE1) :: ZP_PRO_INF_TYP
 REAL, DIMENSION(KSIZE1) :: ZP_AVA_TYP
+!
+REAL, DIMENSION(KSIZE1,KSIZE2,NIMPUR) :: ZP_SNOWIMP_CONC
+
 REAL, DIMENSION(KSIZE1) :: ZP_SNOWMAK
 REAL, DIMENSION(KSIZE1,1) :: ZP_DIR_SW !VV: Use of dimension of 1 for the number of spectral bands
 REAL, DIMENSION(KSIZE1,1) :: ZP_SCA_SW !VV: Need to be adjusted in the future version of SVS
@@ -1156,10 +1167,23 @@ IF (HSNOWSCHEME=='CRO') THEN
                 CSNOWZREF,ZP_SNOWMAK, LSNOWCOMPACT_BOOL,                      &
                 LSNOWMAK_BOOL,LSNOWTILLER,LSELF_PROD,                         &
                 LSNOWMAK_PROP)
+
+      ! Purely diagnostic, this routine can be called only at output time steps
+      CALL SNOWCRO_DIAG(HSNOWHOLD, HSNOWMETAMO, ZP_SNOWDZ, ZP_SNOWSWE, ZP_SNOWRHO, ZP_SNOWDIAMOPT, ZP_SNOWSPHERI, ZP_SNOWAGE,  &
+              ZP_SNOWHIST, ZP_SNOWTEMP, ZP_SNOWLIQ, ZP_DIRCOSZW, ZP_SNOWIMPUR, ZP_SNOWDEND, &
+              ZP_SNOWSPHER,ZP_SNOWSIZE, ZP_SNOWSSA, ZP_SNOWTYPEMEPRA, ZP_SNOWRAM, ZP_SNOWSHEAR, &
+              ZP_ACC_RAT, ZP_NAT_RAT,   &
+              ZP_SNDPT_12H, ZP_SNDPT_1DY, ZP_SNDPT_3DY, ZP_SNDPT_5DY, ZP_SNDPT_7DY, &
+              ZP_SNSWE_1DY, ZP_SNSWE_3DY, ZP_SNSWE_5DY, ZP_SNSWE_7DY, &
+              ZP_SNRAM_SONDE, ZP_SN_WETTHCKN, ZP_SN_REFRZNTHCKN,ZP_SNOWIMP_CONC,  &
+              ZP_DEP_HIG, ZP_DEP_MOD, ZP_DEP_SUP, ZP_DEP_TOT, ZP_DEP_HUM, &
+              ZP_ACC_LEV, ZP_NAT_LEV, ZP_PRO_SUP_TYP, ZP_PRO_INF_TYP, ZP_AVA_TYP)        
+
 !VV!
   ZP_GFLXCOR (:) = 0.0
   ZP_FLSN_COR(:) = 0.0
   ZP_SOILCOR (:) = 0.0
+
 
 ! Compute net shortwave and longwave fluxes
    
@@ -1319,6 +1343,7 @@ DO JWRK=1,KSIZE2
     PSNOWDIAMOPT(JI,JWRK) = ZP_SNOWDIAMOPT(JJ,JWRK)
     PSNOWSPHERI(JI,JWRK) = ZP_SNOWSPHERI(JJ,JWRK)
     PSNOWHIST (JI,JWRK) = ZP_SNOWHIST (JJ,JWRK)
+    PSNOWTYPE (JI,JWRK) = ZP_SNOWTYPEMEPRA (JJ,JWRK)
   ENDDO
 ENDDO
 
