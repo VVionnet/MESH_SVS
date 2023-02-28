@@ -181,12 +181,12 @@ OBJECTS+=suncos.o soili_svs.o vegi_svs.o drag_svs.o snow_alone.o snow_veg.o ebud
 # SVS2
 OBJECTS+= parkind1.o yomhook.o
 OBJECTS+= modd_csts.o modd_snow_par.o modd_prep_snow.o modd_const_atm.o  modd_surf_par.o modd_type_date_surf.o modd_const_tartes.o modd_reprod_oper.o modd_convparexp.o modd_meb_par.o modd_snow_metamo.o modd_surf_atm.o
-OBJECTS+= modi_abor1_sfx.o modi_bld_e_budget.o modi_surface_ri.o modi_snowcro.o  modi_ini_csts.o  modi_sunpos.o   modi_ini_surf_csts.o   modi_surface_aero_cond.o  modi_tridiag_ground.o modi_surface_cd.o  modi_snow3l.o modi_wind_threshold.o
+OBJECTS+= modi_abor1_sfx.o modi_bld_e_budget.o modi_surface_ri.o  modi_snowcro_diag.o modi_snowcro.o  modi_ini_csts.o  modi_sunpos.o   modi_ini_surf_csts.o   modi_surface_aero_cond.o  modi_tridiag_ground.o modi_surface_cd.o  modi_snow3l.o modi_wind_threshold.o
 OBJECTS+= mode_thermos.o
 OBJECTS+= wind_threshold.o tridiag_ground_snowcro.o surface_aero_cond.o  surface_cd.o  surface_ri.o
 OBJECTS+= mode_crodebug.o mode_snow3l.o  mode_tartes.o
 OBJECTS+= inisoili_svs2.o ini_csts.o ini_surf_csts.o
-OBJECTS+= agg_phases.o phase_changes.o tridiag_ground.o snowcro.o snow3l.o 
+OBJECTS+= agg_phases.o phase_changes.o tridiag_ground.o snowcro_diag.o snowcro.o snow3l.o 
 OBJECTS+= soili_svs2.o vegi_svs2.o drag_svs2.o ebudget_svs2.o snow_svs.o svs2.o
 
 
