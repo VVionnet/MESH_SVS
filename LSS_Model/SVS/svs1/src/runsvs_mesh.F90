@@ -19,6 +19,7 @@ module runsvs_mesh
     use sfcbus_mod
     use sfc_options
     use svs_configs
+    USE MODD_SNOW_PAR,  ONLY : XVAGING_NOGLACIER
 
     use str_mod, only: str_concat
 
@@ -94,6 +95,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_HSNOWHOLD = 'HSNOWHOLD' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_HSNOWRES = 'HSNOWRES' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LSNOWDRIFT_SUBLIM = 'LSNOWDRIFT_SUBLIM' ! For svs2 only 
+    character(len = *), parameter, public :: VN_SVS_XVAGING_NOGLACIER = 'XVAGING_NOGLACIER' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_SNOMA = 'SNOMA'
     character(len = *), parameter, public :: VN_SVS_SNVMA = 'SNVMA'
     character(len = *), parameter, public :: VN_SVS_SNOMA_SVS = 'SNOMA_ML'
@@ -197,6 +199,7 @@ module runsvs_mesh
         integer :: nprofile_day = 4 !
         logical :: lsoil_freezing_svs1 = .false.
         logical :: lwater_ponding_svs1 = .false.
+        real :: xvaging_noglacier = -1 
     end type
 
     !* PROCESS_ACTIVE: Variable to enable SVS.
@@ -832,6 +835,14 @@ module runsvs_mesh
         endif
 
         write(*, nml = surface_cfgs)
+
+        !> Initialize snowpack constants for Crocus and ES
+        call ini_csts
+
+        ! Update physical parameters for Crocus using values provided in MESH_parameter.txt 
+        if(svs_mesh%vs%xvaging_noglacier>0.) then
+               xvaging_noglacier=svs_mesh%vs%xvaging_noglacier
+        end if 
 
         !> Initialize the physics bus.
         call phy_businit(ni, nk)

@@ -256,8 +256,6 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       IF(KOUNT.EQ.1) then
 
          ! ---------------- Initialize variables for ES and Crocus snowpack schemes--------------------  
-       
-         CALL INI_CSTS
 
          DO I=1,N
             PGFLUXSNOW(I)=0.0
