@@ -75,3 +75,6 @@ hsnowcomp B92     ! Option for the compaction scheme for Crocus
 lout_snow_profile  .true.  ! Create output file containing detailed information on snowpack layering. 
 nprofile_day     4          ! Number of snow profiles per day (can be  1, 2, 4, 6, 12, 24)
 lout_snow_enbal  .false.    ! Create output file containing information about the snowpack energy and mass budget
+
+!> Physical constant for snowpack scheme (uncomment to use)
+!>xvaging_noglacier  60 ! Aging coefficient (in days) used for albedo calculation in visible range (see modd_snow_par)
