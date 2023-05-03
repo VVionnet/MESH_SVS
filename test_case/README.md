@@ -52,9 +52,8 @@ This folder contains a setup for a test of MESH-SVS in  point mode at the Col de
 * Requires the package xarray and pandas. `snowtools` requires extra packages (see the dedicated webpage). 
 
 
-On the ECCC collaboration server **GPSCC**, you need to load a specific conda environement to get accees to the xarray and pandas packages. 
+On the ECCC collaboration server **GPSCC**, you need to load a specific version of python that contins all the package that are needed:  
 
 ```
-. ssmuse-sh -x hpco/exp/mib002/anaconda2/anaconda2-5.0.1-hpcobeta2
-source activate /home/vvi001/.conda/envs/env_py3p6_vv
+. ssmuse-sh -p /fs/ssm/eccc/cmd/cmds/env/python/latest
 ```

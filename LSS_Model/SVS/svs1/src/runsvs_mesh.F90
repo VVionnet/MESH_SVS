@@ -19,6 +19,7 @@ module runsvs_mesh
     use sfcbus_mod
     use sfc_options
     use svs_configs
+    USE MODD_SNOW_PAR,  ONLY : XVAGING_NOGLACIER
 
     use str_mod, only: str_concat
 
@@ -94,6 +95,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_HSNOWHOLD = 'HSNOWHOLD' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_HSNOWRES = 'HSNOWRES' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LSNOWDRIFT_SUBLIM = 'LSNOWDRIFT_SUBLIM' ! For svs2 only 
+    character(len = *), parameter, public :: VN_SVS_XVAGING_NOGLACIER = 'XVAGING_NOGLACIER' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_SNOMA = 'SNOMA'
     character(len = *), parameter, public :: VN_SVS_SNVMA = 'SNVMA'
     character(len = *), parameter, public :: VN_SVS_SNOMA_SVS = 'SNOMA_ML'
@@ -102,6 +104,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_SNODIAMOPT_SVS = 'SNODOPT_ML'
     character(len = *), parameter, public :: VN_SVS_SNOSPHERI_SVS = 'SNOSPH_ML'
     character(len = *), parameter, public :: VN_SVS_SNOHIST_SVS = 'SNOHIST_ML'
+    character(len = *), parameter, public :: VN_SVS_SNOTYPE_SVS = 'SNOTYPE_ML'
     character(len = *), parameter, public :: VN_SVS_TSNOW_SVS = 'TSNOW_ML'
     character(len = *), parameter, public :: VN_SVS_WSNOW_SVS = 'WSNOW_ML'
     character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_PROFILE = 'LOUT_SNOW_PROFILE' ! For svs2 only 
@@ -196,6 +199,7 @@ module runsvs_mesh
         integer :: nprofile_day = 4 !
         logical :: lsoil_freezing_svs1 = .false.
         logical :: lwater_ponding_svs1 = .false.
+        real :: xvaging_noglacier = -1 
     end type
 
     !* PROCESS_ACTIVE: Variable to enable SVS.
@@ -832,6 +836,14 @@ module runsvs_mesh
 
         write(*, nml = surface_cfgs)
 
+        !> Initialize snowpack constants for Crocus and ES
+        call ini_csts
+
+        ! Update physical parameters for Crocus using values provided in MESH_parameter.txt 
+        if(svs_mesh%vs%xvaging_noglacier>0.) then
+               xvaging_noglacier=svs_mesh%vs%xvaging_noglacier
+        end if 
+
         !> Initialize the physics bus.
         call phy_businit(ni, nk)
 
@@ -1220,7 +1232,8 @@ ierr = 200
                             trim(VN_SVS_SNOSPHERI_SVS) // '_' // trim(adjustl(level)), &
                             trim(VN_SVS_SNOHIST_SVS) // '_' // trim(adjustl(level)), &
                             trim(VN_SVS_TSNOW_SVS) // '_' // trim(adjustl(level)), &
-                            trim(VN_SVS_WSNOW_SVS) // '_' // trim(adjustl(level)) 
+                            trim(VN_SVS_WSNOW_SVS) // '_' // trim(adjustl(level)), & 
+                            trim(VN_SVS_SNOTYPE_SVS) // '_' // trim(adjustl(level)) 
           end do
           write(iout_snow_profile, *)
        endif
@@ -1494,7 +1507,8 @@ ierr = 200
                        busptr(vd%snospheri_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
                        busptr(vd%snohist_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
                        busptr(vd%tsnow_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                       busptr(vd%wsnow_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+                       busptr(vd%wsnow_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
+                       busptr(vd%snotype_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
                 end do
                 write(iout_snow_profile, *)
 

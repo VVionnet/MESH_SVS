@@ -119,6 +119,7 @@ subroutine sfc_businit(moyhr,ni,nk)
         snohist_svs,snohistv_svs,   &
         snoma_svs, snomav_svs, &
         snoden_svs, snodenv_svs,   &
+        snotype_svs, snotypev_svs, &
         subldrifta, subldriftv,     &
         swnetsa, swnetsv,        &
         taf, &
@@ -582,6 +583,8 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR3D1(snospheriv_svs,'VN=snospheriv_svs ;ON=G2EV;VD=snow grain sphericity under veg (per layer)  ;VS=A*'//ns//'  ;VB=p1')
       PHYVAR3D1(snohist_svs,   'VN=snohist_svs  ;ON=HIES;VD=snow grain historical variable (per layer)     ;VS=A*'//ns//'  ;VB=p1')
       PHYVAR3D1(snohistv_svs,  'VN=snohistv_svs ;ON=HIEV;VD=snow grain historical variable under veg (per layer)     ;VS=A*'//ns//'           ;VB=p1')
+      PHYVAR3D1(snotype_svs,'VN=snotype_svs;ON=G3ES;VD=diag. snow grain type (per layer)             ;VS=A*'//ns//'  ;VB=p1')
+      PHYVAR3D1(snotypev_svs,'VN=snotypev_svs;ON=G3EV;VD=diag. snow grain type under veg (per layer) ;VS=A*'//ns//'  ;VB=p1')
       PHYVAR3D1(snoma_svs,     'VN=snoma_svs    ;ON=I5ES;VD=snow mass (per layer)                          ;VS=A*'//ns//'  ;VB=p1')
       PHYVAR3D1(snomav_svs,    'VN=snomav_svs   ;ON=I5EV;VD=snow mass under veg (per layer)                ;VS=A*'//ns//'  ;VB=p1')
       PHYVAR3D1(snoden_svs,    'VN=snoden_svs   ;ON=7SES;VD=absolute snow density (per layer)              ;VS=A*'//ns//'  ;VB=p1')

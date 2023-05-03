@@ -65,7 +65,7 @@ hsnowscheme  CRO ! Selection among CRO and ES
 
 hsnowdrift_cro  VI13 ! Option for the snowdrift scheme for Crocus: Mechanical transformation of snow grain and compaction and effect of wind  on falling snow properties
 lsnowdrift_sublim  .false. !# Activate mass loss due to blowing snow sublimation in ES and Crocus
-hsnowmetamo CI13  ! Option for the metamorphism scheme for Crocus
+hsnowmetamo C13  ! Option for the metamorphism scheme for Crocus
 hsnowrad  B92     ! Option for the radiative transfer scheme for Crocus
 hsnowfall V12     ! Option for the falling snow density for Crocus
 hsnowcond Y81     ! Option for the thermal conductivity scheme for Crocus
@@ -75,3 +75,6 @@ hsnowcomp B92     ! Option for the compaction scheme for Crocus
 lout_snow_profile  .true.  ! Create output file containing detailed information on snowpack layering. 
 nprofile_day     4          ! Number of snow profiles per day (can be  1, 2, 4, 6, 12, 24)
 lout_snow_enbal  .false.    ! Create output file containing information about the snowpack energy and mass budget
+
+!> Physical constant for snowpack scheme (uncomment to use)
+!>xvaging_noglacier  60 ! Aging coefficient (in days) used for albedo calculation in visible range (see modd_snow_par)
