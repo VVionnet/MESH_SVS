@@ -108,11 +108,11 @@ subroutine sfc_businit(moyhr,ni,nk)
    !--------   Speficic parameter FOR SVS 2 -----------------
    character(len=2) :: ns
    integer :: legv,qaf,    &
-        hpsa,hpsv, gfluxsa, gfluxsv,        &
+        hpsa,hpsv, gfluxsa, gfluxsv, lesc, lescaf,    &
         lwnetsa, lwnetsv,        &
         esa, esv, &
         qgr, qgv, qveg, resagrv,        &
-        rsnows_acc, rsnowsv_acc, skyviewa, &
+        rsnows_acc, rsnowsv_acc, skyviewa, sncma, &
         snoage_svs, snoagev_svs,  &
         snodiamopt_svs, snodiamoptv_svs, &
         snospheri_svs, snospheriv_svs,   &
@@ -522,6 +522,8 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR2D1(laivl,        'VN=laivl        ;ON=LAIL;VD=leaf area index for low vegetation only                           ;VB=p0')
       PHYVAR2D1(latflaf,      'VN=latflaf      ;ON=ALAT;VD=Accum. of LATF at all levels (kg/m2 = mm)                         ;VB=p0')
       PHYVAR3D1(latflw,       'VN=latflw       ;ON=LATF;VD=Lateral flow                                   ;VS=A*'//ngl//'  ;VB=p0')
+      PHYVAR2D1(lesc,         'VN=lesc         ;ON=LSC ;VD=latent heat flux over snow intercepted in high-veg                ;VB=v0')
+      PHYVAR2D1(lescaf,       'VN=lescaf       ;ON=LSCA;VD=accum. of sublimation from intercepted snow                       ;VB=p0')      
       PHYVAR2D1(leg,          'VN=leg          ;ON=L2  ;VD=latent heat flux over bare grnd                                   ;VB=v0')
       PHYVAR2D1(legv,         'VN=legv         ;ON=LEGV;VD=LE over grnd under veg fraction                                   ;VB=v0')
       PHYVAR2D1(ler,          'VN=ler          ;ON=LR  ;VD=latent heat flux from leaves                                      ;VB=v0')
@@ -570,6 +572,7 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR2D1(skyview,      'VN=skyview      ;ON=SVF ;VD=sky view factor for tall vegetation                               ;VB=p0')
       PHYVAR2D1(skyviewa,     'VN=skyviewa     ;ON=SVFA ;VD=sky view factor for av. vegetation                               ;VB=p0')
       PHYVAR2D1(slop,         'VN=slop         ;ON=SLOP;VD=average maximum subgrid-scale topo slope (nil)                    ;VB=p1')
+      PHYVAR2D1(sncma,        'VN=sncma        ;ON=SCM ;VD=mass of intercepted snow in high vegehtation                      ;VB=p1')      
       PHYVAR2D1(snoal,        'VN=snoal        ;ON=SNAL;VD=snow-over-low-veg/bare-ground albedo                              ;VB=p1        ;MIN=0')
       PHYVAR2D1(snoden,       'VN=snoden       ;ON=SNDN;VD=snow-over-low-veg/bare-ground density in kg/m3                    ;VB=p0        ;MIN=0')
       PHYVAR2D1(snodpl,       'VN=snodpl       ;ON=SNDP;VD=snow-over-low-veg/bare-ground depth                               ;VB=p1        ;MIN=0')

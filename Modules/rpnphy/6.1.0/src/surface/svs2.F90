@@ -24,7 +24,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    use sfcbus_mod
    use sfc_options, only: atm_external, atm_tplus, radslope, jdateo, &
         use_photo, nclass, zu, zt, sl_Lmin_soil, VAMIN, svs_local_z0m, &
-        vf_type, nsl
+        vf_type, nsl, lsnow_interception_svs2
    use svs_configs
 
    use tdpack
@@ -127,9 +127,9 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
    real,dimension(n) :: alva, cg, cvpa, del, dwaterdt
    real,dimension(n) :: eva, gamva, hrsurf
-   real,dimension(n) :: leff, lesnofrac, lesvnofrac, rainrate_mm
+   real,dimension(n) :: leff, lesnofrac, lesvnofrac, rainrate_mm, rainrate_mm_veg 
    real,dimension(n) :: leslnofrac, lesvlnofrac
-   real,dimension(n) :: rgla, rhoa, snowrate_mm, stom_rs, stomra, rpp
+   real,dimension(n) :: rgla, rhoa, snowrate_mm,snowrate_mm_veg, stom_rs, stomra, rpp
    real,dimension(n) :: suncosa, sunother1, sunother2, sunother3
    real,dimension(n) :: sunother4, trad, tva, vdir, vmod, vmod_lmin, wrmax, wvegt
 ! 
@@ -477,6 +477,30 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                          N, NL_SVS)
       if (phy_error_L) return
 
+
+! 
+     IF(LSNOW_INTERCEPTION_SVS2) THEN
+
+            CALL SNOW_INTERCEPTION_SVS2(tt,hu, ps, vmod,           &
+                              rainrate_mm,snowrate_mm, bus(x(SNCMA     ,1,1)),  &
+                              bus(x(LESC     ,1,1)),bus(x(LESCAF     ,1,1)),    &
+                              BUS(x(LAIVH  ,1,1)), BUS(x(VEGH   ,1,1)),    &
+                              rainrate_mm_veg,snowrate_mm_veg   ,               &
+                              DT, N)
+
+             write(*,*) 'Inter snw',bus(x(SNCMA     ,1,1)),  snowrate_mm(:) ,snowrate_mm_veg(:)
+
+     ELSE
+
+
+       ! Rainfall and snowfall rate below high-vegetation are not impacted by the presence of high-vegetation  
+          DO I=1,N
+            rainrate_mm_veg(i) = rainrate_mm(i) 
+            snowrate_mm_veg(i) = snowrate_mm(i) 
+         ENDDO
+          
+      ENDIF
+
 !     Prepare radiation for snow under high veg --> Impact of vegetation on incoming SW and LW 
       DO I=1,N
            PRG_VEG(I)   = zfsolis(I) * bus(x(VEGTRANS,I,1))              ! Incoming SW under VEG
@@ -498,7 +522,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                          ps,tt,PRG_VEG,     &
                          hu, VMOD, &
                          PRAT_VEG,         &
-                         RAINRATE_MM, SNOWRATE_MM,                                       &
+                         RAINRATE_MM_VEG, SNOWRATE_MM_VEG,                      &
                          RHOA, bus(x(zusl,1,1)),  bus(x(ztsl,1,1)),             &
                          BUS(X(ALGR,1,1)), PD_G, PDZG,                          &
                          bus(x(RSNOWSV,1,1)), bus(x(GFLUXSV,1,1)),bus(x(RNETSV,1,1)) , bus(x(HFLUXSV ,1,1)), &
@@ -527,6 +551,9 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
             bus(x(WSNOW,I,1))   =  bus(x(WSNOW,I,1)) + bus(x(WSNOW_SVS ,I,J))*1000.
             bus(x(WSNV,I,1))   =  bus(x(WSNV,I,1)) + bus(x(WSNOWV_SVS ,I,J))*1000.
          ENDDO
+
+         write(*,*) 'SWE Open', bus(x(SNOMA,I,1))
+         write(*,*) 'SWE Forest', bus(x(SNVMA,I,1)) 
 
 ! Cumulated liquid water runoff leaving the snowpack 
          bus(x(RSNOWS_ACC,I,1)) = bus(x(RSNOWS_ACC,I,1)) + bus(x(RSNOWSA,I,1))*DT

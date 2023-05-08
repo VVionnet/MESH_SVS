@@ -333,6 +333,23 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
                     call assign_line_args(svs_mesh%vs%lout_snow_enbal, args(2), istat)
                 end if
 
+            case (VN_SVS_LOUT_SNOW_VEGH)
+                if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS' ) then
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    p = 1
+                    call assign_line_args(svs_mesh%vs%lout_snow_vegh, args(2), istat)
+                end if
+                
+
+            case (VN_SVS_LSNOW_INTERCEPTION_SVS2)
+                if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS' ) then
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    p = 1
+                    call assign_line_args(svs_mesh%vs%lsnow_interception_svs2, args(2), istat)
+                end if                
+
             case (VN_SVS_NPROFILE_DAY)
                 if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS') then
                     istat = istat + radix(istat)**pstat%INACTIVE
