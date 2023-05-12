@@ -1450,9 +1450,6 @@ ierr = 200
         if (.not. svs_mesh%PROCESS_ACTIVE) return
 
         !> Update variables (equivalent to calls to 'phyput_input_param' and 'sfc_get_input_param').
-        write(time_run_now, "(i4.4, 2i2.2, '.', 2i2.2)") ic%now%year, ic%now%month, ic%now%day, ic%now%hour, ic%now%mins
-        idateo = cmcdate_fromprint(time_run_now)
-        jdateo = jdate_from_cmc(idateo)
 
 
     ! Write SVS hourly outputs
@@ -1550,11 +1547,7 @@ ierr = 200
                         busptr(vd%tsnowveg%i)%ptr(1:ni, trnch),busptr(vd%tsnowveg%i)%ptr((ni+1):2*ni, trnch)
               write(iout_svs1_snow, *)
 
-
            end if
-
-
-
 
         end if
 
@@ -1563,6 +1556,12 @@ ierr = 200
             call runsvs_mesh_copy_vs_to_bus()
             kount = 0
             call inichamp4(kount, trnch, ni, nk)
+
+            ! Compute beginning date of simulation
+            write(time_run_now, "(i4.4, 2i2.2, '.', 2i2.2)") ic%now%year, ic%now%month, ic%now%day, ic%now%hour, ic%now%mins
+            idateo = cmcdate_fromprint(time_run_now)
+            jdateo = jdate_from_cmc(idateo)
+
         end if
 
         !> Increment 'kount'.
