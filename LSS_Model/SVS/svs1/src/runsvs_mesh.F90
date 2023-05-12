@@ -1476,6 +1476,8 @@ ierr = 200
         !> Local variables.
         integer i, idateo, ierr, j, k, istat, nfreq
 
+        !integer yyb,mmb,ddb,hhb,mmb
+
         real :: tt,hu
         real, dimension(il1:il2) :: tve
         !real, dimension(il1:il2) :: tt
@@ -1488,7 +1490,6 @@ ierr = 200
         write(time_run_now, "(i4.4, 2i2.2, '.', 2i2.2)") ic%now%year, ic%now%month, ic%now%day, ic%now%hour, ic%now%mins
         idateo = cmcdate_fromprint(time_run_now)
         jdateo = jdate_from_cmc(idateo)
-
 
     ! Write SVS hourly outputs
 1010    format(9999(g15.7e2, ','))
@@ -1612,6 +1613,7 @@ ierr = 200
             kount = 0
             call inichamp4(kount, trnch, ni, nk)
         end if
+
 
         !> Increment 'kount'.
         kount = kount + 1

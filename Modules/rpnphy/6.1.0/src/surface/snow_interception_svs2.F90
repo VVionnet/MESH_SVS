@@ -134,7 +134,7 @@
       DO I=1,N
          IF(SNCMA(I)> 0. .OR. SR(I)>0.) THEN  ! Snow is present on the canopy or occurrence of snowfall
 
-                write(*,*) 'In inter', SNCMA(1), SR(1)*DT
+                !write(*,*) 'In inter', SNCMA(1), SR(1)*DT
                 !!!!!!!!
                 ! Interception Code (Simple version of HP98)
                 !!!!!!!!
@@ -148,7 +148,7 @@
                  FVEG(I) = 0.29 * LOG(LAIVH(I))+ 0.55
                  FVEG(I) = MIN(1., MAX(0., FVEG(I)))   
 
-                write(*,*) 'Veg prop',  LAIVH(I), FVEG(I)          
+                !write(*,*) 'Veg prop',  LAIVH(I), FVEG(I)          
 
                 ! Compute Canopy interception
                 INTCPT(I) = (SCAP(I) - SNCMA(I))*(1 -exp(-FVEG(I)*SR(I)*DT/SCAP(I)))
@@ -159,7 +159,7 @@
                 ! Update the amount of snow that falls below high vegetation
                 DIRECT_SNOW(I)  = SR(I)*DT - INTCPT(I)
 
-                write(*,*) 'After inter', SNCMA(1), INTCPT(1)
+                !write(*,*) 'After inter', SNCMA(1), INTCPT(1)
 
                 !!!!!!!!
                 ! Sublimation Code  (Lundquist et al, 2021)
@@ -174,7 +174,7 @@
                    ! Eq. 5 in Lundquist et al. (2021)
                    ! Only account for sublimation so far
                    SUB_CPY  = MAX(0.,CSUB * VSUBL(I) * PS(I) / EPS *(PQSAT(I)-HU(I)) * DT)
-                   write(*,*) 'Subl',PQSAT(I), HU(I),SUB_CPY
+                  ! write(*,*) 'Subl',PQSAT(I), HU(I),SUB_CPY
                 ENDIF
 
                 ! Remove mass of intercepted lost by sublimation
@@ -189,7 +189,7 @@
                 ESUBSNWC(I) = SUB_CPY/DT 
 
 
-                write(*,*) 'After Subl', SNCMA(1), SUB_CPY
+                !write(*,*) 'After Subl', SNCMA(1), SUB_CPY
 
                 !!!!!!!!
                 ! Unloading Code 
@@ -223,8 +223,8 @@
                 ! high veg
                 NET_SNOW(I) = DIRECT_SNOW(I) + UNLOAD(I)
 
-                write(*,*) 'After Unload', SNCMA(1), UNLOAD(1),T(1)
-                write(*,*) 'Drip', DRIP_CPY(1),'Solid', SNW_UNLOAD
+                !write(*,*) 'After Unload', SNCMA(1), UNLOAD(1),T(1)
+                !write(*,*) 'Drip', DRIP_CPY(1),'Solid', SNW_UNLOAD
 
          ENDIF
        END DO

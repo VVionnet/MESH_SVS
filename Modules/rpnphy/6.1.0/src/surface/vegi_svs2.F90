@@ -240,8 +240,6 @@
 !*       8.     MAXIMUM VOLUMETRIC WATER CONTENT RETAINED ON VEGETATION (m3/m3)
 !               ------------------------------
 !
-     
-          
              WRMAX(I) = 0.2 * LAI(I)
 
           ELSE

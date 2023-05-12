@@ -227,14 +227,19 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
           snowrate_mm(i) = bus(x(snowrate,i,1)) * M_TO_MM
       ENDDO
 
-
+  
       ! Calculate greenwich hour 
       call mu_js2ymdhms(jdateo, yy, mo, dd, hh, mn, sec)
       hz0 = hh + float(mn)/60. + float(sec)/3600.
       hz = amod(hz0+ (float(kount)*dt)/3600., 24.)
       
+
+
       !Determine the current julian day
       julien = real(jdate_day_of_year(jdateo + kount*int(dt) + MU_JDATE_HALFDAY))
+      !write(*,*) 'Day',mo,dd,hh,mn,sec,zfsolis(1)
+      write(*,*) 'Day2',hz,zfsolis(1)
+      !write(*,*) 'Day 3',bus(x(dlat,1,1)),bus(x(dlon,1,1))
       !Get local solar angle
       call suncos2(suncosa,sunother1,sunother2,sunother3,sunother4,n, &
                    bus(x(dlat,1,1)),bus(x(dlon,1,1)),hz,julien,.false.)
@@ -394,7 +399,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            BUS(x(PSNVH  ,1,1)), BUS(x(PSNVHA ,1,1)), &  
            ALVA, BUS(x(LAIVA  ,1,1)), CVPA, EVA, BUS(x(Z0HA ,1,1)),&
            BUS(x(Z0MVG,1,1)), RGLA, STOMRA,   &
-           GAMVA,bus(x(CONDSLD    ,1,1)) , bus(x(CONDDRY   ,1,1)), N)
+           GAMVA,bus(x(CONDSLD    ,1,1)) , bus(x(CONDDRY   ,1,1)), &
+           bus(x(VGHEIGHT   ,1,1)), N)
 !
 !     
 
@@ -455,8 +461,16 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       if (phy_error_L) return
 
 
+!      Effect of high vegetation on met forcing
 
 
+      CALL  CANOPY_MET_SVS2(tt, hu, ps, vmod,zfsolis, bus(x(FDSI,1,1)), &
+                         bus(x(TVEGE,1,1)),bus(x(zusl,1,1)),  bus(x(ztsl,1,1)),  & 
+                         PZENITH, PRG_VEG, PRAT_VEG, & 
+                         BUS(x(LAIVH  ,1,1)),bus(x(VEGTRANS,1,1)) , bus(x(SKYVIEW,1,1)) , &
+                         bus(x(EMISVH,1,1)),N) 
+     
+     
 !     Snow over bare/low ground
 
       CALL SNOW_SVS(   bus(x(SNOMA_SVS,1,1)), bus(x(TSNOW_SVS,1,1)), bus(x(WSNOW_SVS,1,1)),    &
@@ -488,7 +502,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                               rainrate_mm_veg,snowrate_mm_veg   ,               &
                               DT, N)
 
-             write(*,*) 'Inter snw',bus(x(SNCMA     ,1,1)),  snowrate_mm(:) ,snowrate_mm_veg(:)
+                      ! write(*,*) 'Inter snw',bus(x(SNCMA     ,1,1)),  snowrate_mm(:) ,snowrate_mm_veg(:)
 
      ELSE
 
@@ -507,6 +521,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
            PRAT_VEG(I)  = bus(x(SKYVIEW,I,1)) * bus(x(FDSI,I,1)) +    &  ! Incoming LW under veg
                  (1. - bus(x(SKYVIEW,I,1))) * EVA(I) * STEFAN * (bus(x(TVEGE,I,2)))**4.  ! add EVA--nathalie
+
+         !write(*,*) 'Ori',PRG_VEG(I),PRAT_VEG(I)
 
       ENDDO
 
@@ -552,8 +568,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
             bus(x(WSNV,I,1))   =  bus(x(WSNV,I,1)) + bus(x(WSNOWV_SVS ,I,J))*1000.
          ENDDO
 
-         write(*,*) 'SWE Open', bus(x(SNOMA,I,1))
-         write(*,*) 'SWE Forest', bus(x(SNVMA,I,1)) 
+         !write(*,*) 'SWE Open', bus(x(SNOMA,I,1))
+         !write(*,*) 'SWE Forest', bus(x(SNVMA,I,1)) 
 
 ! Cumulated liquid water runoff leaving the snowpack 
          bus(x(RSNOWS_ACC,I,1)) = bus(x(RSNOWS_ACC,I,1)) + bus(x(RSNOWSA,I,1))*DT
