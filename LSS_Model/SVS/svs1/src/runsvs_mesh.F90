@@ -243,7 +243,7 @@ module runsvs_mesh
     integer, private :: bus_length
     integer, allocatable, private :: bus_ptr(:)
     real, private :: time_dt = 0
-    real, private :: lmo_winter = -1.
+    real, private :: lmo_winter = -1.0
     integer :: kount_reset = 0
     integer, private :: kount = 0
     integer, parameter, private :: trnch = 1

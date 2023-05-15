@@ -14,7 +14,7 @@
 !CANADA, H9P 1J3; or send e-mail to service.rpn@ec.gc.ca
 !-------------------------------------- LICENCE END ---------------------------
 
-      SUBROUTINE SNOW_INTERCEPTION_SVS2 (T, HU,PS,VMOD,     & 
+      SUBROUTINE SNOW_INTERCEPTION_SVS2 (T, HU,PS,VMOD, ISWR,      & 
                      RR, SR, SNCMA, ESUBSNWC,SUBSNWC_CUM, LAIVH, VEGH,    &
                      RR_VEG, SR_VEG, DT,  N)
 
@@ -30,7 +30,7 @@
       INTEGER N
 
 
-      REAL SNCMA(N), RR(N), SR(N),  RR_VEG(N), SR_VEG(N)
+      REAL SNCMA(N), RR(N), SR(N),  RR_VEG(N), SR_VEG(N), ISWR(N)
       REAL PS(N), RHOA(N), HU(N)
       REAL LAIVH(N), T(N), VEGH(N),VMOD(N)
       REAL ESUBSNWC(N), SUBSNWC_CUM(N)
@@ -62,6 +62,7 @@
 ! HU          Specific humidity of air at the model lowest level [kg kg-1]
 ! VMOD        wind speed at the forcing level (above high-vegetation) [m/s]
 ! PS          Surface pressure [Pa]
+! ISWR        Solar radiation incident at the top of the high-vegetation [W m-2]
 
 !             - Input (other parameters)
 ! DT          time step [s]
@@ -91,6 +92,13 @@
       REAL, DIMENSION(N) :: UNLOAD !  Unloaded mass (kg/m^2)
       REAL, DIMENSION(N) :: VSUBL ! Ventilation wind speed used in the calcultation of sublimation
 
+
+      CHARACTER(LEN=4) :: HDIFU  ! Option to compute the molecular diffusivity of water vapour in air
+      CHARACTER(LEN=4) HSUBL_CANO ! Option used for the snow canopy sulimation
+
+      REAL XI2,EXT2, WINDEXT2, UVENT, ESI, EVAP, LAMBDA, SSTAR, A1, B1,  LS, J
+      REAL C1, SIGMA, SVDENS, SUB_RATE,SUB_POT, MPM, CE
+      REAL NU, NR, MU,DVAP
      
      ! Parameters used in the snow interception code
      !
@@ -100,25 +108,52 @@
 
      ! Parameters used in the snow sublimation code
      !
+     ! LU21             
       REAL, PARAMETER ::   CSUB =  0.002/3600.  ! Coefficient of transfert in Lundquist et al (2021) (kg s m**-3 Pa**-1)
-      
-      REAL   ::   EPS  ! Ratio of molecular weights of water and dry air
+
+     ! HP98
+      REAL, PARAMETER ::     ALPHA = 5   ! Shape parameter used when computing the averahe sublimation rate
+      REAL, PARAMETER ::     GAMA = 1.15 ! Parameter used in the computation of the exponential wind profile in the canopy
+      REAL, PARAMETER ::    ZVENT = 0.75 ! Ratio between ventilation wind speed height and tree height [-]
+      REAL, PARAMETER :: RADIUS_ICESPH = 5e-4 ! Radius of single 'ideal' ice shpere [m]
+      REAL, PARAMETER :: ALBEDO_ICESPH = 0.8  ! Albedo of single 'ideal' ice shpere [-] 
+      REAL, PARAMETER :: KS = 0.0114          ! Snow shape coefficient for jack pine. Taken from Pomeroy et al. (1998)
+      REAL, PARAMETER :: FRACT = 0.37 ! Fractal dimension of intercepted snow [-]
+
+
+      REAL   EPS ! Ratio of molecular weights of water and dry air
 
      ! Parameters used in the snow unloading code
      !
-      REAL ::  TCNC ! Canopy unloading time scale for cold snow (s)
-      REAL ::  TCNM  ! Canopy unloading time scale for melting snow (s)
+      REAL, PARAMETER  ::  TCNC = 240*3600. ! Canopy unloading time scale for cold snow (s)
+      REAL, PARAMETER ::  TCNM = 48*3600. ! Canopy unloading time scale for melting snow (s)
+
+
+     ! Physical constant used in the code 
+     ! TODO: Use the constants from GEM
+
+      REAL, SAVE :: MWAT = 0.0180153 ! Molecular weight of water [kg mol-1]
+      REAL, SAVE :: RGAZ = 8.314  !  Universal gas constant [J mol-1 K-1]
+      REAL, SAVE :: CICE = 2.102e3; !  Heat capacity of ice [J kg-1 K-1]
 
      !
      ! 0. Initialize parameters
      !
 
       EPS =  XRD/XRV
-      TCNC = 240*3600.
-      TCNM = 48*3600.
      !
      ! 1. Configure the options used in the code
      !
+
+      HDIFU = 'HP98' ! Selection the formulation used to compute the molecular  diffusivity  of  water  vapour  in  air
+                      !    'HP98': formulation used in HP98
+                      !    'HP13': formulation used in Harder and Pomeroy (2013)
+                      !    'TM66': original formulation used in Thorpe and Mason (1966) including the contribution of air pressure
+                      !    'PU98': formulation used in Pruppacher et al.(1998)
+
+      HSUBL_CANO = 'HP98'  ! Select the approach used to compute the mass loss due sublimation of intercepted snow 
+                      ! 'LU21': simple approach from Lundquist et al. ! (2021)
+                      ! 'HP98': formulation proposed by Harder and Pomeroy (1998) 
 
      
      ! 2. Evolution of snow mass intercepted by the canopy
@@ -165,28 +200,127 @@
                 ! Sublimation Code  (Lundquist et al, 2021)
                 !!!!!!!!     
 
-                VSUBL(I) = 0.7*VMOD(I) ! Initial and gross assumption. 
+                IF(HSUBL_CANO == 'LU21') THEN
+                    VSUBL(I) = 0.7*VMOD(I) ! Initial and gross assumption. 
                                    ! Need to be revised! 
           
 
-                IF( SNCMA(I)>EPSILON_SVS .AND. T(I) < 273.15) THEN
-                   ! Mass of intercepted snow loss due to sublimation
-                   ! Eq. 5 in Lundquist et al. (2021)
-                   ! Only account for sublimation so far
-                   SUB_CPY  = MAX(0.,CSUB * VSUBL(I) * PS(I) / EPS *(PQSAT(I)-HU(I)) * DT)
-                  ! write(*,*) 'Subl',PQSAT(I), HU(I),SUB_CPY
-                ENDIF
+                   IF( SNCMA(I)>EPSILON_SVS .AND. T(I) < 273.15) THEN
+                      ! Mass of intercepted snow loss due to sublimation
+                      ! Eq. 5 in Lundquist et al. (2021)
+                      ! Only account for sublimation so far
+                      SUB_CPY  = MAX(0.,CSUB * VSUBL(I) * PS(I) / EPS *(PQSAT(I)-HU(I)) * DT)
+                     ! write(*,*) 'Subl',PQSAT(I), HU(I),SUB_CPY
+                   ENDIF
+
+                ELSE IF(HSUBL_CANO == 'HP98') THEN
+
+                   ! Fraction of the entire forest height [-]
+                   XI2 = 1-ZVENT
+
+                   ! Canopy wind speed extinction coefficient [-]
+                   ! Ellis et al (2010) (EL10) refers to Eagleson (2002) to justify the formulation of this coefficient
+                   EXT2 = GAMA * LAIVH(I) 
+
+                   ! Computation of ventilation wind speed of intercepted snow derived from above-caopny wind speed  [Eq 8 in EL10]
+                   ! Estimated within canopy wind speed at fraction XI2 of the entire tree height [Eq 8 in EL10]  [m s-1]
+                   ! TODO: need to use wind speed at top of canopy derived from log profile and displacement height (cf
+                   ! canopy_met_svs2.F90)
+                   VSUBL(I) = VMOD(I) * EXP(-1 * EXT2 * XI2)
+
+                    ! Saturation vapor pressure with respect to ice (Buick, 1981) [Pa] 
+                    ! TODO: Crocus approach should be used for consistency
+                    ESI = 611.15 * EXP(22.452 * (T(I)-273.15) / (T(I)-273.15 + 272.55))
+
+                   ! Derive partial vapor pressure from speficic humidity and pressure [Pa]
+                   EVAP = HU(I) * PS(I) / (0.622+0.378 * HU(I) ) 
+
+                   ! Sutherland's equation for kinematic viscosity
+                   MU=1.8325e-5*416.16/( T(I)+120)*(T(I)/296.16)*SQRT(T(I)/296.16)/RHOA(I)
+
+                   ! Compute thermal conductivity of air [J m-1 s-1 K-1]
+                   LAMBDA = 0.000063 * T(I) + 0.00673
+
+                   ! Compute latent heat of sublimation [J kg-1]
+                   ! We use here the formulation of Roges and Yau (1989) as in Harder and Pomeroy (2013)
+                   ! Note that the canopy module in CRHM used a constant value
+                   ! TODO: Crocus approach should be used for consistency
+                   IF(T(I)<273.15) THEN
+                      LS =  1000.0 * (2834.1 - 0.29 *(T(I)-273.15) - 0.004*(T(I)-273.15)**2.)
+                   ELSE 
+                      LS = 1000.0 * (2501.0 - (2.361 * (T(I)-273.15)))
+                   ENDIF    
+
+                   ! Compute diffusivity of water vapour in air [m2 s-1]
+                   IF(HDIFU=='HP98') THEN
+                      DVAP = 2.063e-5 * (T(I)/273.15)**(-1.75)
+                   ELSE IF(HDIFU=='HP13') THEN
+                      DVAP = 2.063e-5 * (T(I)/273.15)**1.75
+                   ELSE IF(HDIFU=='TM66') THEN
+                     DVAP = 2.063e-5 *   (T(I)/273.15)**1.75 * (PS(I)/101325)
+                    ELSE IF(HDIFU=='PU98') THEN
+                      DVAP =  0.211E-4 * (T(I)/273.15)**1.94 * (101325/PS(I))
+                   ENDIF
+
+                   ! Compute Reynolds Number     [-]
+                   NR  = 2.0 * RADIUS_ICESPH * UVENT / MU
+
+                   ! Compute the Nusselt Number  [-]
+                   NU = 1.79 + 0.606 * SQRT(NR)
+
+                   ! Incoming shortwave radiation to the ideal snow particle [W m-2]
+                   SSTAR = PI* RADIUS_ICESPH**2. * (1.0 - ALBEDO_ICESPH) * ISWR(I)
+
+                   ! Compute the term used in equation for the sublimation rate of an ice sphere
+                   ! from Thorpe and Masson (1966)
+                   A1  = LAMBDA * T(I) *NU
+                   B1 = ( LS * MWAT /(RGAZ * T(I)) ) -1.0 
+                   J = B1/A1
+                   C1  = 1.0 / (DVAP * NU * SVDENS )
+
+                   ! Compute water vapour deficit with respect to  ice  [-]
+                   SIGMA = EVAP/ESI - 1.0  
+
+                   !write(*,*) 'LS, SVDENS',LS, SVDENS
+
+                   ! Compute the mean mass of a snow particle assuming that the size distribution of 
+                   ! intercepted snow particle follow a gamma distribution with alpha  = 5
+                   ! and a mean radius equals to RADIUS_ICESPH
+                   ! This approach is used in PBSM3D (see EQ 23 in Pomeroy et al (1993))
+                   ! However, it is never described in the papers about the canopy module in CRHM (J. Pomeroy, personal
+                   ! communication, 2022)
+                   MPM = 4.0 / 3.0 * PI * 917. * RADIUS_ICESPH**3. * (1.0 + 3.0 / ALPHA + 2.0 / ALPHA**2.)
+
+                   ! Sublimation rate coefficient of single 'ideal' ice sphere [s-1]
+                  SUB_RATE = (2.0 *PI * RADIUS_ICESPH *SIGMA - SSTAR *J)/ ( LS *J + C1) / MPM  
+
+                   ! Compute the intercepted snow exposure coefficient
+                   ! 
+                   IF ((SNCMA(I)/SCAP(I)) <=  0.0) THEN
+                      CE = 0.07
+                   ELSE
+                     CE = KS * (SNCMA(I)/SCAP(I))**(-1.0*FRACT) 
+                   ENDIF
+
+                   ! Calculate 'potential' canopy sublimation [s-1]
+                   SUB_POT = SUB_RATE * CE
+
+                   ! Limit sublimation to canopy snow available and take sublimated snow away from canopy snow at timestep start
+                   SUB_CPY = MAX(0.,-SNCMA(I)*SUB_POT*DT)  ! Ensure that only sublimation is computed (neglect solid condensation)
+
+                ENDIF  
 
                 ! Remove mass of intercepted lost by sublimation
                 IF(SUB_CPY>SNCMA(I)) THEN
-                   SUB_CPY = SNCMA(I)
-                   SNCMA(I) = 0.
+                    SUB_CPY = SNCMA(I)
+                    SNCMA(I) = 0.
                 ELSE
-                   SNCMA(I) = SNCMA(I) - SUB_CPY
+                    SNCMA(I) = SNCMA(I) - SUB_CPY
                 ENDIF
 
                 SUBSNWC_CUM(I) = SUBSNWC_CUM(I) +  SUB_CPY
                 ESUBSNWC(I) = SUB_CPY/DT 
+
 
 
                 !write(*,*) 'After Subl', SNCMA(1), SUB_CPY

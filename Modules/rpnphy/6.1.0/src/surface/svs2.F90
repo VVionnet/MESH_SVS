@@ -143,6 +143,11 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
    real,dimension(n) :: prg_veg    ! Surface incoming shortwave radiation under high vegetation
    real,dimension(n) :: prat_veg   ! Surface incoming longwave radiation under high vegetation
+   real,dimension(n) :: pwind_veg  ! Wind speed under high vegetation
+   real,dimension(n) :: ptair_veg  ! Air temperature under high vegetation
+   real,dimension(n) :: phu_veg    ! Air specific humidity under high vegetation
+   real,dimension(n) :: phref_veg  ! Forcing height under high vegetation
+
 
      ! NL_SVS VARIABLES
    real, dimension(n,nl_svs) ::  pd_g, pdzg
@@ -238,7 +243,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       !Determine the current julian day
       julien = real(jdate_day_of_year(jdateo + kount*int(dt) + MU_JDATE_HALFDAY))
       !write(*,*) 'Day',mo,dd,hh,mn,sec,zfsolis(1)
-      write(*,*) 'Day2',hz,zfsolis(1)
+      !write(*,*) 'Day2',hz,zfsolis(1),vmod(1),uu(1),vv(1)
       !write(*,*) 'Day 3',bus(x(dlat,1,1)),bus(x(dlon,1,1))
       !Get local solar angle
       call suncos2(suncosa,sunother1,sunother2,sunother3,sunother4,n, &
@@ -361,6 +366,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
               min_wind_speed=2.5,min_wind_reduc='linear')
       endif
 
+      !write(*,*) 'VMOD',VMOD(1),sl_Lmin_soil,VAMIN
 
       if (i /= SL_OK) then
          call physeterror('svs', 'error returned by sl_prelim()')
@@ -460,15 +466,17 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            N )  
       if (phy_error_L) return
 
-
+!
 !      Effect of high vegetation on met forcing
-
-
-      CALL  CANOPY_MET_SVS2(tt, hu, ps, vmod,zfsolis, bus(x(FDSI,1,1)), &
-                         bus(x(TVEGE,1,1)),bus(x(zusl,1,1)),  bus(x(ztsl,1,1)),  & 
-                         PZENITH, PRG_VEG, PRAT_VEG, & 
-                         BUS(x(LAIVH  ,1,1)),bus(x(VEGTRANS,1,1)) , bus(x(SKYVIEW,1,1)) , &
-                         bus(x(EMISVH,1,1)),N) 
+!
+!
+!      CALL  CANOPY_MET_SVS2(tt, hu, ps, vmod, vdir, zfsolis, bus(x(FDSI,1,1)), &
+!                         bus(x(TVEGE,1,1)),bus(x(zusl,1,1)),  bus(x(ztsl,1,1)),  &
+!                         bus(x(FCOR,1,1)), bus(x(DLAT,1,1)), bus(x(SNVDP,1,1)),bus(x(TSNOWV_SVS,1,1)),bus(x(TPSOILV,1,1)),   &  
+!                         SUNCOSA, PRG_VEG, PRAT_VEG, PWIND_VEG, PTAIR_VEG, PHU_VEG ,  & 
+!                         PHREF_VEG,BUS(x(Z0MVH  ,1,1)), BUS(x(VEGH   ,1,1)), &
+!                         BUS(x(LAIVH  ,1,1)),bus(x(VEGTRANS,1,1)) , bus(x(SKYVIEW,1,1)) , &
+!                         bus(x(EMISVH,1,1)),bus(x(VGHEIGHT,1,1)),N) 
      
      
 !     Snow over bare/low ground
