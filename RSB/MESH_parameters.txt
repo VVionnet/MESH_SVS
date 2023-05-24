@@ -1,0 +1,108 @@
+!> TXT (free-format) MESH configuration file.
+!>
+!> See important notes below to use this file for basin configuration (e.g., to run point mode).
+!>  When running in distributed mode, 'npoints' should correspond to the number of GRUs
+!>  determined from the distributed database (LSS or drainage database, depending on operating mode).
+!>  When running in point mode, 'npoints' defines the number of subbasins/simulation points.
+!> See details on this file format here: [LINK]
+
+!> Basin information.
+!> Only a single column (single point) for point mode.
+!> npoints   ----- 1
+deglat         46.57647 !degrees
+deglng         -72.2233 !degrees
+
+!> Forcing configuration.
+observed_forcing      height !height: uses heights directly.
+!> npoints   ----- 1
+zusl            2 !m, for momentum
+ztsl            2 !m, for temperature/humidity
+
+!> Surface (WATDRN).
+!> npoints   ----- 1
+slop           0.000 !m m**-1
+draindens       50.0 !m m**-2
+
+! > Select land surface scheme
+schmsol  SVS
+
+! ************** Bloc freezing soil SVS1 *****************
+! Soil freezing scheme 
+ lsoil_freezing_svs1  .true.    ! Activate soil freezing and thawing in SVS1 
+
+! Water ponding scheme
+ lwater_ponding_svs1  .false.    ! Activate water ponding in SVS1 
+! watpond 0  ! Heigh in m of ponded water
+! ********************************************************
+
+!> Soils.
+soiltext                 NIL !NIL: required to use soil_levels.txt as-is
+!> By default, values for 3 layers are required and only read. The values of the third layer are applied to all deeper layers.
+!> To override this behaviour, activate "NRSOILLAYEREADFLAG" in MESH_input_run_options.ini with an option.
+!> See details here: https://wiki.usask.ca/display/MESH/NRSOILAYEREADFLAG
+!>  Validate the mapping by activating "DIAGNOSEMODE" in MESH_input_run_options.ini.
+!>  A summary of the soil layers, texture values, and mapping are then printed to MESH_output_echo_print.txt.
+!> nlayers   ----- 1 ----- 2 ----- 3 ----- 4 ----- 5 ----- 6 ----- 7 ----- 8 ----- 9 ---- 10 ---- 11 ---- 12 ---- 13 ---- 14
+sand             0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0    95.0    95.0    95.0 !%
+clay            05.0    05.0    05.0    05.0    05.0    05.0    05.0    05.0    05.0    05.0    05.0 !%
+wsoil          0.083   0.086   0.098 !vol. content - initialisation
+isoil            0.0     0.0     0.0 !vol. content - initialisation
+tpsoil         280.0   280.0   280.0 ! soil temperature below bg/lv  (K) - initialisation
+tpsoilv        280.0   280.0   280.0 ! soil temperature below high veg  (K) - initialisation
+
+tperm      281 ! (Deep soil temperature) - mean 195cm prof SADLP
+
+!> Special values not tied to soil layer scheme.
+!> nlayers   ----- 1 ----- 2
+tground       284.8  284.8 !Kelvin, only 2 values for svs1
+
+!> Vegetation canopies.
+!> Map land cover to the most appropriate land cover in SVS.
+!> Values are required for 26 pre-defined categories.             ** inicover_svs.F90 - vegdat pour fraction **
+!> ncanopies ----- 1 ----- 2 ----- 3 ----- 4 ----- 5 ----- 6 ----- 7 ----- 8 ----- 9 ---- 10 ---- 11 ---- 12 ---- 13 ---- 14 ---- 15 ---- 16 ---- 17 ---- 18 ---- 19 ---- 20 ---- 21 ---- 22 ---- 23 ---- 24 ---- 25 ---- 26
+!>               sea glacier in-lake ever-nl ever-bl deci-nl deci-bl trop-bl  dry-tr ever-sh deci-sh thor-sh shor-gr long-gr   crops    rice   sugar   maize  cotton  irr-cr   urban  tundra   swamp  desert mx-tree   mx-sh
+vf               0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     1.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0 !fraction
+z0v              0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.3     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0 !roughness length
+!> nlayers   ----- 1 ----- 2
+tvege          285.7   285.7 !Kelvin
+!> npoints   ----- 1
+wveg             0.0 !kg m**-2
+
+!! ********* Bloc neige SVS2 ************
+! ! Multilayer Snowpack scheme
+! nsl     20   ! Number of snow layers
+! hsnowscheme  CRO ! Selection among CRO and ES
+
+! hsnowdrift_cro  VI13 ! Option for the snowdrift scheme for Crocus: Mechanical transformation of snow grain and compaction and effect of wind  on falling snow properties
+! lsnowdrift_sublim  .false. !# Activate mass loss due to blowing snow sublimation in ES and Crocus
+! hsnowmetamo C13  ! Option for the metamorphism scheme for Crocus - Autres options B21, C13, T07, F06
+! hsnowrad  B92     ! Option for the radiative transfer scheme for Crocus
+! hsnowfall V12     ! Option for the falling snow density for Crocus
+! hsnowcond Y81     ! Option for the thermal conductivity scheme for Crocus
+! hsnowhold B92     ! Option for the liquid water content scheme for Crocus
+! hsnowcomp B92     ! Option for the compaction scheme for Crocus
+
+! lout_snow_profile  .true.  ! Create output file containing detailed information on snowpack layering. 
+! nprofile_day     4          ! Number of snow profiles per day (can be  1, 2, 4, 6, 12, 24)
+! lout_snow_enbal  .true.    ! Create output file containing information about the snowpack energy and mass budget
+!! **************************************
+
+! ********* Bloc neige SVS1 ************
+!> Snow.
+!> Category: High veg.
+!> nlayers   ----- 1 ----- 2
+tsnowveg      273.16  273.16 !Kelvin
+!> npoints   ----- 1
+snvdp            0.0 !m
+snvden           0.0 !kg m**-3, replaces 'snoro'; replaced if 'snoro' is listed after this line
+snval            0.0 !fraction
+wsnv             0.0 !kg m**-2
+!> Category: Low veg. and bare ground.
+!> nlayers   ----- 1 ----- 2
+tsnow         273.16  273.16 !Kelvin
+!> npoints   ----- 1
+snodpl           0.0 !m
+snoden           0.0 !kg m**-3, replaces 'snoro'; replaced if 'snoro' is listed after this line
+snoal            0.0 !fraction
+wsnow            0.0 !kg m**-2
+! **************************************

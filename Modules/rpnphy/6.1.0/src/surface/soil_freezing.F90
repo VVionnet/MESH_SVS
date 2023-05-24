@@ -128,9 +128,8 @@
               FAC_SNW = 0.5
       ELSE IF(OPT_SNOW ==1) THEN
               FAC_SNW = 1.0
-      ENDIF                   
-
-
+      ENDIF   
+                      
       LAMI   = 2.22 ! Thermal conductivity of ice
       DAY     = 86400.
       CICE    = 2.106E3  ! specific heat of ice 
@@ -141,9 +140,17 @@
       Z0 = 0.01
       RHONEW=100.0
 
+      ! Compute layer depth
+      !
+      ZLAYER(1) =  DELZ(1)
+      DO K =2, NL_SVS
+        ZLAYER(K) = ZLAYER(K-1) + DELZ(K)
+      ENDDO
+      !
+
       DO  I=1,N
         TBTM(I) = TDEEP(I) ! K
-        DBTM(I) = 5.0  ! m
+        DBTM(I) = MAX(5.0, ZLAYER(NL_SVS) + 0.5* DELZ(NL_SVS)) ! m
 
          ! Snow thermal conductitivy
         LAMS(I) = LAMI * SNORO(I)**1.88
@@ -195,13 +202,7 @@
         ENDIF             
       ENDDO
       !
-      ! Compute layer depth
-      !
-      ZLAYER(1) =  DELZ(1)
-      DO K =2, NL_SVS
-        ZLAYER(K) = ZLAYER(K-1) + DELZ(K)
-      ENDDO
-      !
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !     1. Compute the thermal resistances and the heat flux between
       !        adjacent layers
@@ -251,7 +252,7 @@
         ! Treatment of the bottom layer
         ! Use thermal conductivity of the deepest SVS layer
         !
-        RTH(I,NL_SVS+1) = (DBTM(I) - ZLAYER(NL_SVS))/SOILCONDZ(I,NL_SVS)
+        RTH(I,NL_SVS+1) = 0.5* DELZ(NL_SVS)/ SOILCONDZ(I,NL_SVS) + (DBTM(I) - ZLAYER(NL_SVS)) / SOILCONDZ(I,NL_SVS) !(DBTM(I) - ZLAYER(NL_SVS))/SOILCONDZ(I,NL_SVS)
         HFLUX(I,NL_SVS+1) = ( TSOIL(I,NL_SVS)- TBTM(I)) / RTH(I,NL_SVS+1)
         !
       ENDDO
