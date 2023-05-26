@@ -378,6 +378,8 @@ LOGICAL, INTENT(IN)                    :: OATMORAD ! activate atmotartes scheme
                                        ! HSNOWMETAMO=C13 Carmagnola et al 2014
                                        ! HSNOWMETAMO=T07 Taillandier et al 2007
                                        ! HSNOWMETAMO=F06 Flanner et al 2006
+                                       ! HSNOWMETAMO=S-F Schlef et al 2014
+                                       ! HSNOWMETAMO=S-B Schlef et al 2014
                                        !-----------------------
                                        ! Radiative transfer scheme
                                        ! HSNOWRAD=B92 Brun et al 1992
@@ -1791,8 +1793,8 @@ DO JST = 1,IMAX_USE
         !
         IF ( PSNOWDIAMOPT(JJ,JST)>=XVDIAM6*(4.-PSNOWSPHERI(JJ,JST)) .AND. PSNOWSPHERI(JJ,JST)<XVGRAN6 ) THEN
             ! non dendritic case
-            IF ((HSNOWMETAMO == 'B21') .OR. (HSNOWMETAMO == 'F06').OR. &
-               (HSNOWMETAMO == 'S-F').OR.(HSNOWMETAMO == 'T07'))  THEN !calculation of grain size with the new proposed version
+            IF ((HSNOWMETAMO == 'B21') .OR. (HSNOWMETAMO == 'F06') .OR. &
+               (HSNOWMETAMO == 'S-F') .OR. (HSNOWMETAMO == 'T07'))  THEN !calculation of grain size with the new proposed version
               CALL GETGRAINSIZE_B21(PSNOWDIAMOPT(JJ,JST),PSNOWSPHERI(JJ,JST),ZSNOWSIZE)
             ELSEIF (PSNOWDIAMOPT(JJ,JST) - 0.0004*(1+PSNOWSPHERI(JJ,JST)) >= 0) THEN
                 ZSNOWSIZE  = 2.*PSNOWDIAMOPT(JJ,JST)/(1+  PSNOWSPHERI(JJ,JST))

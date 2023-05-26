@@ -484,13 +484,17 @@ module sfc_options
    !    HSNOWMETAMO=C13 Carmagnola et al 2014 
    !    HSNOWMETAMO=T07 Taillandier et al 2007
    !    HSNOWMETAMO=F06 Flanner et al 2006
+   !    HSNOWMETAMO=S-F Schlef et al 2014
+   !    HSNOWMETAMO=S-B Schlef et al 2014
    character(len=16) :: hsnowmetamo = 'B21'
    namelist /surface_cfgs/ hsnowmetamo
-   character(len=*), parameter :: HSNOWMETAMO_OPT(4) = (/ &
+   character(len=*), parameter :: HSNOWMETAMO_OPT(6) = (/ &
         'C13',  &
         'T07',  &  
         'F06',  &  
-        'B21'  &  
+        'B21',  &
+        'S-F',  &
+        'S-B'   &  
          /)
 
    ! Option for the radiative transfer scheme for Crocus
