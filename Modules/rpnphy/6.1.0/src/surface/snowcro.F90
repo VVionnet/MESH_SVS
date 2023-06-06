@@ -4912,7 +4912,8 @@ DO JJ = 1,SIZE(PSNOW(:))
                                    *LOG(10.))
           ENDIF
       ELSEIF ( HSNOWFALL == 'A76') THEN ! Anderson 76 law
-        IF(PTA(JJ) - XTT + XRHOS_A76_3 < 0.) THEN
+        !VV IF(PTA(JJ) - XTT + XRHOS_A76_3 < 0.) THEN
+        IF(PTA(JJ) - XTT + XRHOS_A76_3 < XUEPSI_SMP) THEN !VV Modification for single precision
           PSNOWRHOF (JJ) = XRHOS_A76_1
         ELSE
           PSNOWRHOF (JJ) = XRHOS_A76_1 + MAX( EXP(1.5*LOG(XRHOS_A76_2*( PTA(JJ) - XTT + XRHOS_A76_3 ))),0.  )
