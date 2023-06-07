@@ -393,7 +393,9 @@ LOGICAL, INTENT(IN)                    :: OATMORAD ! activate atmotartes scheme
                                        ! HSNOWFALL=P75 Pahaut 1975
                                        ! HSNOWFALL=NZE Constant density 200 kg/m3 (who knows ?)
                                        ! HSNOWFALL=R21 Royer et al. 2021
-                                       ! HSNOWFALL=L22 Lackner et al. 2022                                         
+                                       ! HSNOWFALL=L22 Lackner et al. 2022
+                                       ! HSNOWFALL=GW1 
+                                       ! HSNOWFALL=GW2                                         
                                        !---------------------
                                        ! Thermal conductivity scheme
                                        ! HSNOWCOND=Y81 default Crocus from Yen et al. 1981
@@ -4555,6 +4557,8 @@ USE MODD_SNOW_PAR, ONLY : XRHOSMIN_ES, XSNOWDMIN, XANSMAX, XAGLAMAX, XSNOWCRITD,
                           XSNOWFALL_A_SN_P75, XSNOWFALL_B_SN_P75, XSNOWFALL_C_SN_P75,&
                           XSNOWFALL_A_SN_R21, XSNOWFALL_B_SN_R21, XSNOWFALL_C_SN_R21,&
                           XSNOWFALL_A_SN_L22, XSNOWFALL_B_SN_L22, XSNOWFALL_C_SN_L22,&
+                          XSNOWFALL_A_SN_GW1, XSNOWFALL_B_SN_GW1, XSNOWFALL_C_SN_GW1,&
+                          XSNOWFALL_A_SN_GW2, XSNOWFALL_B_SN_GW2, XSNOWFALL_C_SN_GW2,&
                           XRHOS_A76_1, XRHOS_A76_2, XRHOS_A76_3, XRHOS_S02_1,      &
                           XRHOS_S02_2, XRHOS_S02_3, XRHOS_S02_4, XRHOS_S02_5,      &
                           XRHOS_S02_6, XIMPUR_WET, XRHO_SNOWMAK, XPSR_SNOWMAK, SNOW_VEG_H
@@ -4945,10 +4949,18 @@ DO JJ = 1,SIZE(PSNOW(:))
           PSNOWRHOF (JJ) = MAX( XRHOSMIN_ES, XSNOWFALL_A_SN_R21 + &
                                          XSNOWFALL_B_SN_R21 * ( PTA(JJ)-XTT ) + &
                                          XSNOWFALL_C_SN_R21 * SQRT(ZWIND_RHO(JJ) ) )
-    ELSEIF( HSNOWFALL == 'L22') THEN ! Lackner et al. 2022 (Doubled density, Increased wind speed by 5)
+      ELSEIF( HSNOWFALL == 'L22') THEN ! Lackner et al. 2022 (Doubled density, Increased wind speed by 5)
           PSNOWRHOF (JJ) = MAX( XRHOSMIN_ES, XSNOWFALL_A_SN_L22 + &
                                          XSNOWFALL_B_SN_L22 * ( PTA(JJ)-XTT ) + &
                                          XSNOWFALL_C_SN_L22 * SQRT(ZWIND_RHO(JJ) ) )
+      ELSEIF( HSNOWFALL == 'GW1') THEN ! GW1 (XSNOWFALL_C_SN * 1.5) 
+          PSNOWRHOF (JJ) = MAX( XRHOSMIN_ES, XSNOWFALL_A_SN_GW1 + &
+                                         XSNOWFALL_B_SN_GW1 * ( PTA(JJ)-XTT ) + &
+                                         XSNOWFALL_C_SN_GW1 * SQRT(ZWIND_RHO(JJ) ) )
+      ELSEIF( HSNOWFALL == 'GW2') THEN ! GW2 (XSNOWFALL_C_SN * 1) 
+          PSNOWRHOF (JJ) = MAX( XRHOSMIN_ES, XSNOWFALL_A_SN_GW2 + &
+                                         XSNOWFALL_B_SN_GW2 * ( PTA(JJ)-XTT ) + & 
+                                         XSNOWFALL_C_SN_GW2 * SQRT(ZWIND_RHO(JJ) ) )
       ELSEIF ( HSNOWFALL == 'S02') THEN ! SNOWPACK 2014 law  min wind speed = 2m/s
           IF (PTA(JJ) > 259.15) THEN
               PSNOWRHOF (JJ)=EXP(( XRHOS_S02_1 + XRHOS_S02_2 * (PTA(JJ)-XTT) +&

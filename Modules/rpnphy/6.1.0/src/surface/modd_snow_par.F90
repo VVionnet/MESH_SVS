@@ -311,6 +311,18 @@ REAL, PARAMETER :: XSNOWTHRMCOND_S97_3 = 0.138
 REAL, PARAMETER :: XSNOWTHRMCOND_S97_4 = -1.01
 REAL, PARAMETER :: XSNOWTHRMCOND_S97_5 = 3.233
 ! 
+! Jordan et al 1991, Crocus thermal conductivity coefficients from Jordan et al. 1991
+REAL, PARAMETER :: XSNOWTHRMCOND_J91_1 = 0.023 ! [(W/(m K)] Thermal conductivity of air 
+REAL, PARAMETER :: XSNOWTHRMCOND_J91_2 = 7.75E-5 !
+REAL, PARAMETER :: XSNOWTHRMCOND_J91_3 = 1.105E-6 !
+REAL, PARAMETER :: XSNOWTHRMCOND_J91_4 = 2.29 ! [W(/m K)] Thermal conductivity of ice
+!
+! Fourteau et al 2021, Crocus thermal conductivity coefficients from Fourteau et al. 2021 for 263K
+REAL, PARAMETER :: XSNOWTHRMCOND_F21_1 = 1.985 !
+REAL, PARAMETER :: XSNOWTHRMCOND_F21_2 = 917 ! (kg/m3) Density of ice
+REAL, PARAMETER :: XSNOWTHRMCOND_F21_3 = 0.073 !
+REAL, PARAMETER :: XSNOWTHRMCOND_F21_4 = 0.0336 !
+!
 ! Thermal conductivity of ice and water at 273K (for freezing rain)
 REAL, PARAMETER :: XTHRMCOND_ICE = 2.22    ! [W/(m K)]
 REAL, PARAMETER :: XTHRMCOND_WATER = 0.561    ! [W/(m K)]
@@ -341,14 +353,24 @@ REAL, PARAMETER :: XSNOWFALL_C_SN_P75 =  26.0  ! kg/(m7/2 s1/2)
 
 ! Coefficients for R21 (Royer et al., 2021)
 REAL, PARAMETER :: XSNOWFALL_A_SN_R21 = 109.0 ! kg/m3
-REAL, PARAMETER :: XSNOWFALL_B_SN_R21 =   9.0 ! kg/(m3 K)
-REAL, PARAMETER :: XSNOWFALL_C_SN_R21 =  32.5 ! kg/(m7/2 s1/2) different from Brun 89 (*2)
+REAL, PARAMETER :: XSNOWFALL_B_SN_R21 =   6.0 ! kg/(m3 K)
+REAL, PARAMETER :: XSNOWFALL_C_SN_R21 =  52.0 ! kg/(m7/2 s1/2) different from Brun 89 (*2)
 
 ! Coefficients for L22 (Lackner et al., 2022)
 REAL, PARAMETER :: XSNOWFALL_A_SN_L22 = 218.0 ! kg/m3 different from Brun 89 (*2)
 REAL, PARAMETER :: XSNOWFALL_B_SN_L22 =   6.0 ! kg/(m3 K)
 REAL, PARAMETER :: XSNOWFALL_C_SN_L22 = 260.0 ! kg/(m7/2 s1/2) different from Brun 89 (*5)
-!
+
+! Coefficients for GW23 
+REAL, PARAMETER :: XSNOWFALL_A_SN_GW1 = 109.0 ! kg/m3 
+REAL, PARAMETER :: XSNOWFALL_B_SN_GW1 =   6.0 ! kg/(m3 K)
+REAL, PARAMETER :: XSNOWFALL_C_SN_GW1 =  39.0 ! kg/(m7/2 s1/2) 1.5 * Default of Brun 89 (V12) 
+
+! Coefficients for GW23 
+REAL, PARAMETER :: XSNOWFALL_A_SN_GW2 = 109.0 ! kg/m3
+REAL, PARAMETER :: XSNOWFALL_B_SN_GW2 =   6.0 ! kg/(m3 K)
+REAL, PARAMETER :: XSNOWFALL_C_SN_GW2 =  32.5 ! kg(m7/2 s1/2) 1 * Default of Brun 89 (V12)
+
 !
 ! Coefficients for the optimal vertical grid calculation
 REAL, PARAMETER :: XDZ1 = 0.01

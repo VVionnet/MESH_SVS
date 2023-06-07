@@ -514,17 +514,21 @@ module sfc_options
    !   HSNOWFALL=P75 Pahaut 1975
    !   HSNOWFALL=NZE Constant density 200 kg/m3 (defined snowcro.F90 )
    !   HSNOWFALL=R21 Royer et al. 2021
-   !   HSNOWFALL=L22 Lackner et al. 2022         
+   !   HSNOWFALL=L22 Lackner et al. 2022
+   !   HSNOWFALL=GW1 
+   !   HSNOWFALL=GW2         
    character(len=16) :: hsnowfall = 'V12'
    namelist /surface_cfgs/ hsnowfall
-   character(len=*), parameter :: HSNOWFALL_OPT(7) = (/ &
+   character(len=*), parameter :: HSNOWFALL_OPT(9) = (/ &
         'V12',  &
         'A76',  &  
         'S02',  &  
         'P75',  &  
         'NZE',  &
         'R21',  &
-        'L22'   &  
+        'L22',  &  
+        'GW1',  &
+        'GW2'   &   
          /)
 
    ! Option for the thermal conductivity scheme for Crocus
@@ -532,13 +536,17 @@ module sfc_options
    !    HSNOWCOND=I02 ISBA_ES snow conductivity parametrization (Boone et al. 2002)
    !    HSNOWCOND=C11 Calonne et al. 2011 snow conductivity parametrization
    !    HSNOWCOND=S97 Sturm et al. 1997
+   !    HSNOWCOND=J91 Jordan et al. 1991
+   !    HSNOWCOND=F21 Fourteau et al. 2021
    character(len=16) :: hsnowcond = 'Y81'
    namelist /surface_cfgs/ hsnowcond
-   character(len=*), parameter :: HSNOWCOND_OPT(4) = (/ &
+   character(len=*), parameter :: HSNOWCOND_OPT(6) = (/ &
         'Y81',  &
         'I02',  &  
         'C11',  &
-        'S97'   &  
+        'S97',  &  
+        'J91',  &
+        'F21'   &
          /)
 
    ! Option for the liquid water content scheme for Crocus
