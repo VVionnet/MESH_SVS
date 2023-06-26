@@ -6311,15 +6311,34 @@ ELSE
   GPRINTIMPUR=.FALSE.
 ENDIF
 
+
+! 
+!    PSNOWTEMP(:,:) = XTT + ( ((PSNOWHEAT(:,:)/PSNOWDZ(:,:))                   &
+!                     + XLMTT*PSNOWRHO(:,:))/ZSCAP(:,:) )  
+!    PSNOWLIQ(:,:)  = MAX(0.0,PSNOWTEMP(:,:)-XTT)*ZSCAP(:,:)*                  &
+!                     PSNOWDZ(:,:)/(XLMTT*XRHOLW)  
+!    PSNOWTEMP(:,:) = MIN(XTT,PSNOWTEMP(:,:))
+
+
 ! Compute snow temperature from enthalpy
 ZSCAP     (1:KLAYERS) = PSNOWRHO(1:KLAYERS) * XCI
-IF (ALL(PSNOWDZ(1:KLAYERS)>0.) .AND. ALL(ZSCAP(1:KLAYERS)>0.)) THEN
-  ZSNOWTEMP (1:KLAYERS) = XTT + &
-                          ( ( PSNOWHEAT(1:KLAYERS)/PSNOWDZ(1:KLAYERS) + XLMTT*PSNOWRHO(1:KLAYERS) )/ZSCAP(1:KLAYERS) )
-ELSE
-  PRINT*, "WARNING: UNABLE TO COMPUTE ZSNOWTEMP"
-  ZSNOWTEMP (1:KLAYERS) = -999.
-ENDIF
+
+DO JST=1,KLAYERS
+    IF(PSNOWDZ(JST)>0) THEN
+         ZSNOWTEMP (JST) =  XTT + ( ((PSNOWHEAT(JST)/PSNOWDZ(JST))                   &
+                     + XLMTT*PSNOWRHO(JST))/ZSCAP(JST) )  
+     ELSE
+          ZSNOWTEMP (JST) = -999.
+     ENDIF
+ENDDO
+
+!IF (ALL(PSNOWDZ(1:KLAYERS)>0.) .AND. ALL(ZSCAP(1:KLAYERS)>0.)) THEN
+!  ZSNOWTEMP (1:KLAYERS) = XTT + &
+!                          ( ( PSNOWHEAT(1:KLAYERS)/PSNOWDZ(1:KLAYERS) + XLMTT*PSNOWRHO(1:KLAYERS) )/ZSCAP(1:KLAYERS) )
+!ELSE
+!  PRINT*, "WARNING: UNABLE TO COMPUTE ZSNOWTEMP"
+!  ZSNOWTEMP (1:KLAYERS) = -999.
+!ENDIF
 
 IF (OPRINTGRAN) THEN
   !
@@ -6350,11 +6369,11 @@ IF (OPRINTGRAN) THEN
   DO JST = 1,KLAYERS
     IF (GPRINTIMPUR) THEN
       WRITE(*,'(9(ES12.3,"|")," L",I2.2)') PSNOWDZ(JST),PSNOWRHO(JST),    &
-                                          PSNOWLIQ(JST),MAX(XTT, ZSNOWTEMP(JST)),PSNOWHEAT(JST),PSNOWDIAMOPT(JST), &
+                                          PSNOWLIQ(JST),MIN(XTT, ZSNOWTEMP(JST)),PSNOWHEAT(JST),PSNOWDIAMOPT(JST), &
                                           PSNOWSPHERI(JST),ZSNOWSSA(JST),PSNOWIMPUR(JST,1),JST
     ELSE
       WRITE(*,'(9(ES12.3,"|")," L",I2.2)') PSNOWDZ(JST),PSNOWRHO(JST),    &
-                                          PSNOWLIQ(JST),MAX(XTT, ZSNOWTEMP(JST)),PSNOWHEAT(JST),PSNOWDIAMOPT(JST), &
+                                          PSNOWLIQ(JST),MIN(XTT, ZSNOWTEMP(JST)),PSNOWHEAT(JST),PSNOWDIAMOPT(JST), &
                                           PSNOWSPHERI(JST),ZSNOWSSA(JST),PSNOWAGE(JST),JST    
     ENDIF
   ENDDO
@@ -6371,7 +6390,7 @@ ELSE
         "------------"
   DO JST = 1,KLAYERS
     WRITE(*,'(5(ES12.3,"|")," L",I2.2)') PSNOWDZ(JST),PSNOWRHO(JST),&
-                                         PSNOWLIQ(JST),MAX(XTT, ZSNOWTEMP(JST)),PSNOWHEAT(JST),JST
+                                         PSNOWLIQ(JST),MIN(XTT, ZSNOWTEMP(JST)),PSNOWHEAT(JST),JST
   ENDDO
   WRITE(*,'(5(A12,"|"))')"------------","------------","------------",&
         "------------"

@@ -406,6 +406,9 @@ module runsvs_mesh
         !> For constants.
         use tdpack_const, only: omega
 
+        ! For Crocus debug mode
+        use mode_crodebug
+
         !> Local variables.
         real, dimension(il1:il2) :: sumvfz0
         integer i
@@ -494,6 +497,11 @@ module runsvs_mesh
         do i = 0, 1
             if (allocated(svs_mesh%vs%tvege)) svs_bus(a2(tvege, i):z2(tvege, i)) = svs_mesh%vs%tvege(:, i + 1)
         end do
+
+        ! Add option to use Crocus debug mode
+        if(svs_mesh%vs%schmsol=='SVS2') then
+                call init_crodebug(svs_mesh%vs%hsnowscheme)
+        end if
 
         if(svs_mesh%vs%schmsol=='SVS2') then
            do i = 1, nl_svs

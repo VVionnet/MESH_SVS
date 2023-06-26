@@ -17,7 +17,7 @@
       SUBROUTINE CANOPY_MET_SVS2 (T, HU,PS,VMOD, VDIR,  ISW, ILW, TVEG, ZU,ZT,          &
                                  FCOR, LAT, SNVDP,TSNOWV_SVS, TPSOILV,  &
                                  SUNCOS,ISW_CAN,ILW_CAN,VMOD_CAN,T_CAN,HU_CAN,   &
-                                 VMOD_TOP, HREF_SUBCANO, Z0MVH,Z0SNOW,PSNVH,  & 
+                                 VMOD_TOP, UREF_SUBCANO, TREF_SUBCANO, Z0MVH,Z0SNOW,PSNVH,  & 
                                  VEGH,LAIVH,VEGTRANS,SKYVIEW,EMISVH, &
                                  VGH_HEIGHT,VGH_DENS, N )
 
@@ -35,7 +35,7 @@
       REAL VEGTRANS(N),SKYVIEW(N), EMISVH(N), LAIVH(N),VGH_HEIGHT(N),VEGH(N)
       REAL VGH_DENS(N), Z0SNOW(N), PSNVH(N)
       REAL ISW_CAN(N), ILW_CAN(N)
-      REAL VMOD_CAN(N), T_CAN(N),HU_CAN(N),HREF_SUBCANO(N),VMOD_TOP(N)
+      REAL VMOD_CAN(N),T_CAN(N),HU_CAN(N),UREF_SUBCANO(N),TREF_SUBCANO(N),VMOD_TOP(N)
 !
 !
 !Author
@@ -101,9 +101,9 @@
            Z0_CLEARING =EXP( (1-PSNVH(I)) *LOG(0.03)+PSNVH(I)*LOG(Z0SNOW(I)))
 
            IF(ZU(I) > HSUBCANO)    THEN
-                 HREF_SUBCANO(I) =  HSUBCANO
+                 UREF_SUBCANO(I) =  HSUBCANO
            ELSE 
-                 HREF_SUBCANO(I) =  ZU(I)
+                 UREF_SUBCANO(I) =  ZU(I)
            ENDIF
 
            IF(LWINDFORCING_ABOVE) THEN
@@ -150,7 +150,7 @@
            ENDIF
          ELSE  
              ! No high vegetation present 
-             HREF_SUBCANO(I) =  ZU(I)    
+             UREF_SUBCANO(I) =  ZU(I)    
              VMOD_CAN(I) = VMOD(I)
              VMOD_TOP(I) = VMOD(I)
          ENDIF    
@@ -182,12 +182,14 @@
        DO I=1,N
           T_CAN(I) = T(I)
           HU_CAN(I) = HU(I)
+          TREF_SUBCANO(I) =  ZT(I)
        ENDDO
      !
      !  xxxx. Compute impact of forest on incoming radiative fluxes 
      !
        !write(*,*) 'Above Can',ISW(1),ILW(1)
        !write(*,*) 'Zenith',SUNCOS(1)
+
 
       IF(LRAD_SVS) THEN
            DO I=1,N
