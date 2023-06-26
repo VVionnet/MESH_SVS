@@ -518,6 +518,12 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
           
       ENDIF
 
+      ! Store rainfall and snofall rate below high vegetation (in m) to be consistent with rainrate and snowrate in the bus
+      DO I=1,N
+          bus(x(rainrate_vgh,i,1))  = rainrate_mm_veg(i)/1000.
+          bus(x(snowrate_vgh,i,1))  = snowrate_mm_veg(i)/1000.
+      ENDDO
+
 !     Prepare radiation for snow under high veg --> Impact of vegetation on incoming SW and LW 
       DO I=1,N
            PRG_VEG(I)   = zfsolis(I) * bus(x(VEGTRANS,I,1))              ! Incoming SW under VEG

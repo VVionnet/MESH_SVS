@@ -111,7 +111,7 @@ subroutine sfc_businit(moyhr,ni,nk)
         hpsa,hpsv, gfluxsa, gfluxsv, lesc, lescaf,    &
         lwnetsa, lwnetsv,        &
         esa, esv, &
-        qgr, qgv, qveg, resagrv,        &
+        qgr, qgv, qveg, rainrate_vgh, resagrv,        &
         rsnows_acc, rsnowsv_acc, skyviewa, sncma, &
         snoage_svs, snoagev_svs,  &
         snodiamopt_svs, snodiamoptv_svs, &
@@ -119,7 +119,7 @@ subroutine sfc_businit(moyhr,ni,nk)
         snohist_svs,snohistv_svs,   &
         snoma_svs, snomav_svs, &
         snoden_svs, snodenv_svs,   &
-        snotype_svs, snotypev_svs, &
+        snotype_svs, snotypev_svs, snowrate_vgh, &
         subldrifta, subldriftv,     &
         swnetsa, swnetsv,        &
         taf, &
@@ -544,7 +544,8 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR3D1(quartz,       'VN=quartz       ;ON=QRTZ;VD=quartz contain of the soil layer               ;VS=A*'//ngl//'  ;VB=p0') 
       PHYVAR2D1(qgr,          'VN=qgr          ;ON=QGR; VD=specific humidity over bare ground                                ;VB=p0')
       PHYVAR2D1(qgv,          'VN=qgv          ;ON=QGV; VD=specific humidity over ground under vegetation                    ;VB=p0')
-      PHYVAR2D1(qveg,         'VN=qveg         ;ON=QVEG;VD=specific humidity of vegetation                                   ;VB=p0')  
+      PHYVAR2D1(qveg,         'VN=qveg         ;ON=QVEG;VD=specific humidity of vegetation                                   ;VB=p0') 
+      PHYVAR2D1(rainrate_vgh, 'VN=rainrate_vgh ;ON=RRVH;VD=rainfall rate below high vegetation                               ;VB=p0')      
       PHYVAR2D1(rcctem,       'VN=rcctem       ;ON=RCC ;VD=stomatal resistance CTEM                                          ;VB=p0')
       PHYVAR2D1(resagr,       'VN=resagr       ;ON=RSGR;VD=aerodynamic resistance over bare ground                           ;VB=p0')
       PHYVAR2D1(resagrv,      'VN=resagrv      ;ON=RSGV;VD=aerodynamic resistance over soil under vege.                     ;VB=p0')
@@ -592,6 +593,7 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR3D1(snomav_svs,    'VN=snomav_svs   ;ON=I5EV;VD=snow mass under veg (per layer)                ;VS=A*'//ns//'  ;VB=p1')
       PHYVAR3D1(snoden_svs,    'VN=snoden_svs   ;ON=7SES;VD=absolute snow density (per layer)              ;VS=A*'//ns//'  ;VB=p1')
       PHYVAR3D1(snodenv_svs,   'VN=snodenv_svs  ;ON=7SEV;VD=absolute snow density under veg (per layer)    ;VS=A*'//ns//'  ;VB=p1')
+      PHYVAR2D1(snowrate_vgh, 'VN=snowrate_vgh ;ON=SRVH;VD=snowfall rate below high vegetation (accounting for interception) ;VB=p0')       
       PHYVAR2D1(snval,        'VN=snval        ;ON=SVAL;VD=snow-under-high-veg albedo                                        ;VB=p1')
       PHYVAR2D1(snvden,       'VN=snvden       ;ON=SVDN;VD=snow-under-high-veg density in kg/m3                              ;VB=p0')
       PHYVAR2D1(snvdp,        'VN=snvdp        ;ON=SVDP;VD=snow-under-high-veg depth                                         ;VB=p1')

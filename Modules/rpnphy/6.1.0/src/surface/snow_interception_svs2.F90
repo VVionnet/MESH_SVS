@@ -131,8 +131,8 @@
      ! Parameters used in the snow unloading code
      !
       REAL, PARAMETER  ::  TCNC = 240*3600. ! Canopy unloading time scale for cold snow (s)
-      !REAL, PARAMETER ::  TCNM = 48*3600. ! Canopy unloading time scale for melting snow (s)
-      REAL, PARAMETER ::  TCNM = 6.*3600. ! Canopy unloading time scale for melting snow (s)
+      REAL, PARAMETER ::  TCNM = 48*3600. ! Canopy unloading time scale for melting snow (s)
+      !REAL, PARAMETER ::  TCNM = 6.*3600. ! Canopy unloading time scale for melting snow (s)
 
 
      ! Physical constant used in the code 
@@ -151,13 +151,14 @@
      ! 1. Configure the options used in the code
      !
 
-      HDIFU = 'HP98' ! Selection the formulation used to compute the molecular  diffusivity  of  water  vapour  in  air
+      HDIFU = 'HP13' ! Selection the formulation used to compute the molecular  diffusivity  of  water  vapour  in  air
                       !    'HP98': formulation used in HP98
                       !    'HP13': formulation used in Harder and Pomeroy (2013)
                       !    'TM66': original formulation used in Thorpe and Mason (1966) including the contribution of air pressure
                       !    'PU98': formulation used in Pruppacher et al.(1998)
+                      ! HP13 is recommended since the exponent  is consistent with the other formulations  
 
-      HSUBL_CANO = 'NONE'  ! Select the approach used to compute the mass loss due sublimation of intercepted snow 
+      HSUBL_CANO = 'HP98'  ! Select the approach used to compute the mass loss due sublimation of intercepted snow 
                       ! 'LU21': simple approach from Lundquist et al. ! (2021)
                       ! 'HP98': formulation proposed by Hedstrom and Pomeroy (1998) 
                       ! 'NONE': no mass loss due to sublimation of intercepted snow
@@ -177,7 +178,7 @@
       DO I=1,N
          IF(SNCMA(I)> 0. .OR. SR(I)>0.) THEN  ! Snow is present on the canopy or occurrence of snowfall
 
-                write(*,*) 'In inter', SNCMA(1), SR(1)*DT
+                !write(*,*) 'In inter', SNCMA(1), SR(1)*DT
                 !!!!!!!!
                 ! Interception Code (Simple version of HP98)
                 !!!!!!!!
@@ -195,7 +196,7 @@
                 ! Update the amount of snow that falls below high vegetation
                 DIRECT_SNOW(I)  = SR(I)*DT - INTCPT(I)
 
-                write(*,*) 'After inter', SNCMA(1), INTCPT(1)
+                !write(*,*) 'After inter', SNCMA(1), INTCPT(1)
 
                 !!!!!!!!
                 ! Sublimation Code  (Lundquist et al, 2021)
@@ -346,7 +347,7 @@
                !!!!!!!!
                ! Update snowfall and rainfall rate sent to snow below high-veh 
                !!!!!!!! 
-               IF(T(I)>=273.15) THEN 
+               IF(T(I)>273.15) THEN 
                     DRIP_CPY(I) =  UNLOAD(I) ! Unload considered as liquid
                     SNW_UNLOAD = 0. 
                 ELSE
@@ -356,14 +357,14 @@
 
                 ! Update the total snow mass sent to the snowpack below
                 ! high veg
-                NET_SNOW(I) = DIRECT_SNOW(I) + UNLOAD(I)
+                NET_SNOW(I) = DIRECT_SNOW(I) + SNW_UNLOAD
 
 
                 ! Update the snow mass intercepted in the canopy
                 !SNCMA(I) = SNCMAT(I)
 
-                write(*,*) 'After Unload', SNCMA(1), UNLOAD(1),T(1)
-                write(*,*) 'Drip', DRIP_CPY(1),'Solid', SNW_UNLOAD
+                !write(*,*) 'After Unload', SNCMA(1), UNLOAD(1),T(1)
+                !write(*,*) 'Drip', DRIP_CPY(1),'Solid', SNW_UNLOAD
 
          ENDIF
        END DO
