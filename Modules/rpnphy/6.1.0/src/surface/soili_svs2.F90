@@ -25,7 +25,7 @@
            WTA, CG,PSOILHCAPZ, PSOILCONDZ, PSNGRVL,  & 
            Z0H, ALGR, EMGR, PSNVH, PSNVHA,   &
            ALVA, LAIVA, CVPA, EVA, Z0HA, Z0MVG, RGLA, STOMRA ,&  
-           GAMVA,CONDSLD, CONDDRY, VGHEIGHT, N )
+           GAMVA,CONDSLD, CONDDRY,  N )
          !
         use tdpack_const, only: PI
         use svs_configs
@@ -54,7 +54,6 @@
       REAL Z0HA(N), Z0MVG(N), RGLA(N), STOMRA(N), STOMRVH(N), STOMRVL(N)
       REAL GAMVL(N), GAMVH(N), GAMVA(N)
       REAL CONDSLD(N,NL_SVS),CONDDRY(N,NL_SVS)
-      REAL VGHEIGHT(N)
       
 !Author
 !          S. Belair et al. (January 2009)
@@ -343,10 +342,6 @@ include "isbapar.cdk"
 
             Z0MVG(I)= EXP(Z0MVG(I))
 
-            ! Get mean vegetation height (need to be revised to only account for high-veg)
-            VGHEIGHT(I) =  10. *  Z0MVG(I)
-
-!                        LOCAL VEG. THERMAL ROUGNESS            
 !
             Z0HA(I) = ( VEGH(I)                  * LOG(Z0MVH(I) * Z0M_TO_Z0H) &
                      + VEGL(I) * (1.-PSNGRVL(I)) * LOG(Z0MVL(I) * Z0M_TO_Z0H)) &     

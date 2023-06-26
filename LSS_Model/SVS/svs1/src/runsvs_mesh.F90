@@ -34,6 +34,7 @@ module runsvs_mesh
             0.001, 0.001, 0.001, 1.75, 2.0, 1.0, 2.0, 3.0, 0.8, 0.1, &
             0.2, 0.2, 0.1, 0.1, 0.15, 0.15, 0.35, 0.25, 0.1, 0.25, &
             5.0, 0.1, 0.1, 0.1, 1.75, 0.5 /)
+        real,dimension(NCLASS) :: Z0DAT_UP
     end type
 
     !> SVS2 output
@@ -444,6 +445,11 @@ module runsvs_mesh
             svs_bus(a2(vegf, 1199 - i):z2(vegf, 1199 - i)) = svs_mesh%vs%vf(:, 1200 - i)
             if (allocated(svs_mesh%vs%z0v)) then
                 svs_bus(a1(z0):z1(z0)) = svs_bus(a1(z0):z1(z0)) + svs_mesh%vs%vf(:, 1200 - i)*svs_mesh%vs%z0v(:, 1200 - i)
+                if(svs_mesh%vs%z0v(1, 1200 - i)>0.) then
+                     svs_mesh%c%Z0DAT_UP(1200 - i) = svs_mesh%vs%z0v(1, 1200 - i)
+                else
+                     svs_mesh%c%Z0DAT_UP(1200 - i) = svs_mesh%c%Z0DAT(1200 - i)
+                endif
             else
                 svs_bus(a1(z0):z1(z0)) = svs_bus(a1(z0):z1(z0)) + svs_mesh%vs%vf(:, 1200 - i)*svs_mesh%c%Z0DAT(1200 - i)
             end if
@@ -1605,6 +1611,18 @@ ierr = 200
             call runsvs_mesh_copy_vs_to_bus()
             kount = 0
             call inichamp4(kount, trnch, ni, nk)
+
+            ! Update roughness length for high and low veg. to be consistent with information provided by the users in
+            ! MESH_paramter.txt
+            if (allocated(svs_mesh%vs%z0v)) then
+                    call aggveghigh(busptr(vd%vegf%i)%ptr(:, trnch), log(svs_mesh%c%Z0DAT_UP), log(svs_mesh%c%Z0DAT_UP), busptr(vd%z0mvh%i)%ptr(:, trnch), &
+                    busptr(vd%dlat%i)%ptr(:, trnch), ni, NCLASS)
+                    busptr(vd%z0mvh%i)%ptr(:, trnch) = EXP(busptr(vd%z0mvh%i)%ptr(:, trnch))
+
+                    call aggveglow(busptr(vd%vegf%i)%ptr(:, trnch), log(svs_mesh%c%Z0DAT_UP), log(svs_mesh%c%Z0DAT_UP), busptr(vd%z0mvl%i)%ptr(:, trnch), &
+                    busptr(vd%dlat%i)%ptr(:, trnch), ni, NCLASS)
+                    busptr(vd%z0mvl%i)%ptr(:, trnch) = EXP(busptr(vd%z0mvl%i)%ptr(:, trnch))
+            endif
 
             ! Compute beginning date of simulation
             write(time_run_now, "(i4.4, 2i2.2, '.', 2i2.2)") ic%now%year, ic%now%month, ic%now%day, ic%now%hour, ic%now%mins

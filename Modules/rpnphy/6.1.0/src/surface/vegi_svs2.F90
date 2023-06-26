@@ -15,9 +15,9 @@
 !-------------------------------------- LICENCE END --------------------------------------
       SUBROUTINE VEGI_SVS2 ( RG, T, TVEG, HU, PS, &
            WD , RGL, LAI, LAIH, RSMIN, GAMMA, WWILT, WFC, &   
-           SUNCOS, DRZ, D50, D95, PSNGRVL, VEGH, VEGL, RS, SKYVIEW,  &
+           SUNCOS, DRZ, D50, D95, PSNGRVL, VEGH, VEGL, Z0MVH, RS, SKYVIEW,  &
            SKYVIEWA, VTR, VTRA, &    
-           FCD, ACROOT, WRMAX, N  )
+           FCD, ACROOT, WRMAX, VGH_HEIGHT,VGH_DENS,  N  )
 !
         use tdpack
         use svs_configs
@@ -31,7 +31,8 @@
       REAL RGL(N), LAI(N), RSMIN(N), GAMMA(N), WWILT(N,NL_SVS)
       REAL WFC(N,NL_SVS), RS(N), SKYVIEW(N), VTR(N), DRZ(N)
       REAL SKYVIEWA(N),VTRA(N)
-      REAL D50(N), D95(N), ACROOT(N,NL_SVS) , WRMAX(N)  
+      REAL D50(N), D95(N), ACROOT(N,NL_SVS) , WRMAX(N)
+      REAL Z0MVH(N),  VGH_HEIGHT(N), VGH_DENS(N)
 !
 !Author
 !          S. Belair, M.Abrahamowicz,S.Z.Husain (June 2015)
@@ -68,6 +69,8 @@
 ! PSNGRVL  fraction of the bare soil or low veg. covered by snow
 ! VEGH     fraction of HIGH vegetation
 ! VEGL     fraction of LOW vegetation
+! Z0MVH    Local roughness associated with HIGH vegetation only (no
+!          orography)      
 !      
 !          - Output -
 ! RS       Surface or stomatal resistance
@@ -78,6 +81,8 @@
 ! FCD(NL_SVS)  Root fraction within soil layer (NL_SVS soil layers)
 ! ACROOT(NL_SVS) Active fraction of roots (0-1) in the soil layer
 ! WRMAX    Max volumetric water content retained on vegetation
+! VGH_HEIGHT Height of trees in areas of high vegeation (m)     
+! VGH_DENS Density of trees in areas of high vegeation (m)       
 !
 !
       INTEGER I, K
@@ -241,6 +246,20 @@
 !               ------------------------------
 !
              WRMAX(I) = 0.2 * LAI(I)
+
+!
+!*       9.     HEIGHT OF TREES in HIGH VEGETATION
+!               ------------------------------
+!
+             VGH_HEIGHT(I) =  10. *  Z0MVH(I) ! Derived from the roughness
+                                            ! lenght for high veg. Z0MVH is computed in GenPhySx using a
+                                            ! database that contains information about the vegetation height 
+!
+!*       10.     DENSITY OF TREES in HIGH VEGETATION
+!               ------------------------------
+!
+             VGH_DENS(I) =   0.29 * LOG(LAIH(I))+ 0.55   ! Based on LAI of high vegetation following Pomeroy et al (HP, 2002)
+             VGH_DENS(I) = MIN(1., MAX(0., VGH_DENS(I)))
 
           ELSE
           !  NO VEGETATION

@@ -30,7 +30,7 @@
                    RNETSV, HFLUXSV,LESLVNOFRAC, LESVNOFRAC, ESVNOFRAC,  &
                    ALPHASV, & 
                    TSVS, & 
-                   VEGH, VEGL, VGHEIGHT, PSNVH,PSNVHA, & 
+                   VEGH, VEGL, VGH_HEIGHT, PSNVH,PSNVHA, & 
                    SKYVIEW,SKYVIEWA, &
                    SOILHCAP, SOILCOND, &  
                    RR,WR,SNM,SVM, &
@@ -87,7 +87,7 @@
       REAL VEGH(N), VEGL(N), PSNVH(N), PSNVHA(N)
       REAL SKYVIEW(N),SKYVIEWA(N), ILMO(N), HST(N), TRAD(N), VTRA(N)
       REAL WR(N),RR(N),SNM(N),SVM(N)
-      REAL VGHEIGHT(N)
+      REAL VGH_HEIGHT(N)
       REAL SOILHCAP(N,NL_SVS),SOILCOND(N,NL_SVS)
 
 !  ajout temporaire pour tests
@@ -625,7 +625,7 @@
       END DO
 
       DO I=1,N
-        ZA(I) = 2. * VGHEIGHT(I) / 3.   ! reference height in canopy for flux
+        ZA(I) = 2. * VGH_HEIGHT(I) / 3.   ! reference height in canopy for flux
         ZA(I) = max(2.0,ZA(I))
 !!$         Z0TEMP(I) = 0.05                ! bare ground local momentum roughness
 !!$         Z0HG(I)=0.01                    ! bare ground local heat roughness
