@@ -553,14 +553,14 @@ module sfc_options
    !   HSNOWHOLD=B92 default Crocus from Brun et al. 1992 or Vionnet et al. 2012 (Default in SVS2)
    !   HSNOWHOLD=B02 ISBA_ES  parametrization (Boone et al. 2002)
    !   HSNOWHOLD=O04 CLM parametrization (Oleson et al 2004)
-   !   HSNOWHOLD=S02 SNOWPACK aprametrization (Lehning et al 2002)    
+   !   HSNOWHOLD=SPK SNOWPACK parametrization (Lehning et al 2002)    
    character(len=16) :: hsnowhold = 'B92'
    namelist /surface_cfgs/ hsnowhold
    character(len=*), parameter :: HSNOWHOLD_OPT(4) = (/ &
         'B92',  &
         'B02',  &  
         'O04',  &  
-        'S02'   &   
+        'SPK'   &   
          /)
 
    ! Option for the compaction scheme for Crocus

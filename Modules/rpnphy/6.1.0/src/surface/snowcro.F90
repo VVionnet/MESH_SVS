@@ -406,7 +406,7 @@ LOGICAL, INTENT(IN)                    :: OATMORAD ! activate atmotartes scheme
                                        ! HSNOWHOLD=B92 default Crocus from Brun et al. 1992 or Vionnet et al. 2012
                                        ! HSNOWHOLD=B02 ISBA_ES  parametrization (Boone et al. 2002)
                                        ! HSNOWHOLD=O04 CLM parametrization (Oleson et al 2004)
-                                       ! HSNOWHOLD=S02 SNOWPACK aprametrization (Lehning et al 2002)
+                                       ! HSNOWHOLD=SPK SNOWPACK parametrization (Lehning et al 2002)
                                        !-----------------------                                     
                                        ! reference height is constant or variable from the snow surface
                                        ! HSNOWZREF='CST' constant reference height from the snow surface
