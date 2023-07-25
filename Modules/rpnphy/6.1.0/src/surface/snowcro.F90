@@ -391,7 +391,7 @@ LOGICAL, INTENT(IN)                    :: OATMORAD ! activate atmotartes scheme
                                        ! HSNOWHOLD=B92 default Crocus from Brun et al. 1992 or Vionnet et al. 2012
                                        ! HSNOWHOLD=B02 ISBA_ES  parametrization (Boone et al. 2002)
                                        ! HSNOWHOLD=O04 CLM parametrization (Oleson et al 2004)
-                                       ! HSNOWHOLD=S02 SNOWPACK aprametrization (Lehning et al 2002)
+                                       ! HSNOWHOLD=SPK SNOWPACK parametrization (Lehning et al 2002)
                                        !-----------------------                                     
                                        ! reference height is constant or variable from the snow surface
                                        ! HSNOWZREF='CST' constant reference height from the snow surface
@@ -615,7 +615,8 @@ ZSNOWTEMP(:,:) = 0.
 GSNOWFALL(:) = .FALSE.
 ! Detection of freezing rain
 DO JJ = 1,SIZE(ZSNOW)
-  GFRZRAIN(JJ) = (PTA(JJ) < XTT) .AND. (PRR(JJ)*PTSTEP > XUEPSI)
+  !VV GFRZRAIN(JJ) = (PTA(JJ) < XTT) .AND. (PRR(JJ)*PTSTEP > XUEPSI) ! Modif for single precision
+  GFRZRAIN(JJ) = (PTA(JJ) < XTT) .AND. (PRR(JJ)*PTSTEP > XUEPSI_SMP*917.) !Canoot create ice layer thinner than  XUEPSI_SMP
 END DO
 INLVLS_USE(:) = 0
 DO JST = 1,SIZE(PSNOWSWE(:,:),2)
@@ -4911,7 +4912,8 @@ DO JJ = 1,SIZE(PSNOW(:))
                                    *LOG(10.))
           ENDIF
       ELSEIF ( HSNOWFALL == 'A76') THEN ! Anderson 76 law
-        IF(PTA(JJ) - XTT + XRHOS_A76_3 < 0.) THEN
+        !VV IF(PTA(JJ) - XTT + XRHOS_A76_3 < 0.) THEN
+        IF(PTA(JJ) - XTT + XRHOS_A76_3 < XUEPSI_SMP) THEN !VV Modification for single precision
           PSNOWRHOF (JJ) = XRHOS_A76_1
         ELSE
           PSNOWRHOF (JJ) = XRHOS_A76_1 + MAX( EXP(1.5*LOG(XRHOS_A76_2*( PTA(JJ) - XTT + XRHOS_A76_3 ))),0.  )
@@ -5644,8 +5646,8 @@ IF ( ABS( ZPSNOW_NEW - PSNOWDZF )<XUEPSI_SMP * MAX(PSNOWDZF,1.) ) THEN
 ELSE
   ! Old total snowdepth
   DO JST = 1,SIZE(PSNOWRHO)
-!VV    IF ( PSNOWDZ(JST)>=XUEPSI_SMP ) THEN
-    IF ( PSNOWDZ(JST)>=XUEPSI ) THEN
+!VV    IF ( PSNOWDZ(JST)>=XUEPSI ) THEN
+    IF ( PSNOWDZ(JST)>=XUEPSI_SMP ) THEN
       ZPSNOW_OLD = ZPSNOW_OLD + PSNOWDZ(JST)
 !VV      IF ( ABS( ZPSNOW_NEW - PSNOWDZF - ZPSNOW_OLD )<XUEPSI ) THEN
       IF ( ABS( ZPSNOW_NEW - PSNOWDZF - ZPSNOW_OLD )<XUEPSI_SMP *MAX(ZPSNOW_OLD, 1.0 )) THEN              
