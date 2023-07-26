@@ -112,6 +112,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_NPROFILE_DAY = 'NPROFILE_DAY' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LSOIL_FREEZING_SVS1 = 'LSOIL_FREEZING_SVS1' ! For svs1 only 
     character(len = *), parameter, public :: VN_SVS_LWATER_PONDING_SVS1 = 'LWATER_PONDING_SVS1' ! For svs1 only 
+    character(len = *), parameter, public :: VN_SVS_LUNIQUE_PROFILE_SVS2 = 'LUNIQUE_PROFILE_SVS2' ! For svs2 only 
 
     !> SVS variables names for I/O (modifiers/special conditions).
     character(len = *), parameter, public :: VN_SVS_SAND_N = 'SAND_N'
@@ -199,6 +200,7 @@ module runsvs_mesh
         integer :: nprofile_day = 4 !
         logical :: lsoil_freezing_svs1 = .false.
         logical :: lwater_ponding_svs1 = .false.
+        logical :: lunique_profile_svs2 = .false.        
         real :: xvaging_noglacier = -1 
     end type
 
@@ -765,6 +767,12 @@ module runsvs_mesh
         if(svs_mesh%vs%schmsol=='SVS') then
                 lwater_ponding_svs1 = svs_mesh%vs%lwater_ponding_svs1
         endif
+
+        ! Activate or not the unique soil column in SVS2
+        if(svs_mesh%vs%schmsol=='SVS2') then
+                lunique_profile_svs2 = svs_mesh%vs%lunique_profile_svs2
+        endif
+        
 
         ierr =0
         ! Initialize number of snow layers (for multilayer snowpack schemes in SVS2)

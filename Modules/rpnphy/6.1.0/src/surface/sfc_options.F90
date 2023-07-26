@@ -295,6 +295,10 @@ module sfc_options
    logical           :: lwater_ponding_svs1 = .false.
    namelist /surface_cfgs/ lwater_ponding_svs1 
 
+   !# If .true., SVS2 uses only a unique column for the soil
+   logical           :: lunique_profile_svs2 = .false.
+   namelist /surface_cfgs/ lunique_profile_svs2 
+   
 
    !# Use snow albedo "I6" directly if .true.;
    !# Use snow age "XA" to calculate snow albedo if .false.
