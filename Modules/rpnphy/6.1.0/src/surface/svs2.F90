@@ -24,10 +24,11 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    use sfcbus_mod
    use sfc_options, only: atm_external, atm_tplus, radslope, jdateo, &
         use_photo, nclass, zu, zt, sl_Lmin_soil, VAMIN, svs_local_z0m, &
-        vf_type, nsl
+        vf_type, nsl, lunique_profile_svs2
    use svs_configs
 
    use tdpack
+   USE MODD_CSTS,     ONLY : XRHOLW
 
    implicit none
 !!!#include <arch_specific.hf>
@@ -147,6 +148,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
      ! NL_SVS VARIABLES
    real, dimension(n,nl_svs) ::  pd_g, pdzg
    real, dimension(n,nl_svs) ::  psoilhcapz_v
+   real,dimension(n,nl_svs) :: psoil_temp_vgh  ! Soil temperature at the bottom of the snowpack under high vegetation
 !
 
    real, dimension(n,nl_svs) :: wsoiltt
@@ -483,9 +485,22 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
            PRAT_VEG(I)  = bus(x(SKYVIEW,I,1)) * bus(x(FDSI,I,1)) +    &  ! Incoming LW under veg
                  (1. - bus(x(SKYVIEW,I,1))) * EVA(I) * STEFAN * (bus(x(TVEGE,I,2)))**4.  ! add EVA--nathalie
-
       ENDDO
 
+! Define temperature use as a lower boundary condition for the snowpack below high vegetation  
+      IF(LUNIQUE_PROFILE_SVS2) THEN
+          DO I=1,N
+             DO J=1,NL_SVS
+                PSOIL_TEMP_VGH(I,J) = bus(x(TPSOIL,I,J))
+             ENDDO
+          ENDDO
+      ELSE
+          DO I=1,N
+             DO J=1,NL_SVS
+                PSOIL_TEMP_VGH(I,J) = bus(x(TPSOILV,I,J))
+             ENDDO
+          ENDDO
+      ENDIF
 !  
 !     Snow under high veg  as in SVS1
 !     WARNING VV : just for technical tests at the moment
@@ -494,7 +509,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       CALL SNOW_SVS(   bus(x(SNOMAV_SVS,1,1)), bus(x(TSNOWV_SVS,1,1)), bus(x(WSNOWV_SVS,1,1)),    &
                          bus(x(SNODENV_SVS,1,1)), bus(x(SNVAL,1,1)),bus(x(SNOAGEV_SVS,1,1)),    &
                          bus(x(SNODIAMOPTV_SVS,1,1)), bus(x(SNOSPHERIV_SVS,1,1)),bus(x(SNOHISTV_SVS,1,1)),   &
-                         DT, bus(x(TPSOILV,1,1)), PCT, bus(x(SOILHCAPZ,1,1)), bus(x(SOILCONDZ,1,1)),               &
+                         DT,PSOIL_TEMP_VGH, PCT, bus(x(SOILHCAPZ,1,1)), bus(x(SOILCONDZ,1,1)),               &
                          ps,tt,PRG_VEG,     &
                          hu, VMOD, &
                          PRAT_VEG,         &
@@ -535,7 +550,68 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       ENDDO  
 
 !
-      CALL EBUDGET_SVS2(bus(x(TSA ,1,1)),  &  
+      IF(LUNIQUE_PROFILE_SVS2) THEN ! One soil profile in SVS2
+
+             CALL EBUDGET_SVS2_ONEPROFILE(bus(x(TSA ,1,1)),  &  
+                  bus(x(WSOIL     ,1,1)) , bus(x(ISOIL,1,1)),  &   
+                  bus(x(TGROUND    ,1,1)) , bus(x(TGROUND,1,2)),   & 
+                  bus(x(TVEGE      ,1,1)) , bus(x(TVEGE,1,2)),   &  
+                  bus(x(TPSOIL    ,1,1)) ,    & 
+                  bus(x(TPERM     ,1,1)) , bus(x(GFLUXSA,1,1)), bus(x(GFLUXSV,1,1)), &  
+                  DT                     , VMOD, VDIR, bus(x(DLAT,1,1)),   &   
+                  zfsolis ,ALVA ,bus(x(laiva,1,1)),GAMVA ,     & 
+                  BUS(x(ALGR,1,1))        , BUS(x(EMISGR,1,1)),    & 
+                  bus(x(FDSI       ,1,1)) , zthetaa ,    &   
+                  bus(x(FCOR       ,1,1)) , bus(x(zusl,1,1)),    &  
+                  bus(x(ztsl       ,1,1)) , hu, &
+                  ps, RHOA, BUS(x(SVS_WTA,1,1)), &
+                  z0m, z0mland , bus(x(Z0T,1,indx_soil)),&
+                  HRSURF,       & 
+                  bus(x(HV         ,1,1)) , DEL, STOM_RS ,& 
+                  CG,CVPA,EVA,bus(x(PSNGRVL    ,1,1)) ,    &    
+                  bus(x(RESAGR,1,1)), bus(x(RESAVG,1,1)),   &        
+                  bus(x(RESASA,1,1)), bus(x(RESASV,1,1)) ,bus(x(RESAGRV,1,1)), &
+                  bus(x(RNETSA     ,1,1)) , bus(x(HFLUXSA,1,1)),   &   
+                  LESLNOFRAC, LESNOFRAC        , bus(x(ESA,1,1)),   &   
+                  bus(x(SNOAL      ,1,1)) ,    &  
+                  bus(x(TSNOW_SVS  ,1,1)) ,    &  
+                  bus(x(RNETSV     ,1,1)) , bus(x(HFLUXSV ,1,1)),   &   
+                  LESVLNOFRAC, LESVNOFRAC              , bus(x(ESV,1,1)),    &    
+                  bus(x(SNVAL      ,1,1)) ,    &  
+                  bus(x(TSNOWV_SVS ,1,1)) ,   &   
+                  bus(x(VEGH       ,1,1)) , bus(x(VEGL   ,1,1)), bus(x(VGHEIGHT   ,1,1)),  &   
+                  bus(x(PSNVH      ,1,1)) ,    &   
+                  bus(x(PSNVHA     ,1,1)),  &   
+                  bus(x(SKYVIEW   ,1,1)), bus(x(SKYVIEWA   ,1,1)),   &  
+                  bus(x(SOILHCAPZ ,1,1)) ,bus(x(SOILCONDZ,1,1)),   & 
+                  rainrate_mm,bus(x(WVEG   ,1,1)),bus(x(snoma,1,1)),&
+                  bus(x(snvma,1,1)),&
+                  bus(x(VEGTRANSA  ,1,1)) , bus(x(ALVIS,1,indx_soil)),     & 
+                  bus(x(RNET_S     ,1,1)),    &   
+                  bus(x(FC  ,1,indx_soil)), bus(x(FV  ,1,indx_soil)),   &    
+                  bus(x(LEG        ,1,1)) , bus(x(LEV  ,1,1)),    &   
+                  bus(x(LES        ,1,1)) , bus(x(LESV   ,1,1)),    &  
+                  bus(x(LEGV       ,1,1)) ,  &
+                  bus(x(LER        ,1,1)) , bus(x(LETR       ,1,1)) ,   &  
+                  bus(x(EG         ,1,1)) ,   &    
+                  bus(x(ER         ,1,1)) , bus(x(ETR    ,1,1)),    &  
+                  bus(x(FL         ,1,1)),  bus(x(EFLUX      ,1,1)) ,    &  
+                  bus(x(BM         ,1,1)) , bus(x(FQ   ,1,1)),    &  
+                  bus(x(bt, 1,indx_soil)) , bus(x(RESAEF,1,1)),   &  
+                  LEFF                    ,    & 
+                  bus(x(FTEMP,1,indx_soil)), BUS(x(FVAP,1,indx_soil)),   &   
+                  bus(x(qsurf,1,indx_soil)), bus(x(frv ,1,indx_soil)),   &   
+                  bus(x(ALFAT      ,1,1)) , bus(x(ALFAQ      ,1,1)) ,    &  
+                  bus(x(ilmo  ,1,indx_soil)), bus(x(hst  ,1,indx_soil)), &   
+                  TRAD, N,   &
+                  bus(x(QVEG ,1,1)), bus(x(QGV   ,1,1)), bus(x(QGR   ,1,1)), & 
+                  bus(x(TAF   ,1,1)), bus(x(QAF   ,1,1)), bus(x(VAF   ,1,1)), & 
+                  RPP, bus(x(Z0HA ,1,1)))
+
+              
+      ELSE  ! Two soil profiles for temperature in SVS2
+
+             CALL EBUDGET_SVS2(bus(x(TSA ,1,1)),  &  
                   bus(x(WSOIL     ,1,1)) , bus(x(ISOIL,1,1)),  &   
                   bus(x(TGROUND    ,1,1)) , bus(x(TGROUND,1,2)),   & 
                   bus(x(TVEGE      ,1,1)) , bus(x(TVEGE,1,2)),   &  
@@ -590,6 +666,12 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                   bus(x(QVEG ,1,1)), bus(x(QGV   ,1,1)), bus(x(QGR   ,1,1)), & 
                   bus(x(TAF   ,1,1)), bus(x(QAF   ,1,1)), bus(x(VAF   ,1,1)), & 
                   RPP, bus(x(Z0HA ,1,1)))
+
+       ENDIF
+
+
+
+
       if (phy_error_L) return
 !
 !
@@ -654,6 +736,20 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
          endif
       ENDIF
 !
+
+!
+!     Phase change for the soil column below bare ground and snow covering bare ground and low veg (if LUNIQUE_PROFILE_SVS2=FALSE)
+!     or below the unique soil column (if LUNIQUE_PROFILE_SVS2=TRUE)
+!
+      CALL PHASE_CHANGES (DT, bus(x(LAIVA  ,1,1)), BUS(x(SOILHCAPZ,1,1)) , &
+                      bus(x(WSAT   ,1,1)), bus(x(PSISAT  ,1,1)), bus(x(BCOEF  ,1,1)), &
+                      bus(x(TPSOIL ,1,1)), bus(x(ISOIL  ,1,1)), &
+                      wsoilt, WFTG, WDTTG, DELWATGR, DELICEGR     , &
+                      bus(x(FROOTD ,1,1)), N                   , &
+                      bus(x(PHASEF ,1,1)), bus(x(PHASEM ,1,1)) , &
+                      bus(x(DELTAT ,1,1)), bus(x(APPHEATCAP ,1,1)), bus(x(TMAX ,1,1)) )
+!
+  IF(.NOT. LUNIQUE_PROFILE_SVS2) THEN 
 !
 !     Phase change for the soil column below high vegetation (both snow-covered and snow free) 
 !     and snow-free low vegetation 
@@ -666,17 +762,6 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                       bus(x(PHASEFV ,1,1)), bus(x(PHASEMV ,1,1)), &
                       bus(x(DELTATV ,1,1)), bus(x(APPHEATCAPV ,1,1)), bus(x(TMAXV ,1,1)) )
 !
-!
-!     Phase change for the soil column below bare ground and snow covering bare ground and low veg
-!
-      CALL PHASE_CHANGES (DT, bus(x(LAIVA  ,1,1)), BUS(x(SOILHCAPZ,1,1)) , &
-                      bus(x(WSAT   ,1,1)), bus(x(PSISAT  ,1,1)), bus(x(BCOEF  ,1,1)), &
-                      bus(x(TPSOIL ,1,1)), bus(x(ISOIL  ,1,1)), &
-                      wsoilt, WFTG, WDTTG, DELWATGR, DELICEGR     , &
-                      bus(x(FROOTD ,1,1)), N                   , &
-                      bus(x(PHASEF ,1,1)), bus(x(PHASEM ,1,1)) , &
-                      bus(x(DELTAT ,1,1)), bus(x(APPHEATCAP ,1,1)), bus(x(TMAX ,1,1)) )
-!
 !     Aggregate the phase changes into one since one profile is used for soil moisture in 
 !     the current version of SVS2 
 
@@ -686,7 +771,23 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                        WDTTG, WDTTV, WFTG, WFTV       , &
                        bus(x(TPSOIL ,1,1)), bus(x(TPSOILV ,1,1)), BUS(x(SOILHCAPZ,1,1)), &
                        N )
+ 
+      DO I=1,N
+         DO J=1,NL_SVS  
+            WSOILT(I,J) = WSOILTT(I,J) 
+         END DO 
+      END DO
 !
+  ELSE 
+       ! Update the soil liquid water and ice content after phase changes 
+       DO I=1,N
+         DO J=1,NL_SVS  
+            WSOILT(I,J) = WDTTG(I,J)
+            ISOILT(I,J) = WFTG(I,J)
+          END DO 
+       END DO 
+                   
+  ENDIF
 !
       CALL UPDATE_SVS ( WSOILT, ISOILT, WVEGT, &
                        bus(x(latflw  ,1,1)), bus(x(watflow ,1,1)),  &

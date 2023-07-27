@@ -1209,9 +1209,14 @@ ierr = 200
            write(iout_soil, FMT_CSV, advance = 'no') &
                             trim(VN_SVS_ISOIL) // '_' // trim(adjustl(level)), &
                             trim(VN_SVS_WSOIL) // '_' // trim(adjustl(level)), &
-                            trim(VN_SVS_TPSOIL) // '_' // trim(adjustl(level)), &
-                            trim(VN_SVS_TPSOILV) // '_' // trim(adjustl(level))
+                            trim(VN_SVS_TPSOIL) // '_' // trim(adjustl(level))
        end do
+       if(.not. svs_mesh%vs%lunique_profile_svs2) then
+         do j = 1, nl_svs     
+           write(iout_soil, FMT_CSV, advance = 'no') &
+                            trim(VN_SVS_TPSOILV) // '_' // trim(adjustl(level))
+         end do
+       endif      
        write(iout_soil, *)
 
 
@@ -1476,9 +1481,14 @@ ierr = 200
                  write(iout_soil, FMT_CSV, advance = 'no') &
                      busptr(vd%isoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) , &
                      busptr(vd%wsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                     busptr(vd%tpsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                     busptr(vd%tpsoilv%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+                     busptr(vd%tpsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
               end do
+              if(.not. svs_mesh%vs%lunique_profile_svs2) then                     
+                do i = 1, nl_svs
+                   write(iout_soil, FMT_CSV, advance = 'no') &
+                     busptr(vd%tpsoilv%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+                end do
+              endif
               write(iout_soil, *)
 
               ! Write file containing bulk snow outputs
