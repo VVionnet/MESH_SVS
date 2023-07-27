@@ -46,6 +46,9 @@ tperm      280.0 ! (Deep soil temperature)
 !> Activate single soil column in SVS2
 lunique_profile_svs2 .false.
 
+!> lower boundary condition for heat diffusion in SVS2: TPERM or 0FLUX
+lbcheat_svs2 TPERM
+
 !> Special values not tied to soil layer scheme.
 !> nlayers   ----- 1 ----- 2
 tground       284.8  284.8 !Kelvin, only 2 values for svs1
