@@ -677,40 +677,44 @@
 
        DO I=1,N
 
-! flux-zero at bottom
 
-!!$          A2(I,NL_SVS) = -(BETAA) * DT * SOILCD(I,NL_SVS-1) /  &
-!!$                    (SOILHCAP(I,NL_SVS) * DELZ(NL_SVS) * DELZZ(NL_SVS-1))
-!!$
-!!$          B2(I,NL_SVS) = 1. - A2(I,NL_SVS)
-!!$          C2(I,NL_SVS) = 0.0
-!!$
-!!$          D2(I,NL_SVS) = TP(I,NL_SVS) - ( (1. - BETAA) * DT * SOILCD(I,NL_SVS-1) / &
-!!$                    (SOILHCAP(I,NL_SVS) * DELZ(NL_SVS)*DELZZ(NL_SVS-1)) ) * TP(I,NL_SVS) &
-!!$                   +( (1. - BETAA) * DT * SOILCD(I,NL_SVS-1) / &
-!!$                    (SOILHCAP(I,NL_SVS) * DELZ(NL_SVS)*DELZZ(NL_SVS-1)) ) * TP(I,NL_SVS-1) 
+          IF(LBCHEAT_SVS2=='TPERM') THEN
+            !  Prescribed T at bottom 
 
-
-!         Prescribed T at bottom (will become a option (flux=0 at the bottom is the other option)
-
-          A2(I,NL_SVS) = -BETAA * DT * SOILCD(I,NL_SVS-1) / &
+            A2(I,NL_SVS) = -BETAA * DT * SOILCD(I,NL_SVS-1) / &
                     (SOILHCAP(I,NL_SVS) * DELZ(NL_SVS)*DELZZ(NL_SVS-1))
 
 !          B2(I,NL_SVS) = 1. + (BETAA*DT/(SOILHCAP(I,NL_SVS)*DELZ(NL_SVS)))*(SOILCD(I,NL_SVS-1)/DELZZ(NL_SVS-1) + SOILCD(I,NL_SVS)/DELZZ(NL_SVS))
 
-          B2(I,NL_SVS) = 1. + ( BETAA*DT*SOILCD(I,NL_SVS) ) / ( SOILHCAP(I,NL_SVS)*DELZ(NL_SVS)*DELZZ(NL_SVS) ) + &
+            B2(I,NL_SVS) = 1. + ( BETAA*DT*SOILCD(I,NL_SVS) ) / ( SOILHCAP(I,NL_SVS)*DELZ(NL_SVS)*DELZZ(NL_SVS) ) + &
                      ( BETAA*DT*SOILCD(I,NL_SVS-1) ) / ( SOILHCAP(I,NL_SVS)*DELZ(NL_SVS)*DELZZ(NL_SVS-1) )
 
-
-          C2(I,NL_SVS) = 0.0
+            C2(I,NL_SVS) = 0.0
 
 !!!$          D2(I,NL_SVS) = TP(I,NL_SVS) + ( DT * SOILCD(I,NL_SVS) / (SOILHCAP(I,NL_SVS) * DELZ(NL_SVS)*DELZZ(NL_SVS)) ) * TPERM(I) - &
 !!!$               ( (1. - BETAA) * DT * SOILCD(I,NL_SVS-1) / (SOILHCAP(I,NL_SVS) * DELZ(NL_SVS)*DELZZ(NL_SVS-1)) ) * (TP(I,NL_SVS)-TP(I,NL_SVS-1)) - &
 !!!$               ( (1. - BETAA) * DT * SOILCD(I,NL_SVS)   / (SOILHCAP(I,NL_SVS) * DELZ(NL_SVS)*DELZZ(NL_SVS)) )  * TP(I,NL_SVS)
 
-          D2(I,NL_SVS) = TP(I,NL_SVS) +  ( DT/(SOILHCAP(I,NL_SVS)*DELZ(NL_SVS)) ) * ( ( SOILCD(I,NL_SVS)/DELZZ(NL_SVS) ) * TPERM(I) &
+            D2(I,NL_SVS) = TP(I,NL_SVS) +  ( DT/(SOILHCAP(I,NL_SVS)*DELZ(NL_SVS)) ) * ( ( SOILCD(I,NL_SVS)/DELZZ(NL_SVS) ) * TPERM(I) &
                - ( (1. - BETAA) * SOILCD(I,NL_SVS-1)/DELZZ(NL_SVS-1) ) * (TP(I,NL_SVS)-TP(I,NL_SVS-1)) &
                - ( (1. - BETAA) * SOILCD(I,NL_SVS)/DELZZ(NL_SVS) ) * TP(I,NL_SVS) )
+
+          ELSE IF(LBCHEAT_SVS2=="0FLUX") THEN
+            ! flux-zero at bottom of the soil column
+
+            A2(I,NL_SVS) = -(BETAA) * DT * SOILCD(I,NL_SVS-1) /  &
+                    (SOILHCAP(I,NL_SVS) * DELZ(NL_SVS) * DELZZ(NL_SVS-1))
+
+            B2(I,NL_SVS) = 1. - A2(I,NL_SVS)
+
+            C2(I,NL_SVS) = 0.0
+
+            D2(I,NL_SVS) = TP(I,NL_SVS) - ( (1. - BETAA) * DT * SOILCD(I,NL_SVS-1) / &
+                    (SOILHCAP(I,NL_SVS) * DELZ(NL_SVS)*DELZZ(NL_SVS-1)) ) * TP(I,NL_SVS) &
+                   +( (1. - BETAA) * DT * SOILCD(I,NL_SVS-1) / &
+                    (SOILHCAP(I,NL_SVS) * DELZ(NL_SVS)*DELZZ(NL_SVS-1)) ) * TP(I,NL_SVS-1)
+
+         ENDIF
 
        END DO
 !

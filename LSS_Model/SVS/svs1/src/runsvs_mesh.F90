@@ -113,6 +113,8 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_LSOIL_FREEZING_SVS1 = 'LSOIL_FREEZING_SVS1' ! For svs1 only 
     character(len = *), parameter, public :: VN_SVS_LWATER_PONDING_SVS1 = 'LWATER_PONDING_SVS1' ! For svs1 only 
     character(len = *), parameter, public :: VN_SVS_LUNIQUE_PROFILE_SVS2 = 'LUNIQUE_PROFILE_SVS2' ! For svs2 only 
+    character(len = *), parameter, public :: VN_SVS_LBCHEAT_SVS2 = 'LBCHEAT_SVS2'! For svs2 only 
+    
 
     !> SVS variables names for I/O (modifiers/special conditions).
     character(len = *), parameter, public :: VN_SVS_SAND_N = 'SAND_N'
@@ -200,7 +202,8 @@ module runsvs_mesh
         integer :: nprofile_day = 4 !
         logical :: lsoil_freezing_svs1 = .false.
         logical :: lwater_ponding_svs1 = .false.
-        logical :: lunique_profile_svs2 = .false.        
+        logical :: lunique_profile_svs2 = .false. 
+        character(len = DEFAULT_FIELD_LENGTH) :: lbcheat_svs2 = 'TPERM'        
         real :: xvaging_noglacier = -1 
     end type
 
@@ -770,10 +773,12 @@ module runsvs_mesh
 
         ! Activate or not the unique soil column in SVS2
         if(svs_mesh%vs%schmsol=='SVS2') then
+                ! Activate or not the unique soil column in SVS2
                 lunique_profile_svs2 = svs_mesh%vs%lunique_profile_svs2
+                ! Select the option used for the lower boundary condition of the heat diffusion in SVS2
+                lbcheat_svs2 = svs_mesh%vs%lbcheat_svs2
         endif
         
-
         ierr =0
         ! Initialize number of snow layers (for multilayer snowpack schemes in SVS2)
         if(svs_mesh%vs%schmsol=='SVS2') then 

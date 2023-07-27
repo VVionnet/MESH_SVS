@@ -39,9 +39,12 @@ clay            30.0    30.0    30.0 !%
 wsoil          0.083   0.086   0.098 !vol. content
 isoil            0.0     0.0     0.0 !vol. content
 tpsoil         280.0   280.0   280.0 ! soil temperature below bg/lv  (K)
-tpsoilv        280.0   280.0   280.0 ! soil temperature below high veg  (K)
+tpsoilv        280.0   280.0   280.0 ! soil temperature below high veg  (K) (not used if lunique_profile_svs2=true)
 
 tperm      280.0 ! (Deep soil temperature)
+
+!> Activate single soil column in SVS2
+lunique_profile_svs2 .false.
 
 !> Special values not tied to soil layer scheme.
 !> nlayers   ----- 1 ----- 2

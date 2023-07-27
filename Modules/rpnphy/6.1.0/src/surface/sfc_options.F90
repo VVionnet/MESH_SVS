@@ -299,7 +299,16 @@ module sfc_options
    logical           :: lunique_profile_svs2 = .false.
    namelist /surface_cfgs/ lunique_profile_svs2 
    
-
+   !#  Lower boundary conditions for heat equation in SVS2
+   !# * 'TPERM'   :  prescribed temperature at bottom of the soil column 
+   !# * '0FLUX'   :  assumes heat flux at the bottom of the soil column is negligible
+   character(len=5) :: lbcheat_svs2    = 'TPERM'
+   namelist /surface_cfgs/ lbcheat_svs2 
+   character(len=*), parameter :: LBCHEAT_SVS2_OPT(2) = (/ &
+        'TPERM',  &
+        '0FLUX'  &
+        /)
+   
    !# Use snow albedo "I6" directly if .true.;
    !# Use snow age "XA" to calculate snow albedo if .false.
    logical           :: snoalb_anl  = .true.
