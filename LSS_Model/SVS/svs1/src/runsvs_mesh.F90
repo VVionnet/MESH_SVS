@@ -1218,6 +1218,7 @@ ierr = 200
        end do
        if(.not. svs_mesh%vs%lunique_profile_svs2) then
          do j = 1, nl_svs     
+           write(level, FMT_GEN) j
            write(iout_soil, FMT_CSV, advance = 'no') &
                             trim(VN_SVS_TPSOILV) // '_' // trim(adjustl(level))
          end do
