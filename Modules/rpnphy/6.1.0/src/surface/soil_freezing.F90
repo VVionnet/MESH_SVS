@@ -1,7 +1,7 @@
 !copyright (C) 2001  MSC-RPN COMM  %%%RPNPHY%%%
 
       SUBROUTINE SOIL_FREEZING(DT, TSOIL, VEGL, VEGH, PSN, PSNVH,  &
-                                SOILCONDZ, SOILHCAPZ , TGRS,   &
+                                SOILCONDZ, SOILHCAPZ , TGRS, TVEGD,   &
                                 WSOIL, ISOIL,  &
                                 SNORO, SNODP, TSNO, &
                                 SNVRO, SNVDP, TSNV, &
@@ -19,7 +19,7 @@
 
       REAL DT
 
-      REAL, DIMENSION(N)        :: VEGL, VEGH, PSN, PSNVH, TGRS, TDEEP
+      REAL, DIMENSION(N)        :: VEGL, VEGH, PSN, PSNVH, TGRS, TDEEP, TVEGD
       REAL, DIMENSION(N)        :: SNORO, SNODP, TSNO 
       REAL, DIMENSION(N)        :: SNVRO, SNVDP, TSNV 
       REAL, DIMENSION(N,NL_SVS) :: TSOIL,SOILCONDZ, SOILHCAPZ,WSOIL,ISOIL, WUNFRZ
@@ -58,6 +58,7 @@
       !          --- Prognostic variables of SVS not modified by SOIL_FREEZING ---
       !
       ! TGRS          bare ground surface temperature from Force Restore
+      ! TVEGD         deep vegetation temperature from Force Restore
       ! SNODP         snow depth for snow over bare ground/low veg
       ! SNORO         snow density for snow over bare ground/low veg
       ! TSNO          deep snow temperature for snow over bare ground/low veg
@@ -85,14 +86,17 @@
       LOGICAL LSNOW_EFFECT ! Swithc to include or not the effect of the snow cover
       INTEGER OPT_SNOW  ! Option to compute the heat flux between the snowpack and the soil
       INTEGER OPT_FRAC    ! Option to compute the snow cover fraction        
-      INTEGER OPT_LIQWAT  ! Option to compute the unfrozen redisudal water content     
+      INTEGER OPT_LIQWAT  ! Option to compute the unfrozen redisudal water content  
+      INTEGER OPT_VEGFLUX ! Option to compute the surface heat flux from the snow-free vegetation 
+      INTEGER OPT_AGGFLUX ! Option to compute the surface average heat flux
+
 
       REAL LAMI, CICE, DAY, MYOMEGA 
       REAL MFAC, RHONEW,Z0
 
       REAL HNET,HNETR,TTEST, TTEST2, UFWC,DFWC, FWCTEST, QLAT
       REAL RTH_GRND, RTH_SNO,RTH_SNV,FAC_SNW
-      REAL HFLUX_GRND, HFLUX_SNO,HFLUX_SNV
+      REAL HFLUX_GRND, HFLUX_SNO,HFLUX_SNV, HFLUX_VEG
       REAL, DIMENSION(N, NL_SVS+1) :: RTH, HFLUX
       REAL, DIMENSION(N, NL_SVS) :: WC, RFS, ISOILT
       REAL, DIMENSION(NL_SVS)   :: ZLAYER
@@ -100,6 +104,7 @@
       REAL, DIMENSION(N)           :: TBTM, DBTM, LAMS, LAMSV, FRAC_SNWL, FRAC_SNWH
       REAL KDIFFU,KDIFFUV 
       REAL, DIMENSION(N)           :: DAMPD,DAMPDV
+      REAL, DIMENSION(N,SVS_TILESP1)           :: WTG 
 
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -123,7 +128,14 @@
                    ! 1: use a constant value of 0.06 (as in VSMB)
                    ! 2: use a value that depends on soil texture
 
+      OPT_VEGFLUX = 2 ! Option to compute the surface heat flux from the snow-free vegetation 
+                   ! 1: use surface bare ground temperature from FR scheme 
+                   ! 2: use deep vegetation temperature from  FR scheme
 
+      OPT_AGGFLUX = 2  ! Option to compute the surface average heat flux 
+                   ! 1: initial option developped in the soil freezing scheme (not correct, to be removed)
+                   ! 2: correct formulation to 
+                   
       IF(OPT_SNOW ==0) THEN
               FAC_SNW = 0.5
       ELSE IF(OPT_SNOW ==1) THEN
@@ -200,6 +212,15 @@
 
         ENDIF             
       ENDDO
+
+      ! Compute weights of surface type in SVS:
+      !               - snow-free bare ground WTG_2
+      !               - snow-free vegetation WTG_3
+      !               - snow-covered bare ground and low vegetation WTG_4
+      !               - snow below high-vegetation WTG_5
+
+      CALL WEIGHTS_SVS(VEGH, VEGL,FRAC_SNWL,FRAC_SNWH,N,WTG)
+
       !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !     1. Compute the thermal resistances and the heat flux between
@@ -215,7 +236,12 @@
           RTH_GRND = 0.5*DELZ(1)/SOILCONDZ(I,1)  
           HFLUX_GRND = (TGRS(I) - TSOIL(I,1)) / RTH_GRND
 
-          
+          IF(OPT_VEGFLUX==1) THEN
+              HFLUX_VEG = HFLUX_GRND
+          ELSE IF(OPT_VEGFLUX==2) THEN
+              HFLUX_VEG = (TVEGD(I) - TSOIL(I,1)) / RTH_GRND
+          ENDIF
+
           IF(OPT_SNOW ==0 .OR. OPT_SNOW ==1) THEN
              RTH_SNO = FAC_SNW*SNODP(I)/LAMS(I) + 0.5*DELZ(1)/SOILCONDZ(I,1)
              HFLUX_SNO = (TSNO(I) - TSOIL(I,1)) / RTH_SNO
@@ -231,8 +257,13 @@
           ENDIF
                  
           ! Compute average surface heat flux using fractions
-          HFLUX(I,1) = (1.0-VEGH(I)) * ((1.0-FRAC_SNWL(I)) * HFLUX_GRND + FRAC_SNWL(I) * HFLUX_SNO)    + &
-                               VEGH(I) * ((1.0-FRAC_SNWH(I)) * HFLUX_GRND + FRAC_SNWH(I) * HFLUX_SNV)
+          IF(OPT_AGGFLUX ==1) THEN
+               HFLUX(I,1) = (1.0-VEGH(I)) * ((1.0-FRAC_SNWL(I)) * HFLUX_GRND + FRAC_SNWL(I) * HFLUX_SNO)    + &
+                               VEGH(I) * ((1.0-FRAC_SNWH(I)) * HFLUX_VEG + FRAC_SNWH(I) * HFLUX_SNV)
+          ELSE 
+               HFLUX(I,1) = WTG(I,2) * HFLUX_GRND + WTG(I,3) * HFLUX_VEG + &
+                               WTG(I,4) * HFLUX_SNO + WTG(I,5) * HFLUX_SNV 
+          ENDIF
 
         ELSE
           RTH(I,1) = 0.5*DELZ(1)/SOILCONDZ(I,1)  
