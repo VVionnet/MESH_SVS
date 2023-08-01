@@ -90,11 +90,11 @@
       REAL LAMI, CICE, DAY, MYOMEGA 
       REAL MFAC, RHONEW,Z0
 
-      REAL HNET,HNETR,TTEST,UFWC,DFWC, FWCTEST, QLAT
+      REAL HNET,HNETR,TTEST, TTEST2, UFWC,DFWC, FWCTEST, QLAT
       REAL RTH_GRND, RTH_SNO,RTH_SNV,FAC_SNW
       REAL HFLUX_GRND, HFLUX_SNO,HFLUX_SNV
       REAL, DIMENSION(N, NL_SVS+1) :: RTH, HFLUX
-      REAL, DIMENSION(N, NL_SVS) :: WC, RFS
+      REAL, DIMENSION(N, NL_SVS) :: WC, RFS, ISOILT
       REAL, DIMENSION(NL_SVS)   :: ZLAYER
 
       REAL, DIMENSION(N)           :: TBTM, DBTM, LAMS, LAMSV, FRAC_SNWL, FRAC_SNWH
@@ -141,9 +141,15 @@
       Z0 = 0.01
       RHONEW=100.0
 
+      ! Compute layer depth
+      ZLAYER(1) =  DELZ(1)
+      DO K =2, NL_SVS
+        ZLAYER(K) = ZLAYER(K-1) + DELZ(K)
+      ENDDO
+      
       DO  I=1,N
         TBTM(I) = TDEEP(I) ! K
-        DBTM(I) = 5.0  ! m
+        DBTM(I) = ZLAYER(NL_SVS) + 0.5* DELZ(NL_SVS) ! m
 
          ! Snow thermal conductitivy
         LAMS(I) = LAMI * SNORO(I)**1.88
@@ -171,6 +177,7 @@
                   RFS(I,K) = WUNFRZ(I,K) ! Residual unfrozen content
             ENDIF
             WC(I,K) = WSOIL(I,K) + ISOIL(I,K) ! Total water content
+            ISOILT(I,K) = ISOIL(I,K)  ! Initialize frozen soil volumetric water (to be updated in the routine) 
         ENDDO
 
         IF(OPT_SNOW ==2) THEN
@@ -193,15 +200,6 @@
 
         ENDIF             
       ENDDO
-      !
-      ! Compute layer depth
-      !
-      ZLAYER(1) =  DELZ(1)
-      DO K =2, NL_SVS
-        ZLAYER(K) = ZLAYER(K-1) + DELZ(K)
-      ENDDO
-
-
       !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !     1. Compute the thermal resistances and the heat flux between
@@ -235,10 +233,7 @@
           ! Compute average surface heat flux using fractions
           HFLUX(I,1) = (1.0-VEGH(I)) * ((1.0-FRAC_SNWL(I)) * HFLUX_GRND + FRAC_SNWL(I) * HFLUX_SNO)    + &
                                VEGH(I) * ((1.0-FRAC_SNWH(I)) * HFLUX_GRND + FRAC_SNWH(I) * HFLUX_SNV)
-      !  write(*,*) 'Frac',PSN(I), SNODP(I), LAMS(I)
-      !  write(*,*) 'Rth', RTH_GRND,RTH_SNO
-      !  write(*,*) TGRS(I),TSNO(I), TSOIL(I,1)
-      !  write(*,*) 'Flux',HFLUX_GRND,HFLUX_SNO,HFLUX(I,1) 
+
         ELSE
           RTH(I,1) = 0.5*DELZ(1)/SOILCONDZ(I,1)  
           HFLUX(I,1) = (TGRS(I) - TSOIL(I,1)) / RTH(I,1)
@@ -255,7 +250,7 @@
         ! Treatment of the bottom layer
         ! Use thermal conductivity of the deepest SVS layer
         !
-        RTH(I,NL_SVS+1) = (DBTM(I) - ZLAYER(NL_SVS))/SOILCONDZ(I,NL_SVS)
+        RTH(I,NL_SVS+1) = 0.5* DELZ(NL_SVS)/ SOILCONDZ(I,NL_SVS) + (DBTM(I) - ZLAYER(NL_SVS)) / SOILCONDZ(I,NL_SVS)
         HFLUX(I,NL_SVS+1) = ( TSOIL(I,NL_SVS)- TBTM(I)) / RTH(I,NL_SVS+1)
         !
       ENDDO
@@ -268,27 +263,31 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !
       !
- !     write(*,*) 'Upper forcing', TGRS(1), TSNO(1), PSN(1)
+      ! 
       DO I=1, N
         DO K =1, NL_SVS
-           HNET = (HFLUX(I,K)- HFLUX(I,K+1))*DT
+           HNET = (HFLUX(I,K)- HFLUX(I,K+1))*DT ! Heat flux received by layer K
 
-
-           IF(TSOIL(I,K) .GT. TRPL) THEN
+           IF(TSOIL(I,K) - TRPL .GT. EPSILON_SVS_TK) THEN
+              !TSOIL POSITIVE
                 TTEST = TSOIL(I,K) + HNET/(SOILHCAPZ(I,K)*DELZ(K))
                 IF(TTEST .LT. TRPL) THEN
-                     UFWC = MAX(WSOIL(I,K) - RFS(I,K), 0.) ! Liquid water available for freezing
-                     IF(UFWC>0.) THEN  
+                     UFWC = MAX(WSOIL(I,K) - RFS(I,K), 0.) !Maximum liquid water available for freezing
+                     IF(UFWC>0.) THEN 
+                        ! if have unfrozen water available for freezing
                         HNETR = HNET + (TSOIL(I,K)-TRPL) * SOILHCAPZ(I,K)*DELZ(K)
 
-                        DFWC = -HNETR/(RAUW*CHLF*DELZ(K)) ! Ice content that could be potentially formed
+                        DFWC = -HNETR/(RAUW*CHLF*DELZ(K)) ! Maximum ice content that could be potentially formed
                         IF(UFWC>DFWC) THEN  !  Enough liquid water for freezing, temperature stay constant
+                           ! All energy will be used to freeze water
+                           ! because max created ice < max liquid water that can be frozen
                            TSOIL(I,K) = TRPL
-                           ISOIL(I,K) = DFWC
+                           ISOILT(I,K) = DFWC + ISOIL(I,K)
                         ELSE ! All available liquid water is frozen and temperature keep decreasing
+                           ! Freeze all available water, and remaining energy flux will decrease temperature
                            HNETR  = HNETR +UFWC* RAUW*CHLF*DELZ(K)
                            TSOIL(I,K) =  TRPL + HNETR/(SOILHCAPZ(I,K)*DELZ(K))
-                           ISOIL(I,K) = UFWC
+                           ISOILT(I,K) = UFWC + ISOIL(I,K)
                         ENDIF
                      ELSE
                         TSOIL(I,K) = TTEST ! No enough liquid water for freezing, temperature keep decreasing. 
@@ -296,7 +295,9 @@
                ELSE  
                      TSOIL(I,K) = TTEST
                ENDIF
-           ELSE IF(TSOIL(I,K) .EQ. TRPL) THEN
+
+            ELSE IF( abs(TSOIL(I,K)-TRPL) .LE. EPSILON_SVS_TK) THEN
+               ! TSOIL within "epsilon" of TRPL
                DFWC = -HNET/(RAUW*CHLF*DELZ(K))
                UFWC = MAX(WSOIL(I,K) - RFS(I,K) , 0.)  
                FWCTEST = ISOIL(I,K) + DFWC
@@ -304,61 +305,98 @@
                   ! Total melting of frozen content and ground heating 
                   ! with the remaining energy
                   HNETR = HNET -ISOIL(I,K) * RAUW*CHLF*DELZ(K)
-                  ISOIL(I,K) = 0.0    
+                  ISOILT(I,K) = 0.0    
                   TSOIL(I,K) = TSOIL(I,K) + HNETR/(SOILHCAPZ(I,K)*DELZ(K))
                ELSE 
                   IF(DFWC.GT.UFWC) THEN
                       !Total freezing of soil layer and ground cooling
                       ! with the remaining energy
                       HNETR = HNET + UFWC * RAUW*CHLF*DELZ(K)
-                      ISOIL(I,K) = ISOIL(I,K) + UFWC
+                      ISOILT(I,K) = ISOIL(I,K) + UFWC
                       TSOIL(I,K) = TSOIL(I,K) + HNETR/(SOILHCAPZ(I,K)*DELZ(K))
                    ELSE
                       ! layer is still partially frozen and T = 0 deg
-                      ISOIL(I,K) = FWCTEST
+                      ISOILT(I,K) = FWCTEST
+                      TSOIL(I,K) = TRPL
                    ENDIF
                 ENDIF
 
              ELSE  ! Soil at negative temperature
 
-                TTEST = TSOIL(I,K) + HNET/(SOILHCAPZ(I,K)*DELZ(K))
+                ! Temperature that would be reached without phase change
+                TTEST = TSOIL(I,K) + HNET/(SOILHCAPZ(I,K)*DELZ(K)) 
+
                 IF(TTEST .GT. TRPL) THEN
                      !
-                     !Enough energy is brought to heat the soil to 0 deg and 
-                     ! melt part of the ice
+                     ! Enough energy is brought to heat the soil to 0 deg and 
+                     ! melt part of the ice if ice is present
                      !
-                     HNETR = HNET + (TSOIL(I,K)-TRPL) * SOILHCAPZ(I,K)*DELZ(K)
-                     TSOIL(I,K) = TRPL
-                     ISOIL(I,K) = ISOIL(I,K)-HNETR/(RAUW*CHLF*DELZ(K))
+                     IF(ISOIL(I,K)>0.) THEN 
+                        ! If ice is present, compute the energy left after warming the soil
+                        ! temp. to 0 degC
+                        HNETR = HNET + (TSOIL(I,K)-TRPL) * SOILHCAPZ(I,K)*DELZ(K)
+
+                        ! Maximum ice content that could be potentially melted with such amount of energy
+                        DFWC = HNETR/(RAUW*CHLF*DELZ(K))
+
+                        IF(DFWC<ISOIL(I,K)) THEN 
+                            ! All energy is used to melt ice and some ice remains 
+                            TSOIL(I,K) = TRPL
+                            ISOILT(I,K) = ISOIL(I,K)-DFWC
+                        ELSE         
+                            ! All ice is melted and remaining energy is used to warm the layer above 0 degC
+                            ! Remove the energy required to melt the ice 
+                            HNETR  = HNETR -ISOIL(I,K)* RAUW*CHLF*DELZ(K) 
+                            ! Update the temperature and the ice content
+                            TSOIL(I,K) =  TRPL + HNETR/(SOILHCAPZ(I,K)*DELZ(K))
+                            ISOILT(I,K) = 0. 
+                        ENDIF
+                     ELSE
+                        TSOIL(I,K) = TTEST ! No melting of ice and no contribution from phase change  
+                     ENDIF
+
                 ELSE
-                     ! Not enough energy for melting
+                     !
+                     ! The temperature remains negative 
                      ! 
-                     ! Check if liquid water is present about the residual unfrozen water content
+                     ! Check if liquid water is present above the residual unfrozen water content
+                     ! and freeze this water if it is the case. Such situation should not be encoutered at model runtime
+                     ! but may be present if data assimilation has changed in an unconsistent way the soil temperature and/or water content. 
                      UFWC = MAX(WSOIL(I,K) - RFS(I,K), 0.)
+
                      IF(UFWC .GT. 0.) THEN
-                          ! Freeze the remaining water and modif soil temp
-                          ISOIL(I,K) = ISOIL(I,K) + UFWC
-                          QLAT  = UFWC* RAUW*CHLF*DELZ(K)
-                     ELSE
-                          QLAT  = 0.
-                     ENDIF
-                     TTEST = TTEST + QLAT/(SOILHCAPZ(I,K)*DELZ(K))
-                     IF(TTEST .GT. TRPL) THEN
-                          QLAT = (TTEST - TRPL) * SOILHCAPZ(I,K)*DELZ(K)
-                          ISOIL(I,K)  = ISOIL(I,K) - QLAT / (RAUW*CHLF*DELZ(K))
-                          TSOIL(I,K) =TRPL
-                     ELSE
-                          TSOIL(I,K) = TTEST
-                     ENDIF
-                 ENDIF
+                         ! There is liquid water that can be frozen.
+                         ! Compute the energy that would be released by the freezing of this amount of water 
+                         QLAT  = UFWC* RAUW*CHLF*DELZ(K)
+                         ! Compute the temperature that would be reached
+                         TTEST2 = TTEST + QLAT/(SOILHCAPZ(I,K)*DELZ(K))
 
-           ENDIF
+                         IF(TTEST2 .GT. TRPL) THEN 
+                              ! Too much energy would be released 
+                              QLAT =  (TRPL-TTEST)*SOILHCAPZ(I,K)*DELZ(K) ! Compute the energy which is actually relasead
+                              ISOILT(I,K)  = ISOIL(I,K) + QLAT/(RAUW*CHLF*DELZ(K)) ! Update ice content
+                              TSOIL(I,K) =TRPL
+                         ELSE
+                              ! All the available liquid water is melting and the temperature reamins below 0 deg 
+                              ISOILT(I,K) = ISOIL(I,K) + UFWC 
+                              TSOIL(I,K) = TTEST2
+                         ENDIF
+                     ELSE
+                          ! No liquid water is available for freezing
+                          ! The ice content does not change and the temperature remains negative
+                          TSOIL(I,K) = TTEST  
+                     ENDIF
 
+                  ENDIF
+
+             ENDIF
+
+           ! Update frozen water content
+           ISOIL(I,K) = ISOILT(I,K)
+    
            ! Update liquid water content
            WSOIL(I,K) = WC(I,K) - ISOIL(I,K)
-
-           
-         !  write(*,*) K,TSOIL(I,K), WSOIL(I,K), ISOIL(I,K), WSOIL(I,K)+ISOIL(I,K)
+       
         ENDDO
       ENDDO
 
