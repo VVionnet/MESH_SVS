@@ -771,7 +771,10 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                        WDTTG, WDTTV, WFTG, WFTV       , &
                        bus(x(TPSOIL ,1,1)), bus(x(TPSOILV ,1,1)), BUS(x(SOILHCAPZ,1,1)), &
                        N )
- 
+
+!
+!     Update the soil liquid water content after the aggregation of phase changes
+!
       DO I=1,N
          DO J=1,NL_SVS  
             WSOILT(I,J) = WSOILTT(I,J) 
