@@ -41,6 +41,7 @@ module runsvs_mesh
     integer :: iout_snow_bulk = 151
     integer :: iout_snow_profile = 152
     integer :: iout_snow_enbal = 153
+    integer :: iout_soil_diag = 154
 
     !> SVS1 output
     integer :: iout_svs1_soil = 160
@@ -63,6 +64,9 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_CLAY = 'CLAY'
     character(len = *), parameter, public :: VN_SVS_WSOIL = 'WSOIL'
     character(len = *), parameter, public :: VN_SVS_ISOIL = 'ISOIL'
+    character(len = *), parameter, public :: VN_SVS_LATFLW = 'LATFLW'
+    character(len = *), parameter, public :: VN_SVS_DRAIN = 'DRAIN'
+    character(len = *), parameter, public :: VN_SVS_WATFLW = 'WATFLW'
     character(len = *), parameter, public :: VN_SVS_KTHERMAL = 'KTHERMAL'
     character(len = *), parameter, public :: VN_SVS_TGROUND = 'TGROUND'
     character(len = *), parameter, public :: VN_SVS_VF = 'VF'
@@ -108,6 +112,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_TSNOW_SVS = 'TSNOW_ML'
     character(len = *), parameter, public :: VN_SVS_WSNOW_SVS = 'WSNOW_ML'
     character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_PROFILE = 'LOUT_SNOW_PROFILE' ! For svs2 only 
+    character(len = *), parameter, public :: VN_SVS_LOUT_SOIL_DIAG = 'LOUT_SOIL_DIAG' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_ENBAL = 'LOUT_SNOW_ENBAL' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_NPROFILE_DAY = 'NPROFILE_DAY' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LSOIL_FREEZING_SVS1 = 'LSOIL_FREEZING_SVS1' ! For svs1 only 
@@ -198,6 +203,7 @@ module runsvs_mesh
         character(len = DEFAULT_FIELD_LENGTH) :: hsnowres = 'RIL'
         logical :: lsnowdrift_sublim = .true.
         logical :: lout_snow_profile = .false.
+        logical :: lout_soil_diag = .false.
         logical :: lout_snow_enbal = .false.
         integer :: nprofile_day = 4 !
         logical :: lsoil_freezing_svs1 = .false.
@@ -1257,6 +1263,24 @@ ierr = 200
           write(iout_snow_profile, *)
        endif
 
+       if(svs_mesh%vs%lout_soil_diag) then 
+          open(iout_soil_diag, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs2_soil_diag_hourly.csv', action = 'write')
+          write(iout_soil_diag, FMT_CSV, advance = 'no') 'YEAR', 'JDAY', 'HOUR', 'MINS'
+          write(iout_soil_diag, FMT_CSV, advance = 'no') 'LAT_AC', 'ROF_AC','DRA_AC'          
+          do j = 1, nl_svs
+            write(level, FMT_GEN) j
+            write(iout_soil_diag, FMT_CSV, advance = 'no') &
+                            trim(VN_SVS_LATFLW) // '_' // trim(adjustl(level)), &
+                            trim(VN_SVS_DRAIN) // '_' // trim(adjustl(level))
+          end do
+          do j = 1, nl_svs+1
+            write(level, FMT_GEN) j
+            write(iout_soil_diag, FMT_CSV, advance = 'no') &
+                            trim(VN_SVS_WATFLW) // '_' // trim(adjustl(level))
+          end do          
+          write(iout_soil_diag, *)
+       endif
+               
 
    else if(svs_mesh%vs%schmsol=='SVS') then
 
@@ -1534,6 +1558,24 @@ ierr = 200
                 write(iout_snow_profile, *)
 
               end if
+
+              if( svs_mesh%vs%lout_soil_diag) then 
+                 ! Write file containing soil hydrological diagnostic output
+                  write(iout_soil_diag, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
+                  write(iout_soil_diag, FMT_CSV, advance = 'no') busptr(vd%latflaf%i)%ptr(:, trnch),busptr(vd%runofftotaf%i)%ptr(1, trnch), &
+                        busptr(vd%drainaf%i)%ptr(:, trnch)
+                  do i = 1, nl_svs
+                      write(iout_soil_diag, FMT_CSV, advance = 'no') &
+                             busptr(vd%latflw%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) , &
+                             busptr(vd%drain%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+                   end do 
+                  do i = 1, nl_svs+1
+                      write(iout_soil_diag, FMT_CSV, advance = 'no') &
+                             busptr(vd%watflow%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+                   end do 
+                  write(iout_soil_diag, *)
+              end if
+
 
            end if
 
