@@ -65,7 +65,6 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_WSOIL = 'WSOIL'
     character(len = *), parameter, public :: VN_SVS_ISOIL = 'ISOIL'
     character(len = *), parameter, public :: VN_SVS_LATFLW = 'LATFLW'
-    character(len = *), parameter, public :: VN_SVS_DRAIN = 'DRAIN'
     character(len = *), parameter, public :: VN_SVS_WATFLW = 'WATFLW'
     character(len = *), parameter, public :: VN_SVS_KTHERMAL = 'KTHERMAL'
     character(len = *), parameter, public :: VN_SVS_TGROUND = 'TGROUND'
@@ -1266,12 +1265,11 @@ ierr = 200
        if(svs_mesh%vs%lout_soil_diag) then 
           open(iout_soil_diag, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs2_soil_diag_hourly.csv', action = 'write')
           write(iout_soil_diag, FMT_CSV, advance = 'no') 'YEAR', 'JDAY', 'HOUR', 'MINS'
-          write(iout_soil_diag, FMT_CSV, advance = 'no') 'LAT_AC', 'ROF_AC','DRA_AC'          
+          write(iout_soil_diag, FMT_CSV, advance = 'no') 'LAT_AC', 'ROF_AC','DRA_AC','ROF_INS'         
           do j = 1, nl_svs
             write(level, FMT_GEN) j
             write(iout_soil_diag, FMT_CSV, advance = 'no') &
-                            trim(VN_SVS_LATFLW) // '_' // trim(adjustl(level)), &
-                            trim(VN_SVS_DRAIN) // '_' // trim(adjustl(level))
+                            trim(VN_SVS_LATFLW) // '_' // trim(adjustl(level))
           end do
           do j = 1, nl_svs+1
             write(level, FMT_GEN) j
@@ -1563,11 +1561,10 @@ ierr = 200
                  ! Write file containing soil hydrological diagnostic output
                   write(iout_soil_diag, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
                   write(iout_soil_diag, FMT_CSV, advance = 'no') busptr(vd%latflaf%i)%ptr(:, trnch),busptr(vd%runofftotaf%i)%ptr(1, trnch), &
-                        busptr(vd%drainaf%i)%ptr(:, trnch)
+                        busptr(vd%drainaf%i)%ptr(:, trnch),busptr(vd%runofftot%i)%ptr(1, trnch)
                   do i = 1, nl_svs
                       write(iout_soil_diag, FMT_CSV, advance = 'no') &
-                             busptr(vd%latflw%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) , &
-                             busptr(vd%drain%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+                             busptr(vd%latflw%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
                    end do 
                   do i = 1, nl_svs+1
                       write(iout_soil_diag, FMT_CSV, advance = 'no') &
@@ -1790,6 +1787,10 @@ ierr = 200
             vs%tile%tsol(:, i) = busptr(vd%tground%i)%ptr((ni + 1):, trnch)
         end do
 
+        ! Cumulate surface runoff for land surface tile
+         busptr(vd%runofftotaf%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch) =   &
+                           busptr(vd%runofftotaf%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch)   + &
+                           busptr(vd%runofftot%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch)
 
     end subroutine
 
