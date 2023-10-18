@@ -1,7 +1,7 @@
 !copyright (C) 2001  MSC-RPN COMM  %%%RPNPHY%%%
 
       SUBROUTINE SOIL_FREEZING(DT, TSOIL, VEGL, VEGH, PSN, PSNVH,  &
-                                SOILCONDZ, SOILHCAPZ , TGRS, TVEGD,   &
+                                SOILCONDZ, SOILHCAPZ , TGRS, TVEGS,   &
                                 WSOIL, ISOIL,  &
                                 SNORO, SNODP, TSNO, &
                                 SNVRO, SNVDP, TSNV, &
@@ -19,7 +19,7 @@
 
       REAL DT
 
-      REAL, DIMENSION(N)        :: VEGL, VEGH, PSN, PSNVH, TGRS, TDEEP, TVEGD
+      REAL, DIMENSION(N)        :: VEGL, VEGH, PSN, PSNVH, TGRS, TDEEP,TVEGS
       REAL, DIMENSION(N)        :: SNORO, SNODP, TSNO 
       REAL, DIMENSION(N)        :: SNVRO, SNVDP, TSNV 
       REAL, DIMENSION(N,NL_SVS) :: TSOIL,SOILCONDZ, SOILHCAPZ,WSOIL,ISOIL, WUNFRZ
@@ -33,6 +33,9 @@
       ! Simulate the evolution of soil freezing and thawing 
       ! using the simple heat conduction method proposed by
       ! Hayashi et al. (2007) and Mohammed et al. (2012)
+      ! The upper boundary conditions are taken from the FR schemes and
+      ! the coupling is done as the IFS code (see IFS techincal
+      ! documentation)
       
       !
       !Arguments
@@ -58,7 +61,7 @@
       !          --- Prognostic variables of SVS not modified by SOIL_FREEZING ---
       !
       ! TGRS          bare ground surface temperature from Force Restore
-      ! TVEGD         deep vegetation temperature from Force Restore
+      ! TVEGS         surface vegetation temperature from Force Restore
       ! SNODP         snow depth for snow over bare ground/low veg
       ! SNORO         snow density for snow over bare ground/low veg
       ! TSNO          deep snow temperature for snow over bare ground/low veg
@@ -88,10 +91,12 @@
       INTEGER OPT_FRAC    ! Option to compute the snow cover fraction        
       INTEGER OPT_LIQWAT  ! Option to compute the unfrozen redisudal water content  
       INTEGER OPT_VEGFLUX ! Option to compute the surface heat flux from the snow-free vegetation 
+      INTEGER OPT_VEGCOND ! Option to compute the skin conductivity from the snow-free vegetation 
       INTEGER OPT_AGGFLUX ! Option to compute the surface average heat flux
 
 
       REAL LAMI, CICE, DAY, MYOMEGA 
+      REAL LAM_VEGL_STAB, LAM_VEGH_STAB,LAM_VEGL_UNSTAB, LAM_VEGH_UNSTAB
       REAL MFAC, RHONEW,Z0
 
       REAL HNET,HNETR,TTEST, TTEST2, UFWC,DFWC, FWCTEST, QLAT
@@ -103,8 +108,9 @@
 
       REAL, DIMENSION(N)           :: TBTM, DBTM, LAMS, LAMSV, FRAC_SNWL, FRAC_SNWH
       REAL KDIFFU,KDIFFUV 
-      REAL, DIMENSION(N)           :: DAMPD,DAMPDV
-      REAL, DIMENSION(N,SVS_TILESP1)           :: WTG 
+      REAL, DIMENSION(N)           :: DAMPD,DAMPDV,LAM_VEG
+      REAL, DIMENSION(N,SVS_TILESP1)           :: WTG
+
 
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -129,8 +135,13 @@
                    ! 2: use a value that depends on soil texture
 
       OPT_VEGFLUX = 2 ! Option to compute the surface heat flux from the snow-free vegetation 
-                   ! 1: use surface bare ground temperature from FR scheme 
-                   ! 2: use deep vegetation temperature from  FR scheme
+                   ! 1: use surface bare ground temperature from FR scheme and resistance from bare ground
+                   ! 2: use surface vegetation temperature from  FR scheme and resistance from bare ground
+                   ! 3: use surface vegetation temperature from  FR scheme and skin conductivity for vegetation 
+
+      OPT_VEGCOND = 1 ! Option to compute the skin conductivity for the vegetation 
+                   ! 1: same value of 10 for low and high veg. in both stable and unstable conditions ()
+                   ! 2: different values for low and high veg. in stable and unstable conditions ()
 
       OPT_AGGFLUX = 2  ! Option to compute the surface average heat flux 
                    ! 1: initial option developped in the soil freezing scheme (not correct, to be removed)
@@ -153,6 +164,23 @@
       Z0 = 0.01
       RHONEW=100.0
 
+      ! Define skin conductivity for low and high vegetation (W m-2 K-1)
+      IF(OPT_VEGCOND==1) THEN 
+          ! Effect of stable and unstable stratification are not taken into account 
+          ! Values taken from Tab 1.2 in sup. material of Boussetta et al (2021)
+          LAM_VEGH_STAB = 10 
+          LAM_VEGL_STAB = 10  
+          LAM_VEGH_UNSTAB = 10 
+          LAM_VEGL_UNSTAB = 10  
+      ELSE IF(OPT_VEGCOND ==2) THEN
+          ! Effect of stable and unstable stratification are  taken into account
+          ! Values taken from Tab 3 in Trigo et al. (2015)
+          LAM_VEGH_STAB = 15
+          LAM_VEGL_STAB = 10  
+          LAM_VEGH_UNSTAB = 20 
+          LAM_VEGL_UNSTAB = 10  
+      ENDIF   
+
       ! Compute layer depth
       ZLAYER(1) =  DELZ(1)
       DO K =2, NL_SVS
@@ -166,6 +194,15 @@
          ! Snow thermal conductitivy
         LAMS(I) = LAMI * SNORO(I)**1.88
         LAMSV(I) = LAMI * SNVRO(I)**1.88
+
+        ! Vegetation average skin conductivity
+        IF(VEGL(I)+VEGH(I)> 0.) THEN
+            IF(TVEGS(I) > TSOIL(I,1)) THEN ! Stable case
+                 LAM_VEG(I) =(VEGL(I)*LAM_VEGL_STAB+VEGH(I)*LAM_VEGH_STAB)/(VEGL(I)+VEGH(I))
+            ELSE  ! Unstable case
+                 LAM_VEG(I) =(VEGL(I)*LAM_VEGL_UNSTAB+VEGH(I)*LAM_VEGH_UNSTAB)/(VEGL(I)+VEGH(I))
+            ENDIF                 
+        ENDIF
 
         ! Snow cover fraction used for the exchanges with the surface
         IF(OPT_FRAC==1) THEN
@@ -239,7 +276,9 @@
           IF(OPT_VEGFLUX==1) THEN
               HFLUX_VEG = HFLUX_GRND
           ELSE IF(OPT_VEGFLUX==2) THEN
-              HFLUX_VEG = (TVEGD(I) - TSOIL(I,1)) / RTH_GRND
+              HFLUX_VEG = (TVEGS(I) - TSOIL(I,1)) / RTH_GRND
+          ELSE IF(OPT_VEGFLUX==3) THEN
+              HFLUX_VEG = (TVEGS(I) - TSOIL(I,1)) * LAM_VEG(I)              
           ENDIF
 
           IF(OPT_SNOW ==0 .OR. OPT_SNOW ==1) THEN
