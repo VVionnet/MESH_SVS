@@ -506,7 +506,7 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                 bus(x(vegh    ,1,1)), bus(x(psngrvl ,1,1)),&
                 bus(x(psnvha  ,1,1)), bus(x(soilcondz,1,1)), &
                 bus( x(soilhcapz,1,1)), &
-                bus(x(tground, 1,1)), bus(x(tvege,1,2)), &
+                bus(x(tground, 1,1)), bus(x(tvege,1,1)), &
                 bus(x(wsoil   ,1,1)) , bus(x(isoil   ,1,1)), &
                 bus(x(snoro   ,1,1)) , bus(x(snodpl   ,1,1)), &
                 bus(x(tsnow   ,1,2)) ,  &
