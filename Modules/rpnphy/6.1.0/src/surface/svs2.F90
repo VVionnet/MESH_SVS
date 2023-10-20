@@ -501,7 +501,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
     
 !     Snow over bare/low ground
 
-      write(*,*) 'Snow open'
+      !write(*,*) 'Snow open'
 
       CALL SNOW_SVS(   bus(x(SNOMA_SVS,1,1)), bus(x(TSNOW_SVS,1,1)), bus(x(WSNOW_SVS,1,1)),    &
                          bus(x(SNODEN_SVS,1,1)),  bus(x(SNOAL,1,1)),bus(x(SNOAGE_SVS,1,1)),    &
@@ -562,7 +562,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
 !      ENDDO
 
-      write(*,*) 'Snow Forest'
+      !write(*,*) 'Snow Forest'
 !  
 !     Snow under high veg  as in SVS1
 !     WARNING VV : just for technical tests at the moment

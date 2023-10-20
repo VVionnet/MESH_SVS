@@ -110,6 +110,15 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_SNOTYPE_SVS = 'SNOTYPE_ML'
     character(len = *), parameter, public :: VN_SVS_TSNOW_SVS = 'TSNOW_ML'
     character(len = *), parameter, public :: VN_SVS_WSNOW_SVS = 'WSNOW_ML'
+    character(len = *), parameter, public :: VN_SVS_SNOMAV_SVS = 'SNOMAV_ML'
+    character(len = *), parameter, public :: VN_SVS_SNODENV_SVS = 'SNODENV_ML'
+    character(len = *), parameter, public :: VN_SVS_SNOAGEV_SVS = 'SNOAGEV_ML'
+    character(len = *), parameter, public :: VN_SVS_SNODIAMOPTV_SVS = 'SNODOPTV_ML'
+    character(len = *), parameter, public :: VN_SVS_SNOSPHERIV_SVS = 'SNOSPHV_ML'
+    character(len = *), parameter, public :: VN_SVS_SNOHISTV_SVS = 'SNOHISTV_ML'
+    character(len = *), parameter, public :: VN_SVS_SNOTYPEV_SVS = 'SNOTYPEV_ML'
+    character(len = *), parameter, public :: VN_SVS_TSNOWV_SVS = 'TSNOWV_ML'
+    character(len = *), parameter, public :: VN_SVS_WSNOWV_SVS = 'WSNOWV_ML' 
     character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_PROFILE = 'LOUT_SNOW_PROFILE' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_ENBAL = 'LOUT_SNOW_ENBAL' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_NPROFILE_DAY = 'NPROFILE_DAY' ! For svs2 only 
@@ -1282,6 +1291,21 @@ ierr = 200
                             trim(VN_SVS_WSNOW_SVS) // '_' // trim(adjustl(level)), & 
                             trim(VN_SVS_SNOTYPE_SVS) // '_' // trim(adjustl(level)) 
           end do
+          if(svs_mesh%vs%lout_snow_vegh) then
+                do j = 1, nsl
+                       write(level, FMT_GEN) j
+                       write(iout_snow_profile, FMT_CSV, advance = 'no') &
+                            trim(VN_SVS_SNOMAV_SVS) // '_' // trim(adjustl(level)), &
+                            trim(VN_SVS_SNODENV_SVS) // '_' // trim(adjustl(level)), &
+                            trim(VN_SVS_SNOAGEV_SVS) // '_' // trim(adjustl(level)), &
+                            trim(VN_SVS_SNODIAMOPTV_SVS) // '_' // trim(adjustl(level)), &
+                            trim(VN_SVS_SNOSPHERIV_SVS) // '_' // trim(adjustl(level)), &
+                            trim(VN_SVS_SNOHISTV_SVS) // '_' // trim(adjustl(level)), &
+                            trim(VN_SVS_TSNOWV_SVS) // '_' // trim(adjustl(level)), &
+                            trim(VN_SVS_WSNOWV_SVS) // '_' // trim(adjustl(level)), & 
+                            trim(VN_SVS_SNOTYPEV_SVS) // '_' // trim(adjustl(level)) 
+               end do
+          endif
           write(iout_snow_profile, *)
        endif
 
@@ -1571,6 +1595,20 @@ ierr = 200
                        busptr(vd%wsnow_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
                        busptr(vd%snotype_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
                 end do
+                if( svs_mesh%vs%lout_snow_vegh) then
+                  do i = 1, nsl
+                     write(iout_snow_profile, FMT_CSV, advance = 'no') &
+                       busptr(vd%snomav_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) , &
+                       busptr(vd%snodenv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
+                       busptr(vd%snoagev_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
+                       busptr(vd%snodiamoptv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) , &
+                       busptr(vd%snospheriv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
+                       busptr(vd%snohistv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
+                       busptr(vd%tsnowv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
+                       busptr(vd%wsnowv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
+                       busptr(vd%snotypev_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+                  end do
+                endif
                 write(iout_snow_profile, *)
 
               end if

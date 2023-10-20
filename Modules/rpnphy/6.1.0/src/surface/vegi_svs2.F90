@@ -258,8 +258,12 @@
 !*       10.     DENSITY OF TREES in HIGH VEGETATION
 !               ------------------------------
 !
-             VGH_DENS(I) =   0.29 * LOG(LAIH(I))+ 0.55   ! Based on LAI of high vegetation following Pomeroy et al (HP, 2002)
-             VGH_DENS(I) = MIN(1., MAX(0., VGH_DENS(I)))
+             IF(LAIH(I) > 0.) THEN                               
+                VGH_DENS(I) =   0.29 * LOG(LAIH(I))+ 0.55   ! Based on LAI of high vegetation following Pomeroy et al (HP, 2002)
+                VGH_DENS(I) = MIN(1., MAX(0., VGH_DENS(I)))
+             ELSE
+                VGH_DENS(I) =   0.
+             ENDIF
 
           ELSE
           !  NO VEGETATION
