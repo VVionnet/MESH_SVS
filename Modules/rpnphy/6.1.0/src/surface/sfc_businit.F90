@@ -109,7 +109,7 @@ subroutine sfc_businit(moyhr,ni,nk)
    character(len=2) :: ns
    integer :: legv,qaf,    &
         hpsa,hpsv, gfluxsa, gfluxsv, lesc, lescaf,    &
-        lwnetsa, lwnetsv,        &
+        lwca,lwnetsa, lwnetsv,        &
         esa, esv, &
         qgr, qgv, qveg, rainrate_vgh, resagrv,        &
         rsnows_acc, rsnowsv_acc, skyviewa, sncma, &
@@ -121,7 +121,7 @@ subroutine sfc_businit(moyhr,ni,nk)
         snoden_svs, snodenv_svs,   &
         snotype_svs, snotypev_svs, snowrate_vgh, &
         subldrifta, subldriftv,     &
-        swnetsa, swnetsv,        &
+        swnetsa, swnetsv,swca,        &
         taf, &
         tpsoilv, &
         tsnow_svs,tsnowv_svs,   &
@@ -533,6 +533,7 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR2D1(lev,          'VN=lev          ;ON=LV  ;VD=latent heat flux over vegetation                                  ;VB=v0')
       PHYVAR2D1(lwnetsa,      'VN=lwnetsa      ;ON=LWSA;VD=net longwave radiation (snow only)                               ;VB=p0')
       PHYVAR2D1(lwnetsv,      'VN=lwnetsv      ;ON=LWSV;VD=net lomgwave radiation (snow under veg. only)                    ;VB=p0')
+      PHYVAR2D1(lwca,         'VN=lwca         ;ON=LWCA;VD=incoming longwave radiation below high veg                       ;VB=p0')
       PHYVAR2D1(melts,        'VN=melts        ;ON=MLTS;VD=accum. snow melting (kg/m2)                                       ;VB=p0')
       PHYVAR2D1(meltsr,       'VN=meltsr       ;ON=MLTR;VD=accum. snow melting due to rain (kg/m2)                           ;VB=p0')
       PHYVAR3D1(psi,          'VN=psi          ;ON=PSI ;VD=soil water suction                             ;VS=A*'//ngl//'  ;VB=p0')
@@ -608,6 +609,8 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR2D1(subldriftv,   'VN=subldriftv   ;ON=SUDV;VD=mass loss blowing snow sublimation (snow-under-hv)                ;VB=p0')
       PHYVAR2D1(swnetsa,      'VN=swnetsa      ;ON=SWSA;VD=net shortwave radiation (snow only)                               ;VB=p0')
       PHYVAR2D1(swnetsv,      'VN=swnetsv      ;ON=SWSV;VD=net shortwave radiation (snow under veg. only)                    ;VB=p0')
+      PHYVAR2D1(swca,         'VN=swca         ;ON=SWCA;VD=incoming shortwave radiation below high veg                       ;VB=p0')
+      PHYVAR2D1(taf,          'VN=taf          ;ON=TAF ;VD=air temperature inside canopy                                     ;VB=p0')
       PHYVAR3D1(tground,      'VN=tground      ;ON=TGR ;VD=skin and mean ground temp.                     ;VS=A*2            ;VB=p1')
       PHYVAR2D1(tperm,        'VN=tperm        ;ON=TPRD;VD=constant deep soil temperature                                    ;VB=p0')
       PHYVAR3D1(tpsoil,       'VN=tpsoil       ;ON=TGRD;VD=soil temperature profil                        ;VS=A*'//ngl//'  ;VB=p1')

@@ -141,11 +141,6 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    real,dimension(n) :: pforest
    real,dimension(n) :: pgfluxsnow_v,pforest_v
 
-   real,dimension(n) :: prg_veg    ! Surface incoming shortwave radiation under high vegetation
-   real,dimension(n) :: prat_veg   ! Surface incoming longwave radiation under high vegetation
-   real,dimension(n) :: pwind_veg  ! Wind speed under high vegetation
-   real,dimension(n) :: ptair_veg  ! Air temperature under high vegetation
-   real,dimension(n) :: phu_veg    ! Air specific humidity under high vegetation
    real,dimension(n) :: pwind_top  ! Wind speed at canopy top
    real,dimension(n) :: puref_veg  ! Forcing height for wind under high vegetation
    real,dimension(n) :: ptref_veg  ! Forcing height for temperature/humidity under high vegetation
@@ -475,7 +470,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
          CALL  CANOPY_MET_SVS2(tt, hu, ps, vmod, vdir, zfsolis, bus(x(FDSI,1,1)), &
                          bus(x(TVEGE,1,1)),bus(x(zusl,1,1)),  bus(x(ztsl,1,1)),  &
                          bus(x(FCOR,1,1)), bus(x(DLAT,1,1)), bus(x(SNVDP,1,1)),bus(x(TSNOWV_SVS,1,1)),bus(x(TPSOILV,1,1)),   &  
-                         SUNCOSA, PRG_VEG, PRAT_VEG, PWIND_VEG, PTAIR_VEG, PHU_VEG , PWIND_TOP,  & 
+                         SUNCOSA, bus(x(SWCA,1,1)), bus(x(LWCA,1,1)), bus(x(VAF,I,1)), bus(x(TAF,I,1)), bus(x(QAF,I,1)) , PWIND_TOP,  & 
                          PUREF_VEG,PTREF_VEG,BUS(x(Z0MVH  ,1,1)),PZ0,bus(x(PSNVH,1,1)),  BUS(x(VEGH   ,1,1)), &
                          BUS(x(LAIVH  ,1,1)),bus(x(VEGTRANS,1,1)) , bus(x(SKYVIEW,1,1)) , &
                          bus(x(EMISVH,1,1)),bus(x(VGH_HEIGHT,1,1)),bus(x(VGH_DENS,1,1)),N) 
@@ -484,25 +479,19 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
          DO I=1,N
             PUREF_VEG(I) = bus(x(zusl,I,1))
             PTREF_VEG(I) =  bus(x(ztsl,I,1))
-            PTAIR_VEG(I) = TT(I)
-            PHU_VEG(I) = HU(I)
-            PWIND_VEG(I) = VMOD(I)
-!     Prepare radiation for snow under high veg --> Impact of vegetation on incoming SW and LW 
-            PRG_VEG(I)   = zfsolis(I) * bus(x(VEGTRANS,I,1))              ! Incoming SW under VEG
+            bus(x(TAF,I,1))  = TT(I)  ! Air temperature in the canopy
+            bus(x(QAF,I,1))  = HU(I)  ! Air specific humidity in the canopy
+            bus(x(VAF,I,1))  = VMOD(I) ! Wind speed in the canopy
+            ! Prepare radiation for snow under high veg --> Impact of vegetation on incoming SW and LW 
+            bus(x(SWCA,I,1))    = zfsolis(I) * bus(x(VEGTRANS,I,1))              ! Incoming SW under VEG
 
-            PRAT_VEG(I)  = bus(x(SKYVIEW,I,1)) * bus(x(FDSI,I,1)) +    &  ! Incoming LW under veg
+            bus(x(LWCA,I,1))  = bus(x(SKYVIEW,I,1)) * bus(x(FDSI,I,1)) +    &  ! Incoming LW under veg
                  (1. - bus(x(SKYVIEW,I,1))) * EVA(I) * STEFAN * (bus(x(TVEGE,I,2)))**4.  ! add EVA--nathalie
          ENDDO
        ENDIF
 
-         !write(*,*) 'Ori',PRG_VEG(I),PRAT_VEG(I)
-          
-
     
 !     Snow over bare/low ground
-
-      !write(*,*) 'Snow open'
-
       CALL SNOW_SVS(   bus(x(SNOMA_SVS,1,1)), bus(x(TSNOW_SVS,1,1)), bus(x(WSNOW_SVS,1,1)),    &
                          bus(x(SNODEN_SVS,1,1)),  bus(x(SNOAL,1,1)),bus(x(SNOAGE_SVS,1,1)),    &
                          bus(x(SNODIAMOPT_SVS,1,1)), bus(x(SNOSPHERI_SVS,1,1)),bus(x(SNOHIST_SVS,1,1)),   &
@@ -525,7 +514,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 ! 
      IF(LSNOW_INTERCEPTION_SVS2) THEN
 
-            CALL SNOW_INTERCEPTION_SVS2(PTAIR_VEG,PHU_VEG, ps, PWIND_TOP,zfsolis, RHOA,     &
+            CALL SNOW_INTERCEPTION_SVS2(bus(x(TAF,I,1)),bus(x(QAF,I,1)), ps, PWIND_TOP,zfsolis, RHOA,     &
                               rainrate_mm,snowrate_mm, bus(x(SNCMA     ,1,1)),  &
                               bus(x(LESC     ,1,1)),bus(x(LESCAF     ,1,1)),    &
                               BUS(x(LAIVH  ,1,1)), BUS(x(VEGH   ,1,1)),BUS(x(VGH_DENS   ,1,1)),    &
@@ -551,17 +540,6 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
           bus(x(snowrate_vgh,i,1))  = snowrate_mm_veg(i)/1000.
       ENDDO
 
-!     Prepare radiation for snow under high veg --> Impact of vegetation on incoming SW and LW 
-!      DO I=1,N
-!           PRG_VEG(I)   = zfsolis(I) * bus(x(VEGTRANS,I,1))              ! Incoming SW under VEG
-
-!           PRAT_VEG(I)  = bus(x(SKYVIEW,I,1)) * bus(x(FDSI,I,1)) +    &  ! Incoming LW under veg
-!                 (1. - bus(x(SKYVIEW,I,1))) * EVA(I) * STEFAN * (bus(x(TVEGE,I,2)))**4.  ! add EVA--nathalie
-
-         !write(*,*) 'Ori',PRG_VEG(I),PRAT_VEG(I)
-
-!      ENDDO
-
       !write(*,*) 'Snow Forest'
 !  
 !     Snow under high veg  as in SVS1
@@ -572,9 +550,9 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                          bus(x(SNODENV_SVS,1,1)), bus(x(SNVAL,1,1)),bus(x(SNOAGEV_SVS,1,1)),    &
                          bus(x(SNODIAMOPTV_SVS,1,1)), bus(x(SNOSPHERIV_SVS,1,1)),bus(x(SNOHISTV_SVS,1,1)),   &
                          DT, bus(x(TPSOILV,1,1)), PCT, bus(x(SOILHCAPZ,1,1)), bus(x(SOILCONDZ,1,1)),               &
-                         ps,PTAIR_VEG,PRG_VEG,     &
-                         PHU_VEG, PWIND_VEG, &
-                         PRAT_VEG,         &
+                         ps,bus(x(TAF,I,1)),bus(x(SWCA,1,1)),     &
+                         bus(x(QAF,I,1)), bus(x(VAF,I,1)), &
+                         bus(x(LWCA,1,1)),         &
                          RAINRATE_MM_VEG, SNOWRATE_MM_VEG,                      &
                          RHOA,  PUREF_VEG,   PTREF_VEG,             &
                          BUS(X(ALGR,1,1)), PD_G, PDZG,                          &

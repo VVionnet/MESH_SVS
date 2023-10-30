@@ -1261,7 +1261,7 @@ ierr = 200
           open(iout_snow_bulk_vegh, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs2_snow_bulk_veg_hourly.csv', action = 'write')
           write(iout_snow_bulk_vegh, FMT_CSV, advance = 'no') 'YEAR', 'JDAY', 'HOUR', 'MINS'
           write(iout_snow_bulk_vegh, FMT_CSV, advance = 'no') 'SNVMA',   &
-          'SNVDP','SNVDEN','SNVALB','WSNV','TSNV_SURF','RSNV_AC','RAINRATE_VGH', 'SNOWRATE_VGH' 
+          'SNVDP','SNVDEN','SNVALB','WSNV','TSNV_SURF','RSNV_AC','RAINRATE_VGH', 'SNOWRATE_VGH'  
           if(svs_mesh%vs%lsnow_interception_svs2) then 
               write(iout_snow_bulk_vegh, FMT_CSV, advance = 'no') 'SNCMA', 'LESC','LESCAF'
           endif
@@ -1272,6 +1272,9 @@ ierr = 200
            open(iout_snow_enbal, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs2_snow_enbal_hourly.csv', action = 'write')
            write(iout_snow_enbal, FMT_CSV, advance = 'no') 'YEAR', 'JDAY', 'HOUR', 'MINS'
            write(iout_snow_enbal, FMT_CSV, advance = 'no') 'SNO_RNET', 'SNO_SWNET','SNO_LWNET','SNO_LE','SNO_H','SNO_BSUBL','SNO_G', 'SNO_HRAIN', 'SUBLIM_LV'
+           if(svs_mesh%vs%lout_snow_vegh) then
+                   write(iout_snow_enbal, FMT_CSV, advance = 'no') 'LW_DCA','SW_DCA','TA_CA','HU_CA','WS_CA' 
+           endif
            write(iout_snow_enbal, *)
        endif
 
@@ -1562,6 +1565,10 @@ ierr = 200
                   write(iout_snow_enbal, FMT_CSV, advance = 'no') busptr(vd%rnetsa%i)%ptr(:, trnch),busptr(vd%swnetsa%i)%ptr(:, trnch), &
                        busptr(vd%lwnetsa%i)%ptr(:, trnch), -1.0*busptr(vd%les%i)%ptr(:, trnch), -1.0*busptr(vd%hfluxsa%i)%ptr(:, trnch), &
                        busptr(vd%subldrifta%i)%ptr(:, trnch), -1.0*busptr(vd%gfluxsa%i)%ptr(:, trnch), busptr(vd%hpsa%i)%ptr(:, trnch), busptr(vd%esa%i)%ptr(:, trnch)
+                  if( svs_mesh%vs%lout_snow_vegh) then
+                          write(iout_snow_enbal, FMT_CSV, advance = 'no') busptr(vd%lwca%i)%ptr(:, trnch),busptr(vd%swca%i)%ptr(:,trnch) , &
+                           busptr(vd%taf%i)%ptr(:, trnch),busptr(vd%qaf%i)%ptr(:, trnch),busptr(vd%vaf%i)%ptr(:, trnch)
+                  endif             
                   write(iout_snow_enbal, *)
               end if
 
