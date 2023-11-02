@@ -470,7 +470,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
          CALL  CANOPY_MET_SVS2(tt, hu, ps, vmod, vdir, zfsolis, bus(x(FDSI,1,1)), &
                          bus(x(TVEGE,1,1)),bus(x(zusl,1,1)),  bus(x(ztsl,1,1)),  &
                          bus(x(FCOR,1,1)), bus(x(DLAT,1,1)), bus(x(SNVDP,1,1)),bus(x(TSNOWV_SVS,1,1)),bus(x(TPSOILV,1,1)),   &  
-                         SUNCOSA, bus(x(SWCA,1,1)), bus(x(LWCA,1,1)), bus(x(VAF,I,1)), bus(x(TAF,I,1)), bus(x(QAF,I,1)) , PWIND_TOP,  & 
+                         SUNCOSA, bus(x(SWCA,1,1)), bus(x(LWCA,1,1)), bus(x(VCA,1,1)), bus(x(TCA,1,1)), bus(x(QCA,1,1)) , PWIND_TOP,  & 
                          PUREF_VEG,PTREF_VEG,BUS(x(Z0MVH  ,1,1)),PZ0,bus(x(PSNVH,1,1)),  BUS(x(VEGH   ,1,1)), &
                          BUS(x(LAIVH  ,1,1)),bus(x(VEGTRANS,1,1)) , bus(x(SKYVIEW,1,1)) , &
                          bus(x(EMISVH,1,1)),bus(x(VGH_HEIGHT,1,1)),bus(x(VGH_DENS,1,1)),N) 
@@ -479,9 +479,9 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
          DO I=1,N
             PUREF_VEG(I) = bus(x(zusl,I,1))
             PTREF_VEG(I) =  bus(x(ztsl,I,1))
-            bus(x(TAF,I,1))  = TT(I)  ! Air temperature in the canopy
-            bus(x(QAF,I,1))  = HU(I)  ! Air specific humidity in the canopy
-            bus(x(VAF,I,1))  = VMOD(I) ! Wind speed in the canopy
+            bus(x(TCA,I,1))  = TT(I)  ! Air temperature in the canopy
+            bus(x(QCA,I,1))  = HU(I)  ! Air specific humidity in the canopy
+            bus(x(VCA,I,1))  = VMOD(I) ! Wind speed in the canopy
             ! Prepare radiation for snow under high veg --> Impact of vegetation on incoming SW and LW 
             bus(x(SWCA,I,1))    = zfsolis(I) * bus(x(VEGTRANS,I,1))              ! Incoming SW under VEG
 
@@ -514,7 +514,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 ! 
      IF(LSNOW_INTERCEPTION_SVS2) THEN
 
-            CALL SNOW_INTERCEPTION_SVS2(bus(x(TAF,I,1)),bus(x(QAF,I,1)), ps, PWIND_TOP,zfsolis, RHOA,     &
+            CALL SNOW_INTERCEPTION_SVS2(bus(x(TCA,1,1)),bus(x(QCA,1,1)), ps, PWIND_TOP,zfsolis, RHOA,     &
                               rainrate_mm,snowrate_mm, bus(x(SNCMA     ,1,1)),  &
                               bus(x(LESC     ,1,1)),bus(x(LESCAF     ,1,1)),    &
                               BUS(x(LAIVH  ,1,1)), BUS(x(VEGH   ,1,1)),BUS(x(VGH_DENS   ,1,1)),    &
@@ -550,8 +550,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                          bus(x(SNODENV_SVS,1,1)), bus(x(SNVAL,1,1)),bus(x(SNOAGEV_SVS,1,1)),    &
                          bus(x(SNODIAMOPTV_SVS,1,1)), bus(x(SNOSPHERIV_SVS,1,1)),bus(x(SNOHISTV_SVS,1,1)),   &
                          DT, bus(x(TPSOILV,1,1)), PCT, bus(x(SOILHCAPZ,1,1)), bus(x(SOILCONDZ,1,1)),               &
-                         ps,bus(x(TAF,I,1)),bus(x(SWCA,1,1)),     &
-                         bus(x(QAF,I,1)), bus(x(VAF,I,1)), &
+                         ps,bus(x(TCA,1,1)),bus(x(SWCA,1,1)),     &
+                         bus(x(QCA,1,1)), bus(x(VCA,1,1)), &
                          bus(x(LWCA,1,1)),         &
                          RAINRATE_MM_VEG, SNOWRATE_MM_VEG,                      &
                          RHOA,  PUREF_VEG,   PTREF_VEG,             &

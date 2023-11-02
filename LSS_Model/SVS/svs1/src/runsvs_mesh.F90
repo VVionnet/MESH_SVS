@@ -1567,7 +1567,7 @@ ierr = 200
                        busptr(vd%subldrifta%i)%ptr(:, trnch), -1.0*busptr(vd%gfluxsa%i)%ptr(:, trnch), busptr(vd%hpsa%i)%ptr(:, trnch), busptr(vd%esa%i)%ptr(:, trnch)
                   if( svs_mesh%vs%lout_snow_vegh) then
                           write(iout_snow_enbal, FMT_CSV, advance = 'no') busptr(vd%lwca%i)%ptr(:, trnch),busptr(vd%swca%i)%ptr(:,trnch) , &
-                           busptr(vd%taf%i)%ptr(:, trnch),busptr(vd%qaf%i)%ptr(:, trnch),busptr(vd%vaf%i)%ptr(:, trnch)
+                           busptr(vd%tca%i)%ptr(:, trnch),busptr(vd%qca%i)%ptr(:, trnch),busptr(vd%vca%i)%ptr(:, trnch)
                   endif             
                   write(iout_snow_enbal, *)
               end if

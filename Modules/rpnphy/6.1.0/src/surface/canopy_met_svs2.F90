@@ -154,6 +154,7 @@
              VMOD_CAN(I) = VMOD(I)
              VMOD_TOP(I) = VMOD(I)
          ENDIF    
+
       ENDDO
      !
      !  xxxx. Compute impact of forest on temperature and hunidity
