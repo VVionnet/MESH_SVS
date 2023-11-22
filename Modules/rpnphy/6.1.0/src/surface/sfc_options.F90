@@ -336,9 +336,21 @@ module sfc_options
    logical           :: svs_local_z0m     = .false.
    namelist /surface_cfgs/ svs_local_z0m  
    
-
-
-
+   !# Option to deal with melt due to rain on snow in SVS snow scheme
+   !# BELAIR03: Original formulation from Belair et al. (2003)
+   !# BELAIR03_DTGEM: Revised formulation of Belair et al. (2003) using the time step of GEM at the time when the parameterisation has been
+   !developped (12 min). Recommended for coupled applications with short time steps (< 5 min). 
+   !# NONE: Snow melt due to rain deactivated
+   !# LEONARDINI21:  Assume all the energy brought by rain is used to melt the snowpack (see Leonardini et al. (2021)
+   ! Options BELAIR03_DTGEM andLEONARDINI21 remvoe the large sensitivity to the time step found with BELAIR03.  
+   character(len=16) :: svs_snow_rain   = 'BELAIR03'
+   namelist /surface_cfgs/ svs_snow_rain
+   character(len=*), parameter :: SVS_SNOW_RAIN_OPT(4) = (/ &
+        'BELAIR03         ',  &
+        'BELAIR03_DTGEM   ',  &
+        'NONE             ',  &
+        'LEONARDINI21     ' &
+        /)
    
    !# Limit temperature inversions to 8K/40m in surface layer if .true.
    logical           :: tdiaglim    = .false.
