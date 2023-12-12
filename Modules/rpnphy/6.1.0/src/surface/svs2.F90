@@ -364,7 +364,17 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
          return
       endif 
 
-!
+
+      IF(.NOT. LUNIQUE_PROFILE_SVS2) THEN 
+        ! Update vegetation temperature with low vegetation. 
+        ! VV TO BE MODIFIED: Intermediate step during developement. 
+        !   
+          DO I=1,N
+            write(*,*)   'VEGL',bus(x(TVEGEL,I,1)),bus(x(TVEGEL,I,2)) 
+            bus(x(TVEGE,I,1))   =  bus(x(TVEGEL,I,1)) 
+            bus(x(TVEGE,I,2))   =  bus(x(TVEGEL,I,2)) 
+          ENDDO
+      ENDIF
 !
 
       CALL SOILI_SVS2( BUS(x(WSOIL ,1,1)), &
@@ -484,7 +494,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            PRG_VEG(I)   = zfsolis(I) * bus(x(VEGTRANS,I,1))              ! Incoming SW under VEG
 
            PRAT_VEG(I)  = bus(x(SKYVIEW,I,1)) * bus(x(FDSI,I,1)) +    &  ! Incoming LW under veg
-                 (1. - bus(x(SKYVIEW,I,1))) * EVA(I) * STEFAN * (bus(x(TVEGE,I,2)))**4.  ! add EVA--nathalie
+                 (1. - bus(x(SKYVIEW,I,1))) * EVA(I) * STEFAN * (bus(x(TVEGEH,I,2)))**4.  ! add EVA--nathalie
       ENDDO
 
 ! Define temperature use as a lower boundary condition for the snowpack below high vegetation  
@@ -613,8 +623,9 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
              CALL EBUDGET_SVS2(bus(x(TSA ,1,1)),  &  
                   bus(x(WSOIL     ,1,1)) , bus(x(ISOIL,1,1)),  &   
-                  bus(x(TGROUND    ,1,1)) , bus(x(TGROUND,1,2)),   & 
-                  bus(x(TVEGE      ,1,1)) , bus(x(TVEGE,1,2)),   &  
+                  bus(x(TGROUND   ,1,1)) , bus(x(TGROUND,1,2)),   & 
+                  bus(x(TVEGEL    ,1,1)) , bus(x(TVEGEL,1,2)),   &  
+                  bus(x(TVEGEH    ,1,1)) , bus(x(TVEGEH,1,2)),   &  
                   bus(x(TPSOIL    ,1,1)) , bus(x(TPSOILV,1,1)),    & 
                   bus(x(TPERM     ,1,1)) , bus(x(GFLUXSA,1,1)), bus(x(GFLUXSV,1,1)), &  
                   DT                     , VMOD, VDIR, bus(x(DLAT,1,1)),   &   
@@ -667,7 +678,16 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                   bus(x(TAF   ,1,1)), bus(x(QAF   ,1,1)), bus(x(VAF   ,1,1)), & 
                   RPP, bus(x(Z0HA ,1,1)))
 
+        ! Update vegetation temperature with low vegetation. 
+        ! VV TO BE MODIFIED: Intermediate step during developement. 
+        !   
+        DO I=1,N
+            bus(x(TVEGE,I,1))   =  bus(x(TVEGEL,I,1)) 
+            bus(x(TVEGE,I,2))   =  bus(x(TVEGEL,I,2)) 
+        ENDDO   
+
        ENDIF
+
 
 
 
@@ -779,6 +799,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
             WSOILT(I,J) = WSOILTT(I,J) 
          END DO 
       END DO
+
+  ENDIF
 !
       CALL UPDATE_SVS ( WSOILT, ISOILT, WVEGT, &
                        bus(x(latflw  ,1,1)), bus(x(watflow ,1,1)),  &

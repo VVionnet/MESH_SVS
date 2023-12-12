@@ -95,7 +95,7 @@ subroutine sfc_businit(moyhr,ni,nk)
         rsnowsv, rveg, sanden, skyview, slop, snodpl, snval, &
         snvden,  snvdp, snvma,  snvro, stomrvh, stomrvl, svs_wta, &
         tground, tsa, tsnavg, tsnow, tsnowveg, &
-        tsvavg, tvege,  vegh, vegl, vegtrans, vgctem, &
+        tsvavg,tvege,  vegh, vegl, vegtrans, vgctem, &
         watflow, wsoilm, wfcdp, wfcint, wsnv, &
         z0ha, z0hbg, z0hvg, z0mland, z0mlanden, z0mvg, z0mvh, z0mvhen, z0mvl, &
         conddry, condsld, quartz, rhosoil, soilhcapz, soilcondz, &
@@ -125,6 +125,7 @@ subroutine sfc_businit(moyhr,ni,nk)
         taf, &
         tpsoilv, &
         tsnow_svs,tsnowv_svs,   &
+        tvegel,tvegeh,  &
         vaf, vegtransa, vgheight, &
         wsnow_svs,wsnowv_svs
 
@@ -614,6 +615,8 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR3D1(tsnow_svs,    'VN=tsnow_svs    ;ON=TSNL;VD=snow temperature per layer                     ;VS=A*'//ns//'   ;VB=p1')
       PHYVAR3D1(tsnowv_svs,   'VN=tsnowv_svs   ;ON=TSLV;VD=snow temperature per layer under veg           ;VS=A*'//ns//'   ;VB=p1')
       PHYVAR2D1(tsvavg,       'VN=tsvavg       ;ON=ATSV;VD=snow-under-high-veg avg temp. for melt/freez                      ;VB=p0')
+      PHYVAR3D1(tvegel,       'VN=tvegel       ;ON=TVGL;VD=skin and mean low vegetation temp.             ;VS=A*2            ;VB=p1')
+      PHYVAR3D1(tvegeh,       'VN=tvegeh       ;ON=TVGH;VD=skin and mean high vegetation temp.            ;VS=A*2            ;VB=p1')
       PHYVAR3D1(tvege,        'VN=tvege        ;ON=TVG ;VD=skin and mean vegetation temp.                 ;VS=A*2            ;VB=p1')
       PHYVAR2D1(vaf,          'VN=vaf          ;ON=VAF ;VD=wind inside canopy                                                ;VB=p0')
       PHYVAR3D1(vegdati,      'VN=vegdati      ;ON=SPAR;VD=sparsness of each vegtation class                 ;VS=A*26        ;VB=p0')

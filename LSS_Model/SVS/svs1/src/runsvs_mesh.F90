@@ -157,6 +157,8 @@ module runsvs_mesh
         real, dimension(:, :), allocatable :: z0v
         real, dimension(:), allocatable :: lnz0
         real, dimension(:, :), allocatable :: tvege
+        real, dimension(:, :), allocatable :: tvegeh ! For svs2 only
+        real, dimension(:, :), allocatable :: tvegel ! For svs2 only
         real, dimension(:), allocatable :: wveg
         real, dimension(:, :), allocatable :: tsnow
         real, dimension(:), allocatable :: snodpl
@@ -486,6 +488,22 @@ module runsvs_mesh
         do i = 0, 1
             if (allocated(svs_mesh%vs%tvege)) svs_bus(a2(tvege, i):z2(tvege, i)) = svs_mesh%vs%tvege(:, i + 1)
         end do
+
+        if(svs_mesh%vs%schmsol=='SVS2' .and. .not. svs_mesh%vs%lunique_profile_svs2) then         
+           do i = 0, 1
+            if (allocated(svs_mesh%vs%tvegel)) svs_bus(a2(tvegel, i):z2(tvegel, i)) = svs_mesh%vs%tvegel(:, i + 1)
+            if (allocated(svs_mesh%vs%tvegeh)) svs_bus(a2(tvegeh, i):z2(tvegeh, i)) = svs_mesh%vs%tvegeh(:, i + 1)
+
+           ! At initial step used tvege as the initial condition for tvegel and tvegeh 
+            where (svs_bus(a2(tvegeh, i):z2(tvegeh, i)) ==0.)
+                     svs_bus(a2(tvegeh, i):z2(tvegeh, i))  = svs_bus(a2(tvege, i):z2(tvege, i))
+            end where
+            where (svs_bus(a2(tvegel, i):z2(tvegel, i)) ==0.)
+                     svs_bus(a2(tvegel, i):z2(tvegel, i))  = svs_bus(a2(tvege, i):z2(tvege, i))
+            end where
+            
+          end do
+        endif
 
         if(svs_mesh%vs%schmsol=='SVS2') then
            do i = 1, nl_svs
@@ -931,7 +949,10 @@ module runsvs_mesh
              call runsvs_mesh_append_phyentvar('snohistv_svs')
              call runsvs_mesh_append_phyentvar('tsnowv_svs')
              call runsvs_mesh_append_phyentvar('wsnowv_svs')
-
+             if(.not. svs_mesh%vs%lunique_profile_svs2) then
+                 call runsvs_mesh_append_phyentvar('tvegel')
+                 call runsvs_mesh_append_phyentvar('tvegeh')
+             end if
         end if
 
 
@@ -1429,7 +1450,14 @@ ierr = 200
                svs_mesh%vs%wsnowv_svs(:, i) = svs_bus(a2(wsnowv_svs, i - 1):z2(wsnowv_svs, i - 1))
             end do
 
-
+            if(.not. svs_mesh%vs%lunique_profile_svs2) then
+               if (.not. allocated(svs_mesh%vs%tvegel)) allocate(svs_mesh%vs%tvegel(ni,2))
+               if (.not. allocated(svs_mesh%vs%tvegeh)) allocate(svs_mesh%vs%tvegeh(ni,2))
+               do i = 0, 1
+                    svs_mesh%vs%tvegel(:, i + 1) = svs_bus(a2(tvegel, i):z2(tvegel, i))
+                    svs_mesh%vs%tvegeh(:, i + 1) = svs_bus(a2(tvegeh, i):z2(tvegeh, i))
+               end do
+            endif
         endif
 
     end subroutine

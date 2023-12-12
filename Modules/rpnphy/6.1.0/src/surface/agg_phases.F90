@@ -80,11 +80,11 @@
       DO I=1,N
          DO K=1,NL_SVS  
 
-            WDTT(I,K) = ( 1. - VEGH(I) - VEGL(I) + PSNG(I)*VEGL(I) ) * WDTTG(I,K)  & 
-                      + (      VEGH(I) + VEGL(I) - PSNG(I)*VEGL(I) ) * WDTTV(I,K)   
+            WDTT(I,K) = ( 1. - VEGH(I)) * WDTTG(I,K)  & 
+                      +   VEGH(I) * WDTTV(I,K)   
 !
-            WFT(I,K)  = ( 1. - VEGH(I) - VEGL(I) + PSNG(I)*VEGL(I) )  * WFTG(I,K)  &
-                      + (      VEGH(I) + VEGL(I) - PSNG(I)*VEGL(I) )  * WFTV(I,K)
+            WFT(I,K)  = ( 1. - VEGH(I))  * WFTG(I,K)  &
+                      +   VEGH(I)   * WFTV(I,K)
             
             IF(WFT(I,K)>0.0.AND.WFT(I,K)<1.0E-6)THEN
                WDTT  (I,K) = WDTT(I,K) + WFT(I,K)

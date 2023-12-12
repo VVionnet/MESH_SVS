@@ -425,6 +425,8 @@ module sfcbus_mod
       SFCVAR(tsvavg, 'tsvavg')
       SFCVAR(tve, 'tve')
       SFCVAR(tvege, 'tvege')
+      SFCVAR(tvegeh, 'tvegeh')
+      SFCVAR(tvegel, 'tvegel')
       SFCVAR(twater, 'twater')
       SFCVAR(u_canyon, 'u_canyon')
       SFCVAR(udiag, 'udiag')
