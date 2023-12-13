@@ -270,6 +270,8 @@
             egf, ev, zqsatsnv, levnofrac, legnofrac,legvnofrac, fracbg,fracvl,  &
             cmu, cm, ctu, vmod_lmin
 
+       real, dimension(n) :: ABG, BBG, SKINCOND_BG,AVL, BVL, SKINCOND_VL      
+
        real, dimension(n) ::  ZQSATGRV, ZDQSATGRV, LOWVEG, HIGHVEG,  &
                                ZQSGRV,ZQSVGH, ZA,Z0TEMP,Z0HG,TGRVS,              &
                                TA4FLX,QA4FLX,ZU4FLX,ZT4FLX,VIT,Z0M4FLX,Z0H4FLX, &
@@ -350,10 +352,60 @@
 !
 
 !
+!!       3xxxx.  COEFFICIENTS FOR THE TIME INTEGRATION OF 
+!!               BARE GROUND SKIN SURFACE TEMPERATURE      
+!               --------------------------------------------
+!
+!
+       DO I=1,N
+!       
+!         Thermodynamic functions used in the linearisation of the
+!         latent heat flux
+          ZQSATGR(I)  = FOQST( TGRS(I),PS(I) )
+          ZDQSATGR(I) = FODQS( ZQSATGR(I),TGRS(I) )
+!
+!         Function zrsra used in the computation of the sensible heat
+!         flux
+!
+          RORAGR(I) = RHOA(I) / RESAGR(I)
+!
+!         Skin conductivity for bare ground
+!           
+          SKINCOND_BG(I) =  2 * SOILCOND(I,1)/DELZ(1)
+!       
+          ABG(I) =  SKINCOND_BG(I) + 4.*EMGR(I)*STEFAN*(TGRS(I)**3)  &
+               + RORAGR(I)*CPD + RORAGR(I)*LEFF(I)*HRSURF(I)*ZDQSATGR(I)
+!
+          BBG(I) = SKINCOND_BG(I)*TP(I,1) + (1.-ALGR(I))*RG(I) +EMGR(I)*RAT(I) &
+               + 3.*EMGR(I)*STEFAN*(TGRS(I)**4) +RORAGR(I)*CPD*THETAA(I) &
+               + RORAGR(I)*LEFF(I)*HRSURF(I)*ZDQSATGR(I)*TGRS(I) &
+               - RORAGR(I)*LEFF(I)*(HRSURF(I)*ZQSATGR(I)-HU(I))         
+!          
+!         Update bare soil skin surface temperature
+!       
+          TGRST(I) = BBG(I)/ABG(I)
+
+          write(*,*) 'TGSS',TGRS(I),TGRST(I)
+          write(*,*) 'HR_SURF',HRSURF(I),'RSW',RG(I) 
+          write(*,*)'SKINCOND', SKINCOND_BG(I)
+
+       END DO
+!         
+!!            TGRD AT TIME 'T+DT': VV To be changed 
+!               -----------------
+!
+      DO I=1,N
+        TGRDT(I) = (TGRD(I) + DT*TGRST(I)/86400.) /   &  
+                      (1.+DT/86400.)
+      END DO
+!
+!
 !!       3B.     COEFFICIENTS FOR THE TIME INTEGRATION OF 
 !!               LOW and HIGH VEGETATION TEMPERATURE      
 !               --------------------------------------------
-!		 FORCE RESTORE SCHEME FOR THE VEGETATION ONLY
+!               Skin temperature for low vegetation
+!                  
+!		FORCE RESTORE SCHEME FOR HIGH VEGETATION ONLY
 !		Note that the ground thermal coefficient is still included when 
 !		computing the vegetation thermal coefficient. This will have to be revised! 
 !               --------------------------------------------
@@ -366,39 +418,35 @@
           IF ( (VEGL(I)*(1-PSNG(I))).GE.EPSILON_SVS ) THEN
              ! EXPOSED LOW VEGETATION PRESENT
 !
-!                            Thermodynamic functions
-!
+!         Thermodynamic functions used in the linearisation of the
+!         latent heat flux             
              
              ZQSATVGL(I)  = FOQST( TVGLS(I),PS(I) )
              ZDQSATVGL(I) = FODQS( ZQSATVGL(I),TVGLS(I) )
 !
-!                              function zrsra      
+!         Function zrsra used in the computation of the sensible heat
+!         flux             
 !
              RORAVGL(I) = RHOA(I) / RESAVG(I)
 !
+!         Skin conductivity for low vegetation
+!           
+          SKINCOND_VL(I) =  10.
+!             
+!       
+          AVL(I) =  SKINCOND_VL(I) + 4.*EMVG(I)*STEFAN*(TVGLS(I)**3)  &
+               + RORAVGL(I)*CPD + RORAVGL(I)*CHLC * HV(I)*ZDQSATVGL(I)
 !
-!                                        terms za, zb, and zc for the
-!                                              calculation of tvgs(t)
-             A3L(I) = 1. / DT + CVP(I) *  & 
-                    (4. * EMVG(I) * STEFAN * (TVGLS(I)**3)  &  
-                    +  RORAVGL(I) * ZDQSATVGL(I) * CHLC * HV(I) &  
-                    +  RORAVGL(I) * CPD )  & 
-                    + 2. * PI / 86400.
+          BVL(I) = SKINCOND_VL(I)*TP(I,1) + (1.-ALVGLAI(I))*RG(I) +EMVG(I)*RAT(I) &
+               + 3.*EMVG(I)*STEFAN*(TVGLS(I)**4) +RORAVGL(I)*CPD*THETAA(I) &
+               + RORAVGL(I)*CHLC * HV(I)*ZDQSATVGL(I)*TGRS(I) &
+               - RORAVGL(I)*CHLC * HV(I)*(ZQSATVGL(I)-HU(I))              
 !
-             B3L(I) = 1. / DT + CVP(I) *   &
-                    (3. * EMVG(I) * STEFAN * (TVGLS(I)** 3)  &   
-                    + RORAVGL(I) * ZDQSATVGL(I) * CHLC* HV(I) )
-           
-!
-             C3L(I) = 2. * PI * TVGLD(I) / 86400. &   
-                     + CVP(I) *  & 
-                     ( RORAVGL(I) * CPD * THETAA(I)  &  
-                     + RG(I) * (1. - ALVGLAI(I)) + EMVG(I)*RAT(I)  & 
-                     - RORAVGL(I)  & 
-                     * CHLC * HV(I) * (ZQSATVGL(I)-HU(I)) )
-
-
-             TVGLST(I) =  ( TVGLS(I)*B3L(I) + C3L(I) ) / A3L(I)
+!          
+!         Update low vegetation skin surface temperature
+!       
+          TVGLST(I) = BVL(I)/AVL(I)  
+!          
 
           ELSE
              ! NO LOW VEGETATION -- USE BARE GROUND VALUES or ZERO to fill arrays to avoid numerical errors
@@ -486,6 +534,8 @@
 
        ENDDO
 
+       write(*,*) 'TVEG', TVGLST(1),TVGHST(1)
+
 !!           TVGD AT TIME 'T+DT': Mean temperature from FR scheme for
 !                      high veg
 !               -----------------
@@ -510,16 +560,6 @@
 !               SOIL TEMPERATURE BELOW BARE GROUND AND LOW VEG. 
 !               --------------------------------------------
 !
-!                            Thermodynamic functions
-!
-!      Use TP as the first level as the surface temperature  
-!
-       DO I=1,N
-          ZQSATGR(I)  = FOQST( TP(I,1),PS(I) )
-          ZDQSATGR(I) = FODQS( ZQSATGR(I),TP(I,1) )
-          ZQSATVGLT(I)  = FOQST( TVGLST(I), PS(I) )          
-       END DO
-!
 !       Interfacial Soil thermal conductivity
 !       Inverse-weighted arithmetic mean of the soil thermal conductivity 
 !       at the interface between two consecutive layers
@@ -540,11 +580,6 @@
 
        END DO
 !
-!                              function zrsra
-!
-       DO I=1,N
-          RORAGR(I) = RHOA(I) / RESAGR(I)
-       END DO
 !
 !                              coefficients A, B, C and term D for the
 !                              matrix inversion for the calculation of TP(t) 
@@ -599,26 +634,30 @@
 
        DO I=1,N
           B2(I,1) = DELZ(1)*SOILHCAP(I,1)/DT                         & 
-                  + FRACBG(I) * ( (4.*EMGR(I)*STEFAN*(TP(I,1)**3)) +  RORAGR(I)*CPD  &
-                           +  RORAGR(I)*LEFF(I)*HRSURF(I)*ZDQSATGR(I) )           &
-                  + FRACVL(I) * ( (4.*EMGR(I)*STEFAN*(TP(I,1)**3)) +  RORAGR(I)*CPD  &
-                           +  RORAGR(I)*LEFF(I)*HRSURF(I)*ZDQSATGR(I) )           &
+                  !+ FRACBG(I) * ( (4.*EMGR(I)*STEFAN*(TP(I,1)**3)) +  RORAGR(I)*CPD  &
+                  !         +  RORAGR(I)*LEFF(I)*HRSURF(I)*ZDQSATGR(I) )           &
+                  + FRACBG(I) * SKINCOND_BG(I)    & 
+                  !+ FRACVL(I) * ( (4.*EMGR(I)*STEFAN*(TP(I,1)**3)) +  RORAGR(I)*CPD  &
+                  !         +  RORAGR(I)*LEFF(I)*HRSURF(I)*ZDQSATGR(I) )           &
+                  + FRACVL(I) * SKINCOND_VL(I)    & 
                   + BETAA*SOILCD(I,1)/DELZZ(1)
           
           C2(I,1) = (-BETAA)*SOILCD(I,1)/DELZZ(1)
           A2(I,1) = 0.0
           
-          D2(I,1) = FRACBG(I) * ( (1.-ALGR(I))*RG(I) + EMGR(I)*RAT(I) &
-                             + 3.*EMGR(I)*STEFAN*(TP(I,1)**4) &
-                             + RORAGR(I)*CPD*THETAA(I) &
-                             + RORAGR(I)*LEFF(I)*HRSURF(I)*ZDQSATGR(I)*TP(I,1) &
-                             - RORAGR(I)*LEFF(I)*(HRSURF(I)*ZQSATGR(I)-HU(I)) ) &
-                  +  FRACVL(I) * ( VTRA(I)*(1.-ALGR(I))*RG(I) + SKYVIEWA(I)*EMGR(I)*RAT(I) &
-                             + 3.*EMGR(I)*STEFAN*(TP(I,1)**4) &
-                             + (1.-SKYVIEWA(I))*EMGR(I)*EMVG(I)*STEFAN*(TVGLST(I)**4) &
-                             + RORAGR(I)*CPD*THETAA(I) &
-                             + RORAGR(I)*LEFF(I)*HRSURF(I)*ZDQSATGR(I)*TP(I,1) &
-                             - RORAGR(I)*LEFF(I)*(HRSURF(I)*ZQSATGR(I)-HU(I)) ) &         
+          D2(I,1) = FRACBG(I) * SKINCOND_BG(I) * TGRST(I)  &
+                    !FRACBG(I) * ( (1.-ALGR(I))*RG(I) + EMGR(I)*RAT(I) &
+                    !         + 3.*EMGR(I)*STEFAN*(TP(I,1)**4) &
+                    !         + RORAGR(I)*CPD*THETAA(I) &
+                    !         + RORAGR(I)*LEFF(I)*HRSURF(I)*ZDQSATGR(I)*TP(I,1) &
+                    !         - RORAGR(I)*LEFF(I)*(HRSURF(I)*ZQSATGR(I)-HU(I)) ) &
+                   +  FRACVL(I) * SKINCOND_VL(I) * TVGLST(I)  &
+                 ! +  FRACVL(I) * ( VTRA(I)*(1.-ALGR(I))*RG(I) + SKYVIEWA(I)*EMGR(I)*RAT(I) &
+                 !            + 3.*EMGR(I)*STEFAN*(TP(I,1)**4) &
+                 !            + (1.-SKYVIEWA(I))*EMGR(I)*EMVG(I)*STEFAN*(TVGLST(I)**4) &
+                 !            + RORAGR(I)*CPD*THETAA(I) &
+                 !            + RORAGR(I)*LEFF(I)*HRSURF(I)*ZDQSATGR(I)*TP(I,1) &
+                 !            - RORAGR(I)*LEFF(I)*(HRSURF(I)*ZQSATGR(I)-HU(I)) ) &         
                   + PSNG(I)*PGRNDFLUX(I)         &
                   + (1.-BETAA)*(SOILCD(I,1)/DELZZ(1))*(TP(I,2)-TP(I,1)) &
                   + ( DELZ(1)*SOILHCAP(I,1)/DT )*TP(I,1) 
@@ -675,17 +714,9 @@
       write(*,*) 'TVEGH',TVGHS(1),TVGHD(1) 
 
 !
-       DO I=1,N
-          TGRST(I) = TP(I,1)
-       ENDDO
-!!            TGRD AT TIME 'T+DT'
-!               -----------------
-!
-      DO I=1,N
-        TGRDT(I) = (TGRD(I) + DT*TGRST(I)/86400.) /   &  
-                      (1.+DT/86400.)
-      END DO
-!
+       !DO I=1,N
+       !   TGRST(I) = TP(I,1)
+       !ENDDO
 !
 !               -------------------------------------------
 !               --------------------------------------------
@@ -738,7 +769,7 @@
                 Z0M4FLX(I) = Z0TEMP(I)
                 Z0H4FLX(I) = Z0HG(I)
 
-                i_flux = sl_sfclayer( TA4FLX, QA4FLX, VIT, VDIR, ZT4FLX, ZT4FLX, &
+                i_flux = sl_sfclayer( TA4FLX, QA4FLX, VIT, VDIR, ZU4FLX, ZT4FLX, &
                     TGRVS, ZQSGRV, Z0M4FLX, Z0H4FLX, LAT, FCOR, &
                     L_min=sl_Lmin_soil,coeft=CTUGRV )
 

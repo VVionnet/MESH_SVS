@@ -14,8 +14,8 @@
 !CANADA, H9P 1J3; or send e-mail to service.rpn@ec.gc.ca
 !-------------------------------------- LICENCE END ---------------------------
 
-      SUBROUTINE EBUDGET_SVS2_ONEPROFILE(TSA, WD, WF , &
-                   TGRS,TGRD,TVGS,TVGD, TP, TPERM,  & 
+      SUBROUTINE EBUDGET_SVS2_ONEPROFILE_SKIN(TSA, WD, WF , &
+                   TGRS,TGRD,TVGLS,TVGLD,TVGHS,TVGHD, TP, TPERM,  &                       
                    PGRNDFLUX, PGRNDFLUXV, DT, VMOD, VDIR, LAT, & 
                    RG, ALVG, LAI, GAMVEG, & 
                    ALGR,EMGR, & 
@@ -61,7 +61,7 @@
       
       REAL TSA(N),  DT, VMOD(N)
       REAL VDIR(N), LAT(N), PGRNDFLUX(N), PGRNDFLUXV(N)
-      REAL TGRS(N), TGRD(N), TVGS(N), TVGD(N)
+      REAL TGRS(N), TGRD(N), TVGLS(N), TVGLD(N), TVGHS(N), TVGHD(N)
       REAL TSNS(N,NSL), TSVS(N,NSL)
       REAL TP(N,NL_SVS), TPERM(N)
       REAL WD(N,NL_SVS), WF(N,NL_SVS)   
@@ -127,8 +127,10 @@
 !          - Input/Output -
 ! TGRS      (bare) ground temperature -- S for "skin"
 ! TGRD      mean ground temperature -- D for "deep"
-! TVGS      vegetation temperature -- S for "skin"
-! TVGD      mean vegetation temperature -- D for "deep"
+! TVGLS     low vegetation temperature -- S for "skin"
+! TVGLD     mean low vegetation temperature -- D for "deep"
+! TVGHS     high vegetation temperature -- S for "skin"
+! TVGHD     mean high vegetation temperature -- D for "deep"      
 ! TS        surface  temperature (new) as seen from ground
 ! Z0H       agg. thermal roughness length for land surface
 !           Output only when svs_dynamic_z0h=.true.
@@ -235,7 +237,7 @@
 
 !
 !
-      INTEGER I,zopt, K
+      INTEGER I,zopt, K, I_FLUX
 !
 !
       REAL EMISSN, EMSOIL, KCOEF, RHOW
@@ -257,18 +259,26 @@
 
 !
 !     MULTIBUDGET VARIABLES 
-!     GR:ground, SN:snow, VG:vegetation, AG: aggregated 
-       real, dimension(n) :: a3, b3, c3, zhv, freezfrac, emvg, &
-            alvglai, zqsatgr, zdqsatgr, zqsatvg, zdqsatvg, zqsatgrt, zqsatvgt, &
-            rnetgr, rnetvg, hfluxgr, hfluxvg, roragr, roravg,  &
+!     GR:ground, SN:snow, VG:vegetation, AG: aggregated
+!     VGL: low vegetation, VGH: high vegetation        
+       real, dimension(n) :: a3h, b3h, c3h, zhv, freezfrac, emvg, &
+            alvglai, zqsatgr, zdqsatgr, zqsatvgl, zdqsatvgl, zqsatgrt, &
+            zqsatvglt,zqsatvght,zqsatvgh, zdqsatvgh,zqsatvgt, &
+            rnetgr, rnetvg, hfluxgr, hfluxvg, &
+            roragr, roravgl,roravgh,    &
             zqsatsno, tgrst, tgrdt, tvgst, tvgdt, esf, esvf, evf, &
+            tvglst,tvgldt,tvghst,tvghdt,   &            
             egf, ev, zqsatsnv, levnofrac, legnofrac,legvnofrac,  &
             cmu, cm, ctu, vmod_lmin
 
        real, dimension(n) ::  ZQSATGRV, ZDQSATGRV, LOWVEG, HIGHVEG,  &
-                               ZQSGRV,ZQSVG, ZA,Z0TEMP,Z0HG,TGRVS,              &
+                               ZQSGRV,ZQSVGH, ZA,Z0TEMP,Z0HG,TGRVS,              &
                                TA4FLX,QA4FLX,ZU4FLX,ZT4FLX,VIT,Z0M4FLX,Z0H4FLX, &
                                CTUGRV,RORAGRV,TPVPRIM,TAFPRIM,DIFTEMP,ZQSATGRVT
+
+       real, dimension(n) :: ABG, BBG, SKINCOND_BG,AVL, BVL,SKINCOND_VL, &
+                      SURF_ENBAL_HVEGB,SURF_ENBAL_HVEGD, FRACBG, FRACVL,& 
+                      FRACVH, FRACSNG, FRACSNVH       
 
        real,dimension(n, svs_tilesp1) :: wtg                     
 
@@ -354,66 +364,306 @@
 !
 !
 !
-
-
-
-!!       4.     FORCE RESTORE SCHEME FOR VEGETATION as in SVS1
-!                     (i.e. VEGETATION SKIN TEMPERATURE)
+!
+!!       3.A.  COEFFICIENTS FOR THE TIME INTEGRATION OF 
+!!               BARE GROUND SKIN SURFACE TEMPERATURE      
 !               --------------------------------------------
-!		 FORCE RESTORE SCHEME FOR THE VEGETATION ONLY
+!
+!
+       DO I=1,N
+!       
+!         Thermodynamic functions used in the linearisation of the
+!         latent heat flux
+          ZQSATGR(I)  = FOQST( TGRS(I),PS(I) )
+          ZDQSATGR(I) = FODQS( ZQSATGR(I),TGRS(I) )
+!
+!         Function zrsra used in the computation of the sensible heat
+!         flux
+!
+          RORAGR(I) = RHOA(I) / RESAGR(I)
+!
+!         Skin conductivity for bare ground
+!           
+          SKINCOND_BG(I) =  2 * SOILCOND(I,1)/DELZ(1)
+!       
+          ABG(I) =  SKINCOND_BG(I) + 4.*EMGR(I)*STEFAN*(TGRS(I)**3)  &
+               + RORAGR(I)*CPD + RORAGR(I)*LEFF(I)*HRSURF(I)*ZDQSATGR(I)
+!
+          BBG(I) = SKINCOND_BG(I)*TP(I,1) + (1.-ALGR(I))*RG(I) +EMGR(I)*RAT(I) &
+               + 3.*EMGR(I)*STEFAN*(TGRS(I)**4) +RORAGR(I)*CPD*THETAA(I) &
+               + RORAGR(I)*LEFF(I)*HRSURF(I)*ZDQSATGR(I)*TGRS(I) &
+               - RORAGR(I)*LEFF(I)*(HRSURF(I)*ZQSATGR(I)-HU(I))         
+!          
+!         Update bare soil skin surface temperature
+!       
+          TGRST(I) = BBG(I)/ABG(I)
+
+          write(*,*) 'TGSS',TGRS(I),TGRST(I)
+          write(*,*) 'HR_SURF',HRSURF(I),'RSW',RG(I) 
+          write(*,*)'SKINCOND', SKINCOND_BG(I)
+
+       END DO        
+!!            TGRD AT TIME 'T+DT': VV To be changed 
+!               -----------------
+!
+      DO I=1,N
+        TGRDT(I) = (TGRD(I) + DT*TGRST(I)/86400.) /   &  
+                      (1.+DT/86400.)
+      END DO
+
+!
+!
+!!       3B.     COEFFICIENTS FOR THE TIME INTEGRATION OF 
+!!               LOW and HIGH VEGETATION TEMPERATURE      
+!               --------------------------------------------
+!               Skin temperature for low vegetation
+!                  
+!		FORCE RESTORE SCHEME FOR HIGH VEGETATION ONLY
 !		Note that the ground thermal coefficient is still included when 
 !		computing the vegetation thermal coefficient. This will have to be revised! 
 !               --------------------------------------------
 !         CALCULATE ONLY IF VEGETATION NON-ZERO PRESENT, OTHERWISE USE BARE GROUND TO IMPOSE DEFAULT PHYSICAL VALUE
 !
+!               --------------------------------------------
+!        3B1. Calculation for low vegetation       
+!               --------------------------------------------
        DO I=1,N      
-          IF ( (VEGH(I)+VEGL(I)*(1-PSNG(I))).GE.EPSILON_SVS ) THEN ! VEGETATION PRESENT
+          IF ( (VEGL(I)*(1-PSNG(I))).GE.EPSILON_SVS ) THEN
+             ! EXPOSED LOW VEGETATION PRESENT
+!
+!         Thermodynamic functions used in the linearisation of the
+!         latent heat flux             
+             
+             ZQSATVGL(I)  = FOQST( TVGLS(I),PS(I) )
+             ZDQSATVGL(I) = FODQS( ZQSATVGL(I),TVGLS(I) )
+!
+!         Function zrsra used in the computation of the sensible heat
+!         flux             
+!
+             RORAVGL(I) = RHOA(I) / RESAVG(I)
+!
+!         Skin conductivity for low vegetation
+!           
+          SKINCOND_VL(I) =  10.
+!             
+!       
+          AVL(I) =  SKINCOND_VL(I) + 4.*EMVG(I)*STEFAN*(TVGLS(I)**3)  &
+               + RORAVGL(I)*CPD + RORAVGL(I)*CHLC * HV(I)*ZDQSATVGL(I)
+!
+          BVL(I) = SKINCOND_VL(I)*TP(I,1) + (1.-ALVGLAI(I))*RG(I) +EMVG(I)*RAT(I) &
+               + 3.*EMVG(I)*STEFAN*(TVGLS(I)**4) +RORAVGL(I)*CPD*THETAA(I) &
+               + RORAVGL(I)*CHLC * HV(I)*ZDQSATVGL(I)*TGRS(I) &
+               - RORAVGL(I)*CHLC * HV(I)*(ZQSATVGL(I)-HU(I))              
+!
+!          
+!         Update low vegetation skin surface temperature
+!       
+          TVGLST(I) = BVL(I)/AVL(I)  
+!          
+
+          ELSE
+             ! NO LOW VEGETATION -- USE BARE GROUND VALUES or ZERO to fill arrays to avoid numerical errors
+             ZQSATVGL(I)  =  ZQSATGR(I)
+             ZDQSATVGL(I) = ZDQSATGR(I)
+             RORAVGL(I) = RORAGR(I)
+             TVGLST(I) = TGRST(I)
+          ENDIF
+
+
+       ENDDO
+!       
+!!           TVGLD AT TIME 'T+DT': Mean temperature from FR scheme for
+!             low veg.
+!               -----------------
+!
+      DO I=1,N
+!      
+!                   Note that as an added precaution,
+!                   we set the low vegetation temperature to
+!                   that of the ground, when no exposed low vegetation is present
+!
+         IF(VEGL(I)*(1.-PSNG(I)).ge.EPSILON_SVS)THEN
+            TVGLDT(I) = (TVGLD(I) + DT*TVGLST(I)/86400.) / (1.+DT/86400.)
+         ELSE
+            TVGLDT(I) = TGRDT(I)
+         ENDIF
+            
+      END DO
+!
+!               --------------------------------------------
+!        3B2. Calculation for high vegetation       
+!               --------------------------------------------      
+!
+       DO I=1,N      
+          IF ( VEGH(I).GE.EPSILON_SVS ) THEN
+             ! HIGH VEGETATION PRESENT
 !
 !                            Thermodynamic functions
 !
-             ZQSATVG(I)  = FOQST( TVGS(I),PS(I) )
-             ZDQSATVG(I) = FODQS( ZQSATVG(I),TVGS(I) )
+             
+             ZQSATVGH(I)  = FOQST( TVGHS(I),PS(I) )
+             ZDQSATVGH(I) = FODQS( ZQSATVGH(I),TVGHS(I) )
 !
 !                              function zrsra      
 !
-             RORAVG(I) = RHOA(I) / RESAVG(I)
+             RORAVGH(I) = RHOA(I) / RESAVG(I)
 !
+!                              Fraction of high vegetation to total vegetation
+!    
+!             FRACH(I) =  MIN(   (VEGH(I)*PSNVH(I))/(VEGH(I)+VEGL(I)*(1-PSNG(I))) , 1.0) 
 !
 !                                        terms za, zb, and zc for the
 !                                              calculation of tvgs(t)
-             A3(I) = 1. / DT + CVP(I) *  & 
-                    (4. * EMVG(I) * STEFAN * (TVGS(I)**3)  &  
-                    +  RORAVG(I) * ZDQSATVG(I) * CHLC * HV(I) &  
-                    +  RORAVG(I) * CPD )  & 
+             A3H(I) = 1. / DT + CVP(I) *  & 
+                    (4. * EMVG(I) * STEFAN * (TVGHS(I)**3)  &  
+                    +  RORAVGH(I) * ZDQSATVGH(I) * CHLC * HV(I) &  
+                    +  RORAVGH(I) * CPD )  & 
                     + 2. * PI / 86400.
 !
-             B3(I) = 1. / DT + CVP(I) *   &
-                    (3. * EMVG(I) * STEFAN * (TVGS(I)** 3)  &   
-                    + RORAVG(I) * ZDQSATVG(I) * CHLC* HV(I) )
+             B3H(I) = 1. / DT + CVP(I) *   &
+                    (3. * EMVG(I) * STEFAN * (TVGHS(I)** 3)  &   
+                    + RORAVGH(I) * ZDQSATVGH(I) * CHLC* HV(I) )
            
 !
-             C3(I) = 2. * PI * TVGD(I) / 86400. &   
+             C3H(I) = 2. * PI * TVGHD(I) / 86400. &   
                      + CVP(I) *  & 
-                     ( RORAVG(I) * CPD * THETAA(I)  &  
+                     ( RORAVGH(I) * CPD * THETAA(I)  &  
                      + RG(I) * (1. - ALVGLAI(I)) + EMVG(I)*RAT(I)  & 
-                     - RORAVG(I)  & 
-                     * CHLC * HV(I) * (ZQSATVG(I)-HU(I)) )
+                     - RORAVGH(I)  & 
+                     * CHLC * HV(I) * (ZQSATVGH(I)-HU(I)) )
 
-             ! Evolution of vegetation skin temperature simulated by the Force Restore
-             TVGST(I) =  ( TVGS(I)*B3(I) + C3(I) ) / A3(I)  
 
-             ! Evolution of vegetation "deep" temperature simulated by the Force Restore
-             TVGDT(I) = (TVGD(I) + DT*TVGST(I)/86400.) / (1.+DT/86400.)
+             TVGHST(I) =  ( TVGHS(I)*B3H(I) + C3H(I) ) / A3H(I)
 
           ELSE
              ! NO VEGETATION -- USE BARE GROUND VALUES or ZERO to fill arrays to avoid numerical errors
-             ZQSATVG(I)  =  ZQSATGR(I)
-             ZDQSATVG(I) = ZDQSATGR(I)
-             RORAVG(I) = RORAGR(I)
-             TVGST(I) = TGRS(I)
-             TVGDT(I) = TGRD(I)
+             ZQSATVGH(I)  =  ZQSATGR(I)
+             ZDQSATVGH(I) = ZDQSATGR(I)
+             RORAVGH(I) = RORAGR(I)
+!             FRACH(I) = 0.0
+             TVGHST(I) = TGRST(I)
           ENDIF
-       END DO          
+
+
+       ENDDO
+
+       write(*,*) 'TVEG', TVGLST(1),TVGHST(1)
+
+!!           TVGD AT TIME 'T+DT': Mean temperature from FR scheme for
+!                      high veg
+!               -----------------
+!
+      DO I=1,N
+!                   Note that as an added precaution,
+!                   we set the vegetation temperature to
+!                   that of the ground, when no vegetation is present
+!
+         IF(VEGH(I).ge.EPSILON_SVS)THEN
+            TVGHDT(I) = (TVGHD(I) + DT*TVGHST(I)/86400.) / (1.+DT/86400.)
+         ELSE
+            TVGHDT(I) = TGRDT(I)
+         ENDIF
+            
+      END DO
+
+!
+!
+!
+!       4.     SURFACE ENERGYE BALANCE FOR GROUND BELOW HIGH VEG
+!               --------------------------------------------
+!               --------------------------------------------
+       DO I=1,N
+          IF(VEGH(I).ge.EPSILON_SVS) THEN   
+
+!             first calculate the saturation vapor
+!             pressure over ground under canopy
+              ZQSATGRV(I)  = FOQST( TP(I,1), PS(I) )
+              ZDQSATGRV(I) = FODQS( ZQSATGRV(I),TP(I,1) )
+              ZQSATVGHT(I)  = FOQST( TVGHST(I), PS(I) )
+
+              ! Derive specific humidity at the surface of the ground
+              ! below high vegetation and over high vegetation 
+              ZQSGRV(I) = HRSURF(I) * ZQSATGRV(I)
+              ZQSVGH(I) = RPP(I) * ZQSATVGHT(I) + ( 1. - RPP(I) ) *QAF(I) ! VV TO BE MODIFIED
+
+              ! Compute meteorology in the canopy air space 
+              VAF(I) = 0.3 * VMOD(I)   !high veg
+              TAF(I) = (0.3 * THETAA(I) + 0.6 *TVGHST(I) + 0.1 * TP(I,1))   ! Temp. inside canopy
+              QAF(I) = (0.3 * HU(I) + 0.6 * ZQSVGH(I) + 0.1 * ZQSGRV(I))    ! Hum.  inside canopy
+
+              ! Compute height and roughness used on the computation
+              ! of the fluxes 
+              ZA(I) = 2. * VGHEIGHT(I) / 3.   ! reference height in canopy for flux
+              ZA(I) = MAX(2.0,ZA(I))
+              Z0TEMP(I) = 1.0                 ! bare ground local momentum roughness
+              Z0HG(I)=0.2                     ! bare ground local heat roughness
+
+              ! Derive surface temperature of the soil below high
+              ! vegetation. 
+              TGRVS(I) = TP(I,1) 
+
+              ! Select variable used to compute the fluxes 
+              TA4FLX(I)  = TAF(I)
+              QA4FLX(I)  = QAF(I)
+              ZU4FLX(I)  = ZA(I)
+              ZT4FLX(I)  = ZA(I)
+              VIT(I)     = VAF(I)
+              Z0M4FLX(I) = Z0TEMP(I)
+              Z0H4FLX(I) = Z0HG(I)
+
+              i_flux = sl_sfclayer( TA4FLX, QA4FLX, VIT, VDIR, ZU4FLX, ZT4FLX, &
+                    TGRVS, ZQSGRV, Z0M4FLX, Z0H4FLX, LAT, FCOR, &
+                    L_min=sl_Lmin_soil,coeft=CTUGRV )
+
+              if (i_flux /= SL_OK) then
+                print*, 'Abort. ebud_svs2 bec of err in sl_sfclayer()'
+              stop
+              endif 
+
+              ! Compute aerodymanical resistance 
+              RESAGRV(I) = 1. / CTUGRV(I)
+
+              !   function zrsra ground under veg
+              RORAGRV(I) = RHOA(I) / RESAGRV(I)
+
+              !drag coef from CLASS for high veg only
+
+              TPVPRIM(I) = TP(I,1)*(1.0 + 0.61 * ZQSGRV(I) )
+              TAFPRIM(I) = TAF(I)*(1.0 + 0.61 * QAF(I) )
+              DIFTEMP(I) = TPVPRIM(I) - TAFPRIM(I)
+        
+              IF (DIFTEMP(I).GT.1.0 )THEN
+                 RORAGRV(I) = RHOA(I) * (0.0019 * (TPVPRIM(I) - TAFPRIM(I))**(1./3.) )
+              ELSEIF (DIFTEMP(I).GT.0.001 .and. DIFTEMP(I).LE.1.0) THEN
+                 RORAGRV(I) = RHOA(I) * (0.0019 * (TPVPRIM(I) - TAFPRIM(I)) )
+              ELSE
+                 RORAGRV(I) = 0.0
+              ENDIF
+
+             ! Contribution of the surface energy budget for high
+             ! vegetation in the coefficient used in the tridiagnonal
+             ! matrix (see next section)
+             ! Contribution to coef D
+             SURF_ENBAL_HVEGD(I) = ( VTRA(I)*(1.-ALGR(I))*RG(I) + SKYVIEWA(I)*EMGR(I)*RAT(I) &
+                            + 3.*EMGR(I)*STEFAN*(TP(I,1)**4) &
+                            +(1.-SKYVIEWA(I))*EMGR(I)*EMVG(I)*STEFAN*(TVGHDT(I)**4) &
+                            + RORAGRV(I)*CPD*TAF(I) &
+                            + RORAGRV(I)*LEFF(I)*HRSURF(I)*ZDQSATGRV(I)*TP(I,1) &
+                            - RORAGRV(I)*LEFF(I)*(HRSURF(I)*ZQSATGRV(I)-QAF(I)) )
+
+             ! Contribution to coef B
+             SURF_ENBAL_HVEGB(I) = 4.*EMGR(I)*STEFAN*(TP(I,1)**3)  +  RORAGRV(I)*CPD &
+                             +  RORAGRV(I)*LEFF(I)*HRSURF(I)*ZDQSATGRV(I) 
+
+
+            ELSE     
+              ! 
+              ! High vegetation not present in the grid cell       
+              SURF_ENBAL_HVEGD(I)= 0.       
+              SURF_ENBAL_HVEGB(I)= 0.       
+          ENDIF
+       END DO                
+
 !
 !
 !       5.     COEFFICIENTS FOR THE TIME INTEGRATION OF TP(I,K)
@@ -421,152 +671,6 @@
 !               --------------------------------------------
 !               --------------------------------------------
 
-!              Thermodynamic functions : calculate the saturation vapor
-!              pressure over ground under canopy and over bare ground
-
-       DO I=1,N
-          ZQSATGR(I)  = FOQST( TP(I,1),PS(I) )
-          ZDQSATGR(I) = FODQS( ZQSATGR(I),TP(I,1) )
-          ZQSATGRV(I)  = ZQSATGR(I)   ! Same value for ground under canopy since a unique profile is used
-          ZDQSATGRV(I) = ZDQSATGR(I)  ! Same value for ground under canopy since a unique profile is used
-          ZQSATVGT(I)  = FOQST( TVGST(I), PS(I) )
-       END DO
-
-!
-!             Compute fractions:
-!                - LOWVEG: fraction of snow-free low vegetation relative to the total snow-free part of the grid covered by vegetation  
-!                - HIGHVEG: fraction of snow-free ground below high vegetation relative to the total snow-free part of the grid covered by vegetation           
-!       
-      DO I=1,N
-         IF((VEGH(I)*(1.-PSNVH(I))+VEGL(I)*(1.-PSNG(I))).gt.EPSILON_SVS) THEN
-            LOWVEG(I)  = VEGL(I)*(1.-PSNG(I))   / (VEGL(I)*(1.-PSNG(I))+VEGH(I)*(1.-PSNVH(I)))
-            HIGHVEG(I) = VEGH(I)*( 1.-PSNVH(I)) / (VEGL(I)*(1.-PSNG(I))+VEGH(I)*(1.-PSNVH(I)))
-         ELSE
-            LOWVEG(I)  = 0.0
-            HIGHVEG(I) = 0.0
-         ENDIF
-      END DO
-
-!
-!            Compute humidity 
-
-      DO I=1,N
-         ! Relative humidity of ground below vegetation
-         ZQSGRV(I) = HRSURF(I) * ZQSATGRV(I) 
-
-         ! Specific humidity of vegetation
-         IF(HIGHVEG(I).gt.LOWVEG(I))THEN  ! High vegetation is dominant 
-            ZQSVG(I) = RPP(I) * ZQSATVGT(I) + ( 1. - RPP(I) ) * QAF(I)
-         ELSE   ! Low vegetation is dominant 
-            ZQSVG(I) = HV(I) * ZQSATVGT(I) + ( 1. - HV(I) ) * HU(I)
-         ENDIF
-
-      END DO
-
-!
-!            Compute air temperature, specific humidity and wind speed in the canopy air-space following Deardoff (1978)
-!      
-      DO I=1,N 
-!         VAF(I) = 0.7 * VMOD(I)   !low veg
-         VAF(I) = 0.3 * VMOD(I)   !high veg
-         TAF(I) = (0.3 * THETAA(I) + 0.6 *TVGST(I) + 0.1 * TP(I,1))    ! Temp. inside canopy
-         QAF(I) = (0.3 * HU(I) + 0.6 * ZQSVG(I) + 0.1 * ZQSGRV(I))      ! Hum.  inside canopy
-      END DO
-
-!
-!            Compute forcing height and local roughness used below high-vegetation 
-!   
-      DO I=1,N
-        ZA(I) = 2. * VGHEIGHT(I) / 3.   ! reference height in canopy for flux
-        ZA(I) = MAX(2.0,ZA(I))
-        Z0TEMP(I) = 1.0                 ! bare ground local momentum roughness
-        Z0HG(I)=0.2                     ! bare ground local heat roughness
-      END DO
-
-!
-!            Select variable used to compute turbulent fluxes for the
-!            part of the grid covered by snow-free veegtation :
-!                 - if high vegetation is dominant (highveg > lowveg), the turbulent fluxes 
-!                    are defined between the canopy air space and the snow-free ground.
-!                  - if low vegetation is dominant (lowveg >= highveg), the turbulent fluxes 
-!                     are defined between the air above the canopy and the snow-free ground.      
-!
-!    
-      DO I=1,N
-        IF(HIGHVEG(I).gt.LOWVEG(I))THEN
-           TA4FLX(I)  = TAF(I)
-           QA4FLX(I)  = QAF(I)
-           ZU4FLX(I)  = ZA(I)
-           ZT4FLX(I)  = ZA(I)
-           VIT(I)     = VAF(I)
-           Z0M4FLX(I) = Z0TEMP(I)
-           Z0H4FLX(I) = Z0HG(I)
-        ELSE
-           TA4FLX(I)  = THETAA(I)
-           QA4FLX(I)  = HU(I)
-           ZU4FLX(I)  = ZUSL(I)
-           ZT4FLX(I)  = ZTSL(I)
-           VIT(I)     = VMOD(I)
-           Z0M4FLX(I) = Z0(I)
-           Z0H4FLX(I) = Z0HA(I)
-        ENDIF
-      END DO
-
-      ! Ground surface temperature
-      DO I=1,N
-        TGRVS(I) = TP(I,1) 
-      END DO
-!
-!
-!     Compute aerodynamic resistance for the
-!            part of the grid covered by snow-free veegtation
-!      
-      i = sl_sfclayer( TA4FLX, QA4FLX, VIT, VDIR, ZU4FLX, ZT4FLX, &
-                    TGRVS, ZQSGRV, Z0M4FLX, Z0H4FLX, LAT, FCOR, &
-                    L_min=sl_Lmin_soil,coeft=CTUGRV )
-
-      if (i /= SL_OK) then
-      print*, 'Abort. ebudget_svs2 because of error in sl_sfclayer()'
-      stop
-      endif 
-
-
-!                              function zrsra ground under veg
-
-      DO I=1,N
-         RESAGRV(I) = 1. / CTUGRV(I)
-         RORAGRV(I) = RHOA(I) / RESAGRV(I)
-
-!                              drag coef from CLASS for high veg only
-
-         IF(HIGHVEG(I).gt.LOWVEG(I))THEN
-
-            TPVPRIM(I) = TP(I,1)*(1.0 + 0.61 * ZQSGRV(I) )
-            TAFPRIM(I) = TAF(I)*(1.0 + 0.61 * QAF(I) )
-            DIFTEMP(I) = TPVPRIM(I) - TAFPRIM(I)
-          
-            IF (DIFTEMP(I).GT.1.0 )THEN
-               RORAGRV(I) = RHOA(I) * (0.0019 * (TPVPRIM(I) - TAFPRIM(I))**(1./3.) )
-            ELSEIF (DIFTEMP(I).GT.0.001 .and. DIFTEMP(I).LE.1.0) THEN
-               RORAGRV(I) = RHOA(I) * (0.0019 * (TPVPRIM(I) - TAFPRIM(I)) )
-            ELSE
-               RORAGRV(I) = 0.0
-            ENDIF
-
-         ENDIF
-
-      END DO      
-
-!
-!     Compute aerodynamic resistance for the
-!            part of the grid covered by bare-ground
-!
-!                              function zrsra
-!
-       DO I=1,N
-          RORAGR(I) = RHOA(I) / RESAGR(I)
-       END DO
-!       
 !       Interfacial Soil thermal conductivity
 !       Inverse-weighted arithmetic mean of the soil thermal conductivity 
 !       at the interface between two consecutive layers
@@ -590,6 +694,22 @@
           DELZZ(K) = (DELZ(K) + DELZ(K+1)) / 2.
        END DO
        DELZZ(NL_SVS) = DELZ(NL_SVS)
+!  
+!
+!      Compute fractions of the respective type of cover
+!   
+       DO I=1,N
+          ! Fraction of snow-free bare ground   
+          FRACBG(I) = (1-PSNG(I))*(1.-VEGH(I)-VEGL(I))  
+          ! Fraction of snow-free low vegetation  
+          FRACVL(I) = (1-PSNG(I))*VEGL(I)
+          ! Fraction of snow-free ground below high vegetation 
+          FRACVH(I) = (1-PSNVH(I))*VEGH(I)
+          ! Fraction of snow covered bg/lv
+          FRACSNG(I) = PSNG(I)*(1.-VEGH(I))
+          ! Fraction of snow covered ground below high vegetation 
+          FRACSNVH(I) = PSNVH(I)*VEGH(I)
+       END DO 
 
 !
 !
@@ -631,44 +751,25 @@
 !                     - snow below high-vegetation WTG_5  
 !
        DO I=1,N
-          B2(I,1) = DELZ(1)*SOILHCAP(I,1)/DT +                   &
-                     + WTG(I,2) * ( (4.*EMGR(I)*STEFAN*(TP(I,1)**3)) + RORAGR(I)*CPD  &
-                             +  RORAGR(I)*LEFF(I)*HRSURF(I)*ZDQSATGR(I) ) &
-                     + WTG(I,3) * ( 4.*EMGR(I)*STEFAN*(TP(I,1)**3)  +  RORAGRV(I)*CPD &
-                             +  RORAGRV(I)*LEFF(I)*HRSURF(I)*ZDQSATGRV(I) ) &
-                     +  BETAA*SOILCD(I,1)/DELZZ(1)
+          B2(I,1) = DELZ(1)*SOILHCAP(I,1)/DT +           &
+                    + FRACBG(I) * SKINCOND_BG(I)         &   
+                    + FRACVL(I) * SKINCOND_VL(I)         &                             
+                    + FRACVH(I) * SURF_ENBAL_HVEGB(I)    &
+                    +  BETAA*SOILCD(I,1)/DELZZ(1)
           
           C2(I,1) = (-BETAA)*SOILCD(I,1)/DELZZ(1)
 
           A2(I,1) = 0.0
 
-          IF (HIGHVEG(I).gt.LOWVEG(I)) THEN
-                  SURF_ENBAL_VEG = ( VTRA(I)*(1.-ALGR(I))*RG(I) + SKYVIEWA(I)*EMGR(I)*RAT(I) &
-                            + 3.*EMGR(I)*STEFAN*(TP(I,1)**4) &
-                            + (1.-SKYVIEWA(I))*EMGR(I)*EMVG(I)*STEFAN*(TVGDT(I)**4) &
-                            + RORAGRV(I)*CPD*TAF(I) &
-                            + RORAGRV(I)*LEFF(I)*HRSURF(I)*ZDQSATGRV(I)*TP(I,1) &
-                            - RORAGRV(I)*LEFF(I)*(HRSURF(I)*ZQSATGRV(I)-QAF(I)) )
-          ELSE 
-
-                  SURF_ENBAL_VEG = VTRA(I)*(1.-ALGR(I))*RG(I) + SKYVIEWA(I)*EMGR(I)*RAT(I) &
-                             + 3.*EMGR(I)*STEFAN*(TP(I,1)**4) &
-                             + (1.-SKYVIEWA(I))*EMGR(I)*EMVG(I)*STEFAN*(TVGST(I)**4) &
-                             + RORAGRV(I)*CPD*THETAA(I) &
-                             + RORAGRV(I)*LEFF(I)*HRSURF(I)*ZDQSATGRV(I)*TP(I,1) &
-                             - RORAGRV(I)*LEFF(I)*(HRSURF(I)*ZQSATGRV(I)-HU(I))
-          ENDIF                   
            
-          D2(I,1) =  WTG(I,2)  * ( (1.-ALGR(I))*RG(I) + EMGR(I)*RAT(I) &
-                             + 3.*EMGR(I)*STEFAN*(TP(I,1)**4) &
-                             + RORAGR(I)*CPD*THETAA(I) &
-                             + RORAGR(I)*LEFF(I)*HRSURF(I)*ZDQSATGR(I)*TP(I,1) &
-                             - RORAGR(I)*LEFF(I)*(HRSURF(I)*ZQSATGR(I)-HU(I)) ) &
-                    + WTG(I,3) * SURF_ENBAL_VEG &
-                    + WTG(I,4) * PGRNDFLUX(I)   & 
-                    + WTG(I,5) * PGRNDFLUXV(I)  & 
-                    + (1.-BETAA)*(SOILCD(I,1)/DELZZ(1))*(TP(I,2)-TP(I,1)) &
-                    + ( DELZ(1)*SOILHCAP(I,1)/DT )*TP(I,1)
+          D2(I,1) =  FRACBG(I) * SKINCOND_BG(I) * TGRST(I)  &
+                  +  FRACVL(I) * SKINCOND_VL(I) * TVGLST(I)  &
+                  + FRACVH(I) * SURF_ENBAL_HVEGD(I) &
+                  + FRACSNG(I)  * PGRNDFLUX(I)   &
+                  + FRACSNVH(I)  * PGRNDFLUXV(I)  & 
+                  + (1.-BETAA)*(SOILCD(I,1)/DELZZ(1))*(TP(I,2)-TP(I,1)) &
+                  + ( DELZ(1)*SOILHCAP(I,1)/DT )*TP(I,1)
+
        END DO
 !
 !
@@ -684,16 +785,11 @@
             A2(I,NL_SVS) = -BETAA * DT * SOILCD(I,NL_SVS-1) / &
                     (SOILHCAP(I,NL_SVS) * DELZ(NL_SVS)*DELZZ(NL_SVS-1))
 
-!          B2(I,NL_SVS) = 1. + (BETAA*DT/(SOILHCAP(I,NL_SVS)*DELZ(NL_SVS)))*(SOILCD(I,NL_SVS-1)/DELZZ(NL_SVS-1) + SOILCD(I,NL_SVS)/DELZZ(NL_SVS))
 
             B2(I,NL_SVS) = 1. + ( BETAA*DT*SOILCD(I,NL_SVS) ) / ( SOILHCAP(I,NL_SVS)*DELZ(NL_SVS)*DELZZ(NL_SVS) ) + &
                      ( BETAA*DT*SOILCD(I,NL_SVS-1) ) / ( SOILHCAP(I,NL_SVS)*DELZ(NL_SVS)*DELZZ(NL_SVS-1) )
 
             C2(I,NL_SVS) = 0.0
-
-!!!$          D2(I,NL_SVS) = TP(I,NL_SVS) + ( DT * SOILCD(I,NL_SVS) / (SOILHCAP(I,NL_SVS) * DELZ(NL_SVS)*DELZZ(NL_SVS)) ) * TPERM(I) - &
-!!!$               ( (1. - BETAA) * DT * SOILCD(I,NL_SVS-1) / (SOILHCAP(I,NL_SVS) * DELZ(NL_SVS)*DELZZ(NL_SVS-1)) ) * (TP(I,NL_SVS)-TP(I,NL_SVS-1)) - &
-!!!$               ( (1. - BETAA) * DT * SOILCD(I,NL_SVS)   / (SOILHCAP(I,NL_SVS) * DELZ(NL_SVS)*DELZZ(NL_SVS)) )  * TP(I,NL_SVS)
 
             D2(I,NL_SVS) = TP(I,NL_SVS) +  ( DT/(SOILHCAP(I,NL_SVS)*DELZ(NL_SVS)) ) * ( ( SOILCD(I,NL_SVS)/DELZZ(NL_SVS) ) * TPERM(I) &
                - ( (1. - BETAA) * SOILCD(I,NL_SVS-1)/DELZZ(NL_SVS-1) ) * (TP(I,NL_SVS)-TP(I,NL_SVS-1)) &
@@ -724,19 +820,6 @@
       CALL DIFUVD2(TP, A2, B2, C2, D2, D2, N, N, NL_SVS)
 !
 !
-!
-!!       6.   BARE GROUND TEMPERATURE (TO KEEP CONSISTENCY WITH SVS1)
-!!               
-!               --------------------------------------------
-
-!
-       DO I=1,N
-          TGRST(I) = TP(I,1)
-          TGRDT(I) = (TGRD(I) + DT*TGRST(I)/86400.) /   &  
-                      (1.+DT/86400.)
-       ENDDO
-!
-!
 !!       7.     FLUX CALCULATIONS
 !               -----------------
 !
@@ -746,7 +829,7 @@
 !                                            recalculate the qsat functions
 !
         ZQSATGRT(I)  = FOQST(  TGRST(I)  ,  PS(I)   )
-        ZQSATVGT(I) =  FOQST(  TVGST(I)  ,  PS(I)   )
+        ZQSATVGT(I) =  FOQST(  TVGLST(I)  ,  PS(I)  ) ! VV TO BE MODIFIED
         ZQSATGRVT(I) = FOQST(  TP(I,1)   ,  PS(I)   )
 !
       ENDDO
@@ -766,7 +849,7 @@
 !                                            Net radiation over vegetation
 !
         RNETVG(I) = (1. - ALVGLAI(I)) * RG(I) + EMVG(I) *&  
-                 (RAT(I) - STEFAN * (TVGST(I)** 4))
+                 (RAT(I) - STEFAN * (TVGLST(I)** 4))! VV TO BE MODIFIED
 !
 !                                            AGGREGATED net radiation (including snow)
 !                                    
@@ -785,7 +868,7 @@
 !
 !                                            Sensible heat flux from the vegetation
 !
-        HFLUXVG(I) = RHOA(I) * CPD * (TVGST(I) - THETAA(I)) / RESAVG(I)
+        HFLUXVG(I) = RHOA(I) * CPD * (TVGLST(I) - THETAA(I)) / RESAVG(I)
 !
 !                                             AGGREGATED sensible heat flux (including snow)
         HFLUX(I)   =  AG( WTA(I,indx_svs_bg), WTA(I,indx_svs_vg), &
@@ -981,7 +1064,7 @@
 !
            TSA(I) = AG( WTA(I,indx_svs_bg), WTA(I,indx_svs_vg), &
                         WTA(I,indx_svs_sn), WTA(I,indx_svs_sv), &
-                        TGRST(I),TVGST(I),TSNS(I,1),TSVS(I,1) )
+                        TGRST(I),TVGLST(I),TSNS(I,1),TSVS(I,1) )
 
         ENDDO
               
@@ -1009,7 +1092,7 @@
 !         
            TSA(I) = RESAEF(I) *  AG( WTA(I,indx_svs_bg), WTA(I,indx_svs_vg), &
                                      WTA(I,indx_svs_sn), WTA(I,indx_svs_sv), &
-                                     TGRST(I)/RESAGR(I), TVGST(I)/RESAVG(I), &
+                                     TGRST(I)/RESAGR(I), TVGLST(I)/RESAVG(I), &
                                      TSNS(I,1)/RESASA(I),  TSVS(I,1)/RESASV(I) )
 
         ENDDO
@@ -1022,7 +1105,7 @@
 
         TRAD(I)= AG( WTA(I,indx_svs_bg), WTA(I,indx_svs_vg), &
                      WTA(I,indx_svs_sn), WTA(I,indx_svs_sv), &
-                     TGRST(I)**4,TVGST(I)**4,TSNS(I,1)**4,TSVS(I,1)**4 )
+                     TGRST(I)**4,TVGLST(I)**4,TSNS(I,1)**4,TSVS(I,1)**4 )
         
         TRAD(I)=TRAD(I)**(1./4.)
      ENDDO
@@ -1140,8 +1223,11 @@
       DO I=1,N
         TGRS(I)   = TGRST(I)
         TGRD(I)   = TGRDT(I)
-        TVGS(I)   = TVGST(I)
-        TVGD(I)   = TVGDT(I)
+        TVGLS(I)   = TVGLST(I)
+        TVGLD(I)   = TVGLDT(I)
+        TVGHS(I)   = TVGHST(I)
+        TVGHD(I)   = TVGHDT(I)      
+
       ENDDO
 !
 !

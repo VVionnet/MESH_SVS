@@ -365,16 +365,14 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       endif 
 
 
-      IF(.NOT. LUNIQUE_PROFILE_SVS2) THEN 
-        ! Update vegetation temperature with low vegetation. 
-        ! VV TO BE MODIFIED: Intermediate step during developement. 
-        !   
-          DO I=1,N
-            write(*,*)   'VEGL',bus(x(TVEGEL,I,1)),bus(x(TVEGEL,I,2)) 
-            bus(x(TVEGE,I,1))   =  bus(x(TVEGEL,I,1)) 
-            bus(x(TVEGE,I,2))   =  bus(x(TVEGEL,I,2)) 
-          ENDDO
-      ENDIF
+      ! Update vegetation temperature with low vegetation. 
+      ! VV TO BE MODIFIED: Intermediate step during developement. 
+      !   
+      DO I=1,N
+          write(*,*)   'VEGL',bus(x(TVEGEL,I,1)),bus(x(TVEGEL,I,2)) 
+          bus(x(TVEGE,I,1))   =  bus(x(TVEGEL,I,1)) 
+          bus(x(TVEGE,I,2))   =  bus(x(TVEGEL,I,2)) 
+      ENDDO
 !
 
       CALL SOILI_SVS2( BUS(x(WSOIL ,1,1)), &
@@ -562,10 +560,11 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 !
       IF(LUNIQUE_PROFILE_SVS2) THEN ! One soil profile in SVS2
 
-             CALL EBUDGET_SVS2_ONEPROFILE(bus(x(TSA ,1,1)),  &  
+             CALL EBUDGET_SVS2_ONEPROFILE_SKIN(bus(x(TSA ,1,1)),  &  
                   bus(x(WSOIL     ,1,1)) , bus(x(ISOIL,1,1)),  &   
-                  bus(x(TGROUND    ,1,1)) , bus(x(TGROUND,1,2)),   & 
-                  bus(x(TVEGE      ,1,1)) , bus(x(TVEGE,1,2)),   &  
+                  bus(x(TGROUND   ,1,1)) , bus(x(TGROUND,1,2)),   & 
+                  bus(x(TVEGEL    ,1,1)) , bus(x(TVEGEL,1,2)),   &  
+                  bus(x(TVEGEH    ,1,1)) , bus(x(TVEGEH,1,2)),   &  
                   bus(x(TPSOIL    ,1,1)) ,    & 
                   bus(x(TPERM     ,1,1)) , bus(x(GFLUXSA,1,1)), bus(x(GFLUXSV,1,1)), &  
                   DT                     , VMOD, VDIR, bus(x(DLAT,1,1)),   &   
@@ -618,6 +617,69 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                   bus(x(TAF   ,1,1)), bus(x(QAF   ,1,1)), bus(x(VAF   ,1,1)), & 
                   RPP, bus(x(Z0HA ,1,1)))
 
+!             CALL EBUDGET_SVS2_ONEPROFILE(bus(x(TSA ,1,1)),  &  
+!                  bus(x(WSOIL     ,1,1)) , bus(x(ISOIL,1,1)),  &   
+!                  bus(x(TGROUND    ,1,1)) , bus(x(TGROUND,1,2)),   & 
+!                  bus(x(TVEGE      ,1,1)) , bus(x(TVEGE,1,2)),   &  
+!                  bus(x(TPSOIL    ,1,1)) ,    & 
+!                  bus(x(TPERM     ,1,1)) , bus(x(GFLUXSA,1,1)), bus(x(GFLUXSV,1,1)), &  
+!                  DT                     , VMOD, VDIR, bus(x(DLAT,1,1)),   &   
+!                  zfsolis ,ALVA ,bus(x(laiva,1,1)),GAMVA ,     & 
+!                  BUS(x(ALGR,1,1))        , BUS(x(EMISGR,1,1)),    & 
+!                  bus(x(FDSI       ,1,1)) , zthetaa ,    &   
+!                  bus(x(FCOR       ,1,1)) , bus(x(zusl,1,1)),    &  
+!                  bus(x(ztsl       ,1,1)) , hu, &
+!                  ps, RHOA, BUS(x(SVS_WTA,1,1)), &
+!                  z0m, z0mland , bus(x(Z0T,1,indx_soil)),&
+!                  HRSURF,       & 
+!                  bus(x(HV         ,1,1)) , DEL, STOM_RS ,& 
+!                  CG,CVPA,EVA,bus(x(PSNGRVL    ,1,1)) ,    &    
+!                  bus(x(RESAGR,1,1)), bus(x(RESAVG,1,1)),   &        
+!                  bus(x(RESASA,1,1)), bus(x(RESASV,1,1)) ,bus(x(RESAGRV,1,1)), &
+!                  bus(x(RNETSA     ,1,1)) , bus(x(HFLUXSA,1,1)),   &   
+!                  LESLNOFRAC, LESNOFRAC        , bus(x(ESA,1,1)),   &   
+!                  bus(x(SNOAL      ,1,1)) ,    &  
+!                  bus(x(TSNOW_SVS  ,1,1)) ,    &  
+!                  bus(x(RNETSV     ,1,1)) , bus(x(HFLUXSV ,1,1)),   &   
+!                  LESVLNOFRAC, LESVNOFRAC              , bus(x(ESV,1,1)),    &    
+!                  bus(x(SNVAL      ,1,1)) ,    &  
+!                  bus(x(TSNOWV_SVS ,1,1)) ,   &   
+!                  bus(x(VEGH       ,1,1)) , bus(x(VEGL   ,1,1)), bus(x(VGHEIGHT   ,1,1)),  &   
+!                  bus(x(PSNVH      ,1,1)) ,    &   
+!                  bus(x(PSNVHA     ,1,1)),  &   
+!                  bus(x(SKYVIEW   ,1,1)), bus(x(SKYVIEWA   ,1,1)),   &  
+!                  bus(x(SOILHCAPZ ,1,1)) ,bus(x(SOILCONDZ,1,1)),   & 
+!                  rainrate_mm,bus(x(WVEG   ,1,1)),bus(x(snoma,1,1)),&
+!                  bus(x(snvma,1,1)),&
+!                  bus(x(VEGTRANSA  ,1,1)) , bus(x(ALVIS,1,indx_soil)),     & 
+!                  bus(x(RNET_S     ,1,1)),    &   
+!                  bus(x(FC  ,1,indx_soil)), bus(x(FV  ,1,indx_soil)),   &    
+!                  bus(x(LEG        ,1,1)) , bus(x(LEV  ,1,1)),    &   
+!                  bus(x(LES        ,1,1)) , bus(x(LESV   ,1,1)),    &  
+!                  bus(x(LEGV       ,1,1)) ,  &
+!                  bus(x(LER        ,1,1)) , bus(x(LETR       ,1,1)) ,   &  
+!                  bus(x(EG         ,1,1)) ,   &    
+!                  bus(x(ER         ,1,1)) , bus(x(ETR    ,1,1)),    &  
+!                  bus(x(FL         ,1,1)),  bus(x(EFLUX      ,1,1)) ,    &  
+!                  bus(x(BM         ,1,1)) , bus(x(FQ   ,1,1)),    &  
+!                  bus(x(bt, 1,indx_soil)) , bus(x(RESAEF,1,1)),   &  
+!                  LEFF                    ,    & 
+!                  bus(x(FTEMP,1,indx_soil)), BUS(x(FVAP,1,indx_soil)),   &   
+!                  bus(x(qsurf,1,indx_soil)), bus(x(frv ,1,indx_soil)),   &   
+!                  bus(x(ALFAT      ,1,1)) , bus(x(ALFAQ      ,1,1)) ,    &  
+!                  bus(x(ilmo  ,1,indx_soil)), bus(x(hst  ,1,indx_soil)), &   
+!                  TRAD, N,   &
+!                  bus(x(QVEG ,1,1)), bus(x(QGV   ,1,1)), bus(x(QGR   ,1,1)), & 
+!                  bus(x(TAF   ,1,1)), bus(x(QAF   ,1,1)), bus(x(VAF   ,1,1)), & 
+!                  RPP, bus(x(Z0HA ,1,1)))
+
+        ! Update vegetation temperature with low vegetation. 
+        ! VV TO BE MODIFIED: Intermediate step during developement. 
+        !   
+        DO I=1,N
+            bus(x(TVEGE,I,1))   =  bus(x(TVEGEL,I,1)) 
+            bus(x(TVEGE,I,2))   =  bus(x(TVEGEL,I,2)) 
+        ENDDO   
               
       ELSE  ! Two soil profiles for temperature in SVS2
 

@@ -489,7 +489,7 @@ module runsvs_mesh
             if (allocated(svs_mesh%vs%tvege)) svs_bus(a2(tvege, i):z2(tvege, i)) = svs_mesh%vs%tvege(:, i + 1)
         end do
 
-        if(svs_mesh%vs%schmsol=='SVS2' .and. .not. svs_mesh%vs%lunique_profile_svs2) then         
+        if(svs_mesh%vs%schmsol=='SVS2') then         
            do i = 0, 1
             if (allocated(svs_mesh%vs%tvegel)) svs_bus(a2(tvegel, i):z2(tvegel, i)) = svs_mesh%vs%tvegel(:, i + 1)
             if (allocated(svs_mesh%vs%tvegeh)) svs_bus(a2(tvegeh, i):z2(tvegeh, i)) = svs_mesh%vs%tvegeh(:, i + 1)
@@ -949,10 +949,8 @@ module runsvs_mesh
              call runsvs_mesh_append_phyentvar('snohistv_svs')
              call runsvs_mesh_append_phyentvar('tsnowv_svs')
              call runsvs_mesh_append_phyentvar('wsnowv_svs')
-             if(.not. svs_mesh%vs%lunique_profile_svs2) then
-                 call runsvs_mesh_append_phyentvar('tvegel')
-                 call runsvs_mesh_append_phyentvar('tvegeh')
-             end if
+             call runsvs_mesh_append_phyentvar('tvegel')
+             call runsvs_mesh_append_phyentvar('tvegeh')
         end if
 
 
@@ -1243,7 +1241,8 @@ ierr = 200
            write(iout_soil, FMT_CSV, advance = 'no') &
                             trim(VN_SVS_TPSOILV) // '_' // trim(adjustl(level))
          end do
-       endif      
+       endif  
+       write(iout_soil, FMT_CSV, advance = 'no') 'TVEG_1','TVEG_2' 
        write(iout_soil, *)
 
 
@@ -1450,14 +1449,12 @@ ierr = 200
                svs_mesh%vs%wsnowv_svs(:, i) = svs_bus(a2(wsnowv_svs, i - 1):z2(wsnowv_svs, i - 1))
             end do
 
-            if(.not. svs_mesh%vs%lunique_profile_svs2) then
-               if (.not. allocated(svs_mesh%vs%tvegel)) allocate(svs_mesh%vs%tvegel(ni,2))
-               if (.not. allocated(svs_mesh%vs%tvegeh)) allocate(svs_mesh%vs%tvegeh(ni,2))
-               do i = 0, 1
-                    svs_mesh%vs%tvegel(:, i + 1) = svs_bus(a2(tvegel, i):z2(tvegel, i))
-                    svs_mesh%vs%tvegeh(:, i + 1) = svs_bus(a2(tvegeh, i):z2(tvegeh, i))
-               end do
-            endif
+            if (.not. allocated(svs_mesh%vs%tvegel)) allocate(svs_mesh%vs%tvegel(ni,2))
+            if (.not. allocated(svs_mesh%vs%tvegeh)) allocate(svs_mesh%vs%tvegeh(ni,2))
+            do i = 0, 1
+                 svs_mesh%vs%tvegel(:, i + 1) = svs_bus(a2(tvegel, i):z2(tvegel, i))
+                 svs_mesh%vs%tvegeh(:, i + 1) = svs_bus(a2(tvegeh, i):z2(tvegeh, i))
+            end do
         endif
 
     end subroutine
@@ -1523,6 +1520,7 @@ ierr = 200
                      busptr(vd%tpsoilv%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
                 end do
               endif
+              write(iout_soil, FMT_CSV, advance = 'no') busptr(vd%tvege%i)%ptr(1:ni, trnch),busptr(vd%tvege%i)%ptr(ni+1:2*ni, trnch)              
               write(iout_soil, *)
 
               ! Write file containing bulk snow outputs
