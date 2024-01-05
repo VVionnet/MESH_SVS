@@ -642,7 +642,7 @@ subroutine inisurf4(kount, ni, nk, trnch)
          if(vf_type == "CCILCECO") then            
             call inicover_svs_ccilceco(0, ni, trnch)
          else
-            call inicover_svs(0, ni, trnch)
+            call inicover_svs2(0, ni, trnch)
          endif
       endif
 !

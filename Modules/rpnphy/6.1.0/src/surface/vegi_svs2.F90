@@ -14,10 +14,10 @@
 !CANADA, H9P 1J3; or send e-mail to service.rpn@ec.gc.ca
 !-------------------------------------- LICENCE END --------------------------------------
       SUBROUTINE VEGI_SVS2 ( RG, T, TVEG, HU, PS, &
-           WD , RGL, LAI, LAIH, RSMIN, GAMMA, WWILT, WFC, &   
+           WD , RGL, LAI, LAI_VH, LAI_VL, RSMIN, GAMMA, WWILT, WFC, &   
            SUNCOS, DRZ, D50, D95, PSNGRVL, VEGH, VEGL, RS, SKYVIEW,  &
            SKYVIEWA, VTR, VTRA, &    
-           FCD, ACROOT, WRMAX, N  )
+           FCD, ACROOT, WRMAX_VL, WRMAX_VH, N  )
 !
         use tdpack
         use svs_configs
@@ -27,11 +27,11 @@
       INTEGER N 
       REAL WD(N,NL_SVS), FCD(N, NL_SVS)
       REAL RG(N), T(N), HU(N), PS(N), TVEG(N)
-      REAL SUNCOS(N), LAIH(N), PSNGRVL(N), VEGH(N), VEGL(N)
+      REAL SUNCOS(N), LAI_VH(N),LAI_VL(N), PSNGRVL(N), VEGH(N), VEGL(N)
       REAL RGL(N), LAI(N), RSMIN(N), GAMMA(N), WWILT(N,NL_SVS)
       REAL WFC(N,NL_SVS), RS(N), SKYVIEW(N), VTR(N), DRZ(N)
       REAL SKYVIEWA(N),VTRA(N)
-      REAL D50(N), D95(N), ACROOT(N,NL_SVS) , WRMAX(N)  
+      REAL D50(N), D95(N), ACROOT(N,NL_SVS) , WRMAX_VL(N),  WRMAX_VH(N)
 !
 !Author
 !          S. Belair, M.Abrahamowicz,S.Z.Husain (June 2015)
@@ -55,7 +55,8 @@
 ! PS       surface pressure
 ! RGL      AVERAGE constant for the calculation of the stomatal resistance
 ! LAI      AVERAGE Leaf area index
-! LAIH     Leaf area index for high vegetation only
+! LAI_VH     Leaf area index for high vegetation only
+! LAI_VL     Leaf area index for low vegetation only
 ! RSMIN    AVERAGE minimum stomatal resistance
 ! GAMMA    other constant for RS (AVERAGED)
 ! WWILT    volumetric water content at the wilting point
@@ -77,7 +78,8 @@
 ! VTRA      Average Vegetation transmissivity 
 ! FCD(NL_SVS)  Root fraction within soil layer (NL_SVS soil layers)
 ! ACROOT(NL_SVS) Active fraction of roots (0-1) in the soil layer
-! WRMAX    Max volumetric water content retained on vegetation
+! WRMAX_VL    Max volumetric water content retained on low vegetation
+! WRMAX_VH    Max volumetric water content retained on high vegetation
 !
 !
       INTEGER I, K
@@ -215,7 +217,7 @@
 !
 !                 Calculate the transmissivity
 !
-             VTR(I) = EXP( -1.0 * EXTINCT(I) * LAIH(I) )
+             VTR(I) = EXP( -1.0 * EXTINCT(I) * LAI_VH(I) )
 !
 !                   --- based on average LAI
              VTRA(I) = EXP( -1.0 * EXTINCT(I) * LAI(I) )
@@ -232,7 +234,7 @@
 !                 crops). Here as a first approximation, we take the
 !                 skyview factor for tall/high vegetation to be exp(-1*LAI).
 !
-             SKYVIEW(I) = EXP( -1.0 * LAIH(I) )
+             SKYVIEW(I) = EXP( -1.0 * LAI_VH(I) )
 !                   --- based on average LAI
              SKYVIEWA(I) = EXP( -1.0 * LAI(I) )
 !
@@ -240,10 +242,13 @@
 !*       8.     MAXIMUM VOLUMETRIC WATER CONTENT RETAINED ON VEGETATION (m3/m3)
 !               ------------------------------
 !
-     
-          
-             WRMAX(I) = 0.2 * LAI(I)
+            ! For low vegetation
+             WRMAX_VL(I) = 0.2 * LAI_VL(I)
 
+            ! For high vegetation
+            ! TODO: Need to account for sparseness once available 
+             WRMAX_VH(I) = 0.2 * LAI_VH(I)
+             
           ELSE
           !  NO VEGETATION
              f1(i)=0.0
@@ -260,7 +265,8 @@
              EXTINCT(I) = 0.0
              VTR(I) = 1.0
              SKYVIEW(i) = 1.0
-             WRMAX(I)=EPSILON_SVS  ! To avoid division by zero
+             WRMAX_VL(I)=EPSILON_SVS  ! To avoid division by zero
+             WRMAX_VH(I)=EPSILON_SVS  ! To avoid division by zero
           ENDIF
        ENDDO
 !

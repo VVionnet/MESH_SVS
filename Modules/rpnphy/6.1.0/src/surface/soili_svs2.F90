@@ -23,12 +23,13 @@
            LAIVH, LAIVL, &   
            Z0MVH, Z0MVL, Z0, CLAY, SAND, DECI, EVER,LAID,  &  
            WTA, CG,PSOILHCAPZ, PSOILCONDZ, PSNGRVL,  & 
-           Z0H, ALGR, EMGR, PSNVH, PSNVHA,   &
+           Z0H, ALGR, EMGR, PSNVH, PSNVHA, PSURFVHA,   &
            ALVA, LAIVA, CVPA, EVA, Z0HA, Z0MVG, RGLA, STOMRA ,&  
            GAMVA,CONDSLD, CONDDRY, N )
          !
         use tdpack_const, only: PI
         use svs_configs
+        use svs2_tile_configs
         use sfc_options, only: read_emis, urban_params_new
         USE MODD_CSTS,    ONLY : XCL, XCI, XRHOLW, XRHOLI, XCONDI, XCONDWTR
      implicit none
@@ -42,12 +43,12 @@
       REAL RHOSV(N), Z0MVH(N), VEGH(N), VEGL(N), SVM(N)
       REAL CGSAT(N), WSAT(N,NL_SVS), WWILT(N,NL_SVS), BCOEF(N,NL_SVS)
       REAL Z0(N)
-      REAL CG(N), WTA(N,svs_tilesp1)
+      REAL CG(N), WTA(N,svs2_tilesp1)
       REAL PSNGRVL(N)
       REAL PSOILHCAPZ(N,NL_SVS),PSOILCONDZ(N,NL_SVS)
       REAL Z0H(N), ALGR(N), CLAY(N), SAND(N)
       REAL DECI(N), EVER(N), LAID(N)
-      REAL EMGR(N), PSNVH(N), PSNVHA(N),  LAIVH(N)
+      REAL EMGR(N), PSNVH(N), PSNVHA(N), PSURFVHA(N), LAIVH(N)
       REAL ALVA(N), LAIVA(N), CVPA(N), EVA(N)
       REAL LAIVL(N), CVH(N), CVL(N), ALVL(N), ALVH(N)
       REAL EMISVH(N), EMISVL(N), ETG(N), Z0MVL(N), RGLVH(N), RGLVL(N)
@@ -113,7 +114,7 @@
 ! CONDDRY  Dry thermal conductivity
 !
 !           - Output -
-! WTA      Weights for SVS surface types as seen from SPACE
+! WTA      Weights for SVS2 surface types as seen from SPACE
 ! CG       heat capacity of the bare soil
 ! PSNGRVL  fraction of the bare soil or low veg. covered by snow
 ! Z0H      agg. roughness length for heat transfer considering snow
@@ -122,6 +123,8 @@
 ! PSNVH    fraction of HIGH vegetation covered by snow
 ! PSNVHA   fraction of HIGH vegetation covered by snow as seen from
 !          the ATMOSPHERE 
+! PSURFVHA fraction of the surface seen through the sparse 
+
 ! ALVA     average vegetation albedo
 ! LAIVA    average vegetation LAI
 ! CVPA     average thermal coefficient of vegetation considering effect
@@ -260,6 +263,7 @@ include "isbapar.cdk"
          ENDIF
             
        
+         
 
 
          IF(SVM(I).GE.CRITSNOWMASS ) THEN
@@ -268,12 +272,13 @@ include "isbapar.cdk"
 !
 
             PSNVH(I)  =  MIN( SVM(I) / (SVM(I)+ RHOSV(I)*5000.*0.1 ), 1.0)
-!                       SNOW FRACTION AS SEEN FROM THE SPACE
-!                       NEED TO ACCOUNT FOR SHIELDING OF LEAVES/TREES
-!
              ! Snow cover fraction close eqals to one as soon as snow is present on the ground
              ! NEED to BE REVISITED. Used for test with Crocus
             PSNVH(I)  =  MIN( SVM(I) / (1.0) , 1.0)
+
+!                       SNOW FRACTION AS SEEN FROM THE SPACE
+!                       NEED TO ACCOUNT FOR SHIELDING OF LEAVES/TREES
+!
 !
             PSNVHA(I) = (EVER(I) * 0.2 + DECI(I) * MAX(LAI0 - LAID(I), 0.2)) * PSNVH(I)
 
@@ -283,8 +288,12 @@ include "isbapar.cdk"
             PSNVHA(I) = 0.0
          ENDIF
 
-
-
+         ! Fraction of surface seen through sparse high vegetation
+         IF(VEGH(I) .GE.EPSILON_SVS) THEN
+            PSURFVHA(I)  = (EVER(I) * 0.2 + DECI(I) * MAX(LAI0 - LAID(I), 0.2))
+         ELSE
+            PSURFVHA(I)  = 0.
+         ENDIF
 !        
       END DO
 !
@@ -293,7 +302,7 @@ include "isbapar.cdk"
 !*      4.      FRACTIONS OF SVS TYPES AS SEEN FROM SPACE
 !               --------------------------
 
-      call weights_svs(VEGH,VEGL,PSNGRVL,PSNVHA,N,WTA)
+      call weights_svs2(VEGH,VEGL,PSNGRVL,PSNVH, PSURFVHA,'ATM', N,WTA)
 
 
 !
