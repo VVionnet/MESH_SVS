@@ -20,7 +20,7 @@ INTERFACE
                 PHPSNOW,PLES3L,PLEL3L,PEVAP,PSNDRIFT,PRI,                 &
                 PEMISNOW,PCDSNOW,PUSTAR,PCHSNOW,PSNOWHMASS,PQS,           &
                 PPERMSNOWFRAC,PFORESTFRAC,PZENITH,                        &
-                HSNOWDRIFT,OSNOWDRIFT_SUBLIM                              )  
+                HSNOWDRIFT,OSNOWDRIFT_SUBLIM, PRSURF                       )  
 
 IMPLICIT NONE
 REAL, INTENT(IN)                       :: PTSTEP
@@ -53,6 +53,7 @@ REAL, DIMENSION(:), INTENT(OUT)        ::  PQS
 REAL, DIMENSION(:), INTENT(IN)         :: PZENITH ! solar zenith angle
  CHARACTER(4), INTENT(IN)              :: HSNOWDRIFT        ! Snowdrift scheme :
 LOGICAL, INTENT(IN)                    :: OSNOWDRIFT_SUBLIM ! activate sublimation during drift
+REAL, DIMENSION(:)                :: PRSURF     ! Additional aerodynamic surface resistance if Ta and HR above canopy
 END SUBROUTINE SNOW3L
 END INTERFACE
 END MODULE MODI_SNOW3L

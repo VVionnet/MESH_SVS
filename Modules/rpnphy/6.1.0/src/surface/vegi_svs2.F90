@@ -15,9 +15,9 @@
 !-------------------------------------- LICENCE END --------------------------------------
       SUBROUTINE VEGI_SVS2 ( RG, T, TVEG, HU, PS, &
            WD , RGL, LAI, LAI_VH, LAI_VL, RSMIN, GAMMA, WWILT, WFC, &   
-           SUNCOS, DRZ, D50, D95, PSNGRVL, VEGH, VEGL, RS, SKYVIEW,  &
+           SUNCOS, DRZ, D50, D95, PSNGRVL, VEGH, VEGL, Z0MVH, RS, SKYVIEW,  &
            SKYVIEWA, VTR, VTRA, &    
-           FCD, ACROOT, WRMAX_VL, WRMAX_VH, N  )
+           FCD, ACROOT, WRMAX_VL, WRMAX_VH,VGH_HEIGHT,VGH_DENS, CLUMPING, N  )
 !
         use tdpack
         use svs_configs
@@ -32,6 +32,8 @@
       REAL WFC(N,NL_SVS), RS(N), SKYVIEW(N), VTR(N), DRZ(N)
       REAL SKYVIEWA(N),VTRA(N)
       REAL D50(N), D95(N), ACROOT(N,NL_SVS) , WRMAX_VL(N),  WRMAX_VH(N)
+      REAL Z0MVH(N),  VGH_HEIGHT(N), VGH_DENS(N)
+      REAL CLUMPING ! clumping coefficient to convert LAI to effective LAI
 !
 !Author
 !          S. Belair, M.Abrahamowicz,S.Z.Husain (June 2015)
@@ -69,6 +71,8 @@
 ! PSNGRVL  fraction of the bare soil or low veg. covered by snow
 ! VEGH     fraction of HIGH vegetation
 ! VEGL     fraction of LOW vegetation
+! Z0MVH    Local roughness associated with HIGH vegetation only (no
+!          orography)      
 !      
 !          - Output -
 ! RS       Surface or stomatal resistance
@@ -80,6 +84,8 @@
 ! ACROOT(NL_SVS) Active fraction of roots (0-1) in the soil layer
 ! WRMAX_VL    Max volumetric water content retained on low vegetation
 ! WRMAX_VH    Max volumetric water content retained on high vegetation
+! VGH_HEIGHT Height of trees in areas of high vegeation (m)     
+! VGH_DENS Density of trees in areas of high vegeation (m)  
 !
 !
       INTEGER I, K
@@ -234,9 +240,10 @@
 !                 crops). Here as a first approximation, we take the
 !                 skyview factor for tall/high vegetation to be exp(-1*LAI).
 !
-             SKYVIEW(I) = EXP( -1.0 * LAI_VH(I) )
+             CLUMPING = 0.5
+             SKYVIEW(I) = EXP( - CLUMPING * LAI(I) * VGH_DENS(I))
 !                   --- based on average LAI
-             SKYVIEWA(I) = EXP( -1.0 * LAI(I) )
+             SKYVIEWA(I) = EXP( - CLUMPING * LAI_VH(I) * VGH_DENS(I))
 !
 !
 !*       8.     MAXIMUM VOLUMETRIC WATER CONTENT RETAINED ON VEGETATION (m3/m3)
@@ -248,6 +255,23 @@
             ! For high vegetation
             ! TODO: Need to account for sparseness once available 
              WRMAX_VH(I) = 0.2 * LAI_VH(I)
+!
+!*       9.     HEIGHT OF TREES in HIGH VEGETATION
+!               ------------------------------
+!
+             VGH_HEIGHT(I) =  10. *  Z0MVH(I) ! Derived from the roughness
+                                            ! lenght for high veg. Z0MVH is computed in GenPhySx using a
+                                            ! database that contains information about the vegetation height 
+!
+!*       10.     DENSITY OF TREES in HIGH VEGETATION
+!               ------------------------------
+!
+!             IF(LAIH(I) > 0.) THEN                               
+!                VGH_DENS(I) =   0.29 * LOG(LAIH(I))+ 0.55   ! Based on LAI of high vegetation following Pomeroy et al (HP, 2002)
+!                VGH_DENS(I) = MIN(1., MAX(0., VGH_DENS(I)))
+!             ELSE
+!                VGH_DENS(I) =   0.
+!             ENDIF
              
           ELSE
           !  NO VEGETATION
@@ -267,6 +291,8 @@
              SKYVIEW(i) = 1.0
              WRMAX_VL(I)=EPSILON_SVS  ! To avoid division by zero
              WRMAX_VH(I)=EPSILON_SVS  ! To avoid division by zero
+             VGH_HEIGHT(I) = 0.
+             VGH_DENS(I)   = 0.
           ENDIF
        ENDDO
 !

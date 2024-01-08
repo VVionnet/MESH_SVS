@@ -109,25 +109,28 @@ subroutine sfc_businit(moyhr,ni,nk)
    character(len=2) :: ns
    integer :: legv,qaf,    &
         hpsa,hpsv, hv_vl, hv_vh, gfluxsa, gfluxsv,      &
-        ler_vl, ler_vh, letr_vl, letr_vh, levl, levh, lwnetsa, lwnetsv,        &
-        er_vl, er_vh, esa, esv, etr_vl, etr_vh, &
-        qgr, qgv, qveg, resagrv,        &
+        lesc,lescaf, &
+        ler_vl, ler_vh, letr_vl, letr_vh, levl, levh,  & 
+        lwca, lwnetsa, lwnetsv,        &
+        er_vl, er_vh, esa, esv, etr_vl, etr_vh, qca, &
+        qgr, qgv, qveg, rainrate_vgh, resagrv,  &
         resa_vl, resa_vh,         &
         rsnows_acc, rsnowsv_acc, psurfvha, skyviewa, &
-        snoage_svs, snoagev_svs,  &
+        sncma, snoage_svs, snoagev_svs,  &
         snodiamopt_svs, snodiamoptv_svs, &
         snospheri_svs, snospheriv_svs,   &
         snohist_svs,snohistv_svs,   &
         snoma_svs, snomav_svs, &
         snoden_svs, snodenv_svs,   &
-        snotype_svs, snotypev_svs, &
+        snotype_svs, snotypev_svs, snowrate_vgh, &
         subldrifta, subldriftv,     &
-        swnetsa, swnetsv,        &
-        taf, &
-        tpsoilv, &
+        swnetsa, swnetsv, swca,        &
+        tca,taf, &
+        tpsoilv, tgroundv, &
         tsnow_svs,tsnowv_svs,   &
         tvegel,tvegeh,  &
-        vaf, vegtransa, vgheight, &
+        vaf, vca, vegtransa, vgh_height,   &
+        vgh_dens, vgh_densen, &
         wveg_vl, wveg_vh,     &       
         wsnow_svs,wsnowv_svs
 
@@ -528,6 +531,8 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR2D1(laivl,        'VN=laivl        ;ON=LAIL;VD=leaf area index for low vegetation only                           ;VB=p0')
       PHYVAR2D1(latflaf,      'VN=latflaf      ;ON=ALAT;VD=Accum. of LATF at all levels (kg/m2 = mm)                         ;VB=p0')
       PHYVAR3D1(latflw,       'VN=latflw       ;ON=LATF;VD=Lateral flow                                   ;VS=A*'//ngl//'  ;VB=p0')
+      PHYVAR2D1(lesc,         'VN=lesc         ;ON=LSC ;VD=latent heat flux over snow intercepted in high-veg                ;VB=v0')
+      PHYVAR2D1(lescaf,       'VN=lescaf       ;ON=LSCA;VD=accum. of sublimation from intercepted snow                       ;VB=p0')      
       PHYVAR2D1(leg,          'VN=leg          ;ON=L2  ;VD=latent heat flux over bare grnd                                   ;VB=v0')
       PHYVAR2D1(legv,         'VN=legv         ;ON=LEGV;VD=LE over grnd under veg fraction                                   ;VB=v0')
       PHYVAR2D1(ler_vl,       'VN=ler_vl       ;ON=LRVL  ;VD=latent heat flux from low veg. leaves                           ;VB=v0')
@@ -540,6 +545,7 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR2D1(levh,         'VN=levh         ;ON=LVH  ;VD=latent heat flux over high vegetation                            ;VB=v0')
       PHYVAR2D1(lwnetsa,      'VN=lwnetsa      ;ON=LWSA;VD=net longwave radiation (snow only)                               ;VB=p0')
       PHYVAR2D1(lwnetsv,      'VN=lwnetsv      ;ON=LWSV;VD=net lomgwave radiation (snow under veg. only)                    ;VB=p0')
+      PHYVAR2D1(lwca,         'VN=lwca         ;ON=LWCA;VD=incoming longwave radiation below high veg                       ;VB=p0')
       PHYVAR2D1(melts,        'VN=melts        ;ON=MLTS;VD=accum. snow melting (kg/m2)                                       ;VB=p0')
       PHYVAR2D1(meltsr,       'VN=meltsr       ;ON=MLTR;VD=accum. snow melting due to rain (kg/m2)                           ;VB=p0')
       PHYVAR3D1(psi,          'VN=psi          ;ON=PSI ;VD=soil water suction                             ;VS=A*'//ngl//'  ;VB=p0')
@@ -549,15 +555,17 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR2D1(psnvha,       'VN=psnvha       ;ON=PSVA;VD=frac. of high veg. covered by snow from atm.                      ;VB=p0')
       PHYVAR2D1(psurfvha,     'VN=psurfvha     ;ON=PSUH;VD=frac. of surface seen through sparse high veg from atm.           ;VB=p0')
       PHYVAR2D1(qaf,          'VN=qaf          ;ON=QAF; VD=specific humidity of air in canopy                               ;VB=p0')
+      PHYVAR2D1(qca,          'VN=qca          ;ON=QCA; VD=specific humidity of air in canopy (FSM2 approach)               ;VB=p0')
       PHYVAR3D1(quartz,       'VN=quartz       ;ON=QRTZ;VD=quartz contain of the soil layer               ;VS=A*'//ngl//'  ;VB=p0') 
       PHYVAR2D1(qgr,          'VN=qgr          ;ON=QGR; VD=specific humidity over bare ground                                ;VB=p0')
       PHYVAR2D1(qgv,          'VN=qgv          ;ON=QGV; VD=specific humidity over ground under vegetation                    ;VB=p0')
       PHYVAR2D1(qveg,         'VN=qveg         ;ON=QVEG;VD=specific humidity of vegetation                                   ;VB=p0')  
+      PHYVAR2D1(rainrate_vgh, 'VN=rainrate_vgh ;ON=RRVH;VD=rainfall rate below high vegetation                               ;VB=p0')      
       PHYVAR2D1(rcctem,       'VN=rcctem       ;ON=RCC ;VD=stomatal resistance CTEM                                          ;VB=p0')
       PHYVAR2D1(resagr,       'VN=resagr       ;ON=RSGR;VD=aerodynamic resistance over bare ground                           ;VB=p0')
       PHYVAR2D1(resagrv,      'VN=resagrv      ;ON=RSGV;VD=aerodynamic resistance over soil under vege.                     ;VB=p0')
-      PHYVAR2D1(resa_vl,      'VN=resa_vl      ;ON=RSVL;VD=aerodynamic resistance over low veget.                           ;VB=p0')
-      PHYVAR2D1(resa_vh,      'VN=resa_vh      ;ON=RSVH;VD=aerodynamic resistance over high veget.                          ;VB=p0')
+      PHYVAR2D1(resa_vl,      'VN=resa_vl      ;ON=REVL;VD=aerodynamic resistance over low veget.                           ;VB=p0')
+      PHYVAR2D1(resa_vh,      'VN=resa_vh      ;ON=REVH;VD=aerodynamic resistance over high veget.                          ;VB=p0')
       PHYVAR2D1(resasa,       'VN=resasa       ;ON=RSSA;VD=aerodynamic resistance for snow on bg/low veg                     ;VB=p0')
       PHYVAR2D1(resasv,       'VN=resasv       ;ON=RSSV;VD=aerodynamic resistance for snow under high veg                    ;VB=p0')
       PHYVAR2D1(resaef,       'VN=resaef       ;ON=RSEF;VD=effective aerodynamic resistance for SVS land tile                ;VB=p0')
@@ -581,6 +589,7 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR2D1(skyview,      'VN=skyview      ;ON=SVF ;VD=sky view factor for tall vegetation                               ;VB=p0')
       PHYVAR2D1(skyviewa,     'VN=skyviewa     ;ON=SVFA ;VD=sky view factor for av. vegetation                               ;VB=p0')
       PHYVAR2D1(slop,         'VN=slop         ;ON=SLOP;VD=average maximum subgrid-scale topo slope (nil)                    ;VB=p1')
+      PHYVAR2D1(sncma,        'VN=sncma        ;ON=SCM ;VD=mass of intercepted snow in high vegehtation                      ;VB=p1')      
       PHYVAR2D1(snoal,        'VN=snoal        ;ON=SNAL;VD=snow-over-low-veg/bare-ground albedo                              ;VB=p1        ;MIN=0')
       PHYVAR2D1(snoden,       'VN=snoden       ;ON=SNDN;VD=snow-over-low-veg/bare-ground density in kg/m3                    ;VB=p0        ;MIN=0')
       PHYVAR2D1(snodpl,       'VN=snodpl       ;ON=SNDP;VD=snow-over-low-veg/bare-ground depth                               ;VB=p1        ;MIN=0')
@@ -600,6 +609,7 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR3D1(snomav_svs,    'VN=snomav_svs   ;ON=I5EV;VD=snow mass under veg (per layer)                ;VS=A*'//ns//'  ;VB=p1')
       PHYVAR3D1(snoden_svs,    'VN=snoden_svs   ;ON=7SES;VD=absolute snow density (per layer)              ;VS=A*'//ns//'  ;VB=p1')
       PHYVAR3D1(snodenv_svs,   'VN=snodenv_svs  ;ON=7SEV;VD=absolute snow density under veg (per layer)    ;VS=A*'//ns//'  ;VB=p1')
+      PHYVAR2D1(snowrate_vgh, 'VN=snowrate_vgh ;ON=SRVH;VD=snowfall rate below high vegetation (accounting for interception) ;VB=p0')       
       PHYVAR2D1(snval,        'VN=snval        ;ON=SVAL;VD=snow-under-high-veg albedo                                        ;VB=p1')
       PHYVAR2D1(snvden,       'VN=snvden       ;ON=SVDN;VD=snow-under-high-veg density in kg/m3                              ;VB=p0')
       PHYVAR2D1(snvdp,        'VN=snvdp        ;ON=SVDP;VD=snow-under-high-veg depth                                         ;VB=p1')
@@ -614,7 +624,9 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR2D1(subldriftv,   'VN=subldriftv   ;ON=SUDV;VD=mass loss blowing snow sublimation (snow-under-hv)                ;VB=p0')
       PHYVAR2D1(swnetsa,      'VN=swnetsa      ;ON=SWSA;VD=net shortwave radiation (snow only)                               ;VB=p0')
       PHYVAR2D1(swnetsv,      'VN=swnetsv      ;ON=SWSV;VD=net shortwave radiation (snow under veg. only)                    ;VB=p0')
-      PHYVAR3D1(tground,      'VN=tground      ;ON=TGR ;VD=skin and mean ground temp.                     ;VS=A*2            ;VB=p1')
+      PHYVAR2D1(swca,         'VN=swca         ;ON=SWCA;VD=incoming shortwave radiation below high veg                       ;VB=p0')
+      PHYVAR3D1(tground,      'VN=tground      ;ON=TGR ;VD=skin and mean exposed bare ground temp.        ;VS=A*2            ;VB=p1')
+      PHYVAR3D1(tgroundv,     'VN=tgroundv     ;ON=TSGV ;VD=skin and mean shaded ground temp.             ;VS=A*2            ;VB=p1')
       PHYVAR2D1(tperm,        'VN=tperm        ;ON=TPRD;VD=constant deep soil temperature                                    ;VB=p0')
       PHYVAR3D1(tpsoil,       'VN=tpsoil       ;ON=TGRD;VD=soil temperature profil                        ;VS=A*'//ngl//'  ;VB=p1')
       PHYVAR3D1(tpsoilv,      'VN=tpsoilv      ;ON=TGRV;VD=soil under veg temperature profil              ;VS=A*'//ngl//'  ;VB=p1')
@@ -629,6 +641,7 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR3D1(tvegeh,       'VN=tvegeh       ;ON=TVGH;VD=skin and mean high vegetation temp.            ;VS=A*2            ;VB=p1')
       PHYVAR3D1(tvege,        'VN=tvege        ;ON=TVG ;VD=skin and mean vegetation temp.                 ;VS=A*2            ;VB=p1')
       PHYVAR2D1(vaf,          'VN=vaf          ;ON=VAF ;VD=wind inside canopy                                                ;VB=p0')
+      PHYVAR2D1(vca,          'VN=vca          ;ON=VCA ;VD=wind inside canopy (FSM2 approach)                                ;VB=p0')
       PHYVAR3D1(vegdati,      'VN=vegdati      ;ON=SPAR;VD=sparsness of each vegtation class                 ;VS=A*26        ;VB=p0')
       PHYVAR3D1(vegf_evol,    'VN=vegf_evol    ;ON=VFEV;VD=vegetation fraction * vegdat: actual veg. fraction;VS=A*26        ;VB=p0')
       PHYVAR2D1(vegh,         'VN=vegh         ;ON=VEGH;VD=fraction of grid covered by high vegetation                       ;VB=p0')
@@ -636,7 +649,10 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR2D1(vegtrans,     'VN=vegtrans     ;ON=VGTR;VD=transmissivity of tall vegetation                                 ;VB=p0')
       PHYVAR2D1(vegtransa,    'VN=vegtransa    ;ON=VTRA;VD=transmissivity of vegetation                                      ;VB=p0')
       PHYVAR3D1(vgctem,       'VN=vgctem       ;ON=VGCT;VD=CTEM vegetation type fractions                 ;VS=A*9            ;VB=p0')
-      PHYVAR2D1(vgheight,     'VN=vgheight     ;ON=VGHG;VD=average height for veg.                                           ;VB=p0')
+      PHYVAR2D1(vgh_height,   'VN=vgh_height   ;ON=VGHH;VD=height for high vegetation                                        ;VB=p0')
+      PHYVAR2D1(vgh_dens,     'VN=vgh_dens     ;ON=VGHD;VD=density for high vegetation (openness)                            ;VB=p0')      
+      if(read_vgh_dens) &
+        PHYVAR2D1(vgh_densen, 'VN=vgh_densen;ON=VHD1;VD=density of trees in areas of high vegetation (openness) (E.)         ;VB=e1; IN=VGHD;MIN=0')       
       PHYVAR3D1(watflow,      'VN=watflow      ;ON=WFL ;VD=waterflow between layers                       ;VS=A*'//nglp1//'  ;VB=p0')
       PHYVAR3D1(wfc,          'VN=wfc          ;ON=WFC ;VD=vol. water content at field cap.               ;VS=A*'//ngl//'    ;VB=p0')
       PHYVAR2D1(wfcdp,        'VN=wfcdp        ;ON=WFCD;VD=vol. water content at field cap. at lowst layer                   ;VB=p0')

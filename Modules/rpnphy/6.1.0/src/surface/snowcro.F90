@@ -9,7 +9,7 @@
                       PSNOWSWE,PSNOWRHO,PSNOWHEAT,PSNOWALB,                     &
                       PSNOWDIAMOPT,PSNOWSPHERI,PSNOWHIST,PSNOWAGE, PSNOWIMPUR,     &
                       PTSTEP,PPS,PSR,PRR,PPSN3L,                                &
-                      PTA,PTG,PSW_RAD,PQA,PVMOD,PLW_RAD, PRHOA,                 &
+                      PTA,PTG,PSW_RAD,PQA,PVMOD,PWIND_DRIFT,PLW_RAD, PRHOA,     &
                       PUREF,PEXNS,PEXNA,PDIRCOSZW,                              &
                       PZREF,PZ0,PZ0EFF,PZ0H,PALB,                               &
                       PSOILCOND,PD_G,                                           &
@@ -25,7 +25,7 @@
                       PSPEC_ALB, PDIFF_RATIO,PSPEC_TOT,PSNOWFLUX,PIMPWET,PIMPDRY,&
                       HSNOWFALL, HSNOWCOND,HSNOWHOLD,HSNOWCOMP,HSNOWZREF,       &
                       PSNOWMAK, OSNOWCOMPACT_BOOL, OSNOWMAK_BOOL, OSNOWTILLER,  &
-                      OSELF_PROD, OSNOWMAK_PROP )
+                      OSELF_PROD, OSNOWMAK_PROP, PRSURF )
 
 !     ##########################################################################
 !
@@ -197,13 +197,14 @@ LOGICAL, INTENT(IN)                    :: OGLACIER   ! True = Over permanent sno
 !                                                          ! 'OLD' = direct
 !                                                          ! 'NEW' = Taylor serie, order 1
 !
-REAL, DIMENSION(:), INTENT(IN)         :: PPS, PTA, PSW_RAD, PQA, PVMOD, PLW_RAD, PSR, PRR 
+REAL, DIMENSION(:), INTENT(IN)         :: PPS, PTA, PSW_RAD, PQA, PVMOD, PWIND_DRIFT, PLW_RAD, PSR, PRR 
 !                                      PSW_RAD = incoming solar radiation (W/m2)
 !                                      PLW_RAD = atmospheric infrared radiation (W/m2)
 !                                      PRR     = rain rate [kg/(m2 s)]
 !                                      PSR     = snow rate (SWE) [kg/(m2 s)]
 !                                      PTA     = atmospheric temperature at level za (K)
 !                                      PVMOD   = modulus of the wind parallel to the orography (m/s)
+!                                      PWIND_DRIFT   = modulus of the wind under canopy if PVMOD is above canopy, otherwise PWIND_DRIFT = PVMOD (m/s)
 !                                      PPS     = surface pressure
 !                                      PQA     = atmospheric specific humidity
 !                                                at level za
@@ -397,6 +398,7 @@ LOGICAL, INTENT(IN)                    :: OATMORAD ! activate atmotartes scheme
                                        ! HSNOWZREF='CST' constant reference height from the snow surface
                                        ! HSNOWZREF='VAR' variable reference height from the snow surface (i.e. constant from the ground)
                                        !-----------------------                                         
+REAL, DIMENSION(:), INTENT(IN)         :: PRSURF ! Aerodynamic surface resistance for snow under canopy (cf. Gouttevin et al. 2013)                                       
 !
 !*      0.2    declarations of local variables
 !
@@ -732,7 +734,7 @@ ENDIF
 ! and add heat content of falling snow
 !
  CALL SNOWNLFALL_UPGRID(TPTIME, OGLACIER,                                       &
-                        PTSTEP,PSR,PRR,PTA,PVMOD,ZSNOWBIS,PSNOWRHO,PSNOWDZ,     &
+                        PTSTEP,PSR,PRR,PTA,PWIND_DRIFT,ZSNOWBIS,PSNOWRHO,PSNOWDZ,     &
                         PSNOWHEAT,PSNOWHMASS,PSNOWALB,PPERMSNOWFRAC,            &
                         PSNOWDIAMOPT,PSNOWSPHERI,PSNOWAGE,GSNOWFALL,GFRZRAIN,   &
                         ZSNOWDZN, ZSNOWRHOF,ZSNOWDZF,                           &
@@ -882,7 +884,7 @@ ENDIF
 !               ---------------
 
 IF (HSNOWDRIFT  .NE. 'NONE') THEN
-  CALL SNOWDRIFT(PTSTEP, PVMOD, PSNOWRHO,PSNOWDZ, ZSNOW, HSNOWMETAMO,                      &
+  CALL SNOWDRIFT(PTSTEP, PWIND_DRIFT, PSNOWRHO,PSNOWDZ, ZSNOW, HSNOWMETAMO,                      &
                  PSNOWDIAMOPT,PSNOWSPHERI,PSNOWHIST,INLVLS_USE,PTA,PQA,PPS,PRHOA,&
                  PZ0EFF,ZUREF,OSNOWDRIFT_SUBLIM,PSNDRIFT)
 ENDIF
@@ -3033,7 +3035,10 @@ PRI(:) = ZRI(:)
 !
 ! Surface aerodynamic resistance for heat transfers
 !
- CALL SURFACE_AERO_COND(ZRI, PZREF, PUREF, PVMOD, PZ0, PZ0H, ZAC, PRA, PCHSNOW, HSNOWRES)
+
+
+ CALL SURFACE_AERO_COND(ZRI, PZREF, PUREF, PVMOD, PZ0, PZ0H, PRSURF, ZAC, PRA, PCHSNOW, HSNOWRES)
+
 !
 PRSRA(:) = PRHOA(:) / PRA(:)
 !
@@ -6314,13 +6319,23 @@ ENDIF
 
 ! Compute snow temperature from enthalpy
 ZSCAP     (1:KLAYERS) = PSNOWRHO(1:KLAYERS) * XCI
-IF (ALL(PSNOWDZ(1:KLAYERS)>0.) .AND. ALL(ZSCAP(1:KLAYERS)>0.)) THEN
-  ZSNOWTEMP (1:KLAYERS) = XTT + &
-                          ( ( PSNOWHEAT(1:KLAYERS)/PSNOWDZ(1:KLAYERS) + XLMTT*PSNOWRHO(1:KLAYERS) )/ZSCAP(1:KLAYERS) )
+
+DO JST=1,KLAYERS
+    IF(PSNOWDZ(JST)>0) THEN
+         ZSNOWTEMP (JST) =  XTT + ( ((PSNOWHEAT(JST)/PSNOWDZ(JST))                   &
+                     + XLMTT*PSNOWRHO(JST))/ZSCAP(JST) )  
 ELSE
-  PRINT*, "WARNING: UNABLE TO COMPUTE ZSNOWTEMP"
-  ZSNOWTEMP (1:KLAYERS) = -999.
+          ZSNOWTEMP (JST) = -999.
 ENDIF
+ENDDO
+
+!IF (ALL(PSNOWDZ(1:KLAYERS)>0.) .AND. ALL(ZSCAP(1:KLAYERS)>0.)) THEN
+!  ZSNOWTEMP (1:KLAYERS) = XTT + &
+!                          ( ( PSNOWHEAT(1:KLAYERS)/PSNOWDZ(1:KLAYERS) + XLMTT*PSNOWRHO(1:KLAYERS) )/ZSCAP(1:KLAYERS) )
+!ELSE
+!  PRINT*, "WARNING: UNABLE TO COMPUTE ZSNOWTEMP"
+!  ZSNOWTEMP (1:KLAYERS) = -999.
+!ENDIF
 
 IF (OPRINTGRAN) THEN
   !
@@ -6351,11 +6366,11 @@ IF (OPRINTGRAN) THEN
   DO JST = 1,KLAYERS
     IF (GPRINTIMPUR) THEN
       WRITE(*,'(9(ES12.3,"|")," L",I2.2)') PSNOWDZ(JST),PSNOWRHO(JST),    &
-                                          PSNOWLIQ(JST),MAX(XTT, ZSNOWTEMP(JST)),PSNOWHEAT(JST),PSNOWDIAMOPT(JST), &
+                                          PSNOWLIQ(JST),MIN(XTT, ZSNOWTEMP(JST)),PSNOWHEAT(JST),PSNOWDIAMOPT(JST), &
                                           PSNOWSPHERI(JST),ZSNOWSSA(JST),PSNOWIMPUR(JST,1),JST
     ELSE
       WRITE(*,'(9(ES12.3,"|")," L",I2.2)') PSNOWDZ(JST),PSNOWRHO(JST),    &
-                                          PSNOWLIQ(JST),MAX(XTT, ZSNOWTEMP(JST)),PSNOWHEAT(JST),PSNOWDIAMOPT(JST), &
+                                          PSNOWLIQ(JST),MIN(XTT, ZSNOWTEMP(JST)),PSNOWHEAT(JST),PSNOWDIAMOPT(JST), &
                                           PSNOWSPHERI(JST),ZSNOWSSA(JST),PSNOWAGE(JST),JST    
     ENDIF
   ENDDO
@@ -6372,7 +6387,7 @@ ELSE
         "------------"
   DO JST = 1,KLAYERS
     WRITE(*,'(5(ES12.3,"|")," L",I2.2)') PSNOWDZ(JST),PSNOWRHO(JST),&
-                                         PSNOWLIQ(JST),MAX(XTT, ZSNOWTEMP(JST)),PSNOWHEAT(JST),JST
+                                         PSNOWLIQ(JST),MIN(XTT, ZSNOWTEMP(JST)),PSNOWHEAT(JST),JST
   ENDDO
   WRITE(*,'(5(A12,"|"))')"------------","------------","------------",&
         "------------"

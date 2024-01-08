@@ -194,6 +194,11 @@ module sfc_options
    logical           :: read_z0vh     = .false.
    namelist /surface_cfgs/ read_z0vh
 
+   !# read-in high vegetation density for SVS if .true.
+   logical           :: read_vgh_dens     = .false.
+   namelist /surface_cfgs/ read_vgh_dens
+
+
    !# Takes into account effect of ocean salinity on saturation specific
    !# humidity at ocean surface (boundary condition for LH flux calculation)
    logical           :: salty_qsat  = .false.
@@ -360,6 +365,18 @@ module sfc_options
         'CLASSIC  ',  &
         'CCILCECO '   &
         /)
+
+   !# If .true., SVS2 simulates interception of snow by canopy, sublimation and inloading of intercepted snow
+   logical           :: lsnow_interception_svs2 = .false.
+   namelist /surface_cfgs/ lsnow_interception_svs2
+
+   !# If .true., SVS2 solves the energy balance using forcing above the canopy
+   logical           :: lcan_ref_level_above = .false.
+   namelist /surface_cfgs/ lcan_ref_level_above
+
+   !# If .true., SVS2 utilizes the canopy module to modify T, U, VMOD, SW, and LW to account for canopy
+   logical           :: lsnow_canopy_mod = .false.
+   namelist /surface_cfgs/ lsnow_canopy_mod
 
    !# Emissivity for water
    !# * '_constant_' : A fixed floating point value used as a constant

@@ -7,7 +7,7 @@ INTERFACE
                       PSNOWSWE,PSNOWRHO,PSNOWHEAT,PSNOWALB,                     &
                       PSNOWGRAN1,PSNOWGRAN2,PSNOWHIST,PSNOWAGE, PSNOWIMPUR,     &
                       PTSTEP,PPS,PSR,PRR,PPSN3L,                                &
-                      PTA,PTG,PSW_RAD,PQA,PVMOD,PLW_RAD, PRHOA,                 &
+                      PTA,PTG,PSW_RAD,PQA,PVMOD,PWIND_DRIFT, PLW_RAD, PRHOA,    &
                       PUREF,PEXNS,PEXNA,PDIRCOSZW,                              &
                       PZREF,PZ0,PZ0EFF,PZ0H,PALB,                               &
                       PSOILCOND,PD_G,                                           &
@@ -23,7 +23,7 @@ INTERFACE
                       PSPEC_ALB, PDIFF_RATIO,PSPEC_TOT,PSNOWFLUX,PIMPWET,PIMPDRY,&
                       HSNOWFALL, HSNOWCOND,HSNOWHOLD,HSNOWCOMP,HSNOWZREF,       &
                       PSNOWMAK, OSNOWCOMPACT_BOOL, OSNOWMAK_BOOL, OSNOWTILLER,  &
-                      OSELF_PROD, OSNOWMAK_PROP )
+                      OSELF_PROD, OSNOWMAK_PROP, PRSURF  )
 USE MODD_TYPE_DATE_SURF, ONLY: DATE_TIME
 IMPLICIT NONE
 REAL, INTENT(IN)                       :: PTSTEP
@@ -32,7 +32,7 @@ TYPE(DATE_TIME), INTENT(IN)            :: TPTIME      ! current date and time
 LOGICAL, INTENT(IN)                    :: OMEB       ! True = coupled to MEB. This means surface fluxes ae IMPOSED
 LOGICAL, INTENT(IN)                    :: OGLACIER   ! True = Over permanent snow and ice,
  CHARACTER(LEN=*), INTENT(IN)          :: HIMPLICIT_WIND   ! wind implicitation option
-REAL, DIMENSION(:), INTENT(IN)         :: PPS, PTA, PSW_RAD, PQA, PVMOD, PLW_RAD, PSR, PRR
+REAL, DIMENSION(:), INTENT(IN)         :: PPS, PTA, PSW_RAD, PQA, PVMOD, PWIND_DRIFT, PLW_RAD, PSR, PRR
 REAL, DIMENSION(:,:), INTENT(IN)       :: P_DIR_SW, P_SCA_SW ! direct and diffuse spectral irradiance (W/m2/um)
 REAL, DIMENSION(:,:), INTENT(IN)       :: PIMPWET, PIMPDRY  !Dry and wet deposit coefficient from Forcing File(g/m²/s)
 REAL, DIMENSION(:), INTENT(IN)         :: PTG, PSOILCOND, PD_G, PPSN3L
@@ -71,6 +71,7 @@ LOGICAL, INTENT(IN)                    :: OSNOWCOMPACT_BOOL, OSNOWMAK_BOOL, OSNO
 LOGICAL, INTENT(IN)                    :: OSNOW_ABS_ZENITH ! activate parametrization of solar absorption for polar regions
  CHARACTER(3), INTENT(IN)              :: HSNOWMETAMO, HSNOWRAD, HSNOWFALL, HSNOWCOND, HSNOWHOLD, HSNOWCOMP, HSNOWZREF
 LOGICAL, INTENT(IN)                    :: OATMORAD ! activate atmotartes scheme
+REAL, DIMENSION(:), INTENT(IN)         :: PRSURF
 END SUBROUTINE SNOWCRO
 END INTERFACE
 END MODULE MODI_SNOWCRO

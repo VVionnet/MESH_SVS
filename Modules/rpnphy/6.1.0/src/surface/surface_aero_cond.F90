@@ -4,7 +4,7 @@
 !SFX_LIC for details. version 1.
 !   ######################################################################
     SUBROUTINE SURFACE_AERO_COND(PRI, PZREF, PUREF, PVMOD, PZ0,&
-                                     PZ0H, PAC, PRA, PCH    ,HSNOWRES       )
+                                     PZ0H, PRSURF, PAC, PRA, PCH    ,HSNOWRES       )
 !   ######################################################################
 !
 !!****  *SURFACE_AERO_COND*  
@@ -81,6 +81,7 @@ REAL, DIMENSION(:), INTENT(IN)    :: PUREF    ! reference height of the wind
                                               ! NOT when coupled to a model (MesoNH)
 REAL, DIMENSION(:), INTENT(IN)    :: PZ0      ! roughness length for momentum
 REAL, DIMENSION(:), INTENT(IN)    :: PZ0H     ! roughness length for heat
+REAL, DIMENSION(:)                :: PRSURF     ! aerodynamic surface resistance if Ta and HR above canopy
 !
 REAL, DIMENSION(:), INTENT(OUT)   :: PAC      ! aerodynamical conductance
 REAL, DIMENSION(:), INTENT(OUT)   :: PRA      ! aerodynamical resistance
@@ -141,16 +142,23 @@ DO JJ=1,SIZE(PRI)
                                     *ZWORK2(JJ)**ZPH(JJ)  &
                                     *ZFH(JJ) * SQRT(-ZSTA(JJ))           &
                       ) 
-        PAC(JJ) = ZCDN(JJ)*  (  ZVMOD(JJ)-15.* ZSTA(JJ)*ZDI(JJ)  )  *  ZFH(JJ)
+        PAC(JJ) = ZCDN(JJ) * (  ZVMOD(JJ)-15.* ZSTA(JJ)*ZDI(JJ)  )  *  ZFH(JJ) ! 1/ra = CDN * U / f_Ri
+
+        PRSURF(JJ) = PRSURF(JJ) * (  ZVMOD(JJ)-15.* ZSTA(JJ)*ZDI(JJ)  ) / ZVMOD(JJ)
 
       ELSE
         ZDI(JJ) = SQRT(ZWORK3(JJ) + 5. * ZSTA(JJ) )
-        PAC(JJ) = ZCDN(JJ)*ZVMOD(JJ)/(1.+15.*ZSTA(JJ)*ZDI(JJ)  &
+        PAC(JJ) = ZCDN(JJ) *ZVMOD(JJ)/(1.+15.*ZSTA(JJ)*ZDI(JJ)  &  ! 1/ra = CDN * U / f_Ri
                  / ZWORK3(JJ) /ZVMOD(JJ) )*ZFH(JJ)    
+
+        PRSURF(JJ) = PRSURF(JJ) * 1./(1.+15.*ZSTA(JJ)*ZDI(JJ)  &
+                 / ZWORK3(JJ) /ZVMOD(JJ) )*ZFH(JJ) 
+
       ENDIF
-    !
-      PRA(JJ) = 1. / PAC(JJ)
-    !
+    
+      PRA(JJ) = 1. / PAC(JJ) + PRSURF(JJ)
+
+    
       PCH(JJ) = 1. / (PRA(JJ) * ZVMOD(JJ))
   ELSE IF (HSNOWRES=='M98')THEN
   ! Martin and Lejeune 1998 ; Cluzet et al 2016
@@ -173,7 +181,10 @@ DO JJ=1,SIZE(PRI)
     ENDIF
     
     PCH(JJ) = ZMARTIN(JJ) * ZCDN_M98(JJ)
-    PRA(JJ)=1./(PCH(JJ)*ZVMOD(JJ))! Nota B. Cluzet : checked in noilhan and mahfouf seems ok
+
+    PRSURF(JJ) = PRSURF(JJ) / ZMARTIN(JJ) ! ZMARTIN(JJ) is the stability correction function
+
+    PRA(JJ)=1./(PCH(JJ)*ZVMOD(JJ)) + PRSURF(JJ) ! Nota B. Cluzet : checked in noilhan and mahfouf seems ok
 
     PAC(JJ)=1./(PRA(JJ))
   ENDIF

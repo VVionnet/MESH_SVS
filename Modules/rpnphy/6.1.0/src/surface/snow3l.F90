@@ -21,7 +21,7 @@
                 PHPSNOW,PLES3L,PLEL3L,PEVAP,PSNDRIFT,PRI,                 &
                 PEMISNOW,PCDSNOW,PUSTAR,PCHSNOW,PSNOWHMASS,PQS,           &
                 PPERMSNOWFRAC,PFORESTFRAC,PZENITH,                        &
-                HSNOWDRIFT,OSNOWDRIFT_SUBLIM                              )  
+                HSNOWDRIFT,OSNOWDRIFT_SUBLIM, PRSURF                      )  
 !     ##########################################################################
 !
 !!****  *SNOW3L*
@@ -276,6 +276,7 @@ CHARACTER(4), INTENT(IN)            :: HSNOWDRIFT        ! Snowdrift scheme :
                                       !  Other options are available in Crocus
 
 LOGICAL, INTENT(IN)               ::  OSNOWDRIFT_SUBLIM ! activate snowdrift, sublimation during drift
+REAL, DIMENSION(:)                :: PRSURF     ! Additional aerodynamic surface resistance if Ta and HR above canopy
 !
 !*      0.2    declarations of local variables
 !
@@ -1206,7 +1207,7 @@ REAL, INTENT(IN)                    :: PTSTEP, PSNOWDZMIN
  CHARACTER(LEN=*),     INTENT(IN)    :: HSNOWRES ! type of sfc resistance
 !                                      DEFAULT=Louis (1979), standard ISBA
 !                                      method. Option to limit Ri number
-!                                      for very srtable conditions
+!                                      for very stable conditions
 !
  CHARACTER(LEN=*),     INTENT(IN)  :: HIMPLICIT_WIND   ! wind implicitation option
 !                                                     ! 'OLD' = direct
@@ -1293,7 +1294,7 @@ PRI(:)=ZRI(:)
 !
 ! Surface aerodynamic resistance for heat transfers
 !
- CALL SURFACE_AERO_COND(ZRI, PZREF, PUREF, PVMOD, PZ0, PZ0H, ZAC, PRA, PCHSNOW, HSNOWRES)
+ CALL SURFACE_AERO_COND(ZRI, PZREF, PUREF, PVMOD, PZ0, PZ0H, PRSURF, ZAC, PRA, PCHSNOW, HSNOWRES)
 !
 ! For atmospheric model coupling:
 !

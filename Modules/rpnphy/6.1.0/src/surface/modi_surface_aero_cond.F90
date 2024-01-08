@@ -2,7 +2,7 @@
 MODULE MODI_SURFACE_AERO_COND
 INTERFACE
     SUBROUTINE SURFACE_AERO_COND(PRI, PZREF, PUREF, PVMOD, PZ0,&
-                                     PZ0H, PAC, PRA, PCH    ,HSNOWRES       )
+                                     PZ0H, PRSURF, PAC, PRA, PCH,HSNOWRES)
 IMPLICIT NONE
 REAL, DIMENSION(:), INTENT(IN)    :: PRI      ! Richardson number
 REAL, DIMENSION(:), INTENT(IN)    :: PVMOD    ! module of the horizontal wind
@@ -14,6 +14,9 @@ REAL, DIMENSION(:), INTENT(OUT)   :: PAC      ! aerodynamical conductance
 REAL, DIMENSION(:), INTENT(OUT)   :: PRA      ! aerodynamical resistance
 REAL, DIMENSION(:), INTENT(OUT)   :: PCH      ! drag coefficient for heat
 CHARACTER(LEN=3), INTENT(IN)  ::HSNOWRES !surface exchange coefficient option 
+REAL, DIMENSION(:)                :: PRSURF     ! aerodynamic surface resistance if Ta and HR above canopy
+
+
 END SUBROUTINE SURFACE_AERO_COND
 END INTERFACE
 END MODULE MODI_SURFACE_AERO_COND

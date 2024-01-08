@@ -348,6 +348,49 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
                     call assign_line_args(svs_mesh%vs%lout_snow_enbal, args(2), istat)
                 end if
 
+            case (VN_SVS_LOUT_SNOW_VEGH)
+                if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS' ) then
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    p = 1
+                    call assign_line_args(svs_mesh%vs%lout_snow_vegh, args(2), istat)
+                end if
+                
+
+            case (VN_SVS_LSNOW_INTERCEPTION_SVS2)
+                if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS' ) then
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    p = 1
+                    call assign_line_args(svs_mesh%vs%lsnow_interception_svs2, args(2), istat)
+                end if     
+
+            case (VN_SVS_LCAN_REF_LEVEL_ABOVE)
+                if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS' ) then
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    p = 1
+                    call assign_line_args(svs_mesh%vs%lcan_ref_level_above, args(2), istat)
+                end if   
+            case (VN_SVS_LSNOW_CANOPY_MOD)
+                if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS' ) then
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    p = 1
+                    call assign_line_args(svs_mesh%vs%lsnow_canopy_mod, args(2), istat)
+                end if  
+           case (VN_SVS_VGH_DENS)
+                if (.not. svs_mesh%PROCESS_ACTIVE) then
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    if (SHDFILEFMT == 2) then
+                        p = shd%lc%NML
+                    else
+                        p = shd%lc%NTYPE
+                    end if
+                    call assign_line_args(svs_mesh%vs%vgh_dens, p, args(2:), istat)
+                end if
+
             case (VN_SVS_NPROFILE_DAY)
                 if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS') then
                     istat = istat + radix(istat)**pstat%INACTIVE
