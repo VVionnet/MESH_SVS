@@ -60,6 +60,7 @@ subroutine inisurf4(kount, ni, nk, trnch)
    real, pointer, dimension(:) :: &
         zdrainaf, zemisr, zemistg, zemistgen, zglacier, zglsea, &
         zglsea0, zicedp, ziceline, zlhtg, zmg, zml, zresa, zresagr, zresavg, &
+        zresa_vh, zresa_vl, &
         zresasa, zresasv, zslop, zsnoal, zsnoalen, zsnoagen, zsnodpl, zsnoden, &
         zsnoma, zsnoro, zsnvden, zsnvdp, zsnvma, ztsrad, ztwater, &
         zz0en, zz0mland, zz0mlanden, zz0mvh, zz0mvhen, zz0veg, zz0tveg
@@ -92,6 +93,8 @@ subroutine inisurf4(kount, ni, nk, trnch)
    MKPTR1D(zresavg,resavg)
    MKPTR1D(zresasa,resasa)
    MKPTR1D(zresasv,resasv)
+   MKPTR1D(zresa_vl,resa_vl)
+   MKPTR1D(zresa_vh,resa_vh)
    MKPTR1D(zslop,slop)
    MKPTR1D(zsnoal,snoal)
    MKPTR1D(zsnoalen,snoalen)
@@ -551,6 +554,8 @@ subroutine inisurf4(kount, ni, nk, trnch)
             zresavg(i)         = 50.
             zresasa(i)         = 100.
             zresasv(i)         = 100.
+            zresa_vl(i)         = 100.
+            zresa_vh(i)         = 100.
          end do
       endif
         

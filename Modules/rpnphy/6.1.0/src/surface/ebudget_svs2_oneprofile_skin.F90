@@ -451,6 +451,7 @@
 !         Function zrsra used in the computation of the sensible heat
 !         flux             
 !
+             write(*,*) 'RESA_Vl',RESA_VL(I)
              RORAVGL(I) = RHOA(I) / RESA_VL(I)
 !
 !         Skin conductivity for low vegetation
