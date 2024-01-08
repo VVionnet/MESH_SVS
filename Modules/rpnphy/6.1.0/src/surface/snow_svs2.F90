@@ -3,7 +3,7 @@
 !SFX_LIC version 1. See LICENSE, CeCILL-C_V1-en.txt and CeCILL-C_V1-fr.txt  
 !SFX_LIC for details. version 1.
 !     #########
-SUBROUTINE SNOW_SVS(  PSNOWSWE,PSNOWTEMP, PSNOWLIQ,PSNOWRHO,PSNOWALB,  &
+SUBROUTINE SNOW_SVS2(  PSNOWSWE,PSNOWTEMP, PSNOWLIQ,PSNOWRHO,PSNOWALB,  &
                       PSNOWAGE, PSNOWDIAMOPT, PSNOWSPHERI, PSNOWHIST,     & 
                       PTSTEP,PTG, PCT, PSOILHCAPZ, & 
                       PSOILCONDZ, PPS, PTA,PSW_RAD, PQA, PVMOD,  PWIND_DRIFT,    &
@@ -18,13 +18,13 @@ SUBROUTINE SNOW_SVS(  PSNOWSWE,PSNOWTEMP, PSNOWLIQ,PSNOWRHO,PSNOWALB,  &
                       N ,  NSOIL)
 !     ######################################################################################
 !
-!!****  *SNOW_SVS*  
+!!****  *SNOW_SVS2*  
 !!
 !!    PURPOSE
 !!    -------
 !
 !     This routine acts as an interface between the snowpack schames SNOWES & Crocus
-!     and the main code of SVS
+!     and the main code of SVS2
 !     
 !!**  METHOD
 !!    ------
@@ -1404,4 +1404,4 @@ ENDDO
 !
 END SUBROUTINE CALL_MODEL
 !
-END SUBROUTINE SNOW_SVS
+END SUBROUTINE SNOW_SVS2
