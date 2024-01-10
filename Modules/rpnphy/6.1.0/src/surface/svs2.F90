@@ -414,7 +414,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       ! VV TO BE MODIFIED: Intermediate step during developement. 
       !   
       DO I=1,N
-          write(*,*)   'VEGL',bus(x(TVEGEL,I,1)),bus(x(TVEGEL,I,2)) 
+          !write(*,*)   'VEGL',bus(x(TVEGEL,I,1)),bus(x(TVEGEL,I,2)) 
           bus(x(TVEGE,I,1))   =  bus(x(TVEGEL,I,1)) 
           bus(x(TVEGE,I,2))   =  bus(x(TVEGEL,I,2)) 
       ENDDO
@@ -456,7 +456,6 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
          ENDIF
       
       endif
-
 !
       CALL DRAG_SVS2 ( bus(x(TPSOIL,1,1)), bus(x(TVEGEL,1,1)), bus(x(TVEGEH,1,1)),  &   
            bus(x(WSOIL ,1,1)) ,  &   
@@ -465,7 +464,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            ps, STOM_RS,   &  
            z0m, z0mland, bus(x(Z0MVG,1,1)), bus(x(WFC,1,1)),      &
            bus(x(WSAT,1,1)),  bus(x(CLAY,1,1)), bus(x(SAND,1,1)), &
-           bus(x(LAIVA,1,1)), WRMAX_VL, WRMAX_VH, & 
+           bus(x(LAIVA,1,1)),BUS(x(LAIVH  ,1,1)), WRMAX_VL, WRMAX_VH, & 
            bus(x(zusl,1,1)), bus(x(ztsl,1,1)),    & 
            bus(x (DLAT,1,1)), &
            bus(x(FCOR,1,1)),bus(x(Z0HA ,1,1)), &  
@@ -473,7 +472,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            bus(x(HUSURF,1,1)),   &  
            HRSURF,      &
            bus(x(HV_VL,1,1)),bus(x(HV_VH,1,1)), DEL_VL, DEL_VH,     &
-           bus(x(Z0HBG,1,1)), bus(x(Z0HVG,1,1)), &
+           bus(x(Z0HBG,1,1)), bus(x(Z0HVG,1,1)), bus(x(VEGH       ,1,1)) , bus(x(VEGL   ,1,1)),&
            N )  
       if (phy_error_L) return
 
@@ -619,7 +618,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
       ENDDO  
 
-!
+!   
       IF(LUNIQUE_PROFILE_SVS2) THEN ! One soil profile in SVS2
 
              CALL EBUDGET_SVS2_ONEPROFILE_SKIN(bus(x(TSA ,1,1)),  &  

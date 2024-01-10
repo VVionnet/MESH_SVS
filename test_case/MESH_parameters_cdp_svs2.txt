@@ -87,8 +87,8 @@ lsnow_interception_svs2  .false.
 lcan_ref_level_above .false.
 lsnow_canopy_mod .false.
 
-! Specify a canopy cover density
-!VGH_DENS    0.6
+! Specify a canopy cover density (high vegetation)
+VGH_DENS    0.
 
 !> Physical constant for snowpack scheme (uncomment to use)
 !>xvaging_noglacier  60 ! Aging coefficient (in days) used for albedo calculation in visible range (see modd_snow_par)
