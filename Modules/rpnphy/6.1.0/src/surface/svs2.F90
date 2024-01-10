@@ -679,7 +679,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                   TRAD, N,   &
                   bus(x(QVEG ,1,1)), bus(x(QGV   ,1,1)), bus(x(QGR   ,1,1)), & 
                   bus(x(TAF   ,1,1)), bus(x(QAF   ,1,1)), bus(x(VAF   ,1,1)), & 
-                  RPP, bus(x(Z0HA ,1,1)))
+                  RPP, bus(x(Z0HA ,1,1)), CLUMPING, bus(x(VGH_DENS,1,1)), BUS(x(Z0MVH  ,1,1)))
 
 !             CALL EBUDGET_SVS2_ONEPROFILE(bus(x(TSA ,1,1)),  &  
 !                  bus(x(WSOIL     ,1,1)) , bus(x(ISOIL,1,1)),  &   
@@ -735,7 +735,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 !                  TRAD, N,   &
 !                  bus(x(QVEG ,1,1)), bus(x(QGV   ,1,1)), bus(x(QGR   ,1,1)), & 
 !                  bus(x(TAF   ,1,1)), bus(x(QAF   ,1,1)), bus(x(VAF   ,1,1)), & 
-!                  RPP, bus(x(Z0HA ,1,1)))
+!                  RPP, bus(x(Z0HA ,1,1)), CLUMPING, bus(x(VGH_DENS,1,1)), BUS(x(Z0MVH  ,1,1)))
 
         ! Update vegetation temperature with low vegetation. 
         ! VV TO BE MODIFIED: Intermediate step during developement. 

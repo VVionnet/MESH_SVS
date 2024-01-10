@@ -17,7 +17,7 @@
       SUBROUTINE EBUDGET_SVS2_ONEPROFILE_SKIN(TSA, WD, WF , &
                    TGRS,TGRD,TVGLS,TVGLD,TVGHS,TVGHD, TP, TPERM,  &                       
                    PGRNDFLUX, PGRNDFLUXV, DT, VMOD, VDIR, LAT, & 
-                   RG, ALVG, LAI, GAMVEG, ALVL, ALVH,  & 
+                   RG, ALVG, LAI, LAIVH, GAMVEG, ALVL, ALVH,  & 
                    ALGR,EMGR, & 
                    RAT, THETAA, FCOR, ZUSL, ZTSL, HU, PS, &  
                    RHOA, WTA, Z0, Z0LOC, Z0H, & 
@@ -43,11 +43,10 @@
                    FTEMP, FVAP, ZQS, FRV, & 
                    ALFAT, ALFAQ, ILMO, HST, TRAD, N,    &
                    QVEG, QGV, QGR, &
-                   TAF, QAF, VAF, & 
 !                   RGVG,FIVG,IRGV,IRVG, &
 !                   HGV,LGV, &
 !                   FGRV, RNGV,grflux, &
-                    RPP,Z0HA)
+                    RPP,Z0HA, CLUMPING,VGH_DENS, Z0MVH )
 
       use tdpack
       use sfclayer_mod, only: sl_sfclayer,SL_OK
@@ -73,7 +72,7 @@
       REAL Z0LOC(N), Z0H(N)
       REAL HV_VL(N), HV_VH(N), DEL_VL(N), DEL_VH(N),  RS(N)
       REAL CG(N), CVP(N),  PSNG(N), EMISVL(N), EMISVH(N)
-      REAL LAI(N), GAMVEG(N), ALGR(N), EMGR(N)
+      REAL LAI(N), LAIVH(N), GAMVEG(N), ALGR(N), EMGR(N)
       REAL RNET(N), HFLUX(N), LE(N), ALPHAS(N)
       REAL ALBT(N)
       REAL LEG(N), LEVL(N), LEVH(N), LER_VL(N), LETR_VL(N),LEGV(N), GFLUX(N)
@@ -94,11 +93,12 @@
       REAL SOILHCAP(N,NL_SVS),SOILCOND(N,NL_SVS)
 
 !  ajout temporaire pour tests
-      REAL VAF(N), TAF(N), QAF(N), QVEG(N), QGV(N), QGR(N)
+      REAL QVEG(N), QGV(N), QGR(N)
 !     REAL RGVG(N), FIVG(N), IRGV(N), IRVG(N), HGV(N), LGV(N), FGRV(N), grflux(N)
       REAL RNGV(N)
       REAL RPP(N)
-      REAL Z0HA(N), RESAGRV(N)
+      REAL Z0HA(N), RESAGRV(N), Z0MVH(N)
+      REAL ZRSURF(N), CLUMPING, VGH_DENS(N)
 
 
 
@@ -149,6 +149,7 @@
 ! RG        global radiation (downward solar)
 ! ALVG      AVERAGED surface albedo associated with vegetation type
 ! LAI       AVERAGED vegetation leaf area index
+! LAIVH     vegetation leaf area index of the high vegetation
 ! GAMVEG    AVERAGED parameter related to the vegetation height
 ! ALGR      albedo of bare ground (soil)
 ! EMGR      emissivity of bare ground (soil) 
@@ -252,6 +253,8 @@
 ! ALFAQ      inhomogeneous boundary term in the diffusion equation for Q
 ! ZQS       area-averaged specific  humidity of a model tile
 ! TRAD      averaged radiative temperature
+! ZRSURF     Aerodynamic surface resistance for soil under canopy (cf. Gouttevin et al. 2013)   
+! Z0MVH      local mom roughness length for high veg.
 
 !
 !
@@ -261,6 +264,10 @@
       REAL EMISSN, EMSOIL, KCOEF, RHOW
       REAL BFREEZ, RAIN1, RAIN2
       REAL ABARK
+      REAL ZUSTAR, ZFSURF
+      REAL ZDH       ! Displacement height
+      REAL, PARAMETER :: ZRALAI = 3.! Parameter for exces resistance introduced by canopy between surface and ref level (cf Table 1, Gouttevin et al. 2015)
+      REAL, PARAMETER :: ZRCHD = 0.67    ! Ratio of displacement height to canopy height
 
       REAL SOILCOND1, SOILCOND2    
 
@@ -292,7 +299,8 @@
        real, dimension(n) ::  ZQSATGRV, ZDQSATGRV, LOWVEG, HIGHVEG,  &
                                ZQSGRV,ZQSVGH, ZA,Z0TEMP,Z0HG,TGRVS,              &
                                TA4FLX,QA4FLX,ZU4FLX,ZT4FLX,VIT,Z0M4FLX,Z0H4FLX, &
-                               CTUGRV,RORAGRV,TPVPRIM,TAFPRIM,DIFTEMP,ZQSATGRVT
+                               CTUGRV,RORAGRV,TPVPRIM,TAFPRIM,DIFTEMP,ZQSATGRVT, & 
+                               RESAGRV_NEUTRAL, LZZ0, LZZ0T, CORR_STAB_RESAGRV
 
        real, dimension(n) :: ABG, BBG, SKINCOND_BG,AVL, BVL,SKINCOND_VL, &
                       SURF_ENBAL_HVEGB,SURF_ENBAL_HVEGD, FRACBG, FRACVL,& 
@@ -596,17 +604,9 @@
               ! Derive specific humidity at the surface of the ground
               ! below high vegetation and over high vegetation 
               ZQSGRV(I) = HRSURF(I) * ZQSATGRV(I)
-              ZQSVGH(I) = RPP(I) * ZQSATVGHT(I) + ( 1. - RPP(I) ) *QAF(I) ! VV TO BE MODIFIED
+              ZQSVGH(I) = RPP(I) * ZQSATVGHT(I) + ( 1. - RPP(I) ) *HU(I) ! VV TO BE MODIFIED
 
-              ! Compute meteorology in the canopy air space 
-              VAF(I) = 0.3 * VMOD(I)   !high veg
-              TAF(I) = (0.3 * THETAA(I) + 0.6 *TVGHST(I) + 0.1 * TP(I,1))   ! Temp. inside canopy
-              QAF(I) = (0.3 * HU(I) + 0.6 * ZQSVGH(I) + 0.1 * ZQSGRV(I))    ! Hum.  inside canopy
 
-              ! Compute height and roughness used on the computation
-              ! of the fluxes 
-              ZA(I) = 2. * VGHEIGHT(I) / 3.   ! reference height in canopy for flux
-              ZA(I) = MAX(2.0,ZA(I))
               Z0TEMP(I) = 1.0                 ! bare ground local momentum roughness
               Z0HG(I)=0.2                     ! bare ground local heat roughness
 
@@ -615,13 +615,31 @@
               TGRVS(I) = TP(I,1) 
 
               ! Select variable used to compute the fluxes 
-              TA4FLX(I)  = TAF(I)
-              QA4FLX(I)  = QAF(I)
-              ZU4FLX(I)  = ZA(I)
-              ZT4FLX(I)  = ZA(I)
-              VIT(I)     = VAF(I)
-              Z0M4FLX(I) = Z0TEMP(I)
-              Z0H4FLX(I) = Z0HG(I)
+
+              TA4FLX(I)  = THETAA(I)
+              QA4FLX(I)  = HU(I)
+              IF (LCAN_REF_LEVEL_ABOVE) THEN ! Reference height above the canopy. In this case, z0 should be the canopy roughness lengths and the heights above canopy
+                 ! WARNING NL: Might need to be updated following conversation with Stephane B. and Maria A.
+                 ZU4FLX(I)  = ZUSL(I) + VGHEIGHT(I)
+                 ZT4FLX(I)  = ZTSL(I) + VGHEIGHT(I)
+                 Z0M4FLX(I) = Z0MVH(I)
+                 Z0H4FLX(I) = Z0MVH(I) * Z0M_TO_Z0H
+                 ZDH = VGHEIGHT(I)*ZRCHD
+                 VIT(I)   = VMOD(I)
+                 ZUSTAR = VMOD(I) * KARMAN / LOG((ZU4FLX(I)-ZDH)/Z0M4FLX(I)) ! ustar above the canopy used in the aero resistances for turbulent fluxes
+
+                 ZFSURF = 1. + ZRALAI * (1. - EXP(-CLUMPING * LAIVH(I) * VGH_DENS(I))) 
+                 ZRSURF(I) = LOG(Z0M4FLX(I) / Z0HG(I)) / (ZUSTAR * KARMAN) * ZFSURF ! The heat roughness length should be the one at the surface below canopy 
+              ELSE
+
+                 ZU4FLX(I)  = ZUSL(I) 
+                 ZT4FLX(I)  = ZTSL(I)
+                 Z0M4FLX(I) = Z0TEMP(I)
+                 Z0H4FLX(I) = Z0HG(I)
+                 VIT(I)   = VMOD(I)
+                 ZUSTAR = VMOD(I) * KARMAN / LOG(ZU4FLX(I)/Z0M4FLX(I)) ! ustar above the canopy used in the aero resistances for turbulent fluxes
+                 ZRSURF(I) = 0.
+              ENDIF
 
               i_flux = sl_sfclayer( TA4FLX, QA4FLX, VIT, VDIR, ZU4FLX, ZT4FLX, &
                     TGRVS, ZQSGRV, Z0M4FLX, Z0H4FLX, LAT, FCOR, &
@@ -632,25 +650,24 @@
               stop
               endif 
 
-              ! Compute aerodymanical resistance 
+              ! Compute aerodymanical resistance with stability atm correction
               RESAGRV(I) = 1. / CTUGRV(I)
+
+              ! Compute aerodymanical resistance for neutral stability 
+              ! cf sfclayer_mod (L.588-605 for computation of lzz0 and lzz0t (z0ref== T)
+              ! It was checked that these correspond to the neutral values calculated in sfclayer_mod before stab correction
+              LZZ0(I) = LOG((Z0M4FLX(I) + ZU4FLX(I)) / Z0M4FLX(I))
+              LZZ0T(I) = LOG((Z0M4FLX(I) + ZU4FLX(I)) / Z0H4FLX(I)) 
+              RESAGRV_NEUTRAL(I) = 1. / (VIT(I) * KARMAN * KARMAN / (LZZ0(I) * LZZ0T(I)))
 
               !   function zrsra ground under veg
               RORAGRV(I) = RHOA(I) / RESAGRV(I)
 
-              !drag coef from CLASS for high veg only
+              ! Calculate the correction factor between RESAGRV when accounting for stability and RESAGRV for neutral stab
+              CORR_STAB_RESAGRV(I) = RESAGRV(I) / RESAGRV_NEUTRAL(I)
 
-              TPVPRIM(I) = TP(I,1)*(1.0 + 0.61 * ZQSGRV(I) )
-              TAFPRIM(I) = TAF(I)*(1.0 + 0.61 * QAF(I) )
-              DIFTEMP(I) = TPVPRIM(I) - TAFPRIM(I)
-        
-              IF (DIFTEMP(I).GT.1.0 )THEN
-                 RORAGRV(I) = RHOA(I) * (0.0019 * (TPVPRIM(I) - TAFPRIM(I))**(1./3.) )
-              ELSEIF (DIFTEMP(I).GT.0.001 .and. DIFTEMP(I).LE.1.0) THEN
-                 RORAGRV(I) = RHOA(I) * (0.0019 * (TPVPRIM(I) - TAFPRIM(I)) )
-              ELSE
-                 RORAGRV(I) = 0.0
-              ENDIF
+              !drag coef from CLASS for high veg only
+              RORAGRV(I) = RHOA(I) / (RESAGRV(I) + ZRSURF(I)* CORR_STAB_RESAGRV(I))
 
              ! Contribution of the surface energy budget for high
              ! vegetation in the coefficient used in the tridiagnonal
@@ -658,10 +675,10 @@
              ! Contribution to coef D
              SURF_ENBAL_HVEGD(I) = ( VTRA(I)*(1.-ALGR(I))*RG(I) + SKYVIEWA(I)*EMGR(I)*RAT(I) &
                             + 3.*EMGR(I)*STEFAN*(TP(I,1)**4) &
-                            +(1.-SKYVIEWA(I))*EMGR(I)*EMISVH(I)*STEFAN*(TVGHDT(I)**4) &
-                            + RORAGRV(I)*CPD*TAF(I) &
+                            +(1.-SKYVIEWA(I))*EMGR(I)*EMISVH(I)*STEFAN*(TVGST(I)**4) &
+                            + RORAGRV(I)*CPD*TA4FLX(I) &
                             + RORAGRV(I)*LEFF(I)*HRSURF(I)*ZDQSATGRV(I)*TP(I,1) &
-                            - RORAGRV(I)*LEFF(I)*(HRSURF(I)*ZQSATGRV(I)-QAF(I)) )
+                            - RORAGRV(I)*LEFF(I)*(HRSURF(I)*ZQSATGRV(I)-QA4FLX(I)) )
 
              ! Contribution to coef B
              SURF_ENBAL_HVEGB(I) = 4.*EMGR(I)*STEFAN*(TP(I,1)**3)  +  RORAGRV(I)*CPD &
