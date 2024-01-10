@@ -44,7 +44,7 @@ tpsoilv        280.0   280.0   280.0 ! soil temperature below high veg  (K) (not
 tperm      280.0 ! (Deep soil temperature)
 
 !> Activate single soil column in SVS2
-lunique_profile_svs2 .false.
+lunique_profile_svs2 .true.
 
 !> lower boundary condition for heat diffusion in SVS2: TPERM or 0FLUX
 lbcheat_svs2 TPERM
@@ -82,10 +82,10 @@ lout_snow_profile  .true.  ! Create output file containing detailed information 
 nprofile_day     4          ! Number of snow profiles per day (can be  1, 2, 4, 6, 12, 24)
 lout_snow_enbal  .false.    ! Create output file containing information about the snowpack energy and mass budget
 
-!> Physical constant for snowpack scheme (uncomment to use)
-!>xvaging_noglacier  60 ! Aging coefficient (in days) used for albedo calculation in visible range (see modd_snow_par)
-
 ! Activate canopy module
-lsnow_interception_svs2  LCANO
+lsnow_interception_svs2  .true.
 lcan_ref_level_above .true.
 lsnow_canopy_mod .true.
+
+!> Physical constant for snowpack scheme (uncomment to use)
+!>xvaging_noglacier  60 ! Aging coefficient (in days) used for albedo calculation in visible range (see modd_snow_par)

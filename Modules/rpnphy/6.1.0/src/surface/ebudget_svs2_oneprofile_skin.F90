@@ -627,7 +627,6 @@
                  ZDH = VGHEIGHT(I)*ZRCHD
                  VIT(I)   = VMOD(I)
                  ZUSTAR = VMOD(I) * KARMAN / LOG((ZU4FLX(I)-ZDH)/Z0M4FLX(I)) ! ustar above the canopy used in the aero resistances for turbulent fluxes
-
                  ZFSURF = 1. + ZRALAI * (1. - EXP(-CLUMPING * LAIVH(I) * VGH_DENS(I))) 
                  ZRSURF(I) = LOG(Z0M4FLX(I) / Z0HG(I)) / (ZUSTAR * KARMAN) * ZFSURF ! The heat roughness length should be the one at the surface below canopy 
               ELSE
@@ -637,7 +636,6 @@
                  Z0M4FLX(I) = Z0TEMP(I)
                  Z0H4FLX(I) = Z0HG(I)
                  VIT(I)   = VMOD(I)
-                 ZUSTAR = VMOD(I) * KARMAN / LOG(ZU4FLX(I)/Z0M4FLX(I)) ! ustar above the canopy used in the aero resistances for turbulent fluxes
                  ZRSURF(I) = 0.
               ENDIF
 
