@@ -76,5 +76,8 @@ lout_snow_profile  .true.  ! Create output file containing detailed information 
 nprofile_day     4          ! Number of snow profiles per day (can be  1, 2, 4, 6, 12, 24)
 lout_snow_enbal  .false.    ! Create output file containing information about the snowpack energy and mass budget
 
+lwrite_restart .true.      ! Option to write a restart file for SVS2 at the end of the simulation
+lread_restart  .false.      ! Option to read restart information for SVS2/Crocus in MESH_paramater.txt.        
+
 !> Physical constant for snowpack scheme (uncomment to use)
 !>xvaging_noglacier  60 ! Aging coefficient (in days) used for albedo calculation in visible range (see modd_snow_par)

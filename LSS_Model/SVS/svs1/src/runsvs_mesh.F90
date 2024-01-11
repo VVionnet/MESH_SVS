@@ -42,6 +42,8 @@ module runsvs_mesh
     integer :: iout_snow_profile = 152
     integer :: iout_snow_enbal = 153
 
+    integer :: iout_svs2_restart = 159
+
     !> SVS1 output
     integer :: iout_svs1_soil = 160
     integer :: iout_svs1_snow = 161
@@ -104,14 +106,25 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_SNODIAMOPT_SVS = 'SNODOPT_ML'
     character(len = *), parameter, public :: VN_SVS_SNOSPHERI_SVS = 'SNOSPH_ML'
     character(len = *), parameter, public :: VN_SVS_SNOHIST_SVS = 'SNOHIST_ML'
+    character(len = *), parameter, public :: VN_SVS_SNOMAV_SVS = 'SNOMAV_ML'
+    character(len = *), parameter, public :: VN_SVS_SNODENV_SVS = 'SNODENV_ML'
+    character(len = *), parameter, public :: VN_SVS_SNOAGEV_SVS = 'SNOAGEV_ML'
+    character(len = *), parameter, public :: VN_SVS_SNODIAMOPTV_SVS = 'SNODOPTV_ML'
+    character(len = *), parameter, public :: VN_SVS_SNOSPHERIV_SVS = 'SNOSPHV_ML'
+    character(len = *), parameter, public :: VN_SVS_SNOHISTV_SVS = 'SNOHISTV_ML'
     character(len = *), parameter, public :: VN_SVS_SNOTYPE_SVS = 'SNOTYPE_ML'
     character(len = *), parameter, public :: VN_SVS_TSNOW_SVS = 'TSNOW_ML'
     character(len = *), parameter, public :: VN_SVS_WSNOW_SVS = 'WSNOW_ML'
+    character(len = *), parameter, public :: VN_SVS_TSNOWV_SVS = 'TSNOWV_ML'
+    character(len = *), parameter, public :: VN_SVS_WSNOWV_SVS = 'WSNOWV_ML'    
     character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_PROFILE = 'LOUT_SNOW_PROFILE' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_ENBAL = 'LOUT_SNOW_ENBAL' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_NPROFILE_DAY = 'NPROFILE_DAY' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LSOIL_FREEZING_SVS1 = 'LSOIL_FREEZING_SVS1' ! For svs1 only 
     character(len = *), parameter, public :: VN_SVS_LWATER_PONDING_SVS1 = 'LWATER_PONDING_SVS1' ! For svs1 only 
+    character(len = *), parameter, public :: VN_SVS_LWRITE_RESTART = 'LWRITE_RESTART' ! For svs2 only 
+    character(len = *), parameter, public :: VN_SVS_LREAD_RESTART = 'LREAD_RESTART' ! For svs2 only 
+        
 
     !> SVS variables names for I/O (modifiers/special conditions).
     character(len = *), parameter, public :: VN_SVS_SAND_N = 'SAND_N'
@@ -126,7 +139,22 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_TSNOWVEG_N = 'TSNOWVEG_N'
     character(len = *), parameter, public :: VN_SVS_TPSOIL_N = 'TPSOIL_N' ! For svs2  and svs1 (with soil freezing)
     character(len = *), parameter, public :: VN_SVS_TPSOILV_N = 'TPSOILV_N' ! For svs2 only
-
+    character(len = *), parameter, public :: VN_SVS_SNOMA_SVS_N = 'SNOMA_ML_N'
+    character(len = *), parameter, public :: VN_SVS_SNODEN_SVS_N = 'SNODEN_ML_N'
+    character(len = *), parameter, public :: VN_SVS_SNOAGE_SVS_N = 'SNOAGE_ML_N'
+    character(len = *), parameter, public :: VN_SVS_SNODIAMOPT_SVS_N = 'SNODOPT_ML_N'
+    character(len = *), parameter, public :: VN_SVS_SNOSPHERI_SVS_N = 'SNOSPH_ML_N'
+    character(len = *), parameter, public :: VN_SVS_SNOHIST_SVS_N = 'SNOHIST_ML_N'
+    character(len = *), parameter, public :: VN_SVS_SNOMAV_SVS_N = 'SNOMAV_ML_N'
+    character(len = *), parameter, public :: VN_SVS_SNODENV_SVS_N = 'SNODENV_ML_N'
+    character(len = *), parameter, public :: VN_SVS_SNOAGEV_SVS_N = 'SNOAGEV_ML_N'
+    character(len = *), parameter, public :: VN_SVS_SNODIAMOPTV_SVS_N = 'SNODOPTV_ML_N'
+    character(len = *), parameter, public :: VN_SVS_SNOSPHERIV_SVS_N = 'SNOSPHV_ML_N'
+    character(len = *), parameter, public :: VN_SVS_SNOHISTV_SVS_N = 'SNOHISTV_ML_N'
+    character(len = *), parameter, public :: VN_SVS_TSNOW_SVS_N = 'TSNOW_ML_N'
+    character(len = *), parameter, public :: VN_SVS_WSNOW_SVS_N = 'WSNOW_ML_N'
+    character(len = *), parameter, public :: VN_SVS_TSNOWV_SVS_N = 'TSNOWV_ML_N'
+    character(len = *), parameter, public :: VN_SVS_WSNOWV_SVS_N = 'WSNOWV_ML_N'   
 
     !> SVS variables (for I/O).
     type runsvs_mesh_variables
@@ -196,6 +224,8 @@ module runsvs_mesh
         logical :: lsnowdrift_sublim = .true.
         logical :: lout_snow_profile = .false.
         logical :: lout_snow_enbal = .false.
+        logical :: lwrite_restart = .false.
+        logical :: lread_restart = .false.
         integer :: nprofile_day = 4 !
         logical :: lsoil_freezing_svs1 = .false.
         logical :: lwater_ponding_svs1 = .false.
@@ -557,6 +587,7 @@ module runsvs_mesh
                    if (allocated(svs_mesh%vs%wsnowv_svs)) svs_bus(a2(wsnowv_svs, i - 1):z2(wsnowv_svs, i - 1)) = svs_mesh%vs%wsnowv_svs(:, i)
             end do
             do i = 1, svs_mesh%vs%nsl
+               write(*,*) 'nsl',i, svs_bus(a2(snoma_svs,i-1):z2(snoma_svs,i-1))
                where (svs_bus(a2(snoma_svs,i-1):z2(snoma_svs,i-1)) == 0.0)
                  svs_bus(a2(snoage_svs, i-1):z2(snoage_svs, i-1))  = 0. 
                  svs_bus(a2(snodiamopt_svs, i-1):z2(snodiamopt_svs, i-1))  = 0. 
@@ -601,6 +632,7 @@ module runsvs_mesh
         type(ShedGridParams) :: shd
         type(fl_ids) :: fls
         type(clim_info) :: cm
+
 
         !> Local variables.
         character(len = DEFAULT_LINE_LENGTH) line
@@ -1238,6 +1270,10 @@ ierr = 200
           write(iout_snow_profile, *)
        endif
 
+       write(*,*) 'restart',svs_mesh%vs%lwrite_restart
+       if(svs_mesh%vs%lwrite_restart) then        
+            open(iout_svs2_restart, file = './' // trim(fls%GENDIR_OUT) // '/' // 'restart_svs2.csv', action = 'write')
+       endif
 
    else if(svs_mesh%vs%schmsol=='SVS') then
 
@@ -1435,11 +1471,13 @@ ierr = 200
         type(fl_ids) :: fls
         type(clim_info) :: cm
 
+        type(dates_model) :: ts
+
         !> Local variable for string date (format: YYYYMMDD.hhmmss).
         character(len = 14) time_run_now
 
         !> Local variables.
-        integer i, idateo, ierr, j, k, istat, nfreq
+        integer i, idateo, ierr, j, k, istat, nfreq,nstep_tot,nstep_now
 
         real :: tt,hu
         real, dimension(il1:il2) :: tve
@@ -1450,7 +1488,15 @@ ierr = 200
         if (.not. svs_mesh%PROCESS_ACTIVE) return
 
         !> Update variables (equivalent to calls to 'phyput_input_param' and 'sfc_get_input_param').
+         
 
+         ! > Get current and last time steps
+         nstep_tot = jday_to_tsteps(ic%stop%year,ic%stop%jday,ic%stop%hour,ic%stop%mins,ic%dtmins )
+         nstep_now = jday_to_tsteps(ic%now%year,ic%now%jday,ic%now%hour,ic%now%mins,ic%dtmins )
+       
+         !write(*,*) ic%now%year,ic%now%jday,ic%now%hour,ic%now%mins,ic%dtmins
+         !write(*,*) ic%stop%year,ic%stop%jday,ic%stop%hour,ic%stop%mins,ic%dtmins
+         !rite(*,*) 'nstep',nstep_tot,nstep_now
 
     ! Write SVS hourly outputs
 1010    format(9999(g15.7e2, ','))
@@ -1510,6 +1556,148 @@ ierr = 200
                 write(iout_snow_profile, *)
 
               end if
+                      
+           end if
+              
+           if(nstep_now == nstep_tot-1 .and. svs_mesh%vs%lwrite_restart) then
+                  write(*,*) 'Write restart file'
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'wveg',busptr(vd%wveg%i)%ptr(:, trnch)
+                  write(iout_svs2_restart, *)
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'tground'
+                  do i = 1, 2
+                       write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%tground%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+                  end do                
+                  write(iout_svs2_restart, *)
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'tvege'
+                  do i = 1, 2
+                       write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%tvege%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+                  end do                
+                  write(iout_svs2_restart, *)
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'tpsoil'
+                  do i = 1, nl_svs
+                       write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%tpsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+                  end do                
+                  write(iout_svs2_restart, *)
+
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'tpsoilv'
+                  do i = 1, nl_svs
+                       write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%tpsoilv%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+                  end do                
+                  write(iout_svs2_restart, *)
+
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'wsoil'
+                  do i = 1, nl_svs
+                       write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%wsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+                  end do  
+                  write(iout_svs2_restart, *)
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'isoil'
+                  do i = 1, nl_svs
+                       write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%isoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+                  end do  
+                  write(iout_svs2_restart, *)
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snoma_ml'
+                  do i = 1, nsl
+                       write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snoma_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+                  end do  
+                  write(iout_svs2_restart, *)
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snoden_ml'
+                  do i = 1, nsl
+                       write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snoden_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+                  end do  
+                  write(iout_svs2_restart, *)
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snoage_ml'
+                  do i = 1, nsl
+                       write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snoage_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+                  end do  
+                  write(iout_svs2_restart, *)
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snodopt_ml'
+                  do i = 1, nsl
+                       write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snodiamopt_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+                  end do  
+                  write(iout_svs2_restart, *)
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snosph_ml'
+                  do i = 1, nsl
+                       write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snospheri_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+                  end do  
+                  write(iout_svs2_restart, *)
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snohist_ml'
+                  do i = 1, nsl
+                       write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snohist_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+                  end do  
+                  write(iout_svs2_restart, *)
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'tsnow_ml'
+                  do i = 1, nsl
+                       write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%tsnow_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+                  end do  
+                  write(iout_svs2_restart, *)
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'wsnow_ml'
+                  do i = 1, nsl
+                       write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%wsnow_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+                  end do  
+                  write(iout_svs2_restart, *)
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snomav_ml'
+                  do i = 1, nsl
+                       write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snomav_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+                  end do  
+                  write(iout_svs2_restart, *)
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snodenv_ml'
+                  do i = 1, nsl
+                       write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snodenv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+                  end do  
+                  write(iout_svs2_restart, *)
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snoagev_ml'
+                  do i = 1, nsl
+                       write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snoagev_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+                  end do  
+                  write(iout_svs2_restart, *)
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snodoptv_ml'
+                  do i = 1, nsl
+                       write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snodiamoptv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+                  end do  
+                  write(iout_svs2_restart, *)
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snosphv_ml'
+                  do i = 1, nsl
+                       write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snospheriv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+                  end do  
+                  write(iout_svs2_restart, *)
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snohistv_ml'
+                  do i = 1, nsl
+                       write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snohistv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+                  end do  
+                  write(iout_svs2_restart, *)
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'tsnowv_ml'
+                  do i = 1, nsl
+                       write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%tsnowv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+                  end do  
+                  write(iout_svs2_restart, *)
+
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') 'wsnowv_ml'
+                  do i = 1, nsl
+                       write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%wsnowv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+                  end do  
+                  write(iout_svs2_restart, *)                  
 
            end if
 
@@ -1744,9 +1932,10 @@ ierr = 200
         type(fl_ids) fls
         type(ShedGridParams) shd
 
-        !> Return if the process is not marked active.
+
         if (.not. svs_mesh%PROCESS_ACTIVE) return
 
     end subroutine
+
 
 end module
