@@ -626,7 +626,7 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR2D1(swnetsv,      'VN=swnetsv      ;ON=SWSV;VD=net shortwave radiation (snow under veg. only)                    ;VB=p0')
       PHYVAR2D1(swca,         'VN=swca         ;ON=SWCA;VD=incoming shortwave radiation below high veg                       ;VB=p0')
       PHYVAR3D1(tground,      'VN=tground      ;ON=TGR ;VD=skin and mean exposed bare ground temp.        ;VS=A*2            ;VB=p1')
-      PHYVAR3D1(tgroundv,     'VN=tgroundv     ;ON=TSGV ;VD=skin and mean shaded ground temp.             ;VS=A*2            ;VB=p1')
+      PHYVAR2D1(tgroundv,     'VN=tgroundv     ;ON=TSGV ;VD=skin shaded ground temp.                            ;            ;VB=p1')
       PHYVAR2D1(tperm,        'VN=tperm        ;ON=TPRD;VD=constant deep soil temperature                                    ;VB=p0')
       PHYVAR3D1(tpsoil,       'VN=tpsoil       ;ON=TGRD;VD=soil temperature profil                        ;VS=A*'//ngl//'  ;VB=p1')
       PHYVAR3D1(tpsoilv,      'VN=tpsoilv      ;ON=TGRV;VD=soil under veg temperature profil              ;VS=A*'//ngl//'  ;VB=p1')
