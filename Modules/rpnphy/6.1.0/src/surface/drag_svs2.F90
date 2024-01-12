@@ -24,7 +24,7 @@
                               HUSURF, & 
                               HRSURF, &       
                               HV_VL, HV_VH, DEL_VL, DEL_VH,  &
-                              Z0HBG, Z0HVG, &
+                              Z0HBG, Z0HVG, VEGL, VEGH, &
                               N)
       use tdpack
       use sfc_options
@@ -42,6 +42,7 @@
       REAL RESAGR(N), RESA_VL(N), RESA_VH(N)
       REAL HUSURF(N), HV_VL(N), HV_VH(N), DEL_VL(N), DEL_VH(N)
       REAL HRSURF(N), WD1(N)
+      REAL VEGH(N), VEGL(N)
 !
 !Author
 !          S. Belair, M.Abrahamowicz, S.Z.Husain, N.Alavi, S.Zhang (June 2015) 
@@ -104,7 +105,8 @@
 ! FCOR      Coriolis factor
 ! Z0HA      AVERAGED Local roughness associated with exposed (no snow)
 !           vegetation only (also no orography), for heat transfer
-! QAF      Specifi humidity in the canopy air space
+! VEGH     fraction of HIGH vegetation
+! VEGL     fraction of LOW vegetation
 !
 !           - Output -
 ! HRSURF   relative humidity of the bare ground surface (1st layer)
@@ -303,15 +305,19 @@
 !
 !                          calculate DEL
 !
-         COEF_VL(I) = 1. + 2.*LAI_VL(I)
+         IF(VEGL(I)>EPSILON_SVS) THEN   ! Low vegetation present in the grid cell
+             COEF_VL(I) = 1. + 2.*LAI_VL(I)
 !
  
-         DEL_VL(I) =   MIN(WR_VL(I),WRMAX_VL(I)) / &
-            ((1.-COEF_VL(I))*MIN(WR_VL(I),WRMAX_VL(I)) +COEF_VL(I)*WRMAX_VL(I) )
+             DEL_VL(I) =   MIN(WR_VL(I),WRMAX_VL(I)) / &
+              ((1.-COEF_VL(I))*MIN(WR_VL(I),WRMAX_VL(I)) +COEF_VL(I)*WRMAX_VL(I) )
 !
-         DEL_VL(I) = MIN(DEL_VL(I),0.1) 
+             DEL_VL(I) = MIN(DEL_VL(I),0.1) 
           
-
+         ELSE
+             COEF_VL(I) = 1.
+             DEL_VL(I) = 0.
+         ENDIF
 !
       END DO
 !
@@ -325,8 +331,9 @@
 !                         step resavg to calculate specific 
 !                         humidity of low vegetation
 !
-        HV_VL(I) = 1. - MAX(0.,SIGN(1.,QSAT_VL(I)-HU(I)))&  
-                 *RS(I)*(1.-DEL_VL(I)) / (RESA_VL(I)+RS(I))
+         IF(VEGL(I)>EPSILON_SVS) THEN   ! Low vegetation present in the grid cell
+             HV_VL(I) = 1. - MAX(0.,SIGN(1.,QSAT_VL(I)-HU(I)))&  
+                   *RS(I)*(1.-DEL_VL(I)) / (RESA_VL(I)+RS(I))
 
 !      Atmospheric resistence for exchange between the the foliage
 !      and the air within the canopy space (Dearrorff, 1978)
@@ -338,8 +345,12 @@
 !                        
 !                         calculate specific humidity of vegetation
 !
-        ZQS_VL(I) = HV_VL(I) * QSAT_VL(I) + ( 1. - HV_VL(I) ) * HU(I)
+             ZQS_VL(I) = HV_VL(I) * QSAT_VL(I) + ( 1. - HV_VL(I) ) * HU(I)
 !
+         ELSE
+             ZQS_VL(I) = 0.
+             HV_VL(I) = 0.
+         ENDIF
       END DO   
 !
 !
@@ -373,7 +384,11 @@
       endif
    
       DO I=1,N
+         IF(VEGL(I)>EPSILON_SVS) THEN   ! Low vegetation present in the grid cell
          RESA_VL(I) = 1. / CTUVG(I)
+         ELSE
+             RESA_VL(I) = 1.
+         ENDIF
       END DO
 !
 !**     2.V     SURFACE TRANSFER COEFFICIENTS FOR HEAT (CH) FOR HIGH VEGETATION 
@@ -401,6 +416,7 @@
 !
 !                          calculate DEL
 !
+         IF(VEGH(I)>EPSILON_SVS) THEN   ! High vegetation present in the grid cell
          COEF_VH(I) = 1. + 2.*LAI_VH(I)
 !
          DEL_VH(I) =   MIN(WR_VH(I),WRMAX_VH(I)) / &
@@ -408,7 +424,10 @@
 !
          DEL_VH(I) = MIN(DEL_VH(I),0.1) 
           
-
+         ELSE
+             COEF_VH(I) = 1.
+             DEL_VH(I) = 0.
+         ENDIF
 !
       END DO
 !
@@ -422,7 +441,8 @@
 !                         step resavg to calculate specific 
 !                         humidity of vegetation
 !
-        HV_VH(I) = 1. - MAX(0.,SIGN(1.,QSAT_VH(I)-HU(I)))&  
+         IF(VEGH(I)>EPSILON_SVS) THEN   ! High vegetation present in the grid cell
+             HV_VH(I) = 1. - MAX(0.,SIGN(1.,QSAT_VH(I)-HU(I)))&  
                  *RS(I)*(1.-DEL_VH(I)) / (RESA_VH(I)+RS(I))
 
 !      Atmospheric resistence for exchange between the the foliage
@@ -435,8 +455,12 @@
 !                        
 !                         calculate specific humidity of high vegetation
 !
-        ZQS_VH(I) = HV_VH(I) * QSAT_VH(I) + ( 1. - HV_VH(I) ) * HU(I)
+             ZQS_VH(I) = HV_VH(I) * QSAT_VH(I) + ( 1. - HV_VH(I) ) * HU(I)
 !
+         ELSE
+             ZQS_VH(I) = 0.
+             HV_VH(I) = 0.
+         ENDIF
       END DO   
 !
 !
@@ -470,7 +494,11 @@
       endif
    
       DO I=1,N
-         RESA_VH(I) = 1. / CTUVG(I)
+         IF(VEGH(I)>EPSILON_SVS) THEN   ! High vegetation present in the grid cell
+             RESA_VH(I) = 1. / CTUVG(I)
+         ELSE
+             RESA_VH(I) = 1.
+         ENDIF
       END DO
 
 !*       3.     HALSTEAD COEFFICIENT (RELATIVE HUMIDITY OF THE VEGETATION) (HV)

@@ -15,7 +15,7 @@
 !-------------------------------------- LICENCE END ---------------------------
 
       SUBROUTINE EBUDGET_SVS2_ONEPROFILE_SKIN(TSA, WD, WF , &
-                   TGRS,TGRD,TVGLS,TVGLD,TVGHS,TVGHD, TP, TPERM,  &                       
+                   TGRS,TGRD,TVGLS,TVGHS,TVGHD, TP, TPERM,  &                       
                    PGRNDFLUX, PGRNDFLUXV, DT, VMOD, VDIR, LAT, & 
                    RG, ALVG, LAI, GAMVEG, ALVL, ALVH,  & 
                    ALGR,EMGR, & 
@@ -63,7 +63,7 @@
       
       REAL TSA(N),  DT, VMOD(N)
       REAL VDIR(N), LAT(N), PGRNDFLUX(N), PGRNDFLUXV(N)
-      REAL TGRS(N), TGRD(N), TVGLS(N), TVGLD(N), TVGHS(N), TVGHD(N)
+      REAL TGRS(N), TGRD(N), TVGLS(N), TVGHS(N), TVGHD(N)
       REAL TSNS(N,NSL), TSVS(N,NSL)
       REAL TP(N,NL_SVS), TPERM(N)
       REAL WD(N,NL_SVS), WF(N,NL_SVS)   
@@ -131,7 +131,6 @@
 ! TGRS      (bare) ground temperature -- S for "skin"
 ! TGRD      mean ground temperature -- D for "deep"
 ! TVGLS     low vegetation temperature -- S for "skin"
-! TVGLD     mean low vegetation temperature -- D for "deep"
 ! TVGHS     high vegetation temperature -- S for "skin"
 ! TVGHD     mean high vegetation temperature -- D for "deep"      
 ! TS        surface  temperature (new) as seen from ground
@@ -409,10 +408,6 @@
 !       
           TGRST(I) = BBG(I)/ABG(I)
 
-          write(*,*) 'TGSS',TGRS(I),TGRST(I)
-          write(*,*) 'HR_SURF',HRSURF(I),'RSW',RG(I) 
-          write(*,*)'SKINCOND', SKINCOND_BG(I)
-
        END DO        
 !!            TGRD AT TIME 'T+DT': VV To be changed 
 !               -----------------
@@ -451,7 +446,6 @@
 !         Function zrsra used in the computation of the sensible heat
 !         flux             
 !
-             write(*,*) 'RESA_Vl',RESA_VL(I)
              RORAVGL(I) = RHOA(I) / RESA_VL(I)
 !
 !         Skin conductivity for low vegetation
@@ -484,24 +478,6 @@
 
        ENDDO
 !       
-!!           TVGLD AT TIME 'T+DT': Mean temperature from FR scheme for
-!             low veg.
-!               -----------------
-!
-      DO I=1,N
-!      
-!                   Note that as an added precaution,
-!                   we set the low vegetation temperature to
-!                   that of the ground, when no exposed low vegetation is present
-!
-         IF(VEGL(I)*(1.-PSNG(I)).ge.EPSILON_SVS)THEN
-            TVGLDT(I) = (TVGLD(I) + DT*TVGLST(I)/86400.) / (1.+DT/86400.)
-         ELSE
-            TVGLDT(I) = TGRDT(I)
-         ENDIF
-            
-      END DO
-!
 !               --------------------------------------------
 !        3B2. Calculation for high vegetation       
 !               --------------------------------------------      
@@ -559,7 +535,6 @@
 
        ENDDO
 
-       write(*,*) 'TVEG', TVGLST(1),TVGHST(1)
 
 !!           TVGD AT TIME 'T+DT': Mean temperature from FR scheme for
 !                      high veg
@@ -1279,7 +1254,6 @@
         TGRS(I)   = TGRST(I)
         TGRD(I)   = TGRDT(I)
         TVGLS(I)   = TVGLST(I)
-        TVGLD(I)   = TVGLDT(I)
         TVGHS(I)   = TVGHST(I)
         TVGHD(I)   = TVGHDT(I)      
 

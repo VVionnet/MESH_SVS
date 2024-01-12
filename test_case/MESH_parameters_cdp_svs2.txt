@@ -39,12 +39,8 @@ clay            30.0    30.0    30.0 !%
 wsoil          0.083   0.086   0.098 !vol. content
 isoil            0.0     0.0     0.0 !vol. content
 tpsoil         280.0   280.0   280.0 ! soil temperature below bg/lv  (K)
-tpsoilv        280.0   280.0   280.0 ! soil temperature below high veg  (K) (not used if lunique_profile_svs2=true)
 
 tperm      280.0 ! (Deep soil temperature)
-
-!> Activate single soil column in SVS2
-lunique_profile_svs2 .false.
 
 !> lower boundary condition for heat diffusion in SVS2: TPERM or 0FLUX
 lbcheat_svs2 TPERM
@@ -60,10 +56,20 @@ tground       284.8  284.8 !Kelvin, only 2 values for svs1
 !>               sea glacier in-lake ever-nl ever-bl deci-nl deci-bl trop-bl  dry-tr ever-sh deci-sh thor-sh shor-gr long-gr   crops    rice   sugar   maize  cotton  irr-cr   urban  tundra   swamp  desert mx-tree   mx-sh
 vf               0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     1.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0 !fraction
 z0v              0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.02    0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0 !roughness length
+
+!> High veg (FR scheme) 
 !> nlayers   ----- 1 ----- 2
-tvege          285.7   285.7 !Kelvin
+tvegeh          285.7   285.7 !Kelvin
 !> npoints   ----- 1
-wveg             0.0 !kg m**-2
+wveg_vh             0.0 !kg m**-2
+
+
+!> Low veg (Skin only) 
+!> nlayers   ----- 1 
+tvegel          285.7  
+!> npoints   ----- 1
+wveg_vl             0.0 !kg m**-2
+
 
 ! Multilayer Snowpack scheme
 nsl     20   ! Number of snow layers
