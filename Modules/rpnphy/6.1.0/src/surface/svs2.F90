@@ -127,9 +127,9 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    integer i,j,m, masklat50(n)
 
    real,dimension(n) :: alva, cg, cvpa, del_vl, del_vh,  dwaterdt
-   real,dimension(n) :: eva, gamva, hrsurf
+   real,dimension(n) :: eva, gamva
    real,dimension(n) :: leff, lesnofrac, lesvnofrac, rainrate_mm, rainrate_mm_veg 
-   real,dimension(n) :: leslnofrac, lesvlnofrac
+   real,dimension(n) :: hrsurf, hrsurfgv, leslnofrac, lesvlnofrac
    real,dimension(n) :: rgla, rhoa, snowrate_mm,snowrate_mm_veg, stom_rs, stomra, rpp
    real,dimension(n) :: suncosa, sunother1, sunother2, sunother3
    real,dimension(n) :: sunother4, trad, tva, vdir, vmod, vmod_lmin, wrmax_vl, wrmax_vh, wveglt, wveght
@@ -401,11 +401,12 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            BUS(x(CLAY   ,1,1)), BUS(x(SAND   ,1,1)), &  
            BUS(x(DECIDUOUS,1,1)),BUS(x(EVERGREEN,1,1)), &  
            BUS(x(LAIDECI,1,1)),   &
-           BUS(x(SVS_WTA,1,1)), CG, &
+           BUS(x(SVS_WTA,1,1)),BUS(x(SVS_WTG,1,1)), CG, &
            BUS(x(SOILHCAPZ,1,1)),BUS(x(SOILCONDZ,1,1)),  &
            BUS(x(PSNGRVL,1,1)),  &  
            BUS(x(Z0T  ,1,indx_soil)),  & 
            BUS(x(ALGR,1,1)),BUS(x(EMISGR,1,1)), &  
+           BUS(x(ALGRV,1,1)),BUS(x(EMISGRV,1,1)), &  
            BUS(x(PSNVH  ,1,1)), BUS(x(PSNVHA ,1,1)), &  
            BUS(x(PSURFVHA ,1,1)),         &
            ALVA, BUS(x(LAIVA  ,1,1)), CVPA, EVA, BUS(x(Z0HA ,1,1)),&
@@ -460,9 +461,10 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       endif
 
 !
-      CALL DRAG_SVS2 ( bus(x(TPSOIL,1,1)), bus(x(TVEGEL,1,1)), bus(x(TVEGEH,1,1)),  &   
+      CALL DRAG_SVS2 ( bus(x(TGROUND,1,1)),bus(x(TGROUNDV,1,1))  , &
+           bus(x(TVEGEL,1,1)), bus(x(TVEGEH,1,1)),  &   
            bus(x(WSOIL ,1,1)) ,  &   
-           bus(x(WVEG_VL   ,1,1)),bus(x(WVEG_VH   ,1,1)),  zthetaa,  &   
+           bus(x(WVEG_VL,1,1)),bus(x(WVEG_VH,1,1)),  zthetaa,  &   
            VMOD, VDIR, hu,     &
            ps, STOM_RS,   &  
            z0m, z0mland, bus(x(Z0MVG,1,1)), bus(x(WFC,1,1)),      &
@@ -471,11 +473,12 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            bus(x(zusl,1,1)), bus(x(ztsl,1,1)),    & 
            bus(x (DLAT,1,1)), &
            bus(x(FCOR,1,1)),bus(x(Z0HA ,1,1)), &  
-           bus(x(RESAGR,1,1)), bus(x(RESA_VL,1,1)),bus(x(RESA_VH,1,1)),  &    
-           bus(x(HUSURF,1,1)),   &  
-           HRSURF,      &
+           bus(x(RESAGR,1,1)),bus(x(RESAGRV,1,1)), &
+           bus(x(RESA_VL,1,1)),bus(x(RESA_VH,1,1)),  &    
+           bus(x(HUSURF,1,1)),bus(x(HUSURFGV,1,1)),   &  
+           HRSURF, HRSURFGV,      &
            bus(x(HV_VL,1,1)),bus(x(HV_VH,1,1)), DEL_VL, DEL_VH,     &
-           bus(x(Z0HBG,1,1)), bus(x(Z0HVG,1,1)), &
+           bus(x(Z0HBG,1,1)), bus(x(Z0HVG,1,1)), bus(x(Z0HGV,1,1)), &
            bus(x(VEGL,1,1)), bus(x(VEGH,1,1)), &
            N )  
       if (phy_error_L) return
@@ -625,16 +628,18 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                   bus(x(TPSOIL    ,1,1)) ,    & 
                   bus(x(TPERM     ,1,1)) , bus(x(GFLUXSA,1,1)), bus(x(GFLUXSV,1,1)), &  
                   DT                     , VMOD, VDIR, bus(x(DLAT,1,1)),     &   
-                  zfsolis ,ALVA ,bus(x(laiva,1,1)),GAMVA , BUS(x(ALVL,1,1)), & 
+                  zfsolis, bus(x(SWCA,1,1)),ALVA ,bus(x(laiva,1,1)),         &
+                  GAMVA , BUS(x(ALVL,1,1)), & 
                   BUS(x(ALVH,1,1)), BUS(x(ALGR,1,1)), BUS(x(EMISGR,1,1)),    & 
-                  bus(x(FDSI       ,1,1)) , zthetaa ,    &   
-                  bus(x(FCOR       ,1,1)) , bus(x(zusl,1,1)),    &  
-                  bus(x(ztsl       ,1,1)) , hu, &
-                  ps, RHOA, BUS(x(SVS_WTA,1,1)), &
+                  BUS(x(ALGRV,1,1)), BUS(x(EMISGRV,1,1)),    & 
+                  bus(x(FDSI       ,1,1)), bus(x(LWCA,1,1)), zthetaa ,    &   
+                  bus(x(FCOR       ,1,1)), bus(x(zusl,1,1)),    &  
+                  bus(x(ztsl       ,1,1)), hu, &
+                  ps, RHOA, BUS(x(SVS_WTA,1,1)), BUS(x(SVS_WTG,1,1)),  &
                   z0m, z0mland , bus(x(Z0T,1,indx_soil)),&
-                  HRSURF,       & 
+                  HRSURF,HRSURFGV,       & 
                   bus(x(HV_VL,1,1)) , bus(x(HV_VH,1,1)), DEL_VL, DEL_VH, STOM_RS ,& 
-                  CG,CVPA,BUS(x(EMISVL ,1,1)), BUS(x(EMISVH ,1,1)),bus(x(PSNGRVL    ,1,1)) ,    &    
+                  CG,CVPA,BUS(x(EMISVL ,1,1)), BUS(x(EMISVH ,1,1)) ,    &    
                   bus(x(RESAGR,1,1)), bus(x(RESA_VL,1,1)),bus(x(RESA_VH,1,1)),   &        
                   bus(x(RESASA,1,1)), bus(x(RESASV,1,1)) ,bus(x(RESAGRV,1,1)), &
                   bus(x(RNETSA     ,1,1)) , bus(x(HFLUXSA,1,1)),   &   
@@ -646,8 +651,6 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                   bus(x(SNVAL      ,1,1)) ,    &  
                   bus(x(TSNOWV_SVS ,1,1)) ,   &   
                   bus(x(VEGH       ,1,1)) , bus(x(VEGL   ,1,1)), bus(x(VGH_HEIGHT   ,1,1)),  &   
-                  bus(x(PSNVH      ,1,1)) ,    &   
-                  bus(x(PSNVHA     ,1,1)), bus(x(PSURFVHA     ,1,1)),   &   
                   bus(x(SKYVIEW   ,1,1)), bus(x(SKYVIEWA   ,1,1)),   &  
                   bus(x(SOILHCAPZ ,1,1)) ,bus(x(SOILCONDZ,1,1)),   & 
                   rainrate_mm,bus(x(WVEG_VL,1,1)),bus(x(WVEG_VH,1,1)), &
@@ -660,7 +663,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                   bus(x(LEGV       ,1,1)) ,  &
                   bus(x(LER_VL        ,1,1)) , bus(x(LETR_VL       ,1,1)) ,   &  
                   bus(x(LER_VH        ,1,1)) , bus(x(LETR_VH       ,1,1)) ,   &  
-                  bus(x(EG         ,1,1)) ,   &    
+                  bus(x(EG            ,1,1)) , bus(x(EGV            ,1,1)) ,   &      
                   bus(x(ER_VL         ,1,1)) , bus(x(ETR_VL    ,1,1)),    &  
                   bus(x(ER_VH         ,1,1)) , bus(x(ETR_VH    ,1,1)),    &  
                   bus(x(FL         ,1,1)),  bus(x(EFLUX      ,1,1)) ,    &  
@@ -690,13 +693,14 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 !
 !
       CALL HYDRO_SVS2 ( DT,      & 
-           bus(x(eg      ,1,1)), bus(x(er_vl      ,1,1)),&
+           bus(x(eg      ,1,1)), bus(x(egv      ,1,1)),   &
+           bus(x(er_vl      ,1,1)),                       &
            bus(x(er_vh   ,1,1)),bus(x(etr_vl      ,1,1)), &
            bus(x(etr_vh  ,1,1)), rainrate_mm         ,&
            bus(x(rsnowsa ,1,1)), bus(x(rsnowsv ,1,1)),&
            bus(x(impervu ,1,1)), bus(x(vegl    ,1,1)),&
-           bus(x(vegh    ,1,1)), bus(x(psngrvl ,1,1)),&
-           bus(x(psnvha  ,1,1)), bus(x(acroot  ,1,1)),&  ! VV TO BE CHECCHED PSNVHA
+           bus(x(vegh    ,1,1)), bus(x(svs_wta ,1,1)),& 
+           bus(x(svs_wtg ,1,1)), bus(x(acroot  ,1,1)),&  
            wrmax_vl,wrmax_vh,  bus(x(wsat    ,1,1)),&
            bus(x(ksat    ,1,1)), bus(x(psisat  ,1,1)),&
            bus(x(bcoef   ,1,1)), bus(x(fbcof   ,1,1)),&

@@ -14,17 +14,17 @@
 !CANADA, H9P 1J3; or send e-mail to service.rpn@ec.gc.ca
 !-------------------------------------- LICENCE END ---------------------------
 
-      SUBROUTINE DRAG_SVS2 ( TGRS, TVGLS, TVGHS, WD1, &
+      SUBROUTINE DRAG_SVS2 ( TGRS, TGRVS, TVGLS, TVGHS, WD1, &
                               WR_VL, WR_VH,  THETAA, VMOD, VDIR, HU,  &  
                               PS, RS, Z0, Z0LOC, Z0VG, WFC, WSAT, CLAY1,  &
                               SAND1, LAI_VL, LAI_VH, WRMAX_VL,WRMAX_VH,&
                               ZUSL, ZTSL, LAT, & 
                               FCOR, Z0HA, & 
-                              RESAGR, RESA_VL, RESA_VH, &  
-                              HUSURF, & 
-                              HRSURF, &       
+                              RESAGR,RESAGRV, RESA_VL, RESA_VH, &  
+                              HUSURF,HUSURFGV, & 
+                              HRSURF,HRSURFGV, &       
                               HV_VL, HV_VH, DEL_VL, DEL_VH,  &
-                              Z0HBG, Z0HVG, VEGL, VEGH, &
+                              Z0HBG, Z0HVG,Z0HGV, VEGL, VEGH, &
                               N)
       use tdpack
       use sfc_options
@@ -38,11 +38,11 @@
       REAL TGRS(N), TVGLS(N), TVGHS(N), WR_VL(N), WR_VH(N), THETAA(N), VMOD(N), VDIR(N), HU(N), CLAY1(N)
       REAL SAND1(N), PS(N), RS(N), Z0(N),Z0LOC(N), Z0VG(N), WFC(N,NL_SVS), WSAT(N,NL_SVS)
       REAL LAI_VL(N), LAI_VH(N),WRMAX_VH(N),WRMAX_VL(N), ZUSL(N), ZTSL(N), LAT(N)
-      REAL FCOR(N), Z0HA(N), Z0HBG(N), Z0HVG(N)
-      REAL RESAGR(N), RESA_VL(N), RESA_VH(N)
-      REAL HUSURF(N), HV_VL(N), HV_VH(N), DEL_VL(N), DEL_VH(N)
-      REAL HRSURF(N), WD1(N)
-      REAL VEGH(N), VEGL(N)
+      REAL FCOR(N), Z0HA(N), Z0HBG(N), Z0HVG(N), Z0HGV(N)
+      REAL RESAGR(N),RESAGRV(N), RESA_VL(N), RESA_VH(N)
+      REAL HUSURF(N),HUSURFGV(N), HV_VL(N), HV_VH(N), DEL_VL(N), DEL_VH(N)
+      REAL HRSURF(N),HRSURFGV(N), WD1(N)
+      REAL VEGH(N), VEGL(N), TGRVS(N)
 !
 !Author
 !          S. Belair, M.Abrahamowicz, S.Z.Husain, N.Alavi, S.Zhang (June 2015) 
@@ -72,11 +72,13 @@
 !
 !          - Input/Output -
 ! RESAGR    aerodynamical surface resistance for bare ground
+! RESAGRV    aerodynamical surface resistance for bare ground
 ! RESA_VL    aerodynamical surface resistance for low vegetation
 ! RESA_VH    aerodynamical surface resistance for high vegetation
 !
 !          - Input -
 ! TGRS      skin (surface) temperature of bare ground
+! TGRVS      skin (surface) temperature of ground below high veg. 
 ! TVGLS      skin (surface) temperature of low vegetation
 ! TVGHS      skin (surface) temperature of high vegetation
 ! WD1       Soil volumetric water content (first level)
@@ -111,6 +113,8 @@
 !           - Output -
 ! HRSURF   relative humidity of the bare ground surface (1st layer)
 ! HUSURF    specific humidity of the bare ground surface
+! HRSURFGV   relative humidity of the the snow-free ground below high veg (1st layer)
+! HUSURFGV   specific humidity of the snow-free ground below high veg
 ! HV_VL        Halstead coefficient (i.e., relative humidity of the
 !           low vegetation canopy)
 ! HV_VH        Halstead coefficient (i.e., relative humidity of the
@@ -118,6 +122,7 @@
 ! DEL_VL    fraction of low veg. canopy covered by intercepted water
 ! DEL_VH    fraction of high veg canopy covered by intercepted water
 ! Z0HBG     Bare ground thermal roughness
+! Z0HGV     Ground below high veg thermal roughness
 ! Z0HVG     Vegetation thermal roughness   
 !
 !
@@ -125,7 +130,9 @@
       INTEGER I, zopt
 
       real, dimension(n) :: temp, coef_vl, coef_vh, qsatgr, qsat_vl, qsat_vh, &
-           zqs_vl, zqs_vh, ctugr, ctuvg, z0hg, wcrit_hrsurf, z0bg_n, ra
+           zqs_vl, zqs_vh, ctugr, ctugrv, ctuvg, z0hg, wcrit_hrsurf, z0bg_n,ra,&
+           z0gv_n, qsatgrv,wcrit_hrsurfgv
+  
            
 !
 !***********************************************************************
@@ -143,12 +150,23 @@
    
       DO I=1,N
          Z0BG_N(I) = Z0MBG
-         Z0HG(I) = Z0M_TO_Z0H * Z0MBG
-      END DO         
+         Z0HBG(I) = Z0M_TO_Z0H * Z0MBG
+      END DO 
+
+!
+!         GROUND BELOW HIGH VEG LOCAL HEAT ROUGHNESS.  It is approximated by the
+!         local momentum roughness of bare ground, times a scaling factor.
+   
+      DO I=1,N
+         Z0GV_N(I) = 1.0 ! Value to be modified
+         Z0HGV(I) = Z0M_TO_Z0H * Z0GV_N(I) 
+      END DO
+
 !
 !
 !
-!*       1.     RELATIVE AND SPECIFIC HUMIDITY OF THE GROUND (HU)
+!*       1.A     RELATIVE HYMIDITY OF THE EXPOSED BARE GROUND AND OF THE
+!                GROUND BELOW HIGH VEG 
 !               -------------------------------------------------
 !
 !                        This relative humidity is related to
@@ -156,7 +174,9 @@
 !                        field capacity of the ground
 !                        ** If the 1st soil layer is very shallow (under 5cm)
 !                        might need to change the calc. to use a deeper layer
-
+!
+!                        Same value since only one soil profile is used       
+!
       if( svs_hrsurf_sltext ) then
          !use hrsurf formulation based on soil texture
 
@@ -173,18 +193,24 @@
 
             TEMP(I)   = PI*WD1(I)/WCRIT_HRSURF(I)
             HRSURF(I) = 0.5 * ( 1.-COS(TEMP(I)) )  
+            HRSURFGV(I) = HRSURF(I)  
+            WCRIT_HRSURFGV(I) = WCRIT_HRSURF(I)
             
          END DO
       else
          ! formulation based on field capacity
          DO I=1,N
-    
             TEMP(I)   = PI*WD1(I)/WFC(I,1)
             HRSURF(I) = 0.5 * ( 1.-COS(TEMP(I)) )  
             wcrit_hrsurf(i) = wfc(i,1)
+            HRSURFGV(I) = HRSURF(I)  
+            WCRIT_HRSURFGV(I) = WCRIT_HRSURF(I)
          END DO
       endif
 !
+!
+!*       1.B    SPECIFIC HUMIDITY OF THE EXPOSED BARE GROUND (HU)
+!               -------------------------------------------------
 !                         there is a specific treatment for dew
 !                         (see Mahfouf and Noilhan, jam, 1991)
 !
@@ -233,12 +259,65 @@
       END DO
 !
 !
+!
+!*       1.C   SPECIFIC HUMIDITY OF THE GROUND BELOW HIGH VEGETATION (HU)
+!               -------------------------------------------------
+!
+!                         there is a specific treatment for dew
+!                         (see Mahfouf and Noilhan, jam, 1991)
+!
+!                         first calculate the saturation vapor
+!                         pressure and specific humidity
+      
+!
+          DO I=1,N
+              QSATGRV(I) = FOQST( TGRVS(I), PS(I) )
+          END DO
+!
+!
+          DO I=1,N
+!
+              IF(VEGH(I) > EPSILON_SVS) THEN ! High vegetation is present
+!                         when hu*qsat < qa, there are two
+!                         possibilities
+!
+!                         low-level air is dry, i.e.,
+!                         qa < qsat
+!
+                  IF ( HRSURFGV(I)*QSATGRV(I).LT.HU(I).AND.QSATGRV(I).GT.HU(I) )& 
+                       HRSURFGV(I) = HU(I) / QSATGRV(I)
+!
+!                          b) low-level air is humid, i.e.,
+!                          qa >= qsat
+!
+                  IF ( HRSURFGV(I)*QSATGRV(I).LT.HU(I).AND.QSATGRV(I).LE.HU(I) )& 
+                      HRSURFGV(I) = 1.0
+
+!
+!                          for very humid soil (i.e., wg > wfc ),
+!                          we take hu=1
+!
+                  IF ( WD1(I).GT.WCRIT_HRSURFGV(I) ) HRSURFGV(I) = 1.0
+
+!
+!
+!                           Calculate specific humidity over ground 
+                 HUSURFGV(I) = HRSURFGV(I) * QSATGRV(I)
+!          
+            ELSE      ! No high vegetation 
+!                    
+!               ! Use value from bare ground to avoid empty arrays
+!                    
+             HUSURFGV(I) = HUSURF(I) 
+!             
+            ENDIF
+!
+          END DO
+!          
+      
+!
 !**     2.A     SURFACE TRANSFER COEFFICIENTS FOR HEAT (CH) FOR BARE GROUND 
 !*             ---------------------------------------------------------------
-!
-!
-!
-!
 !
 !                      *************************************
 !                      DANS LE CALL DE FLXSURF, LE Z0H DEVRAIT ETRE
@@ -250,7 +329,7 @@
          i = sl_sfclayer( THETAA, HU, VMOD, VDIR, ZUSL, ZTSL, &
               TGRS, HUSURF, Z0LOC, Z0HG, LAT, FCOR, optz0=zopt ,&
               z0mloc=z0loc, L_min=sl_Lmin_soil, &
-              coeft=CTUGR, z0t_optz0=Z0HBG )
+              coeft=CTUGR, z0t_optz0=Z0HGV )
 
          if (i /= SL_OK) then
             call physeterror('drag_svs', 'error returned by sl_sfclayer()')
@@ -275,13 +354,69 @@
 
 
       DO I=1,N
-        RESAGR(I) = 1. / CTUGR(I)
+         RESAGR(I) = 1. / CTUGR(I)
       END DO
+!     
 !
 !
 !
 !
-!**     2.B     SURFACE TRANSFER COEFFICIENTS FOR HEAT (CH) FOR LOW VEGETATION 
+!**     2.B     SURFACE TRANSFER COEFFICIENTS FOR HEAT (CH) FOR GROUND
+!                 BELOW HIGH VEG.
+!      
+!*             ---------------------------------------------------------------
+!
+!                      *************************************
+!                      DANS LE CALL DE FLXSURF, LE Z0H DEVRAIT ETRE
+!                      REMPLACER PAR UN Z0H_LOCAL JUSTE POUR LE SOL NU
+!                      *************************************
+!
+      if ( svs_dynamic_z0h ) then
+         zopt=9
+         i = sl_sfclayer( THETAA, HU, VMOD, VDIR, ZUSL, ZTSL, &
+              TGRS, HUSURF, Z0LOC, Z0HG, LAT, FCOR, optz0=zopt ,&
+              z0mloc=z0loc, L_min=sl_Lmin_soil, &
+              coeft=CTUGRV, z0t_optz0=Z0HGV )
+
+         if (i /= SL_OK) then
+            call physeterror('drag_svs', 'error returned by sl_sfclayer()')
+            return
+         endif
+
+      else
+         i = sl_sfclayer( THETAA, HU, VMOD, VDIR, ZUSL, ZTSL, &
+              TGRS, HUSURF, Z0, Z0HG, LAT, FCOR, &
+              L_min=sl_Lmin_soil, &
+              coeft=CTUGRV )
+
+         if (i /= SL_OK) then
+            call physeterror('drag_svs', 'error returned by sl_sfclayer()')
+            return
+         endif
+         
+         do i=1,N
+            z0hgv(i)=z0hg(i)
+         enddo
+
+      endif
+
+
+      DO I=1,N
+        IF(VEGH(I)>EPSILON_SVS) THEN
+            RESAGRV(I) = 1. / CTUGRV(I)
+         ELSE
+            RESAGRV(I) = 1. 
+         ENDIF
+      END DO
+
+
+!     
+!
+!
+!
+!
+
+!**     2.C     SURFACE TRANSFER COEFFICIENTS FOR HEAT (CH) FOR LOW VEGETATION 
 !*             ------------------------------------------------------------
 !
 !                         first calculate the saturation vapor
@@ -391,7 +526,8 @@
          ENDIF
       END DO
 !
-!**     2.V     SURFACE TRANSFER COEFFICIENTS FOR HEAT (CH) FOR HIGH VEGETATION 
+!
+!**     2.D     SURFACE TRANSFER COEFFICIENTS FOR HEAT (CH) FOR HIGH VEGETATION 
 !*             ------------------------------------------------------------
 !
 !                         first calculate the saturation vapor

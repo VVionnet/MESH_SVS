@@ -68,6 +68,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_ISOIL = 'ISOIL'
     character(len = *), parameter, public :: VN_SVS_KTHERMAL = 'KTHERMAL'
     character(len = *), parameter, public :: VN_SVS_TGROUND = 'TGROUND'
+    character(len = *), parameter, public :: VN_SVS_TGROUNDV = 'TGROUNDV' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_VF = 'VF'
     character(len = *), parameter, public :: VN_SVS_Z0V = 'Z0V'
     character(len = *), parameter, public :: VN_SVS_LNZ0 = 'LNZ0'
@@ -143,6 +144,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_WSOIL_N = 'WSOIL_N'
     character(len = *), parameter, public :: VN_SVS_ISOIL_N = 'ISOIL_N'
     character(len = *), parameter, public :: VN_SVS_TGROUND_N = 'TGROUND_N'
+    character(len = *), parameter, public :: VN_SVS_TGROUNDV_N = 'TGROUNDV_N'
     character(len = *), parameter, public :: VN_SVS_VF_N = 'VF_N'
     character(len = *), parameter, public :: VN_SVS_Z0V_N = 'Z0V_N'
     character(len = *), parameter, public :: VN_SVS_TVEGE_N = 'TVEGE_N'
@@ -176,6 +178,7 @@ module runsvs_mesh
         real, dimension(:, :), allocatable :: tpsoilv ! For svs2 only
         integer :: kthermal = 2
         real, dimension(:, :), allocatable :: tground
+        real, dimension(:),    allocatable :: tgroundv
         real, dimension(:, :), allocatable :: vf
         real, dimension(:, :), allocatable :: z0v
         real, dimension(:), allocatable :: lnz0
@@ -536,6 +539,7 @@ module runsvs_mesh
             if (allocated(svs_mesh%vs%tvegeh)) svs_bus(a2(tvegeh, i):z2(tvegeh, i)) = svs_mesh%vs%tvegeh(:, i + 1)
            end do
 
+           if (allocated(svs_mesh%vs%tgroundv)) svs_bus(a1(tgroundv):z1(tgroundv)) = svs_mesh%vs%tgroundv
            if (allocated(svs_mesh%vs%tvegel)) svs_bus(a1(tvegel):z1(tvegel)) = svs_mesh%vs%tvegel
            if (allocated(svs_mesh%vs%wveg_vh)) svs_bus(a1(wveg_vh):z1(wveg_vh)) = svs_mesh%vs%wveg_vh
            if (allocated(svs_mesh%vs%wveg_vl)) svs_bus(a1(wveg_vl):z1(wveg_vl)) = svs_mesh%vs%wveg_vl
@@ -986,7 +990,7 @@ module runsvs_mesh
         call runsvs_mesh_append_phyentvar('wsoil')
         call runsvs_mesh_append_phyentvar('isoil')
         call runsvs_mesh_append_phyentvar('tground')
-        if(svs_mesh%vs%schmsol=='SVS2') then
+        if(svs_mesh%vs%schmsol=='SVS') then
            call runsvs_mesh_append_phyentvar('tvege')
            call runsvs_mesh_append_phyentvar('wveg')
         endif
@@ -1013,6 +1017,7 @@ module runsvs_mesh
              call runsvs_mesh_append_phyentvar('wveg_vh')
              call runsvs_mesh_append_phyentvar('tvegel')
              call runsvs_mesh_append_phyentvar('wveg_vl')
+             call runsvs_mesh_append_phyentvar('tgroundv')
              call runsvs_mesh_append_phyentvar('tpsoil')
              call runsvs_mesh_append_phyentvar('tpsoilv')
              call runsvs_mesh_append_phyentvar('tperm')
@@ -1226,9 +1231,9 @@ print*,vl(i)%n,vl(i)%niveaux,vl(i)%mul,vl(i)%mosaik
                    end do
                 endif
             else if(svs_mesh%vs%schmsol=='SVS2') then
-               call print_message('             Bare ground/low veg    High veg.')
+               call print_message('             Soil profile ')
                do i = 1, nl_svs ! permeable layers
-                   write(line, "(' LAYER ', i3, ': ', 999(f8.3, 2x))") i, svs_bus(a2(tpsoil, i - 1)), svs_bus(a2(tpsoilv, i - 1))
+                   write(line, "(' LAYER ', i3, ': ', 999(f8.3, 1x))") i, svs_bus(a2(tpsoil, i - 1))
                    call print_message(line)
                end do
             end if
@@ -1338,7 +1343,7 @@ ierr = 200
                             trim(VN_SVS_TPSOILV) // '_' // trim(adjustl(level))
          end do
        endif  
-       write(iout_soil, FMT_CSV, advance = 'no') 'TVEGL','TVEGH_1','TVEGH_2' 
+       write(iout_soil, FMT_CSV, advance = 'no') 'TVEGL','TVEGH_1','TVEGH_2','TGROUND','TGROUNDV' 
        write(iout_soil, *)
 
 
@@ -1589,7 +1594,9 @@ ierr = 200
             svs_mesh%vs%wveg_vl = svs_bus(a1(wveg_vl):z1(wveg_vl ))
             svs_mesh%vs%wveg_vh = svs_bus(a1(wveg_vh):z1(wveg_vh ))
 
-
+            if (.not. allocated(svs_mesh%vs%tgroundv)) allocate(svs_mesh%vs%tgroundv(ni))
+            svs_mesh%vs%tgroundv = svs_bus(a1(tgroundv):z1(tgroundv ))
+            
             if(svs_mesh%vs%lsnow_interception_svs2) then 
                if (.not. allocated(svs_mesh%vs%sncma)) allocate(svs_mesh%vs%sncma(ni))
                svs_mesh%vs%sncma = svs_bus(a1(sncma):z1(sncma))
@@ -1663,7 +1670,8 @@ ierr = 200
                 end do
               endif
               write(iout_soil, FMT_CSV, advance = 'no') busptr(vd%tvegel%i)%ptr(1:ni, trnch),busptr(vd%tvegeh%i)%ptr(1:ni,trnch), &
-                      busptr(vd%tvegeh%i)%ptr(ni+1:2*ni, trnch)              
+                      busptr(vd%tvegeh%i)%ptr(ni+1:2*ni, trnch),busptr(vd%tground%i)%ptr(1:ni, trnch) , &
+                      busptr(vd%tgroundv%i)%ptr(1:ni, trnch)               
               write(iout_soil, *)
 
               ! Write file containing bulk snow outputs

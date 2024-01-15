@@ -698,6 +698,17 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
                     b = svs_mesh%vs%kthermal
                     call assign_line_args(svs_mesh%vs%tground, p, b, args(3:), pkey%MAP_ASSIGN_ORDER2, istat, k)
                 end if
+            case (VN_SVS_TGROUNDV )
+                if (.not. svs_mesh%PROCESS_ACTIVE  .or. svs_mesh%vs%schmsol=='SVS' ) then
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    if (SHDFILEFMT == 2) then
+                        p = shd%lc%NML
+                    else
+                        p = shd%lc%NTYPE
+                    end if
+                    call assign_line_args(svs_mesh%vs%tgroundv, p, args(2:), istat)
+                end if                
             case (VN_SVS_VF)
                 if (.not. svs_mesh%PROCESS_ACTIVE) then
                     istat = istat + radix(istat)**pstat%INACTIVE
