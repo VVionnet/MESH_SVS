@@ -57,7 +57,6 @@
       implicit none
 !!!#include <arch_specific.hf>
 
-
       INTEGER N!, NSL
       
       REAL TSA(N),  DT, VMOD(N)
@@ -364,6 +363,8 @@
 !               --------------------------
 
       CALL WEIGHTS_SVS2(VEGH,VEGL,PSNG,PSNVH,PSURFVHA,'GROUND',N,WTG)
+
+
 !           
 !
 !      
@@ -417,9 +418,9 @@
 !       
           TGRST(I) = BBG(I)/ABG(I)
 
-          write(*,*) 'TGSS',TGRS(I),TGRST(I)
-          write(*,*) 'HR_SURF',HRSURF(I),'RSW',RG(I) 
-          write(*,*)'SKINCOND', SKINCOND_BG(I)
+          !write(*,*) 'TGSS',TGRS(I),TGRST(I)
+          !write(*,*) 'HR_SURF',HRSURF(I),'RSW',RG(I) 
+          !write(*,*)'SKINCOND', SKINCOND_BG(I)
 
        END DO        
 !!            TGRD AT TIME 'T+DT': VV To be changed 
@@ -459,7 +460,7 @@
 !         Function zrsra used in the computation of the sensible heat
 !         flux             
 !
-             write(*,*) 'RESA_Vl',RESA_VL(I)
+             !write(*,*) 'RESA_Vl',RESA_VL(I)
              RORAVGL(I) = RHOA(I) / RESA_VL(I)
 !
 !         Skin conductivity for low vegetation
@@ -567,7 +568,7 @@
 
        ENDDO
 
-       write(*,*) 'TVEG', TVGLST(1),TVGHST(1)
+       !write(*,*) 'TVEG', TVGLST(1),TVGHST(1)
 
 !!           TVGD AT TIME 'T+DT': Mean temperature from FR scheme for
 !                      high veg
@@ -618,7 +619,7 @@
 
               TA4FLX(I)  = THETAA(I)
               QA4FLX(I)  = HU(I)
-              IF (LCAN_REF_LEVEL_ABOVE) THEN ! Reference height above the canopy. In this case, z0 should be the canopy roughness lengths and the heights above canopy
+              IF (LCANO_REF_LEVEL_ABOVE) THEN ! Reference height above the canopy. In this case, z0 should be the canopy roughness lengths and the heights above canopy
                  ! WARNING NL: Might need to be updated following conversation with Stephane B. and Maria A.
                  ZU4FLX(I)  = ZUSL(I) + VGHEIGHT(I)
                  ZT4FLX(I)  = ZTSL(I) + VGHEIGHT(I)
@@ -645,7 +646,7 @@
 
               if (i_flux /= SL_OK) then
                 print*, 'Abort. ebud_svs2 bec of err in sl_sfclayer()'
-              stop
+                stop
               endif 
 
               ! Compute aerodymanical resistance with stability atm correction
@@ -661,8 +662,11 @@
               !   function zrsra ground under veg
               RORAGRV(I) = RHOA(I) / RESAGRV(I)
 
+
+
               ! Calculate the correction factor between RESAGRV when accounting for stability and RESAGRV for neutral stab
               CORR_STAB_RESAGRV(I) = RESAGRV(I) / RESAGRV_NEUTRAL(I)
+
 
               !drag coef from CLASS for high veg only
               RORAGRV(I) = RHOA(I) / (RESAGRV(I) + ZRSURF(I)* CORR_STAB_RESAGRV(I))
@@ -673,7 +677,7 @@
              ! Contribution to coef D
              SURF_ENBAL_HVEGD(I) = ( VTRA(I)*(1.-ALGR(I))*RG(I) + SKYVIEWA(I)*EMGR(I)*RAT(I) &
                             + 3.*EMGR(I)*STEFAN*(TP(I,1)**4) &
-                            +(1.-SKYVIEWA(I))*EMGR(I)*EMISVH(I)*STEFAN*(TVGST(I)**4) &
+                            +(1.-SKYVIEWA(I))*EMGR(I)*EMISVH(I)*STEFAN*(TVGHS(I)**4) &
                             + RORAGRV(I)*CPD*TA4FLX(I) &
                             + RORAGRV(I)*LEFF(I)*HRSURF(I)*ZDQSATGRV(I)*TP(I,1) &
                             - RORAGRV(I)*LEFF(I)*(HRSURF(I)*ZQSATGRV(I)-QA4FLX(I)) )

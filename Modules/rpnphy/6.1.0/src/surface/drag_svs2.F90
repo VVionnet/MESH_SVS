@@ -305,7 +305,7 @@
 !
 !                          calculate DEL
 !
-         IF(VEGL(I)>0) THEN   ! High vegetation present in the grid cell
+         IF(VEGL(I)>EPSILON_SVS) THEN   ! Low vegetation present in the grid cell
              COEF_VL(I) = 1. + 2.*LAI_VL(I)
 !
  
@@ -331,7 +331,7 @@
 !                         step resavg to calculate specific 
 !                         humidity of low vegetation
 !
-         IF(VEGL(I)>0) THEN   ! High vegetation present in the grid cell
+         IF(VEGL(I)>EPSILON_SVS) THEN   ! High vegetation present in the grid cell
              HV_VL(I) = 1. - MAX(0.,SIGN(1.,QSAT_VL(I)-HU(I)))&  
                      *RS(I)*(1.-DEL_VL(I)) / (RESA_VL(I)+RS(I))
 
@@ -384,7 +384,7 @@
       endif
    
       DO I=1,N
-         IF(VEGL(I)>0) THEN   ! High vegetation present in the grid cell
+         IF(VEGL(I)>EPSILON_SVS) THEN   ! Low vegetation present in the grid cell
              RESA_VL(I) = 1. / CTUVG(I)
          ELSE
              RESA_VL(I) = 1.
@@ -416,7 +416,7 @@
 !
 !                          calculate DEL
 !
-         IF(VEGH(I)>0) THEN   ! High vegetation present in the grid cell
+         IF(VEGH(I)>EPSILON_SVS) THEN   ! High vegetation present in the grid cell
              COEF_VH(I) = 1. + 2.*LAI_VH(I)
 !
              DEL_VH(I) =   MIN(WR_VH(I),WRMAX_VH(I)) / &
@@ -441,7 +441,7 @@
 !                         step resavg to calculate specific 
 !                         humidity of vegetation
 !
-         IF(VEGH(I)>0) THEN   ! High vegetation present in the grid cell
+         IF(VEGH(I)>EPSILON_SVS) THEN   ! High vegetation present in the grid cell
              HV_VH(I) = 1. - MAX(0.,SIGN(1.,QSAT_VH(I)-HU(I)))&  
                  *RS(I)*(1.-DEL_VH(I)) / (RESA_VH(I)+RS(I))
 

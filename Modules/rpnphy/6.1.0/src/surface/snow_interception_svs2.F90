@@ -169,6 +169,9 @@
 
       ! Initialize snowfall mass directly transfered through the canopy
       DIRECT_SNOW(:) = 0.
+      NET_SNOW(:) = 0.
+
+      DRIP_CPY(:) = 0.
 
       ! Compute specific humidity and vapor pressure at saturation
       PQSAT(:) = QSATI( T(:), PS(:))
@@ -196,7 +199,6 @@
                 ! Update the amount of snow that falls below high vegetation
                 DIRECT_SNOW(I)  = SR(I)*DT - INTCPT(I)
 
-                !write(*,*) 'After inter', SNCMA(1), INTCPT(1)
 
                 !!!!!!!!
                 ! Sublimation Code  (Lundquist et al, 2021)
@@ -204,8 +206,7 @@
 
                 IF(HSUBL_CANO == 'LU21') THEN
                     VSUBL(I) = 0.7*WIND_TOP(I) ! Initial and gross assumption. 
-                                   ! Need to be revised! 
-          
+                                   ! Need to be revised!           
 
                    IF( SNCMA(I)>EPSILON_SVS .AND. T(I) < 273.15) THEN
                       ! Mass of intercepted snow loss due to sublimation
@@ -226,10 +227,10 @@
 
                    ! Computation of ventilation wind speed of intercepted snow derived from above-caopny wind speed  [Eq 8 in EL10]
                    ! Estimated within canopy wind speed at fraction XI2 of the entire tree height [Eq 8 in EL10]  [m s-1]
-                   VSUBL(I) = WIND_TOP(I) * EXP(-1. * EXT2 * XI2)
+                   VSUBL(I) = WIND_TOP(I) * EXP(-1. * EXT2 * XI2)               
 
-                    ! Vaport density at saturation 
-                    SVDENS = PPSAT(I) * MWAT / (RGAZ * T(I))
+                   ! Vaport density at saturation 
+                   SVDENS = PPSAT(I) * MWAT / (RGAZ * T(I))
 
                    ! Derive partial vapor pressure from speficic humidity and pressure [Pa]
                    EVAP = HU(I) * PS(I) / (0.622+0.378 * HU(I) ) 
@@ -291,7 +292,7 @@
                    MPM = 4.0 / 3.0 * PI * 917. * RADIUS_ICESPH**3. * (1.0 + 3.0 / ALPHA + 2.0 / ALPHA**2.)
 
                    ! Sublimation rate coefficient of single 'ideal' ice sphere [s-1]
-                  SUB_RATE = (2.0 *PI * RADIUS_ICESPH *SIGMA - SSTAR *J)/ ( LS *J + C1) / MPM  
+                   SUB_RATE = (2.0 *PI * RADIUS_ICESPH *SIGMA - SSTAR *J)/ ( LS *J + C1) / MPM  
 
 
                    ! Compute the intercepted snow exposure coefficient
@@ -350,7 +351,7 @@
                IF(T(I)>273.15) THEN 
                     DRIP_CPY(I) =  UNLOAD(I) ! Unload considered as liquid
                     SNW_UNLOAD = 0. 
-                ELSE
+               ELSE
                     DRIP_CPY(I) = 0.    ! Unload considered as solid
                     SNW_UNLOAD = UNLOAD(I)
                ENDIF   

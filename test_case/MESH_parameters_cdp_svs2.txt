@@ -84,8 +84,8 @@ lout_snow_enbal  .false.    ! Create output file containing information about th
 
 ! Activate canopy module
 lsnow_interception_svs2  .false.
-lcan_ref_level_above .false.
-lsnow_canopy_mod .false.
+lcano_ref_level_above .false.
+lcano_svs2 .false.
 
 ! Specify a canopy cover density (high vegetation)
 VGH_DENS    0.

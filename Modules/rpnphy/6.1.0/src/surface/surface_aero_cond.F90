@@ -142,24 +142,25 @@ DO JJ=1,SIZE(PRI)
                                     *ZWORK2(JJ)**ZPH(JJ)  &
                                     *ZFH(JJ) * SQRT(-ZSTA(JJ))           &
                       ) 
-        PAC(JJ) = ZCDN(JJ) * (  ZVMOD(JJ)-15.* ZSTA(JJ)*ZDI(JJ)  )  *  ZFH(JJ) ! 1/ra = CDN * U / f_Ri
+        PAC(JJ) = ZCDN(JJ) * (  ZVMOD(JJ)-15.* ZSTA(JJ)*ZDI(JJ)  )  *  ZFH(JJ) ! 1/ra = CDN * U * f_Ri
 
-        PRSURF(JJ) = PRSURF(JJ) * (  ZVMOD(JJ)-15.* ZSTA(JJ)*ZDI(JJ)  ) / ZVMOD(JJ)
+        PRSURF(JJ) = PRSURF(JJ) / (  ZVMOD(JJ)-15.* ZSTA(JJ)*ZDI(JJ)  ) * ZVMOD(JJ) ! rs = rs / f_Ri
 
       ELSE
         ZDI(JJ) = SQRT(ZWORK3(JJ) + 5. * ZSTA(JJ) )
-        PAC(JJ) = ZCDN(JJ) *ZVMOD(JJ)/(1.+15.*ZSTA(JJ)*ZDI(JJ)  &  ! 1/ra = CDN * U / f_Ri
+        PAC(JJ) = ZCDN(JJ) *ZVMOD(JJ)/(1.+15.*ZSTA(JJ)*ZDI(JJ)  &  ! 1/ra = CDN * U * f_Ri
                  / ZWORK3(JJ) /ZVMOD(JJ) )*ZFH(JJ)    
 
-        PRSURF(JJ) = PRSURF(JJ) * 1./(1.+15.*ZSTA(JJ)*ZDI(JJ)  &
-                 / ZWORK3(JJ) /ZVMOD(JJ) )*ZFH(JJ) 
+        PRSURF(JJ) = PRSURF(JJ) / (1./(1.+15.*ZSTA(JJ)*ZDI(JJ)  & ! rs = rs / f_Ri
+                 / ZWORK3(JJ) /ZVMOD(JJ) )*ZFH(JJ)) 
 
       ENDIF
     
       PRA(JJ) = 1. / PAC(JJ) + PRSURF(JJ)
 
-    
+
       PCH(JJ) = 1. / (PRA(JJ) * ZVMOD(JJ))
+
   ELSE IF (HSNOWRES=='M98')THEN
   ! Martin and Lejeune 1998 ; Cluzet et al 2016
     IF (PRI(JJ)<0.0) THEN

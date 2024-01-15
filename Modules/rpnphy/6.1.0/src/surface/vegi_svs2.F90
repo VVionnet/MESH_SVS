@@ -223,10 +223,10 @@
 !
 !                 Calculate the transmissivity
 !
-             VTR(I) = EXP( -1.0 * EXTINCT(I) * LAI_VH(I) )
+             VTR(I) = EXP( -1.0 * EXTINCT(I) * LAI_VH(I) * VGH_DENS(I) )
 !
 !                   --- based on average LAI
-             VTRA(I) = EXP( -1.0 * EXTINCT(I) * LAI(I) )
+             VTRA(I) = EXP( -1.0 * EXTINCT(I) * LAI(I) * VGH_DENS(I) )
 !
 !
 !
@@ -241,9 +241,9 @@
 !                 skyview factor for tall/high vegetation to be exp(-1*LAI).
 !
              CLUMPING = 0.5
-             SKYVIEW(I) = EXP( - CLUMPING * LAI(I) * VGH_DENS(I))
+             SKYVIEW(I) = EXP( - CLUMPING * LAI_VH(I) * VGH_DENS(I))
 !                   --- based on average LAI
-             SKYVIEWA(I) = EXP( - CLUMPING * LAI_VH(I) * VGH_DENS(I))
+             SKYVIEWA(I) = EXP( - CLUMPING * LAI(I) * VGH_DENS(I))
 !
 !
 !*       8.     MAXIMUM VOLUMETRIC WATER CONTENT RETAINED ON VEGETATION (m3/m3)

@@ -112,7 +112,7 @@ contains
 
       if( WT(i,indx_svs2_vl) .lt. min_wt )  WT(i,indx_svs2_vl) = 0.0
       if( WT(i,indx_svs2_sv) .lt. min_wt )  WT(i,indx_svs2_sv) = 0.0             
-      if( WT(i,indx_svs2_gv) .lt. min_wt )  WT(i,indx_svs2_sv) = 0.0  
+      if( WT(i,indx_svs2_gv) .lt. min_wt )  WT(i,indx_svs2_gv) = 0.0  
 
       !     EXPOSED BARE GROUND (NOT COVERED BY SNOW)
       WT(i,indx_svs2_bg) = 1.0 - WT(i,indx_svs2_sn) -  WT(i,indx_svs2_sv) - WT(i,indx_svs2_vl) &

@@ -24,9 +24,9 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    use sfcbus_mod
    use sfc_options, only: atm_external, atm_tplus, radslope, jdateo, &
         use_photo, nclass, zu, zt, sl_Lmin_soil, VAMIN, svs_local_z0m, &
-        vf_type, nsl, lunique_profile_svs2, lsnow_interception_svs2, lsnow_canopy_mod
+        vf_type, nsl, lunique_profile_svs2, lsnow_interception_svs2, lcano_svs2, &
+        lcano_ref_level_above
    use svs_configs
-
    use tdpack
    USE MODD_CSTS,     ONLY : XRHOLW
 
@@ -150,6 +150,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    real,dimension(n) :: puref_veg  ! Forcing height for wind under high vegetation
    real,dimension(n) :: ptref_veg  ! Forcing height for temperature/humidity under high vegetation
    real,dimension(n) :: pzohvh  ! Canopy roughness length for heat
+   real,dimension(n) :: ZZ0NAT, ZZ0HNAT ! Local variables for grid box average roughness length
 
      ! NL_SVS VARIABLES
    real, dimension(n,nl_svs) ::  pd_g, pdzg
@@ -503,14 +504,13 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 !
 !      Effect of high vegetation on met forcing
 !
-     IF(LSNOW_CANOPY_MOD) THEN
-        CALL  CANOPY_MET_SVS2(tt, hu, ps, vmod, vdir, zfsolis, bus(x(FDSI,1,1)), &
+     IF(LCANO_SVS2) THEN
+        CALL  CANOPY_MET_SVS2(tt, hu, vmod, zfsolis, bus(x(FDSI,1,1)), &
                      bus(x(TVEGE,1,1)),bus(x(zusl,1,1)),  bus(x(ztsl,1,1)),  &
-                     bus(x(FCOR,1,1)), bus(x(DLAT,1,1)), bus(x(SNVDP,1,1)),bus(x(TSNOWV_SVS,1,1)),bus(x(TPSOILV,1,1)),   &  
                      SUNCOSA, bus(x(SWCA,1,1)), bus(x(LWCA,1,1)), bus(x(VCA,1,1)), bus(x(TCA,1,1)), bus(x(QCA,1,1)) , PWIND_TOP,  & 
-                     PUREF_VEG,PTREF_VEG,BUS(x(Z0MVH  ,1,1)),PZ0,bus(x(PSNVH,1,1)),  BUS(x(VEGH   ,1,1)), &
-                     BUS(x(LAIVH  ,1,1)),bus(x(VEGTRANS,1,1)) , bus(x(SKYVIEW,1,1)) , &
-                     bus(x(EMISVH,1,1)),bus(x(VGH_HEIGHT,1,1)),bus(x(VGH_DENS,1,1)),CLUMPING, PRSURF, PWIND_DRIFT, N) 
+                     PUREF_VEG,PTREF_VEG,BUS(x(Z0MVH  ,1,1)),PZ0,BUS(x(VEGH   ,1,1)), &
+                     BUS(x(LAIVH  ,1,1)),bus(x(SKYVIEW,1,1)) , &
+                     bus(x(VGH_HEIGHT,1,1)),bus(x(VGH_DENS,1,1)),CLUMPING, PRSURF, PWIND_DRIFT, N) 
      ELSE       
          DO I=1,N
             PUREF_VEG(I) = bus(x(zusl,I,1))
@@ -521,8 +521,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
             ! Prepare radiation for snow under high veg --> Impact of vegetation on incoming SW and LW 
             bus(x(SWCA,I,1))    = zfsolis(I) * bus(x(VEGTRANS,I,1))              ! Incoming SW under VEG
 
-            bus(x(LWCA,I,1))  = bus(x(SKYVIEW,I,1)) * bus(x(FDSI,I,1)) +    &  ! Incoming LW under veg
-                 (1. - bus(x(SKYVIEW,I,1))) * EVA(I) * STEFAN * (bus(x(TVEGE,I,2)))**4.  ! add EVA--nathalie
+            bus(x(LWCA,I,1))  = bus(x(FDSI,I,1)) * bus(x(SKYVIEW,I,1))  +    &  ! Incoming LW under veg
+                 (1. - bus(x(SKYVIEW,I,1))) * EVA(I) * STEFAN * (bus(x(TVEGE,I,1)))**4.  ! add EVA--nathalie
          ENDDO
           
       ENDIF
@@ -574,24 +574,39 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 !     which are used in the energy balance and should be the canopy roughness length
 !     PZ0EFF stays the snow roughness length that is needed for SNOWDRIFT and SNOWFALL_UPGRID
 !
+
+      IF (LCANO_REF_LEVEL_ABOVE) THEN ! Use roughness length for the canopy for the calculation of the air resistance
+        DO I = 1,N
+         ZZ0NAT(I) =  BUS(x(Z0MVH  ,I,1))
+         ZZ0HNAT(I) = PZOHVH(I)
+        ENDDO
+      ELSE ! Use roughness length for snow for the calculation of the air resistance
+        DO I = 1,N
+         ZZ0NAT(I) =  PZ0(I)
+         ZZ0HNAT(I) = PZ0HNAT(I)
+        ENDDO
+      ENDIF
+
       CALL SNOW_SVS2(   bus(x(SNOMAV_SVS,1,1)), bus(x(TSNOWV_SVS,1,1)), bus(x(WSNOWV_SVS,1,1)),    &
-                         bus(x(SNODENV_SVS,1,1)), bus(x(SNVAL,1,1)),bus(x(SNOAGEV_SVS,1,1)),    &
-                         bus(x(SNODIAMOPTV_SVS,1,1)), bus(x(SNOSPHERIV_SVS,1,1)),bus(x(SNOHISTV_SVS,1,1)),   &
-                         DT,PSOIL_TEMP_VGH, PCT, bus(x(SOILHCAPZ,1,1)), bus(x(SOILCONDZ,1,1)),               &
-                         ps, bus(x(TCA,1,1)),bus(x(SWCA,1,1)),     &
-                         bus(x(QCA,1,1)), bus(x(VCA,1,1)), PWIND_DRIFT, &
-                         bus(x(LWCA,1,1)),         &
-                         RAINRATE_MM_VEG, SNOWRATE_MM_VEG,                                       &
-                         RHOA,  PUREF_VEG,   PTREF_VEG,            &
-                         BUS(X(ALGR,1,1)), PD_G, PDZG,                          &
-                         bus(x(RSNOWSV,1,1)), bus(x(GFLUXSV,1,1)),bus(x(RNETSV,1,1)) , bus(x(HFLUXSV ,1,1)), &
-                         PGFLUXSNOW_V,bus(x(SWNETSV,1,1)),bus(x(LWNETSV,1,1)),bus(x(SUBLDRIFTV,1,1)), &
-                         bus(x(HPSV ,1,1)),bus(x(PSNVH ,1,1)), BUS(x(Z0MVH  ,1,1)),PZ0, PZOHVH,  &
-                         LESVNOFRAC, LESVLNOFRAC, bus(x(ESV,1,1)),PZENITH, &
-                         bus(x (DLAT,1,1)), bus(x (DLON,1,1)), PFOREST_V,bus(x(SNOTYPEV_SVS,1,1)), PRSURF, &
-                         N, NL_SVS)
+                             bus(x(SNODENV_SVS,1,1)), bus(x(SNVAL,1,1)),bus(x(SNOAGEV_SVS,1,1)),    &
+                             bus(x(SNODIAMOPTV_SVS,1,1)), bus(x(SNOSPHERIV_SVS,1,1)),bus(x(SNOHISTV_SVS,1,1)),   &
+                             DT,PSOIL_TEMP_VGH, PCT, bus(x(SOILHCAPZ,1,1)), bus(x(SOILCONDZ,1,1)),               &
+                             ps, bus(x(TCA,1,1)),bus(x(SWCA,1,1)),     &
+                             bus(x(QCA,1,1)), bus(x(VCA,1,1)), PWIND_DRIFT, &
+                             bus(x(LWCA,1,1)),         &
+                             RAINRATE_MM_VEG, SNOWRATE_MM_VEG,                                       &
+                             RHOA,  PUREF_VEG,   PTREF_VEG,            &
+                             BUS(X(ALGR,1,1)), PD_G, PDZG,                          &
+                             bus(x(RSNOWSV,1,1)), bus(x(GFLUXSV,1,1)),bus(x(RNETSV,1,1)) , bus(x(HFLUXSV ,1,1)), &
+                             PGFLUXSNOW_V,bus(x(SWNETSV,1,1)),bus(x(LWNETSV,1,1)),bus(x(SUBLDRIFTV,1,1)), &
+                             bus(x(HPSV ,1,1)),bus(x(PSNVH ,1,1)), ZZ0NAT,PZ0,ZZ0HNAT,  &
+                             LESVNOFRAC, LESVLNOFRAC, bus(x(ESV,1,1)),PZENITH, &
+                             bus(x (DLAT,1,1)), bus(x (DLON,1,1)), PFOREST_V,bus(x(SNOTYPEV_SVS,1,1)), PRSURF, &
+                             N, NL_SVS)
+ 
 
       if (phy_error_L) return
+
 
 ! Compute snow diagnostics for hydro and outputs
 !
