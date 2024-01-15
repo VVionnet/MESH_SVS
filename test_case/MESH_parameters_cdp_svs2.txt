@@ -70,6 +70,9 @@ tvegel          285.7
 !> npoints   ----- 1
 wveg_vl             0.0 !kg m**-2
 
+!> Ground below high veg (Skin only) 
+!> nlayers   ----- 1 
+tgroundv       284.8  
 
 ! Multilayer Snowpack scheme
 nsl     20   ! Number of snow layers
