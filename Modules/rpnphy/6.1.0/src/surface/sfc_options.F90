@@ -301,7 +301,7 @@ module sfc_options
    namelist /surface_cfgs/ lwater_ponding_svs1 
 
    !# If .true., SVS2 uses only a unique column for the soil
-   logical           :: lunique_profile_svs2 = .false.
+   logical           :: lunique_profile_svs2 = .true.
    namelist /surface_cfgs/ lunique_profile_svs2 
    
    !#  Lower boundary conditions for heat equation in SVS2

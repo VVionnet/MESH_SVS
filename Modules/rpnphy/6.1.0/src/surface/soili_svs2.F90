@@ -22,8 +22,8 @@
            GAMVH,GAMVL, &  
            LAIVH, LAIVL, &   
            Z0MVH, Z0MVL, Z0, CLAY, SAND, DECI, EVER,LAID,  &  
-           WTA, CG,PSOILHCAPZ, PSOILCONDZ, PSNGRVL,  & 
-           Z0H, ALGR, EMGR, PSNVH, PSNVHA, PSURFVHA,   &
+           WTA, WTG, CG,PSOILHCAPZ, PSOILCONDZ, PSNGRVL,  & 
+           Z0H, ALGR, EMGR, ALGRV, EMGRV, PSNVH, PSNVHA, PSURFVHA,   &
            ALVA, LAIVA, CVPA, EVA, Z0HA, Z0MVG, RGLA, STOMRA ,&  
            GAMVA,CONDSLD, CONDDRY, N )
          !
@@ -43,12 +43,12 @@
       REAL RHOSV(N), Z0MVH(N), VEGH(N), VEGL(N), SVM(N)
       REAL CGSAT(N), WSAT(N,NL_SVS), WWILT(N,NL_SVS), BCOEF(N,NL_SVS)
       REAL Z0(N)
-      REAL CG(N), WTA(N,svs2_tilesp1)
+      REAL CG(N), WTA(N,svs2_tilesp1), WTG(N,svs2_tilesp1)
       REAL PSNGRVL(N)
       REAL PSOILHCAPZ(N,NL_SVS),PSOILCONDZ(N,NL_SVS)
-      REAL Z0H(N), ALGR(N), CLAY(N), SAND(N)
+      REAL Z0H(N), ALGR(N), ALGRV(N), CLAY(N), SAND(N)
       REAL DECI(N), EVER(N), LAID(N)
-      REAL EMGR(N), PSNVH(N), PSNVHA(N), PSURFVHA(N), LAIVH(N)
+      REAL EMGR(N),EMGRV(N), PSNVH(N), PSNVHA(N), PSURFVHA(N), LAIVH(N)
       REAL ALVA(N), LAIVA(N), CVPA(N), EVA(N)
       REAL LAIVL(N), CVH(N), CVL(N), ALVL(N), ALVH(N)
       REAL EMISVH(N), EMISVL(N), ETG(N), Z0MVL(N), RGLVH(N), RGLVL(N)
@@ -114,12 +114,15 @@
 ! CONDDRY  Dry thermal conductivity
 !
 !           - Output -
-! WTA      Weights for SVS2 surface types as seen from SPACE
+! WTA      Weights for SVS2 surface types as seen from ATM.
+! WTG      Weights for SVS2 surface types as seen from GROUND
 ! CG       heat capacity of the bare soil
 ! PSNGRVL  fraction of the bare soil or low veg. covered by snow
 ! Z0H      agg. roughness length for heat transfer considering snow
 ! ALGR     albedo of bare ground (soil)
+! ALGRV    albedo of snow-free ground below high veg
 ! EMGR     emissivity of bare ground (soil)
+! EMGRV    emissivity of snow-free ground below high veg
 ! PSNVH    fraction of HIGH vegetation covered by snow
 ! PSNVHA   fraction of HIGH vegetation covered by snow as seen from
 !          the ATMOSPHERE 
@@ -299,10 +302,13 @@ include "isbapar.cdk"
 !
 
 !
-!*      4.      FRACTIONS OF SVS TYPES AS SEEN FROM SPACE
+!*      4.      FRACTIONS OF SVS TYPES AS SEEN FROM ATM AND GROUND
 !               --------------------------
-
+      ! Seen from atm. 
       call weights_svs2(VEGH,VEGL,PSNGRVL,PSNVH, PSURFVHA,'ATM', N,WTA)
+
+      ! Seen from ground. 
+      call weights_svs2(VEGH,VEGL,PSNGRVL,PSNVH, PSURFVHA,'GROUND', N,WTG)
 
 
 !
@@ -507,6 +513,10 @@ include "isbapar.cdk"
                       + ADRYSAND *        A(I)   * ( 1. - B(I) ) &   
                       + AWETCLAY * ( 1. - A(I) ) *        B(I)  &   
                       + AWETSAND *        A(I)   *        B(I)   
+! 
+!        Albedo of soil below high veg. So far, taken as the same as albedo of exposed bare ground
+!
+         ALGRV(I)     = ALGR(I) 
 
       ENDDO
 
@@ -525,6 +535,7 @@ include "isbapar.cdk"
             EMISVH(I)        = ETG(I)
             EMISVL(I)        = ETG(I)
             EMGR  (I)        = ETG(I)
+            EMGRV (I)        = ETG(I)
             EVA   (I)        = ETG(I)
          ENDDO
   
@@ -549,6 +560,11 @@ include "isbapar.cdk"
                           + EWETCLAY * ( 1. - A(I) ) *        B(I) &    
                           + EWETSAND *        A(I)   *       B(I) 
             !
+!
+!                     EMISSIVITY OF GROUND BELOW HIGH VEG. 
+!                     SO FAR TAKEN EQUALS TO THE BARE GROUND EMISSIVITY
+!
+            EMGRV(I)       = EMGR(I)
 
          ENDDO
 

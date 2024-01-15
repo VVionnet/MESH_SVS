@@ -14,8 +14,8 @@
 !CANADA, H9P 1J3; or send e-mail to service.rpn@ec.gc.ca
 !-------------------------------------- LICENCE END --------------------------------------
 SUBROUTINE HYDRO_SVS2 ( DT, &
-     EG, ER_VL,ER_VH, ETR_VL,ETR_VH, RR, RSNOW, RSNOWV, &
-     IMPERVU, VEGL, VEGH, PSN, PSNVH, ACROOT, WRMAX_VL, WRMAX_VH,  &
+     EG, EGV, ER_VL,ER_VH, ETR_VL,ETR_VH, RR, RSNOW, RSNOWV, &
+     IMPERVU, VEGL, VEGH, WTA, WTG, ACROOT, WRMAX_VL, WRMAX_VH,  &
      WSAT, KSAT, PSISAT, BCOEF, FBCOF, WFCINT, GRKEF, &
      SNM, SVM, WR_VL, WR_VH, WR_VLT, WR_VHT, WD, WDT, WF, WFT, &
      KSATC, KHC, PSI, GRKSAT, WFCDP, &
@@ -23,6 +23,8 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
   !
   use sfc_options
   use svs_configs
+  use svs2_tile_configs  
+
   implicit none
 !!!#include <arch_specific.hf>
 
@@ -48,8 +50,9 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
   !                   - harmonic mean of the hydraulic conductivity  
 
   ! input
-  real, dimension(n)        :: eg, er_vl, etr_vl, er_vh, etr_vh, rr, impervu
-  real, dimension(n)        :: psn, psnvh, vegh, vegl
+  real, dimension(n)        :: eg, egv, er_vl, etr_vl, er_vh, etr_vh, rr, impervu
+  real, dimension(n)        :: vegh, vegl
+  real, dimension(n,svs2_tilesp1) :: wta, wtg
   real, dimension(n,nl_svs) :: bcoef, fbcof, acroot, ksat
   real, dimension(n,nl_svs) :: psisat, wfcint, wsat
   real, dimension(n)        :: grkef, rsnow, rsnowv, wrmax_vl, wrmax_vh, snm, svm 
@@ -87,6 +90,7 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
   !          --- Precipitation and Evaporation Rates ---
   !
   ! EG             evaporation rate (no fraction) over bare ground (1st soil layer) [kg/m2/s]
+  ! EGV            evaporation rate (no fraction) over ground below high vegetation [kg/m2/s]
   ! ER_VL          direct evaporation rate (no fraction) from low veg. leaves [kg/m2/s]
   ! ETR_VL         evapotranspiration rate from low vegetation (no fraction) [kg/m2/s]
   ! ER_VH          direct evaporation rate (no fraction) from high veg. leaves [kg/m2/s]
@@ -100,8 +104,8 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
   ! IMPERVU        fraction of land surface that is considered impervious (related to urban areas) [0-1]
   ! VEGL           fraction of LOW vegetation [0-1]
   ! VEGH           fraction of HIGH vegetation [0-1]
-  ! PSN            fraction of bare ground or low veg. covered by snow [0-1]
-  ! PSNVH          fraction of HIGH vegetation covered by snow [0-1]
+  ! WTA            weights for SVS2 surface tiles as seen from SPACE [0-1]
+  ! WTG            weights for SVS2 surface tiles as seen from GROUND [0-1]
   !
   !          --- Vegetation characteristics ---
   !
@@ -207,6 +211,8 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
   !                       the effective porosity. Any water in excess is added to the lateral flow
   !                   - harmonic mean of the hydraulic conductivity  
   WAT_REDIS = 1
+
+  !
   !
   !-------------------------------------
   !   1.        EVOLUTION OF THE EQUVALENT WATER CONTENT WR_VL and WR_VH
@@ -251,7 +257,7 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
     ENDIF
      !
 
-    IF(VEGL(I)*(1-PSN(I)).GE.EPSILON_SVS) THEN
+    IF( WTG(I,indx_svs2_vl) .GE.EPSILON_SVS) THEN
 
      IF (SNM(I).GE.CRITSNOWMASS)THEN
         !                                  There is snow on the ground, remove evaporation
@@ -291,33 +297,34 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
   !                                  Precipitation reaches ground directly only if no snow
   !                                  otherwise goes to snowpack, and reaches ground as snow runoff
   !
+  ! VV : TODO Rewrite as a function of WTG
   DO I=1,N
-      IF(VEGH(I)+VEGL(I)*(1.-PSN(I)).ge.EPSILON_SVS) THEN
+      IF( (VEGH(I)+ WTG(I,indx_svs2_vl)) .ge.EPSILON_SVS) THEN
          ! have vegetation -- have vegetation runoff 
 
          IF( SNM(I).GE.CRITSNOWMASS .AND. SVM(I).GE. CRITSNOWMASS ) THEN
             !both snow packs exists, rain falls directly to snow, consider runoff from vegetation also.
             PG(I) = (1.-VEGH(I)) * RSNOW(I) + VEGH(I) * RSNOWV(I) &
-                 + VEGL(I)*(1.-PSN(I))*RVEG_VL(I) + VEGH(I) * RVEG_VH(I)
+                 + WTG(I,indx_svs2_vl)*RVEG_VL(I) + VEGH(I) * RVEG_VH(I)
 
 
          ELSE IF ( SNM(I).GE.CRITSNOWMASS .AND. SVM(I).LT.CRITSNOWMASS ) THEN
             ! only low vegetation snow pack present, rain for low vegetation portion
             ! falls through to snow. No rain reaches bare ground because snowpack on low veg. and bare ground exists
             PG(I) = (1.-VEGH(I)) * RSNOW(I) &
-                 + VEGL(I)*(1-PSN(I))*RVEG_VL(I) + VEGH(I) * RVEG_VH(I)
+                 + WTG(I,indx_svs2_vl) *RVEG_VL(I) + VEGH(I) * RVEG_VH(I)
 
 
          ELSE IF ( SNM(I).LT.CRITSNOWMASS .AND. SVM(I).GE.CRITSNOWMASS ) THEN
             !only high vegetation snow pack present, rain for high vegetation portion
             ! falls through to snow. No snow on low veg. and bare ground, so rain can reach bare ground directly
             PG(I) = VEGH(I) * RSNOWV(I) &
-               + VEGL(I)*(1.-PSN(I))*RVEG_VL(I) + VEGH(I) * RVEG_VH(I) &
-               + (1. - PSN(I)) * (1. -VEGL(I) - VEGH(I) ) * RR(I)
+               + WTG(I,indx_svs2_vl) *RVEG_VL(I) + VEGH(I) * RVEG_VH(I) &
+               + WTG(I,indx_svs2_bg) * RR(I)
          ELSE 
             ! no snow present, rain can reach bare ground directly
-            PG(I) = VEGL(I)*(1.-PSN(I))*RVEG_VL(I) + VEGH(I) * RVEG_VH(I) &
-                 + (1 - PSN(I)) * (1. -VEGL(I) - VEGH(I) ) * RR(I)           
+            PG(I) = WTG(I,indx_svs2_vl)*RVEG_VL(I) + VEGH(I) * RVEG_VH(I) &
+                 +  WTG(I,indx_svs2_bg)  * RR(I)           
          ENDIF
 
       ELSE
@@ -434,9 +441,13 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
   !              -----------------------------------------
   !
   ! Compute water removed by evapotranspiration from each layer (rate in m/s, grid box average)
+  ! Need to check if this is correct.
   DO I=1,N
      DO K=1,NL_SVS
-        ETR_GRID(I,K)=((VEGL(I)*(1.-PSN(I))*ETR_VL(I)+VEGH(I)*(1.-PSNVH(I))*ETR_VH(I))*ACROOT(I,K))/(1000.*DELZ(K))
+        ! Initial line in hydro_svs
+        !ETR_GRID(I,K)=((VEGL(I)*(1.-PSN(I))+VEGH(I)*(1.-PSNVH(I)))*ACROOT(I,K)*ETR(I))/(1000.*DELZ(K))
+        ! ETR_GRID(I,K)=((VEGL(I)*(1.-PSN(I))*ETR_VL(I)+VEGH(I)*(1.-PSNVH(I))*ETR_VH(I))*ACROOT(I,K))/(1000.*DELZ(K))
+        ETR_GRID(I,K)=((WTA(I,indx_svs2_vl)*ETR_VL(I) + WTA(I,indx_svs2_vh)*ETR_VH(I))*ACROOT(I,K))/(1000.*DELZ(K))
      END DO
   END DO
   !
@@ -444,7 +455,8 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
 
   ! Boundary condition at the top is net precipitation      
   DO I=1,N
-     F(I,1)=(PG(I)-(1.-VEGL(I)-VEGH(I))*(1-PSN(I))* EG(I))*DT/1000.
+     F(I,1)=(PG(I) - WTG(I,indx_svs2_bg) * EG(I)   & 
+                   - WTG(I,indx_svs2_gv) * EGV(I) )*DT/1000.
   END DO
 
   !Compute water fluxes between soil layers, find K AND PSI at the boundaries     
