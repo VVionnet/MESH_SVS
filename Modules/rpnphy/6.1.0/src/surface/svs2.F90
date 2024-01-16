@@ -626,7 +626,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
             bus(x(WSNV,I,1))   =  bus(x(WSNV,I,1)) + bus(x(WSNOWV_SVS ,I,J))*1000.
          ENDDO
 
-! Cumulated liquid water runoff leaving the snowpack 
+!        Cumulated liquid water runoff leaving the snowpack 
          bus(x(RSNOWS_ACC,I,1)) = bus(x(RSNOWS_ACC,I,1)) + bus(x(RSNOWSA,I,1))*DT
          bus(x(RSNOWSV_ACC,I,1)) = bus(x(RSNOWSV_ACC,I,1)) + bus(x(RSNOWSV,I,1))*DT
 
@@ -636,7 +636,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
       CALL EBUDGET_SVS2_ONEPROFILE_SKIN(bus(x(TSA ,1,1)),  &  
                   bus(x(WSOIL     ,1,1)) , bus(x(ISOIL,1,1)),  &   
-                  bus(x(TGROUND   ,1,1)) , bus(x(TGROUND,1,2)),   & 
+                  bus(x(TGROUND   ,1,1)) , bus(x(TGROUND,1,2)), bus(x(TGROUNDV,1,1)),  & 
                   bus(x(TVEGEL    ,1,1)) ,    &  
                   bus(x(TVEGEH    ,1,1)) , bus(x(TVEGEH,1,2)),   &  
                   bus(x(TPSOIL    ,1,1)) ,    & 
@@ -780,7 +780,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 !
 !     Update prognostic variable in SVS2
 !
-      CALL UPDATE_SVS2 ( WSOILT, ISOILT, WVEGLT,WVEGHT,   &
+      CALL UPDATE_SVS2 ( WDTTG, WFTG, WVEGLT,WVEGHT,   &
                        bus(x(latflw  ,1,1)), bus(x(watflow ,1,1)),  &
                        bus(x(WSOIL   ,1,1)), bus(x(ISOIL   ,1,1)),  &
                        bus(x(WVEG_VL ,1,1)), bus(x(WVEG_VH ,1,1)),  &

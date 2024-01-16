@@ -130,7 +130,7 @@
       INTEGER I, zopt
 
       real, dimension(n) :: temp, coef_vl, coef_vh, qsatgr, qsat_vl, qsat_vh, &
-           zqs_vl, zqs_vh, ctugr, ctugrv, ctuvg, z0hg, wcrit_hrsurf, z0bg_n,ra,&
+           zqs_vl, zqs_vh, ctugr, ctugrv, ctuvg, wcrit_hrsurf, z0bg_n,ra,&
            z0gv_n, qsatgrv,wcrit_hrsurfgv
   
            
@@ -327,7 +327,7 @@
       if ( svs_dynamic_z0h ) then
          zopt=9
          i = sl_sfclayer( THETAA, HU, VMOD, VDIR, ZUSL, ZTSL, &
-              TGRS, HUSURF, Z0LOC, Z0HG, LAT, FCOR, optz0=zopt ,&
+              TGRS, HUSURF, Z0LOC, Z0HBG, LAT, FCOR, optz0=zopt ,&
               z0mloc=z0loc, L_min=sl_Lmin_soil, &
               coeft=CTUGR, z0t_optz0=Z0HGV )
 
@@ -338,7 +338,7 @@
 
       else
          i = sl_sfclayer( THETAA, HU, VMOD, VDIR, ZUSL, ZTSL, &
-              TGRS, HUSURF, Z0, Z0HG, LAT, FCOR, &
+              TGRS, HUSURF, Z0BG_N, Z0HBG, LAT, FCOR, &
               L_min=sl_Lmin_soil, &
               coeft=CTUGR )
 
@@ -347,9 +347,7 @@
             return
          endif
          
-         do i=1,N
-            z0hbg(i)=z0hg(i)
-         enddo
+
       endif
 
 
@@ -374,7 +372,7 @@
       if ( svs_dynamic_z0h ) then
          zopt=9
          i = sl_sfclayer( THETAA, HU, VMOD, VDIR, ZUSL, ZTSL, &
-              TGRS, HUSURF, Z0LOC, Z0HG, LAT, FCOR, optz0=zopt ,&
+              TGRS, HUSURF, Z0LOC, Z0HBG, LAT, FCOR, optz0=zopt ,&
               z0mloc=z0loc, L_min=sl_Lmin_soil, &
               coeft=CTUGRV, z0t_optz0=Z0HGV )
 
@@ -385,7 +383,7 @@
 
       else
          i = sl_sfclayer( THETAA, HU, VMOD, VDIR, ZUSL, ZTSL, &
-              TGRS, HUSURF, Z0, Z0HG, LAT, FCOR, &
+              TGRS, HUSURF, Z0, Z0HBG, LAT, FCOR, &
               L_min=sl_Lmin_soil, &
               coeft=CTUGRV )
 
@@ -394,9 +392,9 @@
             return
          endif
          
-         do i=1,N
-            z0hgv(i)=z0hg(i)
-         enddo
+       !  do i=1,N
+       !     z0hgv(i)=z0hg(i)
+       !  enddo
 
       endif
 

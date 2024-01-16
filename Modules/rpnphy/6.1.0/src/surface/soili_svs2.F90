@@ -85,7 +85,7 @@
 ! WWILT    wilting point volumetric water content
 ! BCOEF    slope of the retention curve
 ! LAIVH    Vegetation leaf area index for HIGH vegetation only
-! LAIVH    Vegetation leaf area index for LOW  vegetation only
+! LAIVL    Vegetation leaf area index for LOW  vegetation only
 ! Z0MVH    Local roughness associated with HIGH vegetation only (no
 !          orography)
 ! Z0MVL    Local roughness associated with LOW vegetation only (no
@@ -309,7 +309,6 @@ include "isbapar.cdk"
 
       ! Seen from ground. 
       call weights_svs2(VEGH,VEGL,PSNGRVL,PSNVH, PSURFVHA,'GROUND', N,WTG)
-
 
 !
 !*      5.      AGGREGATED  VEGETATION FIELDS

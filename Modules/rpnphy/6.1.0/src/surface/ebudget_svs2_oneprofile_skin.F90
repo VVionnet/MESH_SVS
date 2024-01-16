@@ -430,38 +430,37 @@
 !               --------------------------------------------
 !        3B1. Calculation for low vegetation       
 !               --------------------------------------------
-       DO I=1,N      
+       DO I=1,N   
           IF (  WTG(I,indx_svs2_vl) .GE.EPSILON_SVS ) THEN
              ! EXPOSED LOW VEGETATION PRESENT
 !
-!         Thermodynamic functions used in the linearisation of the
-!         latent heat flux             
-             
+!           Thermodynamic functions used in the linearisation of the
+!           latent heat flux             
              ZQSATVGL(I)  = FOQST( TVGLS(I),PS(I) )
              ZDQSATVGL(I) = FODQS( ZQSATVGL(I),TVGLS(I) )
 !
-!         Function zrsra used in the computation of the sensible heat
-!         flux             
+!           Function zrsra used in the computation of the sensible heat
+!           flux             
 !
              RORAVGL(I) = RHOA(I) / RESA_VL(I)
 !
-!         Skin conductivity for low vegetation
+!           Skin conductivity for low vegetation
 !           
-          SKINCOND_VL(I) =  10.
+            SKINCOND_VL(I) =  10.
 !             
 !       
-          AVL(I) =  SKINCOND_VL(I) + 4.*EMISVL(I)*STEFAN*(TVGLS(I)**3)  &
+            AVL(I) =  SKINCOND_VL(I) + 4.*EMISVL(I)*STEFAN*(TVGLS(I)**3)  &
                + RORAVGL(I)*CPD + RORAVGL(I)*CHLC * HV_VL(I)*ZDQSATVGL(I)
 !
-          BVL(I) = SKINCOND_VL(I)*TP(I,1) + (1.-ALVL(I))*RG(I) +EMISVL(I)*RAT(I) &
+            BVL(I) = SKINCOND_VL(I)*TP(I,1) + (1.-ALVL(I))*RG(I) +EMISVL(I)*RAT(I) &
                + 3.*EMISVL(I)*STEFAN*(TVGLS(I)**4) +RORAVGL(I)*CPD*THETAA(I) &
                + RORAVGL(I)*CHLC * HV_VL(I)*ZDQSATVGL(I)*TGRS(I) &
                - RORAVGL(I)*CHLC * HV_VL(I)*(ZQSATVGL(I)-HU(I))              
 !
 !          
-!         Update low vegetation skin surface temperature
+!           Update low vegetation skin surface temperature
 !       
-          TVGLST(I) = BVL(I)/AVL(I)  
+            TVGLST(I) = BVL(I)/AVL(I)  
 !          
 
           ELSE

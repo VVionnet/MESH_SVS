@@ -155,6 +155,7 @@
             TMAX(I,K) = CHLF*TRPL/(CHLF-GRAV*PSI)
 
             DELTAT(I,K) = TG(I,K) - CHLF*TRPL/(CHLF-GRAV*PSI)
+
 !  for tests
 !!$           DELTAT(I,K) = TG(I,K) - TRPL
 !
