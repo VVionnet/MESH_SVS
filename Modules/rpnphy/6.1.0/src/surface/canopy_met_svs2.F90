@@ -15,10 +15,11 @@
 !-------------------------------------- LICENCE END ---------------------------
 
       SUBROUTINE CANOPY_MET_SVS2 (T, HU,VMOD, ISW, ILW, TVEG, ZU,ZT,          &
-                                 SUNCOS,ISW_CAN,ILW_CAN,VMOD_CAN,T_CAN,HU_CAN,   &
-                                 VMOD_TOP, PUREF_VEG, PTREF_VEG, Z0MVH,Z0SNOW,  & 
-                                 VEGH,LAIVH,SKYVIEW, &
-                                 VGH_HEIGHT,VGH_DENS, CLUMPING, PRSURF, PWIND_DRIFT, N )
+                                 SUNCOS,VGH_HEIGHT,VGH_DENS, CLUMPING,    &
+                                 Z0MVH,Z0SNOW, VEGH,LAIVH,SKYVIEW, &
+                                 ISW_CAN,ILW_CAN,VMOD_CAN,T_CAN,HU_CAN,   &
+                                 VMOD_TOP, PUREF_VEG, PTREF_VEG,  & 
+                                 PRSURF, PWIND_DRIFT, N )
 
       use tdpack
       use sfclayer_mod,   only : sl_prelim,sl_sfclayer,SL_OK
@@ -37,6 +38,7 @@
       REAL VGH_DENS(N), Z0SNOW(N)
       REAL ISW_CAN(N), ILW_CAN(N)
       REAL VMOD_CAN(N),T_CAN(N),HU_CAN(N),PUREF_VEG(N),PTREF_VEG(N),VMOD_TOP(N), PWIND_DRIFT(N)
+      REAL PRSURF(N)  ! aerodynamic resistance between surface and canopy
 !
 !
 !Author
@@ -73,7 +75,6 @@
            Z0H, & ! Canopy roughness length for heat
            FSURF ! Function used in the calculation of RSURF   
 
-      REAL, DIMENSION(N) :: PRSURF  ! aerodynamic resistance between surface and canopy
 
 
      ! Parameters used in the radiative code
@@ -103,17 +104,20 @@
 
            ZUREF =  VGH_HEIGHT(I) + ZU(I)
 
-           IF (LCANO_REF_LEVEL_ABOVE) THEN ! All forcings are above the canopy and using the surface resistance in the computation of the turbulent fluxes
+           ! Temperature and HU do not change, only the heights do
+           T_CAN(I) = T(I)
+           HU_CAN(I) = HU(I)
+
+           IF (LCANO_REF_LEVEL_ABOVE) THEN 
 
               !
-              !  xxxx. Compute impact of forest on wind speed
+              !  xxxx. All forcings are above the canopy and using the surface resistance in the computation of the turbulent fluxes
               !  
               ! 
                PUREF_VEG(I) =  ZUREF
                PTREF_VEG(I) = ZT(I) + VGH_HEIGHT(I)
 
-               T_CAN(I) = T(I)
-               HU_CAN(I) = HU(I)
+
                VMOD_CAN(I) =  VMOD(I)
 
                ! Calculation of aerodynamic resistance between surface and canopy (cf Gouttevin et al. 2015)
@@ -133,9 +137,9 @@
 
                ! Wind speed at canopy base height, dense canopy, assuming exp profile between canopy top and canopy base height
                WCAN = ZBETA * CLUMPING *LAIVH(I) * VGH_DENS(I)  ! From Marke et al., (2016); Liston and Elder (2006)
-               VMOD_SUB = VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1))
-               VMOD_CAN(I) = VMOD_SUB 
-               PWIND_DRIFT(I) = VMOD_CAN(I)
+               VMOD_SUB = VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1.))
+
+               PWIND_DRIFT(I) = VMOD_SUB
 
                ! PWIND_DRIFT re-calculated at PUREF (above canopy here) from HSUBCANO (reverse of equations in SNOWFALL_UPGRID() and SNOWDRIFT()
                PWIND_DRIFT(I) = PWIND_DRIFT(I) * LOG(PUREF_VEG(I)/Z0SNOW(I))/LOG(HSUBCANO/Z0SNOW(I))
@@ -151,8 +155,6 @@
                PUREF_VEG(I) =  HSUBCANO
                PTREF_VEG(I) = ZT(I) 
 
-               T_CAN(I) = T(I)
-               HU_CAN(I) = HU(I)
 
                ! Wind speed at canopy top, assuming logarithmic profile above canopy, dense canopy 
                VMOD_TOP(I) = VMOD(I) * LOG((VGH_HEIGHT(I)-DH)/Z0MVH(I))/LOG((ZUREF-DH)/Z0MVH(I))
@@ -165,6 +167,7 @@
 
                ! Wind speed for snow drift calculation under the canopy at PUREF_VEG below the canopy
                PWIND_DRIFT(I) = VMOD_CAN(I)
+
            ENDIF
 
          ELSE  

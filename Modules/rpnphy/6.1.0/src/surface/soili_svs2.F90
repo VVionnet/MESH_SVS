@@ -21,11 +21,11 @@
            EMISVH, EMISVL, ETG, RGLVH , RGLVL, STOMRVH, STOMRVL,  & 
            GAMVH,GAMVL, &  
            LAIVH, LAIVL, &   
-           Z0MVH, Z0MVL, Z0, CLAY, SAND, DECI, EVER,LAID,  &  
+           Z0MVH, Z0MVL, Z0, CLAY, SAND, DECI, EVER,LAID, VGH_DENS,  &  
            WTA, WTG, CG,PSOILHCAPZ, PSOILCONDZ, PSNGRVL,  & 
            Z0H, ALGR, EMGR, ALGRV, EMGRV, PSNVH, PSNVHA, PSURFVHA,   &
            ALVA, LAIVA, CVPA, EVA, Z0HA, Z0MVG, RGLA, STOMRA ,&  
-           GAMVA,CONDSLD, CONDDRY, N )
+           GAMVA,CONDSLD, CONDDRY, CLUMPING, N )
          !
         use tdpack_const, only: PI
         use svs_configs
@@ -54,7 +54,8 @@
       REAL EMISVH(N), EMISVL(N), ETG(N), Z0MVL(N), RGLVH(N), RGLVL(N)
       REAL Z0HA(N), Z0MVG(N), RGLA(N), STOMRA(N), STOMRVH(N), STOMRVL(N)
       REAL GAMVL(N), GAMVH(N), GAMVA(N)
-      REAL CONDSLD(N,NL_SVS),CONDDRY(N,NL_SVS)
+      REAL CONDSLD(N,NL_SVS),CONDDRY(N,NL_SVS), VGH_DENS(N)
+      REAL CLUMPING
       
       
 !Author
@@ -110,8 +111,6 @@
 ! DECI     fraction of high vegetation that is deciduous
 ! EVER     fraction of high vegetation that is evergreen
 ! LAID     LAI of deciduous trees
-! CONDSLD  Soil thermal conductivity
-! CONDDRY  Dry thermal conductivity
 !
 !           - Output -
 ! WTA      Weights for SVS2 surface types as seen from ATM.
@@ -126,7 +125,7 @@
 ! PSNVH    fraction of HIGH vegetation covered by snow
 ! PSNVHA   fraction of HIGH vegetation covered by snow as seen from
 !          the ATMOSPHERE 
-! PSURFVHA fraction of the surface seen through the sparse 
+! PSURFVHA fraction of the surface seen through the sparse high vegetation
 
 ! ALVA     average vegetation albedo
 ! LAIVA    average vegetation LAI
@@ -292,8 +291,11 @@ include "isbapar.cdk"
          ENDIF
 
          ! Fraction of surface seen through sparse high vegetation
+         ! Same equation as for the SKYVIEW for high vegetation
+         CLUMPING = 0.5
          IF(VEGH(I) .GE.EPSILON_SVS) THEN
-            PSURFVHA(I)  = (EVER(I) * 0.2 + DECI(I) * MAX(LAI0 - LAID(I), 0.2))
+            PSURFVHA(I)  = EXP( - CLUMPING * LAIVH(I) * VGH_DENS(I))
+            ! PSURFVHA(I)  = (EVER(I) * 0.2 + DECI(I) * MAX(LAI0 - LAID(I), 0.2))
          ELSE
             PSURFVHA(I)  = 0.
          ENDIF

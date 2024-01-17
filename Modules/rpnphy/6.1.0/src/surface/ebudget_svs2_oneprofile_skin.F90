@@ -570,7 +570,7 @@
 !             Function zrsra used in the computation of the sensible heat
 !             flux
 !
-              RORAGRV(I) = RHOA(I) / RESAGRV(I) ! TO BE MODIFIED
+              RORAGRV(I) = RHOA(I) / RESAGRV(I)
 !
 !             Skin conductivity for ground below high veg
 !           
@@ -599,93 +599,7 @@
 !
        END DO   
 
-
-!              Z0TEMP(I) = 1.0                 ! bare ground local momentum roughness
-!              Z0HG(I)=0.2                     ! bare ground local heat roughness
-!
-!              ! Derive surface temperature of the soil below high
-!              ! vegetation. 
-!              TGRVS(I) = TP(I,1) 
-!
-!              ! Select variable used to compute the fluxes 
-!
-!              TA4FLX(I)  = THETAA(I)
-!              QA4FLX(I)  = HU(I)
-!              IF (LCANO_REF_LEVEL_ABOVE) THEN ! Reference height above the canopy. In this case, z0 should be the canopy roughness lengths and the heights above canopy
-!                 ! WARNING NL: Might need to be updated following conversation with Stephane B. and Maria A.
-!                 ZU4FLX(I)  = ZUSL(I) + VGHEIGHT(I)
-!                 ZT4FLX(I)  = ZTSL(I) + VGHEIGHT(I)
-!                 Z0M4FLX(I) = Z0MVH(I)
-!                 Z0H4FLX(I) = Z0MVH(I) * Z0M_TO_Z0H
-!                 ZDH = VGHEIGHT(I)*ZRCHD
-!                 VIT(I)   = VMOD(I)
-!                 ZUSTAR = VMOD(I) * KARMAN / LOG((ZU4FLX(I)-ZDH)/Z0M4FLX(I)) ! ustar above the canopy used in the aero resistances for turbulent fluxes
-!                 ZFSURF = 1. + ZRALAI * (1. - EXP(-CLUMPING * LAIVH(I) * VGH_DENS(I))) 
-!                 ZRSURF(I) = LOG(Z0M4FLX(I) / Z0HG(I)) / (ZUSTAR * KARMAN) * ZFSURF ! The heat roughness length should be the one at the surface below canopy 
-!              ELSE
-!
-!                 ZU4FLX(I)  = ZUSL(I) 
-!                 ZT4FLX(I)  = ZTSL(I)
-!                 Z0M4FLX(I) = Z0TEMP(I)
-!                 Z0H4FLX(I) = Z0HG(I)
-!                 VIT(I)   = VMOD(I)
-!                 ZRSURF(I) = 0.
-!              ENDIF
-!
-!              i_flux = sl_sfclayer( TA4FLX, QA4FLX, VIT, VDIR, ZU4FLX, ZT4FLX, &
-!                    TGRVS, ZQSGRV, Z0M4FLX, Z0H4FLX, LAT, FCOR, &
-!                    L_min=sl_Lmin_soil,coeft=CTUGRV )
-!
-!              if (i_flux /= SL_OK) then
-!                print*, 'Abort. ebud_svs2 bec of err in sl_sfclayer()'
-!                stop
-!              endif 
-!
-!              ! Compute aerodymanical resistance with stability atm correction
-!              RESAGRV(I) = 1. / CTUGRV(I)
-!
-!              ! Compute aerodymanical resistance for neutral stability 
-!              ! cf sfclayer_mod (L.588-605 for computation of lzz0 and lzz0t (z0ref== T)
-!              ! It was checked that these correspond to the neutral values calculated in sfclayer_mod before stab correction
-!              LZZ0(I) = LOG((Z0M4FLX(I) + ZU4FLX(I)) / Z0M4FLX(I))
-!              LZZ0T(I) = LOG((Z0M4FLX(I) + ZU4FLX(I)) / Z0H4FLX(I)) 
-!              RESAGRV_NEUTRAL(I) = 1. / (VIT(I) * KARMAN * KARMAN / (LZZ0(I) * LZZ0T(I)))
-!
-!              !   function zrsra ground under veg
-!              RORAGRV(I) = RHOA(I) / RESAGRV(I)
-!
-!
-!
-!              ! Calculate the correction factor between RESAGRV when accounting for stability and RESAGRV for neutral stab
-!              CORR_STAB_RESAGRV(I) = RESAGRV(I) / RESAGRV_NEUTRAL(I)!
-!
-!
-!              !drag coef from CLASS for high veg only
-!              RORAGRV(I) = RHOA(I) / (RESAGRV(I) + ZRSURF(I)* CORR_STAB_RESAGRV(I))
-!
-!             ! Contribution of the surface energy budget for high
-!             ! vegetation in the coefficient used in the tridiagnonal
-!             ! matrix (see next section)
-!             ! Contribution to coef D
-!             SURF_ENBAL_HVEGD(I) = ( VTRA(I)*(1.-ALGR(I))*RG(I) + SKYVIEWA(I)*EMGR(I)*RAT(I) &
-!                            + 3.*EMGR(I)*STEFAN*(TP(I,1)**4) &
-!                            +(1.-SKYVIEWA(I))*EMGR(I)*EMISVH(I)*STEFAN*(TVGHS(I)**4) &
-!                            + RORAGRV(I)*CPD*TA4FLX(I) &
-!                            + RORAGRV(I)*LEFF(I)*HRSURF(I)*ZDQSATGRV(I)*TP(I,1) &
-!                            - RORAGRV(I)*LEFF(I)*(HRSURF(I)*ZQSATGRV(I)-QA4FLX(I)) )
-!
-!             ! Contribution to coef B
-!             SURF_ENBAL_HVEGB(I) = 4.*EMGR(I)*STEFAN*(TP(I,1)**3)  +  RORAGRV(I)*CPD &
-!                             +  RORAGRV(I)*LEFF(I)*HRSURF(I)*ZDQSATGRV(I) 
-!
-!
-!            ELSE     
-!              ! 
-!              ! High vegetation not present in the grid cell       
-!              SURF_ENBAL_HVEGD(I)= 0.       
-!              SURF_ENBAL_HVEGB(I)= 0.       
-!          ENDIF
-!       END DO                
+             
 
 !
 !

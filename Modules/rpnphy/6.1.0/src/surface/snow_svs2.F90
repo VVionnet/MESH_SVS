@@ -7,14 +7,14 @@ SUBROUTINE SNOW_SVS2(  PSNOWSWE,PSNOWTEMP, PSNOWLIQ,PSNOWRHO,PSNOWALB,  &
                       PSNOWAGE, PSNOWDIAMOPT, PSNOWSPHERI, PSNOWHIST,     & 
                       PTSTEP,PTG, PCT, PSOILHCAPZ, & 
                       PSOILCONDZ, PPS, PTA,PSW_RAD, PQA, PVMOD,  PWIND_DRIFT,    &
-                      PLW_RAD,PRR, PSR, PRHOA, PUREF,         &
+                      PLW_RAD,PRR, PSR, PRSURF, PRHOA, PUREF,         &
                       PZREF, PALB, PD_G, PDZG,         &
                       PTHRUFAL, PGRNDFLUX,PRNSNOW,PHSNOW, PGFLUXSNOW,        &
                       PSWNETSNOW, PLWNETSNOW,PSUBLDRIFT,                     &
                       PHPSNOW, PPSN,PZ0NAT, PZ0EFF, PZ0HNAT, &
                       PLES3L, PLEL3L, PEVAP, &
                       PZENITH, PLAT, PLON, PFOREST,      &
-                      PSNOWTYPE, PRSURF, & !N , NSL, NSOIL)
+                      PSNOWTYPE, & !N , NSL, NSOIL)
                       N ,  NSOIL)
 !     ######################################################################################
 !
@@ -158,6 +158,9 @@ REAL, DIMENSION(N), INTENT(IN)      :: PPS, PTA, PSW_RAD, PQA,                  
 !                                      PQA     = atmospheric specific humidity
 !                                                at level za
 !
+REAL, DIMENSION(N), INTENT(IN)      :: PRSURF    
+!                                      PRSURF  Aerodynamic surface resistance for snow under canopy (cf. Gouttevin et al. 2015)
+!
 REAL, DIMENSION(N), INTENT(IN)      :: PZREF, PUREF,PRHOA, PALB
 !                                      PZREF     = reference height of the first
 !                                                  atmospheric level
@@ -192,7 +195,7 @@ REAL, DIMENSION(N), INTENT(OUT)     :: PTHRUFAL
 ! puis plus tard dans LALB
 REAL, DIMENSION(N), INTENT(IN)      :: PZENITH    ! solar zenith angle
 
-REAL, DIMENSION(N), INTENT(IN)      :: PRSURF    ! Aerodynamic surface resistance for snow under canopy (cf. Gouttevin et al. 2015)
+
 
 
 !  
@@ -1158,7 +1161,7 @@ IF (HSNOWSCHEME=='CRO') THEN
                 ZP_PET_B_COEF, ZP_PEQ_B_COEF, ZP_SNOWSWE, ZP_SNOWRHO,         &
                 ZP_SNOWHEAT, ZP_SNOWALB, ZP_SNOWDIAMOPT, ZP_SNOWSPHERI,          &
                 ZP_SNOWHIST, ZP_SNOWAGE,ZP_SNOWIMPUR, PTSTEP, ZP_PS,          &
-                ZP_SRSNOW,ZP_RRSNOW, ZP_PSN3L, ZP_TA, ZP_TG(:,1),ZP_SW_RAD,   &
+                ZP_SRSNOW,ZP_RRSNOW, ZP_PSN3L, ZP_RSURF, ZP_TA, ZP_TG(:,1),ZP_SW_RAD,   &
                 ZP_QA,ZP_VMOD,ZP_VMOD_DRIFT, ZP_LW_RAD, ZP_RHOA, ZP_UREF,     &
                 ZP_EXNS, ZP_EXNA,                                             &
                 ZP_DIRCOSZW, ZP_ZREF, ZP_Z0NAT, ZP_Z0EFF, ZP_Z0HNAT,          &
@@ -1176,7 +1179,7 @@ IF (HSNOWSCHEME=='CRO') THEN
                 HSNOWFALL, HSNOWCOND, HSNOWHOLD, HSNOWCOMP,                   &
                 CSNOWZREF,ZP_SNOWMAK, LSNOWCOMPACT_BOOL,                      &
                 LSNOWMAK_BOOL,LSNOWTILLER,LSELF_PROD,                         &
-                LSNOWMAK_PROP, ZP_RSURF)
+                LSNOWMAK_PROP)
 
       ! Purely diagnostic, this routine can be called only at output time steps
       CALL SNOWCRO_DIAG(HSNOWHOLD, HSNOWMETAMO, ZP_SNOWDZ, ZP_SNOWSWE, ZP_SNOWRHO, ZP_SNOWDIAMOPT, ZP_SNOWSPHERI, ZP_SNOWAGE,  &
@@ -1210,7 +1213,7 @@ IF (HSNOWSCHEME=='CRO') THEN
              ZP_PET_A_COEF, ZP_PEQ_A_COEF,ZP_PET_B_COEF, ZP_PEQ_B_COEF,    &
              ZP_SNOWSWE, ZP_SNOWRHO, ZP_SNOWHEAT, ZP_SNOWALB,              &
              ZP_SNOWAGE, PTSTEP,                                           &
-             ZP_PS, ZP_SRSNOW, ZP_RRSNOW, ZP_PSN3L, ZP_TA, ZP_TG(:,1),     &
+             ZP_PS, ZP_SRSNOW, ZP_RRSNOW, ZP_PSN3L, ZP_RSURF, ZP_TA, ZP_TG(:,1),  &
              ZP_SW_RAD, ZP_QA, ZP_VMOD, ZP_LW_RAD, ZP_RHOA, ZP_UREF,       &
              ZP_EXNS, ZP_EXNA, ZP_DIRCOSZW, ZP_ZREF, ZP_Z0NAT, ZP_Z0EFF,   &
              ZP_Z0HNAT, ZP_ALB, ZP_SOILCOND, ZP_D_G(:,1),                  &
@@ -1223,7 +1226,7 @@ IF (HSNOWSCHEME=='CRO') THEN
              ZP_LEL3L, ZP_EVAP, ZP_SNDRIFT, ZP_RI,                         &
              ZP_EMISNOW, ZP_CDSNOW, ZP_USTARSNOW,                          &
              ZP_CHSNOW, ZP_SNOWHMASS, ZP_QS, ZP_VEGTYPE,  ZP_FOREST,       &
-              ZP_ZENITH, HSNOWDRIFT_ES, LSNOWDRIFT_SUBLIM, ZP_RSURF )
+              ZP_ZENITH, HSNOWDRIFT_ES, LSNOWDRIFT_SUBLIM )
  ENDIF
 !
 

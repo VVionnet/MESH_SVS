@@ -19,13 +19,14 @@
                               PS, RS, Z0, Z0LOC, Z0VG, WFC, WSAT, CLAY1,  &
                               SAND1, LAI_VL, LAI_VH, WRMAX_VL,WRMAX_VH,&
                               ZUSL, ZTSL, LAT, & 
-                              FCOR, Z0HA, & 
+                              FCOR, Z0HA, VEGL, VEGH, CLUMPING,&
+                              VGH_DENS, Z0MVH,Z0MVL, VEGHEIGHT,  &
+                              LAIVH, ZVCAN, & 
                               RESAGR,RESAGRV, RESA_VL, RESA_VH, &  
                               HUSURF,HUSURFGV, & 
                               HRSURF,HRSURFGV, &       
                               HV_VL, HV_VH, DEL_VL, DEL_VH,  &
-                              Z0HBG, Z0HVG,Z0HGV, VEGL, VEGH, &
-                              N)
+                              Z0HBG, Z0HVL, Z0HVH,Z0HGV,  N)
       use tdpack
       use sfc_options
       use sfclayer_mod, only: sl_sfclayer,SL_OK
@@ -38,11 +39,13 @@
       REAL TGRS(N), TVGLS(N), TVGHS(N), WR_VL(N), WR_VH(N), THETAA(N), VMOD(N), VDIR(N), HU(N), CLAY1(N)
       REAL SAND1(N), PS(N), RS(N), Z0(N),Z0LOC(N), Z0VG(N), WFC(N,NL_SVS), WSAT(N,NL_SVS)
       REAL LAI_VL(N), LAI_VH(N),WRMAX_VH(N),WRMAX_VL(N), ZUSL(N), ZTSL(N), LAT(N)
-      REAL FCOR(N), Z0HA(N), Z0HBG(N), Z0HVG(N), Z0HGV(N)
+      REAL FCOR(N), Z0HA(N), Z0HBG(N), Z0HVL(N), Z0HVH(N), Z0HGV(N)
+      REAL VGH_DENS(N), Z0MVH(N), Z0MVL(N), VEGHEIGHT(N), LAIVH(N), ZVCAN(N)
       REAL RESAGR(N),RESAGRV(N), RESA_VL(N), RESA_VH(N)
       REAL HUSURF(N),HUSURFGV(N), HV_VL(N), HV_VH(N), DEL_VL(N), DEL_VH(N)
       REAL HRSURF(N),HRSURFGV(N), WD1(N)
       REAL VEGH(N), VEGL(N), TGRVS(N)
+      REAL CLUMPING
 !
 !Author
 !          S. Belair, M.Abrahamowicz, S.Z.Husain, N.Alavi, S.Zhang (June 2015) 
@@ -92,7 +95,7 @@
 ! RS        surface or stomatal resistance
 ! Z0        momentum roughness length (no snow)
 ! Z0LOC     local (no orography) land momentum roughness
-! Z0VG      vegetation-only momentum roughness      
+! Z0VG      averaged vegetation-only momentum roughness      
 ! WFC       volumetric water content at the field capacity
 ! WSAT      volumetric water content at saturation
 ! CLAY1     percentage of clay in first soil layer
@@ -109,6 +112,10 @@
 !           vegetation only (also no orography), for heat transfer
 ! VEGH     fraction of HIGH vegetation
 ! VEGL     fraction of LOW vegetation
+! CLUMPING   coefficient to convert LAI to effective LAI  
+! VGH_DENS   Density of trees in areas of high vegeation (m)
+! VEGHEIGHT Height of trees in areas of high vegeation (m)     
+! ZVCAN   Wind speed within or above the canopy depending on LCANO_REF_ABOVE (m/s)  
 !
 !           - Output -
 ! HRSURF   relative humidity of the bare ground surface (1st layer)
@@ -123,17 +130,24 @@
 ! DEL_VH    fraction of high veg canopy covered by intercepted water
 ! Z0HBG     Bare ground thermal roughness
 ! Z0HGV     Ground below high veg thermal roughness
-! Z0HVG     Vegetation thermal roughness   
-!
-!
+! Z0HVL     LOW Vegetation thermal roughness   
+! Z0HVH     HIGH Vegetation thermal roughness   
+! ZRSURF     Aerodynamic surface resistance for soil under canopy (cf. Gouttevin et al. 2013)   
+! Z0MVH      local mom roughness length for high veg.
+! Z0MVL      local mom roughness length for high veg.
+
 !
       INTEGER I, zopt
 
       real, dimension(n) :: temp, coef_vl, coef_vh, qsatgr, qsat_vl, qsat_vh, &
            zqs_vl, zqs_vh, ctugr, ctugrv, ctuvg, wcrit_hrsurf, z0bg_n,ra,&
-           z0gv_n, qsatgrv,wcrit_hrsurfgv
-  
-           
+           z0gv_n, qsatgrv,wcrit_hrsurfgv, z0hg, zz0hgv, ZZ0HVH, ZZ0HVL
+     real, dimension(n) :: ZUGV, ZTGV, ZZ0MGV, ZDH
+
+     real :: ZRSURF, LZZ0, LZZ0T, RESAGRV_NEUTRAL, ZUSTAR, ZFSURF
+
+     REAL, PARAMETER :: ZRALAI = 3.! Parameter for excess resistance introduced by canopy between surface and ref level (cf Table 1, Gouttevin et al. 2015)
+     REAL, PARAMETER :: ZRCHD = 0.67    ! Ratio of displacement height to canopy height
 !
 !***********************************************************************
 !
@@ -149,19 +163,31 @@
 !         local momentum roughness of bare ground, times a scaling factor.
    
       DO I=1,N
-         Z0BG_N(I) = Z0MBG
-         Z0HBG(I) = Z0M_TO_Z0H * Z0MBG
+         Z0BG_N(I) = Z0(I)
+         Z0HG(I) = Z0M_TO_Z0H * Z0(I)
       END DO 
-
 !
 !         GROUND BELOW HIGH VEG LOCAL HEAT ROUGHNESS.  It is approximated by the
 !         local momentum roughness of bare ground, times a scaling factor.
    
       DO I=1,N
          Z0GV_N(I) = 1.0 ! Value to be modified
-         Z0HGV(I) = Z0M_TO_Z0H * Z0GV_N(I) 
+         ZZ0HGV(I) = Z0M_TO_Z0H * Z0GV_N(I)
+      END DO
+!
+!         HIGH AND LOW VEG LOCAL HEAT ROUGHNESS.  It is approximated by the
+!         local momentum roughness of bare ground, times a scaling factor.
+   
+      DO I=1,N
+         ZZ0HVH(I) = Z0M_TO_Z0H * Z0MVH(I) 
+         ZZ0HVL(I) = Z0M_TO_Z0H * Z0MVL(I) 
       END DO
 
+!          Make sure that wind speed for the canopy is not equal to 0
+
+      DO I=1,N
+         ZVCAN(I) = MAX(ZVCAN(I), 0.1) 
+      END DO   
 !
 !
 !
@@ -302,7 +328,7 @@
 !
 !
 !                           Calculate specific humidity over ground 
-                 HUSURFGV(I) = HRSURFGV(I) * QSATGRV(I)
+                  HUSURFGV(I) = HRSURFGV(I) * QSATGRV(I)
 !          
             ELSE      ! No high vegetation 
 !                    
@@ -327,9 +353,9 @@
       if ( svs_dynamic_z0h ) then
          zopt=9
          i = sl_sfclayer( THETAA, HU, VMOD, VDIR, ZUSL, ZTSL, &
-              TGRS, HUSURF, Z0LOC, Z0HBG, LAT, FCOR, optz0=zopt ,&
+              TGRS, HUSURF, Z0LOC, Z0HG, LAT, FCOR, optz0=zopt ,&
               z0mloc=z0loc, L_min=sl_Lmin_soil, &
-              coeft=CTUGR, z0t_optz0=Z0HGV )
+              coeft=CTUGR, z0t_optz0=Z0HBG )
 
          if (i /= SL_OK) then
             call physeterror('drag_svs', 'error returned by sl_sfclayer()')
@@ -338,7 +364,7 @@
 
       else
          i = sl_sfclayer( THETAA, HU, VMOD, VDIR, ZUSL, ZTSL, &
-              TGRS, HUSURF, Z0BG_N, Z0HBG, LAT, FCOR, &
+              TGRS, HUSURF, Z0BG_N, Z0HG, LAT, FCOR, &
               L_min=sl_Lmin_soil, &
               coeft=CTUGR )
 
@@ -347,6 +373,9 @@
             return
          endif
          
+         do i=1,N
+            z0hbg(i)=z0hg(i)
+         enddo
 
       endif
 
@@ -369,10 +398,12 @@
 !                      REMPLACER PAR UN Z0H_LOCAL JUSTE POUR LE SOL NU
 !                      *************************************
 !
+
       if ( svs_dynamic_z0h ) then
          zopt=9
-         i = sl_sfclayer( THETAA, HU, VMOD, VDIR, ZUSL, ZTSL, &
-              TGRS, HUSURF, Z0LOC, Z0HBG, LAT, FCOR, optz0=zopt ,&
+         ! TO_DO NL: check the roughness lengths used
+         i = sl_sfclayer( THETAA, HU, ZVCAN, VDIR, ZUSL, ZTSL, &
+              TGRVS, HUSURF, Z0LOC, ZZ0HGV, LAT, FCOR, optz0=zopt ,&
               z0mloc=z0loc, L_min=sl_Lmin_soil, &
               coeft=CTUGRV, z0t_optz0=Z0HGV )
 
@@ -382,19 +413,64 @@
          endif
 
       else
-         i = sl_sfclayer( THETAA, HU, VMOD, VDIR, ZUSL, ZTSL, &
-              TGRS, HUSURF, Z0, Z0HBG, LAT, FCOR, &
-              L_min=sl_Lmin_soil, &
-              coeft=CTUGRV )
 
-         if (i /= SL_OK) then
-            call physeterror('drag_svs', 'error returned by sl_sfclayer()')
-            return
-         endif
-         
-       !  do i=1,N
-       !     z0hgv(i)=z0hg(i)
-       !  enddo
+         IF (LCANO_REF_LEVEL_ABOVE) THEN ! Reference height above the canopy. In this case, z0 should be the canopy roughness lengths and the heights above canopy
+            DO I=1,N     
+                 ! WARNING NL: Might need to be updated following conversation with Stephane B. and Maria A.
+                 ZUGV(I) = ZUSL(I) + VEGHEIGHT(I)
+                 ZTGV(I)  = ZTSL(I) + VEGHEIGHT(I)
+                 ZDH(I) = VEGHEIGHT(I)*ZRCHD
+            ENDDO
+
+             ! This CTUGRV should be for high vegetation
+             i = sl_sfclayer( THETAA, HU, ZVCAN, VDIR, ZUGV, ZTGV, &
+                  TGRVS, HUSURF, Z0MVH, Z0HVH, LAT, FCOR, &
+                  L_min=sl_Lmin_soil, &
+                  coeft=CTUGRV )
+
+             if (i /= SL_OK) then
+                call physeterror('drag_svs', 'error returned by sl_sfclayer()')
+                return
+             endif
+
+             DO I=1,N  
+
+                 ! Compute aerodymanical resistance with stability atm correction
+                 RESAGRV(I) = 1. / CTUGRV(I)
+
+                 ! ustar above the canopy used in the aero resistances for turbulent fluxes
+                 ZUSTAR = ZVCAN(I) * KARMAN / LOG((ZUGV(I)-ZDH(I))/Z0MVH(I)) 
+                 ZFSURF = 1. + ZRALAI * (1. - EXP(-CLUMPING * LAIVH(I) * VGH_DENS(I))) 
+                 ZRSURF = LOG(Z0MVH(I) / ZZ0HGV(I)) / (ZUSTAR * KARMAN) * ZFSURF ! The heat roughness length should be the one at the surface below canopy 
+
+                 ! Compute aerodymanical resistance for neutral stability 
+                 ! cf sfclayer_mod (L.588-605 for computation of lzz0 and lzz0t (z0ref== T)
+                 LZZ0 = LOG((ZUGV(I) + Z0MVH(I)) / Z0MVH(I))
+                 LZZ0T = LOG((ZTGV(I) + Z0HVH(I)) / Z0HVH(I)) 
+                 RESAGRV_NEUTRAL = 1. / (VMOD(I) * KARMAN * KARMAN / (LZZ0 * LZZ0T))
+
+                ! Apply stability correction  to ZRSURF
+                ZRSURF = ZRSURF * RESAGRV(I) / RESAGRV_NEUTRAL
+
+                CTUGRV(I) = 1. / (RESAGRV(I) + ZRSURF)
+             ENDDO
+         ELSE
+
+             i = sl_sfclayer( THETAA, HU, ZVCAN, VDIR, ZUSL, ZTSL, &
+                  TGRVS, HUSURF, Z0GV_N, ZZ0HGV, LAT, FCOR, &
+                  L_min=sl_Lmin_soil, &
+                  coeft=CTUGRV )
+
+             if (i /= SL_OK) then
+                call physeterror('drag_svs', 'error returned by sl_sfclayer()')
+                return
+             endif
+
+
+             do i=1,N
+                Z0HGV(i) = ZZ0HGV(i)
+             enddo
+         ENDIF
 
       endif
 
@@ -406,7 +482,6 @@
             RESAGRV(I) = 1. 
          ENDIF
       END DO
-
 
 !     
 !
@@ -491,18 +566,22 @@
 !
       if ( svs_dynamic_z0h ) then
          zopt=9
+
+         ! TO_DO NL: which values of Z0LOC, Z0HA to use here
+
          i = sl_sfclayer( THETAA, HU, VMOD, VDIR, ZUSL, ZTSL, &
               TVGLS, ZQS_VL, Z0LOC, Z0HA, LAT, FCOR, z0mloc=z0loc, &
               optz0=zopt, L_min=sl_Lmin_soil, &
-              coeft=CTUVG, z0t_optz0=Z0HVG )
+              coeft=CTUVG, z0t_optz0=Z0HVL )
 
          if (i /= SL_OK) then
             call physeterror('drag_svs', 'error 2 returned by sl_sfclayer()')
             return
          endif
       else
+        ! NL: Updated with roughn. lengths for VH instead of averaged roughn. length for veg
          i = sl_sfclayer( THETAA, HU, VMOD, VDIR, ZUSL, ZTSL, &
-              TVGLS, ZQS_VL, Z0, Z0HA, LAT, FCOR, &
+              TVGLS, ZQS_VL, Z0MVL, ZZ0HVL, LAT, FCOR, &
               L_min=sl_Lmin_soil, &
               coeft=CTUVG )
 
@@ -511,8 +590,8 @@
             return
          endif
          
-         do i=1,n
-            z0hvg(i)=z0ha(i)
+         do i=1,n ! TO_DO NL: delete or update that with roughn. length for heat for VL?
+            z0hvl(i)=zz0hvl(i)
          enddo
       endif
    
@@ -566,6 +645,47 @@
       END DO
 !
 !
+!
+!
+      if ( svs_dynamic_z0h ) then
+         zopt=9
+         ! TO_DO NL: Which values of Z0LOC and Z0HA to use here
+         ! Which height to use? Should be above the canopy 
+         i = sl_sfclayer( THETAA, HU, VMOD, VDIR, ZUSL, ZTSL, &
+              TVGHS, ZQS_VH, Z0LOC, Z0HA, LAT, FCOR, z0mloc=z0loc, &
+              optz0=zopt, L_min=sl_Lmin_soil, &
+              coeft=CTUVG, z0t_optz0=Z0HVH )
+
+         if (i /= SL_OK) then
+            call physeterror('drag_svs', 'error 2 returned by sl_sfclayer()')
+            return
+         endif
+      else
+         ! NL: Updated with roughn. lengths for VH instead of averaged roughn. length for veg
+         i = sl_sfclayer( THETAA, HU, VMOD, VDIR, ZUSL, ZTSL, &
+              TVGHS, ZQS_VH, Z0MVH, ZZ0HVH, LAT, FCOR, &
+              L_min=sl_Lmin_soil, &
+              coeft=CTUVG )
+
+         if (i /= SL_OK) then
+            call physeterror('drag_svs', 'error 2 returned by sl_sfclayer()')
+            return
+         endif
+         
+         do i=1,n ! TO_DO NL: delete or update that with roughn. length for heat for VL?
+            z0hvh(i)=zz0hvh(i)
+         enddo
+      endif
+   
+      DO I=1,N
+         IF(VEGH(I)>EPSILON_SVS) THEN   ! High vegetation present in the grid cell
+             RESA_VH(I) = 1. / CTUVG(I)
+         ELSE
+             RESA_VH(I) = 1.
+         ENDIF
+      END DO
+!
+!
 !                         calculate Hv based on previous time
 !                         step resavg to use in flxsurf4
 !
@@ -579,7 +699,7 @@
              HV_VH(I) = 1. - MAX(0.,SIGN(1.,QSAT_VH(I)-HU(I)))&  
                  *RS(I)*(1.-DEL_VH(I)) / (RESA_VH(I)+RS(I))
 
-!      Atmospheric resistence for exchange between the the foliage
+!      Atmospheric resistance for exchange between the the foliage
 !      and the air within the canopy space (Dearrorff, 1978)
 !        RA(I)  = 100.0 / (0.3*VMOD(I) + 0.3)  ! 
 !       Equivalent of Hv defined with respect to the mean flow inside the canopy space
@@ -596,44 +716,7 @@
              HV_VH(I) = 0.
          ENDIF
       END DO   
-!
-!
-!
-!
-      if ( svs_dynamic_z0h ) then
-         zopt=9
-         i = sl_sfclayer( THETAA, HU, VMOD, VDIR, ZUSL, ZTSL, &
-              TVGHS, ZQS_VH, Z0LOC, Z0HA, LAT, FCOR, z0mloc=z0loc, &
-              optz0=zopt, L_min=sl_Lmin_soil, &
-              coeft=CTUVG, z0t_optz0=Z0HVG )
 
-         if (i /= SL_OK) then
-            call physeterror('drag_svs', 'error 2 returned by sl_sfclayer()')
-            return
-         endif
-      else
-         i = sl_sfclayer( THETAA, HU, VMOD, VDIR, ZUSL, ZTSL, &
-              TVGHS, ZQS_VH, Z0, Z0HA, LAT, FCOR, &
-              L_min=sl_Lmin_soil, &
-              coeft=CTUVG )
-
-         if (i /= SL_OK) then
-            call physeterror('drag_svs', 'error 2 returned by sl_sfclayer()')
-            return
-         endif
-         
-         do i=1,n
-            z0hvg(i)=z0ha(i)
-         enddo
-      endif
-   
-      DO I=1,N
-         IF(VEGH(I)>EPSILON_SVS) THEN   ! High vegetation present in the grid cell
-             RESA_VH(I) = 1. / CTUVG(I)
-         ELSE
-             RESA_VH(I) = 1.
-         ENDIF
-      END DO
 
 !*       3.     HALSTEAD COEFFICIENT (RELATIVE HUMIDITY OF THE VEGETATION) (HV)
 !               ---------------------------------------------------------------

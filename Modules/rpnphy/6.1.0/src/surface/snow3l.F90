@@ -8,7 +8,7 @@
                 PPET_A_COEF, PPEQ_A_COEF, PPET_B_COEF, PPEQ_B_COEF,       &
                 PSNOWSWE,PSNOWRHO,PSNOWHEAT,PSNOWALB,                     &
                 PSNOWAGE,                                                 &                
-                PTSTEP,PPS,PSR,PRR,PPSN3L,                                &
+                PTSTEP,PPS,PSR,PRR,PPSN3L, PRSURF ,                       &
                 PTA,PTG,PSW_RAD,PQA,PVMOD,PLW_RAD, PRHOA,                 &
                 PUREF,PEXNS,PEXNA,PDIRCOSZW,                              &
                 PZREF,PZ0,PZ0EFF,PZ0H,PALB,                               &
@@ -21,7 +21,7 @@
                 PHPSNOW,PLES3L,PLEL3L,PEVAP,PSNDRIFT,PRI,                 &
                 PEMISNOW,PCDSNOW,PUSTAR,PCHSNOW,PSNOWHMASS,PQS,           &
                 PPERMSNOWFRAC,PFORESTFRAC,PZENITH,                        &
-                HSNOWDRIFT,OSNOWDRIFT_SUBLIM, PRSURF                      )  
+                HSNOWDRIFT,OSNOWDRIFT_SUBLIM                     )  
 !     ##########################################################################
 !
 !!****  *SNOW3L*
@@ -153,6 +153,8 @@ REAL, DIMENSION(:), INTENT(IN)    :: PSOILCOND, PD_G, PPSN3L
 !                                                  Used to calculate ground/snow heat flux
 !                                      PPSN3L    = snow fraction
 !
+REAL, DIMENSION(:)                :: PRSURF     
+!                                 Additional aerodynamic surface resistance if Ta and HR above canopy
 REAL, DIMENSION(:), INTENT(IN)    :: PZREF, PUREF, PEXNS, PEXNA, PDIRCOSZW, PRHOA, PZ0, PZ0EFF, &
                                        PALB, PZ0H, PPERMSNOWFRAC, PFORESTFRAC 
 !                                      PZ0EFF    = roughness length for momentum
@@ -276,7 +278,6 @@ CHARACTER(4), INTENT(IN)            :: HSNOWDRIFT        ! Snowdrift scheme :
                                       !  Other options are available in Crocus
 
 LOGICAL, INTENT(IN)               ::  OSNOWDRIFT_SUBLIM ! activate snowdrift, sublimation during drift
-REAL, DIMENSION(:)                :: PRSURF     ! Additional aerodynamic surface resistance if Ta and HR above canopy
 !
 !*      0.2    declarations of local variables
 !

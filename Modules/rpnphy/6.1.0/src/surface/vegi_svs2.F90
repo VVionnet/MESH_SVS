@@ -15,9 +15,11 @@
 !-------------------------------------- LICENCE END --------------------------------------
       SUBROUTINE VEGI_SVS2 ( RG, T, TVEG, HU, PS, &
            WD , RGL, LAI, LAI_VH, LAI_VL, RSMIN, GAMMA, WWILT, WFC, &   
-           SUNCOS, DRZ, D50, D95, PSNGRVL, VEGH, VEGL, Z0MVH, RS, SKYVIEW,  &
+           SUNCOS, DRZ, D50, D95, PSNGRVL, VEGH, VEGL, Z0MVH,  &
+           VGH_HEIGHT,VGH_DENS, CLUMPING,  &
+           RS, SKYVIEW,  &
            SKYVIEWA, VTR, VTRA, &    
-           FCD, ACROOT, WRMAX_VL, WRMAX_VH,VGH_HEIGHT,VGH_DENS, CLUMPING, N  )
+           FCD, ACROOT, WRMAX_VL, WRMAX_VH,N  )
 !
         use tdpack
         use svs_configs
@@ -33,7 +35,7 @@
       REAL SKYVIEWA(N),VTRA(N)
       REAL D50(N), D95(N), ACROOT(N,NL_SVS) , WRMAX_VL(N),  WRMAX_VH(N)
       REAL Z0MVH(N),  VGH_HEIGHT(N), VGH_DENS(N)
-      REAL CLUMPING ! clumping coefficient to convert LAI to effective LAI
+      REAL CLUMPING 
 !
 !Author
 !          S. Belair, M.Abrahamowicz,S.Z.Husain (June 2015)
@@ -72,7 +74,10 @@
 ! VEGH     fraction of HIGH vegetation
 ! VEGL     fraction of LOW vegetation
 ! Z0MVH    Local roughness associated with HIGH vegetation only (no
-!          orography)      
+!            orography)      
+! VGH_HEIGHT Height of trees in areas of high vegeation (m)     
+! VGH_DENS  Density of trees in areas of high vegeation (m)  
+! CLUMPING   coefficient to convert LAI to effective LAI  
 !      
 !          - Output -
 ! RS       Surface or stomatal resistance
@@ -84,8 +89,8 @@
 ! ACROOT(NL_SVS) Active fraction of roots (0-1) in the soil layer
 ! WRMAX_VL    Max volumetric water content retained on low vegetation
 ! WRMAX_VH    Max volumetric water content retained on high vegetation
-! VGH_HEIGHT Height of trees in areas of high vegeation (m)     
-! VGH_DENS Density of trees in areas of high vegeation (m)  
+
+
 !
 !
       INTEGER I, K
@@ -240,7 +245,6 @@
 !                 crops). Here as a first approximation, we take the
 !                 skyview factor for tall/high vegetation to be exp(-1*LAI).
 !
-             CLUMPING = 0.5
              SKYVIEW(I) = EXP( - CLUMPING * LAI_VH(I) * VGH_DENS(I))
 !                   --- based on average LAI
              SKYVIEWA(I) = EXP( - CLUMPING * LAI(I) * VGH_DENS(I))

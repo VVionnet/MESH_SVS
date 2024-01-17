@@ -561,6 +561,8 @@ module sfcbus_mod
       SFCVAR(z0ha, 'z0ha')
       SFCVAR(z0hbg, 'z0hbg')
       SFCVAR(z0hvg, 'z0hvg')
+      SFCVAR(z0hvl, 'z0hvl')
+      SFCVAR(z0hvh, 'z0hvh')
       SFCVAR(z0hgv, 'z0hgv')
       SFCVAR(z0mland, 'z0mland')
       SFCVAR(z0mlanden, 'z0mlanden')
