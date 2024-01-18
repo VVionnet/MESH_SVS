@@ -24,7 +24,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    use sfcbus_mod
    use sfc_options, only: atm_external, atm_tplus, radslope, jdateo, &
         use_photo, nclass, zu, zt, sl_Lmin_soil, VAMIN, svs_local_z0m, &
-        vf_type, nsl, lsnow_interception_svs2, lsnow_canopy_mod
+        vf_type, nsl, lunique_profile_svs2, lsnow_interception_svs2, lcano_svs2, &
+        lcano_ref_level_above
    use svs_configs
 
    use tdpack
@@ -135,6 +136,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    real,dimension(n) :: sunother4, trad, tva, vdir, vmod, vmod_lmin, wrmax_vl, wrmax_vh, wveglt, wveght
 ! 
    real, dimension(n,nl_svs) :: isoilt, wsoilt
+   real clumping ! Clumping coefficient to switch from LAI to effective LAI
 !
 !  for SVS2 only (to reorganise and clean some var)
    real,dimension(n) :: pct, pz0hnat, pz0, pzenith
@@ -152,6 +154,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    real,dimension(n) :: puref_veg  ! Forcing height for wind under high vegetation
    real,dimension(n) :: ptref_veg  ! Forcing height for temperature/humidity under high vegetation
    real,dimension(n) :: pzohvh  ! Canopy roughness length for heat
+   real,dimension(n) :: zz0nat, zz0hnat ! Local variables for grid box average roughness length
+   real,dimension(n) :: zrsurf_forest, zrsurf_open ! Surface aerodynamic resistances for turbulent fluxes
 
      ! NL_SVS VARIABLES
    real, dimension(n,nl_svs) ::  pd_g, pdzg
@@ -164,7 +168,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    real, dimension(n,nl_svs) :: delwatgr, delwatvg, delicegr, delicevg
 
 
-   real CLUMPING ! Clumping coefficient to switch from LAI to effective LAI
+
 
 
 !******************************************************
@@ -307,6 +311,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
             !PZ0(I)    = Z0HSNOW/Z0M_TO_Z0H
             !PZ0(I)    = bus(x(Z0,I,indx_soil)) !  WARNING VV: Requires a careful check
             PZ0(I)    = Z0MSNOW_CRO
+            ZRSURF_OPEN(I) = 0.
+            ZRSURF_FOREST(I) = 0.
 
             DO J=1,NL_SVS
                PD_G(I,J)=DL_SVS(J)
@@ -400,7 +406,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            BUS(x(Z0MVL  ,1,1)), z0m, &  
            BUS(x(CLAY   ,1,1)), BUS(x(SAND   ,1,1)), &  
            BUS(x(DECIDUOUS,1,1)),BUS(x(EVERGREEN,1,1)), &  
-           BUS(x(LAIDECI,1,1)),   &
+           BUS(x(LAIDECI,1,1)), bus(x(VGH_DENS,1,1)),   &
            BUS(x(SVS_WTA,1,1)),BUS(x(SVS_WTG,1,1)), CG, &
            BUS(x(SOILHCAPZ,1,1)),BUS(x(SOILCONDZ,1,1)),  &
            BUS(x(PSNGRVL,1,1)),  &  
@@ -411,7 +417,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            BUS(x(PSURFVHA ,1,1)),         &
            ALVA, BUS(x(LAIVA  ,1,1)), CVPA, EVA, BUS(x(Z0HA ,1,1)),&
            BUS(x(Z0MVG,1,1)), RGLA, STOMRA,   &
-           GAMVA,bus(x(CONDSLD    ,1,1)) , bus(x(CONDDRY   ,1,1)), N)
+           GAMVA,bus(x(CONDSLD    ,1,1)) , bus(x(CONDDRY   ,1,1)), &
+           CLUMPING, N)
 !
       ! Update vegetation temperature with average of low and high vegetation. 
       ! VV TO BE MODIFIED: Intermediate step during developement. 
@@ -420,7 +427,6 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
           PTVEGE(I)   =  (BUS(x(VEGL,1,1)) *bus(x(TVEGEL,I,1)) + BUS(x(VEGH,1,1)) *bus(x(TVEGEH,I,1)) )/ &
                                              (BUS(x(VEGL,1,1)) + BUS(x(VEGH,1,1)))
       ENDDO
-
 !
       CALL VEGI_SVS2 ( zfsolis,   &
            tt                  , PTVEGE,   &  
@@ -434,11 +440,12 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            bus(x(ROOTDP     ,1,1)),  bus(x(D50   ,1,1)),    &
            bus(x(D95   ,1,1)),  BUS(x(PSNGRVL,1,1)), &
            BUS(x(VEGH   ,1,1)), BUS(x(VEGL   ,1,1)), &
-           BUS(x(Z0MVH  ,1,1)), bus(x(RST     ,1,1)),     &
+           BUS(x(Z0MVH  ,1,1)), bus(x(VGH_HEIGHT   ,1,1)),bus(x(VGH_DENS,1,1)), &
+           CLUMPING,  bus(x(RST     ,1,1)),     &
            bus(x(SKYVIEW ,1,1)), bus(x(SKYVIEWA ,1,1)), &
            bus(x(VEGTRANS,1,1)), bus(x(VEGTRANSA,1,1)),   &   
            bus(x(frootd   ,1,1)), bus(x(acroot ,1,1)), WRMAX_VL, &
-           WRMAX_VH, bus(x(VGH_HEIGHT   ,1,1)),bus(x(VGH_DENS,1,1)), CLUMPING, N)
+           WRMAX_VH,  N)
 
       IF(KOUNT.EQ.1) then
          DO I=1,N
@@ -461,63 +468,16 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       endif
 
 !
-      CALL DRAG_SVS2 ( bus(x(TGROUND,1,1)),bus(x(TGROUNDV,1,1))  , &
-           bus(x(TVEGEL,1,1)), bus(x(TVEGEH,1,1)),  &   
-           bus(x(WSOIL ,1,1)) ,  &   
-           bus(x(WVEG_VL,1,1)),bus(x(WVEG_VH,1,1)),  zthetaa,  &   
-           VMOD, VDIR, hu,     &
-           ps, STOM_RS,   &  
-           z0m, z0mland, bus(x(Z0MVG,1,1)), bus(x(WFC,1,1)),      &
-           bus(x(WSAT,1,1)),  bus(x(CLAY,1,1)), bus(x(SAND,1,1)), &
-           bus(x(LAIVL,1,1)),bus(x(LAIVH,1,1)), WRMAX_VL, WRMAX_VH, & 
-           bus(x(zusl,1,1)), bus(x(ztsl,1,1)),    & 
-           bus(x (DLAT,1,1)), &
-           bus(x(FCOR,1,1)),bus(x(Z0HA ,1,1)), &  
-           bus(x(RESAGR,1,1)),bus(x(RESAGRV,1,1)), &
-           bus(x(RESA_VL,1,1)),bus(x(RESA_VH,1,1)),  &    
-           bus(x(HUSURF,1,1)),bus(x(HUSURFGV,1,1)),   &  
-           HRSURF, HRSURFGV,      &
-           bus(x(HV_VL,1,1)),bus(x(HV_VH,1,1)), DEL_VL, DEL_VH,     &
-           bus(x(Z0HBG,1,1)), bus(x(Z0HVG,1,1)), bus(x(Z0HGV,1,1)), &
-           bus(x(VEGL,1,1)), bus(x(VEGH,1,1)), &
-           N )  
-      if (phy_error_L) return
-
-
-
-      PWIND_DRIFT(:) = VMOD(:)
-
-!     Snow over bare/low ground
-
-      CALL SNOW_SVS2(   bus(x(SNOMA_SVS,1,1)), bus(x(TSNOW_SVS,1,1)), bus(x(WSNOW_SVS,1,1)),    &
-                         bus(x(SNODEN_SVS,1,1)),  bus(x(SNOAL,1,1)),bus(x(SNOAGE_SVS,1,1)),    &
-                         bus(x(SNODIAMOPT_SVS,1,1)), bus(x(SNOSPHERI_SVS,1,1)),bus(x(SNOHIST_SVS,1,1)),   &
-                         DT, bus(x(TPSOIL    ,1,1)) ,  PCT, bus(x(SOILHCAPZ,1,1)), bus(x(SOILCONDZ,1,1)),                 &
-                         ps,tt,zfsolis,     &
-                         hu, VMOD, PWIND_DRIFT, &
-                         bus(x(FDSI,1,1)),         &
-                         RAINRATE_MM, SNOWRATE_MM,                                       &
-                         RHOA, bus(x(zusl,1,1)),  bus(x(ztsl,1,1)),             &
-                         BUS(X(ALGR,1,1)), PD_G, PDZG,                          &
-                         bus(x(RSNOWSA,1,1)), bus(x(GFLUXSA,1,1)),bus(x(RNETSA,1,1)),bus(x(HFLUXSA,1,1)) , &
-                         PGFLUXSNOW,bus(x(SWNETSA,1,1)), bus(x(LWNETSA,1,1)), bus(x(SUBLDRIFTA,1,1)), &
-                         bus(x(HPSA ,1,1)),  bus(x(PSNGRVL ,1,1)), PZ0,PZ0,PZ0HNAT, &
-                         LESNOFRAC, LESLNOFRAC, bus(x(ESA,1,1)), PZENITH, &
-                         bus(x (DLAT,1,1)), bus(x (DLON,1,1)),PFOREST,bus(x(SNOTYPE_SVS,1,1)), PRSURF, &
-                         N, NL_SVS)
-      if (phy_error_L) return
-
-!
 !      Effect of high vegetation on met forcing
 !
-     IF(LSNOW_CANOPY_MOD) THEN
-        CALL  CANOPY_MET_SVS2(tt, hu, ps, vmod, vdir, zfsolis, bus(x(FDSI,1,1)), &
+     IF(LCANO_SVS2) THEN
+        CALL  CANOPY_MET_SVS2(tt, hu, vmod, zfsolis, bus(x(FDSI,1,1)), &
                      bus(x(TVEGEH,1,1)),bus(x(zusl,1,1)),  bus(x(ztsl,1,1)),  &
-                     bus(x(FCOR,1,1)), bus(x(DLAT,1,1)), bus(x(SNVDP,1,1)),bus(x(TSNOWV_SVS,1,1)),bus(x(TPSOILV,1,1)),   &  
-                     SUNCOSA, bus(x(SWCA,1,1)), bus(x(LWCA,1,1)), bus(x(VCA,1,1)), bus(x(TCA,1,1)), bus(x(QCA,1,1)) , PWIND_TOP,  & 
-                     PUREF_VEG,PTREF_VEG,BUS(x(Z0MVH  ,1,1)),PZ0,bus(x(PSNVH,1,1)),  BUS(x(VEGH   ,1,1)), &
-                     BUS(x(LAIVH  ,1,1)),bus(x(VEGTRANS,1,1)) , bus(x(SKYVIEW,1,1)) , &
-                     bus(x(EMISVH,1,1)),bus(x(VGH_HEIGHT,1,1)),bus(x(VGH_DENS,1,1)),CLUMPING, PRSURF, PWIND_DRIFT, N) 
+                     SUNCOSA, bus(x(VGH_HEIGHT,1,1)),bus(x(VGH_DENS,1,1)),CLUMPING, &
+                     BUS(x(Z0MVH  ,1,1)),PZ0, BUS(x(VEGH   ,1,1)), &
+                     BUS(x(LAIVH  ,1,1)),bus(x(SKYVIEW,1,1)) ,bus(x(SWCA,1,1)), bus(x(LWCA,1,1)), &
+                     bus(x(VCA,1,1)), bus(x(TCA,1,1)), bus(x(QCA,1,1)) , PWIND_TOP,  & 
+                     PUREF_VEG,PTREF_VEG,  ZRSURF_FOREST, PWIND_DRIFT, N) 
      ELSE       
          DO I=1,N
             PUREF_VEG(I) = bus(x(zusl,I,1))
@@ -529,10 +489,58 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
             bus(x(SWCA,I,1))    = zfsolis(I) * bus(x(VEGTRANS,I,1))              ! Incoming SW under VEG
 
             bus(x(LWCA,I,1))  = bus(x(SKYVIEW,I,1)) * bus(x(FDSI,I,1)) +    &  ! Incoming LW under veg
-                 (1. - bus(x(SKYVIEW,I,1))) * EVA(I) * STEFAN * (bus(x(TVEGEH,I,2)))**4.  ! add EVA--nathalie
+                 (1. - bus(x(SKYVIEW,I,1))) * EVA(I) * STEFAN * (bus(x(TVEGEH,I,1)))**4.  ! add EVA--nathalie
          ENDDO
           
       ENDIF
+
+!
+      CALL DRAG_SVS2 ( bus(x(TGROUND,1,1)),bus(x(TGROUNDV,1,1))  , &
+           bus(x(TVEGEL,1,1)), bus(x(TVEGEH,1,1)),  &   
+           bus(x(WSOIL ,1,1)) ,  &   
+           bus(x(WVEG_VL,1,1)),bus(x(WVEG_VH,1,1)),  zthetaa,  &   
+           VMOD, VDIR, hu,     &
+           ps, STOM_RS,   &  
+           z0m, z0mland, bus(x(Z0MVG,1,1)), bus(x(WFC,1,1)),      &
+           bus(x(WSAT,1,1)),  bus(x(CLAY,1,1)), bus(x(SAND,1,1)), &
+           bus(x(LAIVL,1,1)),bus(x(LAIVH,1,1)), WRMAX_VL, WRMAX_VH, & 
+           bus(x(zusl,1,1)), bus(x(ztsl,1,1)),    & 
+           bus(x (DLAT,1,1)), &
+           bus(x(FCOR,1,1)),bus(x(Z0HA ,1,1)), bus(x(VEGL,1,1)), bus(x(VEGH,1,1)), &  
+           CLUMPING, bus(x(VGH_DENS,1,1)), BUS(x(Z0MVH  ,1,1)),  BUS(x(Z0MVL  ,1,1)), &
+           bus(x(VGH_HEIGHT   ,1,1)),BUS(x(LAIVH  ,1,1)), bus(x(VCA,1,1)), &
+           bus(x(RESAGR,1,1)),bus(x(RESAGRV,1,1)), &
+           bus(x(RESA_VL,1,1)),bus(x(RESA_VH,1,1)),  &    
+           bus(x(HUSURF,1,1)),bus(x(HUSURFGV,1,1)),   &  
+           HRSURF, HRSURFGV,      &
+           bus(x(HV_VL,1,1)),bus(x(HV_VH,1,1)), DEL_VL, DEL_VH,     &
+           bus(x(Z0HBG,1,1)), bus(x(Z0HVL,1,1)), bus(x(Z0HVH,1,1)), bus(x(Z0HGV,1,1)), &
+            N )  
+      if (phy_error_L) return
+
+
+
+
+!     Snow over bare/low ground
+      
+      CALL SNOW_SVS2(   bus(x(SNOMA_SVS,1,1)), bus(x(TSNOW_SVS,1,1)), bus(x(WSNOW_SVS,1,1)),    &
+                         bus(x(SNODEN_SVS,1,1)),  bus(x(SNOAL,1,1)),bus(x(SNOAGE_SVS,1,1)),    &
+                         bus(x(SNODIAMOPT_SVS,1,1)), bus(x(SNOSPHERI_SVS,1,1)),bus(x(SNOHIST_SVS,1,1)),   &
+                         DT, bus(x(TPSOIL    ,1,1)) ,  PCT, bus(x(SOILHCAPZ,1,1)), bus(x(SOILCONDZ,1,1)),                 &
+                         ps,tt,zfsolis,     &
+                         hu, VMOD, 0., &
+                         bus(x(FDSI,1,1)),         &
+                         RAINRATE_MM, SNOWRATE_MM,    ZRSURF_OPEN,                    &
+                         RHOA, bus(x(zusl,1,1)),  bus(x(ztsl,1,1)),             &
+                         BUS(X(ALGR,1,1)), PD_G, PDZG,                          &
+                         bus(x(RSNOWSA,1,1)), bus(x(GFLUXSA,1,1)),bus(x(RNETSA,1,1)),bus(x(HFLUXSA,1,1)) , &
+                         PGFLUXSNOW,bus(x(SWNETSA,1,1)), bus(x(LWNETSA,1,1)), bus(x(SUBLDRIFTA,1,1)), &
+                         bus(x(HPSA ,1,1)),  bus(x(PSNGRVL ,1,1)), PZ0,PZ0,PZ0HNAT, &
+                         LESNOFRAC, LESLNOFRAC, bus(x(ESA,1,1)), PZENITH, &
+                         bus(x (DLAT,1,1)), bus(x (DLON,1,1)),PFOREST,bus(x(SNOTYPE_SVS,1,1)),  &
+                         N, NL_SVS)
+      if (phy_error_L) return
+
 
      IF(LSNOW_INTERCEPTION_SVS2) THEN
 
@@ -574,22 +582,36 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 !     which are used in the energy balance and should be the canopy roughness length
 !     PZ0EFF stays the snow roughness length that is needed for SNOWDRIFT and SNOWFALL_UPGRID
 !
+
+      IF (LCANO_REF_LEVEL_ABOVE) THEN ! Use roughness length for the canopy for the calculation of the air resistance
+        DO I = 1,N
+         ZZ0NAT(I) =  BUS(x(Z0MVH  ,I,1))
+         ZZ0HNAT(I) = PZOHVH(I)
+        ENDDO
+      ELSE ! Use roughness length for snow for the calculation of the air resistance
+        DO I = 1,N
+         ZZ0NAT(I) =  PZ0(I)
+         ZZ0HNAT(I) = PZ0HNAT(I)
+        ENDDO
+      ENDIF
+
       CALL SNOW_SVS2(   bus(x(SNOMAV_SVS,1,1)), bus(x(TSNOWV_SVS,1,1)), bus(x(WSNOWV_SVS,1,1)),    &
-                         bus(x(SNODENV_SVS,1,1)), bus(x(SNVAL,1,1)),bus(x(SNOAGEV_SVS,1,1)),    &
-                         bus(x(SNODIAMOPTV_SVS,1,1)), bus(x(SNOSPHERIV_SVS,1,1)),bus(x(SNOHISTV_SVS,1,1)),   &
-                         DT,PSOIL_TEMP_VGH, PCT, bus(x(SOILHCAPZ,1,1)), bus(x(SOILCONDZ,1,1)),               &
-                         ps, bus(x(TCA,1,1)),bus(x(SWCA,1,1)),     &
-                         bus(x(QCA,1,1)), bus(x(VCA,1,1)), PWIND_DRIFT, &
-                         bus(x(LWCA,1,1)),         &
-                         RAINRATE_MM_VEG, SNOWRATE_MM_VEG,                                       &
-                         RHOA,  PUREF_VEG,   PTREF_VEG,            &
-                         BUS(X(ALGR,1,1)), PD_G, PDZG,                          &
-                         bus(x(RSNOWSV,1,1)), bus(x(GFLUXSV,1,1)),bus(x(RNETSV,1,1)) , bus(x(HFLUXSV ,1,1)), &
-                         PGFLUXSNOW_V,bus(x(SWNETSV,1,1)),bus(x(LWNETSV,1,1)),bus(x(SUBLDRIFTV,1,1)), &
-                         bus(x(HPSV ,1,1)),bus(x(PSNVH ,1,1)), BUS(x(Z0MVH  ,1,1)),PZ0, PZOHVH,  &
-                         LESVNOFRAC, LESVLNOFRAC, bus(x(ESV,1,1)),PZENITH, &
-                         bus(x (DLAT,1,1)), bus(x (DLON,1,1)), PFOREST_V,bus(x(SNOTYPEV_SVS,1,1)), PRSURF, &
-                         N, NL_SVS)
+                             bus(x(SNODENV_SVS,1,1)), bus(x(SNVAL,1,1)),bus(x(SNOAGEV_SVS,1,1)),    &
+                             bus(x(SNODIAMOPTV_SVS,1,1)), bus(x(SNOSPHERIV_SVS,1,1)),bus(x(SNOHISTV_SVS,1,1)),   &
+                             DT,PSOIL_TEMP_VGH, PCT, bus(x(SOILHCAPZ,1,1)), bus(x(SOILCONDZ,1,1)),               &
+                             ps, bus(x(TCA,1,1)),bus(x(SWCA,1,1)),     &
+                             bus(x(QCA,1,1)), bus(x(VCA,1,1)), PWIND_DRIFT, &
+                             bus(x(LWCA,1,1)),         &
+                             RAINRATE_MM_VEG, SNOWRATE_MM_VEG,  ZRSURF_FOREST,                                   &
+                             RHOA,  PUREF_VEG,   PTREF_VEG,            &
+                             BUS(X(ALGR,1,1)), PD_G, PDZG,                          &
+                             bus(x(RSNOWSV,1,1)), bus(x(GFLUXSV,1,1)),bus(x(RNETSV,1,1)) , bus(x(HFLUXSV ,1,1)), &
+                             PGFLUXSNOW_V,bus(x(SWNETSV,1,1)),bus(x(LWNETSV,1,1)),bus(x(SUBLDRIFTV,1,1)), &
+                             bus(x(HPSV ,1,1)),bus(x(PSNVH ,1,1)), ZZ0NAT,PZ0,ZZ0HNAT,  &
+                             LESVNOFRAC, LESVLNOFRAC, bus(x(ESV,1,1)),PZENITH, &
+                             bus(x (DLAT,1,1)), bus(x (DLON,1,1)), PFOREST_V,bus(x(SNOTYPEV_SVS,1,1)), &
+                             N, NL_SVS)
+ 
 
       if (phy_error_L) return
 
@@ -612,7 +634,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
             bus(x(WSNV,I,1))   =  bus(x(WSNV,I,1)) + bus(x(WSNOWV_SVS ,I,J))*1000.
          ENDDO
 
-! Cumulated liquid water runoff leaving the snowpack 
+!        Cumulated liquid water runoff leaving the snowpack 
          bus(x(RSNOWS_ACC,I,1)) = bus(x(RSNOWS_ACC,I,1)) + bus(x(RSNOWSA,I,1))*DT
          bus(x(RSNOWSV_ACC,I,1)) = bus(x(RSNOWSV_ACC,I,1)) + bus(x(RSNOWSV,I,1))*DT
 
@@ -622,7 +644,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
       CALL EBUDGET_SVS2_ONEPROFILE_SKIN(bus(x(TSA ,1,1)),  &  
                   bus(x(WSOIL     ,1,1)) , bus(x(ISOIL,1,1)),  &   
-                  bus(x(TGROUND   ,1,1)) , bus(x(TGROUND,1,2)),   & 
+                  bus(x(TGROUND   ,1,1)) , bus(x(TGROUND,1,2)), bus(x(TGROUNDV,1,1)),  & 
                   bus(x(TVEGEL    ,1,1)) ,    &  
                   bus(x(TVEGEH    ,1,1)) , bus(x(TVEGEH,1,2)),   &  
                   bus(x(TPSOIL    ,1,1)) ,    & 
@@ -676,7 +698,6 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                   bus(x(ilmo  ,1,indx_soil)), bus(x(hst  ,1,indx_soil)), &   
                   TRAD, N,   &
                   bus(x(QVEG ,1,1)), bus(x(QGV   ,1,1)), bus(x(QGR   ,1,1)), & 
-                  bus(x(TAF   ,1,1)), bus(x(QAF   ,1,1)), bus(x(VAF   ,1,1)), & 
                   RPP, bus(x(Z0HA ,1,1)))
 
 
@@ -753,6 +774,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
          endif
       ENDIF
 !
+
 !
 !     Phase change for the soil column
 !
@@ -763,6 +785,14 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                       bus(x(FROOTD ,1,1)), N                   , &
                       bus(x(PHASEF ,1,1)), bus(x(PHASEM ,1,1)) , &
                       bus(x(DELTAT ,1,1)), bus(x(APPHEATCAP ,1,1)), bus(x(TMAX ,1,1)) )
+
+       ! Update the soil liquid water and ice content after phase changes 
+       DO I=1,N
+         DO J=1,NL_SVS  
+            WSOILT(I,J) = WDTTG(I,J)
+            ISOILT(I,J) = WFTG(I,J)
+          END DO 
+       END DO 
 !
 !     Update prognostic variable in SVS2
 !

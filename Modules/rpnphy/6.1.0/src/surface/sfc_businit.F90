@@ -135,7 +135,7 @@ subroutine sfc_businit(moyhr,ni,nk)
         vgh_dens, vgh_densen, &
         wveg_vl, wveg_vh,     &       
         wsnow_svs,wsnowv_svs, &
-        z0hgv
+        z0hgv,z0hvl, z0hvh 
 
    integer :: phasef, phasem, phasefv, phasemv, deltat, deltatv, appheatcap, appheatcapv, tmax, tmaxv
 
@@ -681,7 +681,8 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR2D1(z0ha,         'VN=z0ha         ;ON=Z0HA;VD=thermal roughness for snowless veg.                               ;VB=p0')
       PHYVAR2D1(z0hbg,        'VN=z0hbg        ;ON=ZTBG;VD=thermal roughness for bare ground in SVS                          ;VB=p0')
       PHYVAR2D1(z0hgv,        'VN=z0hgv        ;ON=ZTGV;VD=thermal roughness for ground below high veg. in SVS2              ;VB=p0')
-      PHYVAR2D1(z0hvg,        'VN=z0hvg        ;ON=ZTVG;VD=thermal roughness for vegetation in SVS                           ;VB=p0')
+      PHYVAR2D1(z0hvl,        'VN=z0hvl        ;ON=ZTVL;VD=thermal roughness for LOW vegetation in SVS2                           ;VB=p0')
+      PHYVAR2D1(z0hvh,        'VN=z0hvh        ;ON=ZTVH;VD=thermal roughness for HIGH vegetation in SVS2                           ;VB=p0')
       PHYVAR2D1(z0mland,      'VN=z0mland      ;ON=Z0LD;VD=local mom roughness length for SVS(snow-free,land-only,no oro.)   ;VB=p0')
       if (svs_dynamic_z0h .or. svs_local_z0m ) &
       PHYVAR2D1(z0mlanden,      'VN=z0mlanden  ;ON=SVS1;VD=local mom roughness length for SVS(snow-free,land-only,no oro.)(E);VB=e1; IN=Z0LD;MIN=0')

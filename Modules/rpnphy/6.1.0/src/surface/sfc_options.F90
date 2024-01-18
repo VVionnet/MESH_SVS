@@ -371,12 +371,12 @@ module sfc_options
    namelist /surface_cfgs/ lsnow_interception_svs2
 
    !# If .true., SVS2 solves the energy balance using forcing above the canopy
-   logical           :: lcan_ref_level_above = .false.
-   namelist /surface_cfgs/ lcan_ref_level_above
+   logical           :: lcano_ref_level_above = .false.
+   namelist /surface_cfgs/ lcano_ref_level_above
 
    !# If .true., SVS2 utilizes the canopy module to modify T, U, VMOD, SW, and LW to account for canopy
-   logical           :: lsnow_canopy_mod = .false.
-   namelist /surface_cfgs/ lsnow_canopy_mod
+   logical           :: lcano_svs2 = .false.
+   namelist /surface_cfgs/ lcano_svs2
 
    !# Emissivity for water
    !# * '_constant_' : A fixed floating point value used as a constant

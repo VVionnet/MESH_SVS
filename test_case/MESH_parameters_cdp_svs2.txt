@@ -91,5 +91,13 @@ lout_snow_profile  .true.  ! Create output file containing detailed information 
 nprofile_day     4          ! Number of snow profiles per day (can be  1, 2, 4, 6, 12, 24)
 lout_snow_enbal  .false.    ! Create output file containing information about the snowpack energy and mass budget
 
+! Activate canopy module
+lsnow_interception_svs2  .false.
+lcano_ref_level_above .false.
+lcano_svs2 .false.
+
+! Specify a canopy cover density (high vegetation)
+VGH_DENS    0.
+
 !> Physical constant for snowpack scheme (uncomment to use)
 !>xvaging_noglacier  60 ! Aging coefficient (in days) used for albedo calculation in visible range (see modd_snow_par)

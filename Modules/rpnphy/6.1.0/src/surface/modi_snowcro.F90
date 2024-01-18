@@ -6,7 +6,7 @@ INTERFACE
                       PPET_A_COEF, PPEQ_A_COEF, PPET_B_COEF, PPEQ_B_COEF,       &
                       PSNOWSWE,PSNOWRHO,PSNOWHEAT,PSNOWALB,                     &
                       PSNOWGRAN1,PSNOWGRAN2,PSNOWHIST,PSNOWAGE, PSNOWIMPUR,     &
-                      PTSTEP,PPS,PSR,PRR,PPSN3L,                                &
+                      PTSTEP,PPS,PSR,PRR,PPSN3L, PRSURF,                             &
                       PTA,PTG,PSW_RAD,PQA,PVMOD,PWIND_DRIFT, PLW_RAD, PRHOA,    &
                       PUREF,PEXNS,PEXNA,PDIRCOSZW,                              &
                       PZREF,PZ0,PZ0EFF,PZ0H,PALB,                               &
@@ -23,7 +23,7 @@ INTERFACE
                       PSPEC_ALB, PDIFF_RATIO,PSPEC_TOT,PSNOWFLUX,PIMPWET,PIMPDRY,&
                       HSNOWFALL, HSNOWCOND,HSNOWHOLD,HSNOWCOMP,HSNOWZREF,       &
                       PSNOWMAK, OSNOWCOMPACT_BOOL, OSNOWMAK_BOOL, OSNOWTILLER,  &
-                      OSELF_PROD, OSNOWMAK_PROP, PRSURF  )
+                      OSELF_PROD, OSNOWMAK_PROP  )
 USE MODD_TYPE_DATE_SURF, ONLY: DATE_TIME
 IMPLICIT NONE
 REAL, INTENT(IN)                       :: PTSTEP

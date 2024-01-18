@@ -7,8 +7,8 @@ INTERFACE
                 PPET_A_COEF, PPEQ_A_COEF, PPET_B_COEF, PPEQ_B_COEF,       &
                 PSNOWSWE,PSNOWRHO,PSNOWHEAT,PSNOWALB,                     &
                 PSNOWAGE,                                                 &                
-                PTSTEP,PPS,PSR,PRR,PPSN3L,                                &
-                PTA,PTG,PSW_RAD,PQA,PVMOD,PLW_RAD, PRHOA,                 &
+                PTSTEP,PPS,PSR,PRR,PPSN3L,  PRSURF,                       &
+                PTA,PTG,PSW_RAD,PQA,PVMOD, PLW_RAD, PRHOA,         &
                 PUREF,PEXNS,PEXNA,PDIRCOSZW,                              &
                 PZREF,PZ0,PZ0EFF,PZ0H,PALB,                               &
                 PSOILCOND,PD_G,PLVTT,PLSTT,                               &
@@ -20,7 +20,7 @@ INTERFACE
                 PHPSNOW,PLES3L,PLEL3L,PEVAP,PSNDRIFT,PRI,                 &
                 PEMISNOW,PCDSNOW,PUSTAR,PCHSNOW,PSNOWHMASS,PQS,           &
                 PPERMSNOWFRAC,PFORESTFRAC,PZENITH,                        &
-                HSNOWDRIFT,OSNOWDRIFT_SUBLIM, PRSURF                       )  
+                HSNOWDRIFT,OSNOWDRIFT_SUBLIM                     )  
 
 IMPLICIT NONE
 REAL, INTENT(IN)                       :: PTSTEP

@@ -18,6 +18,7 @@ subroutine inicover_svs2(kount, ni, trnch)
    use mu_jdate_mod, only: jdate_day_of_year
    use sfc_options
    use sfcbus_mod
+   use svs_configs, only :  ntypeh, vh_type
    implicit none
 !!!#include <arch_specific.hf>
 #include <rmnlib_basics.hf>
@@ -301,6 +302,18 @@ subroutine inicover_svs2(kount, ni, trnch)
        ! for z0m combine the logs 
          logz0mloc(i) = log(z0mdat(i))
       end do
+
+      ! Modify vegdat for high vegetation when density if trees is taken 
+      ! from an external database
+      ! Use a value of 0.99 to make sure that open pixel are present everywhere.
+      read_vgh_dens  = .true.
+      if(read_vgh_dens) then
+          do i=1,ntypeh  
+           k=vh_type(i)  ! loop on HIGH vegetation classes
+           vegdatdn(k)  = 0.99
+           vegdatds(k)  = 0.99
+          enddo
+      endif
 
       ! Fill the laidatd and vegdatd fields for
       ! land use classes varying with seasons

@@ -7,8 +7,8 @@
                       PPEW_A_COEF, PPEW_B_COEF,                                 &
                       PPET_A_COEF, PPEQ_A_COEF, PPET_B_COEF, PPEQ_B_COEF,       &
                       PSNOWSWE,PSNOWRHO,PSNOWHEAT,PSNOWALB,                     &
-                      PSNOWDIAMOPT,PSNOWSPHERI,PSNOWHIST,PSNOWAGE, PSNOWIMPUR,     &
-                      PTSTEP,PPS,PSR,PRR,PPSN3L,                                &
+                      PSNOWDIAMOPT,PSNOWSPHERI,PSNOWHIST,PSNOWAGE, PSNOWIMPUR,  &
+                      PTSTEP,PPS,PSR,PRR,PPSN3L, PRSURF,                 &
                       PTA,PTG,PSW_RAD,PQA,PVMOD,PWIND_DRIFT,PLW_RAD, PRHOA,     &
                       PUREF,PEXNS,PEXNA,PDIRCOSZW,                              &
                       PZREF,PZ0,PZ0EFF,PZ0H,PALB,                               &
@@ -25,7 +25,7 @@
                       PSPEC_ALB, PDIFF_RATIO,PSPEC_TOT,PSNOWFLUX,PIMPWET,PIMPDRY,&
                       HSNOWFALL, HSNOWCOND,HSNOWHOLD,HSNOWCOMP,HSNOWZREF,       &
                       PSNOWMAK, OSNOWCOMPACT_BOOL, OSNOWMAK_BOOL, OSNOWTILLER,  &
-                      OSELF_PROD, OSNOWMAK_PROP, PRSURF )
+                      OSELF_PROD, OSNOWMAK_PROP )
 
 !     ##########################################################################
 !
@@ -208,6 +208,7 @@ REAL, DIMENSION(:), INTENT(IN)         :: PPS, PTA, PSW_RAD, PQA, PVMOD, PWIND_D
 !                                      PPS     = surface pressure
 !                                      PQA     = atmospheric specific humidity
 !                                                at level za
+REAL, DIMENSION(:), INTENT(IN)         :: PRSURF ! Aerodynamic surface resistance for snow under canopy (cf. Gouttevin et al. 2013)                                       
 REAL, DIMENSION(:,:), INTENT(IN)       :: P_DIR_SW, P_SCA_SW ! direct and diffuse spectral irradiance (W/m2/um)
 !
 REAL, DIMENSION(:,:), INTENT(IN)       :: PIMPWET, PIMPDRY  !Dry and wet deposit coefficient from Forcing File(g/m²/s)
@@ -398,7 +399,7 @@ LOGICAL, INTENT(IN)                    :: OATMORAD ! activate atmotartes scheme
                                        ! HSNOWZREF='CST' constant reference height from the snow surface
                                        ! HSNOWZREF='VAR' variable reference height from the snow surface (i.e. constant from the ground)
                                        !-----------------------                                         
-REAL, DIMENSION(:), INTENT(IN)         :: PRSURF ! Aerodynamic surface resistance for snow under canopy (cf. Gouttevin et al. 2013)                                       
+
 !
 !*      0.2    declarations of local variables
 !
