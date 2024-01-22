@@ -7,7 +7,7 @@
                       PPEW_A_COEF, PPEW_B_COEF,                                 &
                       PPET_A_COEF, PPEQ_A_COEF, PPET_B_COEF, PPEQ_B_COEF,       &
                       PSNOWSWE,PSNOWRHO,PSNOWHEAT,PSNOWALB,                     &
-                      PSNOWDIAMOPT,PSNOWSPHERI,PSNOWHIST,PSNOWAGE, PSNOWIMPUR,  &
+                      PSNOWDIAMOPT,PSNOWSPHERI,PSNOWHIST,PSNOWAGE, PSNOWIMPUR,     &
                       PTSTEP,PPS,PSR,PRR,PPSN3L, PRSURF,                 &
                       PTA,PTG,PSW_RAD,PQA,PVMOD,PWIND_DRIFT,PLW_RAD, PRHOA,     &
                       PUREF,PEXNS,PEXNA,PDIRCOSZW,                              &
@@ -146,7 +146,7 @@ USE MODD_TYPE_DATE_SURF, ONLY: DATE_TIME
 USE MODD_CSTS, ONLY : XTT, XRHOLW, XLMTT,XLSTT,XLVTT, XCL, XCI, XPI, XRHOLI
 USE MODD_SNOW_PAR, ONLY : XZ0ICEZ0SNOW, XRHOTHRESHOLD_ICE, XPERCENTAGEPORE, &
                           XPERCENTAGEPORE_FRZ, XPERCENTAGEPORE_ICE, XIMPUR_EFOLD, &
-                          XIMPUR_DRY,XIMPUR_WET,XRHO_SNOWMAK, XPSR_SNOWMAK
+                          XIMPUR_DRY,XIMPUR_WET,XRHO_SNOWMAK, XPSR_SNOWMAK, SNOW_VEG_H
 USE MODD_SNOW_METAMO
 USE MODD_SURF_PAR, ONLY : XUNDEF
 USE MODD_PREP_SNOW, ONLY : NIMPUR
@@ -212,6 +212,9 @@ REAL, DIMENSION(:), INTENT(IN)         :: PRSURF ! Aerodynamic surface resistanc
 REAL, DIMENSION(:,:), INTENT(IN)       :: P_DIR_SW, P_SCA_SW ! direct and diffuse spectral irradiance (W/m2/um)
 !
 REAL, DIMENSION(:,:), INTENT(IN)       :: PIMPWET, PIMPDRY  !Dry and wet deposit coefficient from Forcing File(g/m²/s)
+!
+!REAL, DIMENSION(:,:), INTENT(IN)       :: PHVEG ! Vegetation mean height under 1m to stop snow compaction by wind (m)
+!                                                 Royer et al. 2021 Modification
 !
 REAL, DIMENSION(:), INTENT(IN)         :: PTG, PSOILCOND, PD_G, PPSN3L
 !                                      PTG       = Surface soil temperature (effective
@@ -357,6 +360,10 @@ REAL, DIMENSION(:,:), INTENT(INOUT)    :: PBLOWSNW !  Properties of deposited bl
                                        !    'DFLT': falling snow falls as purely dendritic
                                        !    'GA01': Gallee et al 2001
                                        !    'VI13': Vionnet et al 2013
+                                       !    'R21F': Royer et al 2021 (Full effects: Increase in Maximum Density and Wind Effect)
+                                       !    'R21W': Royer et al 2021 (Increase in Wind_Effect)
+                                       !    'R21R': Royer et al 2021 (Increase in Maximum Density)
+!
 LOGICAL, INTENT(IN)                    :: OSNOWDRIFT_SUBLIM ! activate sublimation during drift
 REAL, DIMENSION (:), INTENT(IN)        ::  PSNOWMAK        ! Snowmaking thickness (m)
 LOGICAL, INTENT(IN)                    :: OSNOWCOMPACT_BOOL, OSNOWMAK_BOOL, OSNOWTILLER, &
@@ -371,6 +378,8 @@ LOGICAL, INTENT(IN)                    :: OATMORAD ! activate atmotartes scheme
                                        ! HSNOWMETAMO=C13 Carmagnola et al 2014
                                        ! HSNOWMETAMO=T07 Taillandier et al 2007
                                        ! HSNOWMETAMO=F06 Flanner et al 2006
+                                       ! HSNOWMETAMO=S-F Schlef et al 2014
+                                       ! HSNOWMETAMO=S-B Schlef et al 2014
                                        !-----------------------
                                        ! Radiative transfer scheme
                                        ! HSNOWRAD=B92 Brun et al 1992
@@ -383,6 +392,10 @@ LOGICAL, INTENT(IN)                    :: OATMORAD ! activate atmotartes scheme
                                        ! HSNOWFALL=S02 Lehning el al. 2002
                                        ! HSNOWFALL=P75 Pahaut 1975
                                        ! HSNOWFALL=NZE Constant density 200 kg/m3 (who knows ?)                                         
+                                       ! HSNOWFALL=R21 Royer et al. 2021
+                                       ! HSNOWFALL=L22 Lackner et al. 2022
+                                       ! HSNOWFALL=GW1 
+                                       ! HSNOWFALL=GW2                                         
                                        !---------------------
                                        ! Thermal conductivity scheme
                                        ! HSNOWCOND=Y81 default Crocus from Yen et al. 1981
@@ -399,7 +412,6 @@ LOGICAL, INTENT(IN)                    :: OATMORAD ! activate atmotartes scheme
                                        ! HSNOWZREF='CST' constant reference height from the snow surface
                                        ! HSNOWZREF='VAR' variable reference height from the snow surface (i.e. constant from the ground)
                                        !-----------------------                                         
-
 !
 !*      0.2    declarations of local variables
 !
@@ -1646,6 +1658,7 @@ USE MODD_CSTS,     ONLY : XTT, XG
 USE MODD_SNOW_PAR, ONLY : XRHOSMAX_ES
 USE MODD_SNOW_METAMO
 USE MODE_SNOW3L, ONLY : GETGRAINSIZE_B21
+USE MODD_SNOW_PAR, ONLY: SNOW_VEG_H
 !
 IMPLICIT NONE
 !
@@ -1660,7 +1673,9 @@ REAL, DIMENSION(:,:), INTENT(INOUT) :: PSNOWRHO, PSNOWDZ   ! Density UNIT : kg m
 !
 REAL, DIMENSION(:), INTENT(OUT)     :: PSNOW        ! Snowheight UNIT : m
 !
-
+!REAL, DIMENSION(:), INTENT(IN)      :: PHVEG        ! Vegetation mean height under 1m to stop snow compaction by wind 
+!                                                     UNIT: m (Royer et al 2021)
+!
 REAL, DIMENSION(:,:), INTENT(INOUT) :: PSNOWDIAMOPT, PSNOWSPHERI, PSNOWHIST
 REAL, DIMENSION(:,:), INTENT(IN)    :: PSNOWDSSA    !Snowtype variables
 REAL, DIMENSION(:,:), INTENT(IN)    :: PSNOWLIQ     ! Snow liquid water content UNIT ??? 
@@ -1677,6 +1692,7 @@ REAL, DIMENSION(:,:), INTENT(INOUT) :: PSNOWAGE, PSNOWSWE  ! Age and SWE of snow
 REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2)) :: ZSNOWRHO2,    &! work snow density UNIT : kg m-3
                                                       ZVISCOSITY,   &! Snow viscosity UNIT : N m-2 s (= Pa s)
                                                       ZSMASS,       &!overburden mass for a given layer UNIT : kg m-2 
+                                                      ZSNOW_JST,    &!Snow layer height (Royer et al 2021) 
                                                       ZSMASSCOEFF    ! Coefficient for extra pressure due to grooming (p.s 20150721)
 !
 REAL,PARAMETER     :: PPK=0.18
@@ -1715,6 +1731,15 @@ ZSMASS(:,1) = 0.5 * PSNOWDZ(:,1) * PSNOWRHO(:,1)  ! overburden of half the mass 
 !
 ! 2. Compaction/Settling
 ! ----------------------
+DO JJ = 1,SIZE(PSNOW)
+  !
+  ! Calculate height of each snow layer (Royer 2021)
+  ZSNOW_JST(JJ,1) = PSNOW(JJ) - 0.5*PSNOWDZ(JJ,1)
+  DO JST=2,INLVLS_USE(JJ)
+     ZSNOW_JST(JJ,JST) = ZSNOW_JST(JJ,JST-1) - 0.5 * (PSNOWDZ(JJ,JST-1) + PSNOWDZ(JJ,JST))
+  ENDDO
+ENDDO
+!
 IF ((HSNOWCOMP=="S14")) THEN 
   DO JST = 1,IMAX_USE
     DO JJ = 1,SIZE(PSNOW)
@@ -1750,8 +1775,8 @@ ELSE
     ENDDO
   ENDDO
 ENDIF 
-
-
+!
+!
 DO JST = 1,IMAX_USE
   DO JJ = 1,SIZE(PSNOW)
   !
@@ -1787,6 +1812,17 @@ DO JST = 1,IMAX_USE
         ENDIF
         !
       ENDIF
+      !
+    ! Increase snow viscosity for snow layer height <= vegetation threshold / M. Barrere
+    IF (HSNOWCOMP == 'R21' .OR. HSNOWCOMP == 'R2V' ) THEN
+       IF ( PSNOWLIQ(JJ,JST)<=XUEPSI .AND. SNOW_VEG_H > 0. ) THEN ! only for dry snow layers when shrubs are present (SNOW_VEG_H>0.)
+        IF(ZSNOW_JST(JJ,JST) <= MIN(0.1,SNOW_VEG_H)) THEN
+           ZVISCOSITY(JJ,JST) = 100. * ZVISCOSITY(JJ,JST)
+        ELSE IF ( ZSNOW_JST(JJ,JST) <= SNOW_VEG_H ) THEN
+           ZVISCOSITY(JJ,JST) = 10. * ZVISCOSITY(JJ,JST)
+        ENDIF
+       ENDIF
+    ENDIF
       !
       ! Calculate new snow snow density: compaction from weight/over-burden
       ZSNOWRHO2(JJ,JST) = PSNOWRHO(JJ,JST) + PSNOWRHO(JJ,JST) * PTSTEP * &
@@ -4522,9 +4558,13 @@ USE MODD_SNOW_PAR, ONLY : XRHOSMIN_ES, XSNOWDMIN, XANSMAX, XAGLAMAX, XSNOWCRITD,
                           XDEPTH_SURFACE, XDIFF_1, XDIFF_MAX, XSCALE_DIFF,         &
                           XSNOWFALL_A_SN, XSNOWFALL_B_SN, XSNOWFALL_C_SN,          &
                           XSNOWFALL_A_SN_P75, XSNOWFALL_B_SN_P75, XSNOWFALL_C_SN_P75,&
+                          XSNOWFALL_A_SN_R21, XSNOWFALL_B_SN_R21, XSNOWFALL_C_SN_R21,&
+                          XSNOWFALL_A_SN_L22, XSNOWFALL_B_SN_L22, XSNOWFALL_C_SN_L22,&
+                          XSNOWFALL_A_SN_GW1, XSNOWFALL_B_SN_GW1, XSNOWFALL_C_SN_GW1,&
+                          XSNOWFALL_A_SN_GW2, XSNOWFALL_B_SN_GW2, XSNOWFALL_C_SN_GW2,&
                           XRHOS_A76_1, XRHOS_A76_2, XRHOS_A76_3, XRHOS_S02_1,      &
                           XRHOS_S02_2, XRHOS_S02_3, XRHOS_S02_4, XRHOS_S02_5,      &
-                          XRHOS_S02_6, XIMPUR_WET, XRHO_SNOWMAK, XPSR_SNOWMAK
+                          XRHOS_S02_6, XIMPUR_WET, XRHO_SNOWMAK, XPSR_SNOWMAK, SNOW_VEG_H
 !
 USE MODE_SNOW3L
 !
@@ -4581,6 +4621,9 @@ CHARACTER(4), INTENT(IN)            :: HSNOWDRIFT        ! Snowdrift scheme :
                                       !    'DFLT': falling snow falls as purely dendritic
                                       !    'GA01': Gallee et al 2001
                                       !    'VI13': Vionnet et al 2013
+                                      !    'R21F': Royer et al 2021 (Increase in Maximum Density and Wind Effect)
+                                      !    'R21W': Royer et al 2021 (Increase in Wind_Effect)
+                                      !    'R21R': Royer et al 2021 (Increase in Maximum Density)
 !
 CHARACTER(3), INTENT(IN)              :: HSNOWFALL   ! snowfall density scheme Cluzet et al 2016
 CHARACTER(3), INTENT(IN)              :: HSNOWMETAMO ! metamorphism scheme
@@ -4905,6 +4948,22 @@ DO JJ = 1,SIZE(PSNOW(:))
           PSNOWRHOF (JJ) = MAX( XRHOSMIN_ES, XSNOWFALL_A_SN_P75 + &
                                          XSNOWFALL_B_SN_P75 * ( PTA(JJ)-XTT ) + &
                                          XSNOWFALL_C_SN_P75 * SQRT(ZWIND_RHO(JJ) ) ) 
+      ELSEIF( HSNOWFALL == 'R21') THEN ! Royer et al. 2021 (Doubled wind speed)
+          PSNOWRHOF (JJ) = MAX( XRHOSMIN_ES, XSNOWFALL_A_SN_R21 + &
+                                         XSNOWFALL_B_SN_R21 * ( PTA(JJ)-XTT ) + &
+                                         XSNOWFALL_C_SN_R21 * SQRT(ZWIND_RHO(JJ) ) )
+      ELSEIF( HSNOWFALL == 'L22') THEN ! Lackner et al. 2022 (Doubled density, Increased wind speed by 5)
+          PSNOWRHOF (JJ) = MAX( XRHOSMIN_ES, XSNOWFALL_A_SN_L22 + &
+                                         XSNOWFALL_B_SN_L22 * ( PTA(JJ)-XTT ) + &
+                                         XSNOWFALL_C_SN_L22 * SQRT(ZWIND_RHO(JJ) ) )
+      ELSEIF( HSNOWFALL == 'GW1') THEN ! GW1 (XSNOWFALL_C_SN * 1.5) 
+          PSNOWRHOF (JJ) = MAX( XRHOSMIN_ES, XSNOWFALL_A_SN_GW1 + &
+                                         XSNOWFALL_B_SN_GW1 * ( PTA(JJ)-XTT ) + &
+                                         XSNOWFALL_C_SN_GW1 * SQRT(ZWIND_RHO(JJ) ) )
+      ELSEIF( HSNOWFALL == 'GW2') THEN ! GW2 (XSNOWFALL_C_SN * 1) 
+          PSNOWRHOF (JJ) = MAX( XRHOSMIN_ES, XSNOWFALL_A_SN_GW2 + &
+                                         XSNOWFALL_B_SN_GW2 * ( PTA(JJ)-XTT ) + & 
+                                         XSNOWFALL_C_SN_GW2 * SQRT(ZWIND_RHO(JJ) ) )
       ELSEIF ( HSNOWFALL == 'S02') THEN ! SNOWPACK 2014 law  min wind speed = 2m/s
           IF (PTA(JJ) > 259.15) THEN
               PSNOWRHOF (JJ)=EXP(( XRHOS_S02_1 + XRHOS_S02_2 * (PTA(JJ)-XTT) +&
@@ -4965,7 +5024,7 @@ DO JJ = 1,SIZE(PSNOW(:))
                       ( ZCOEF + ( 1.- ZCOEF ) * &
                                 ( 3.*PSNOWSPHERIF(JJ) + 4.*(1.-PSNOWSPHERIF(JJ)) ) )
 !
-    ELSE IF ( HSNOWDRIFT=='VI13' ) THEN
+    ELSE IF ((HSNOWDRIFT=='VI13') .OR. (HSNOWDRIFT== 'R21F') .OR. (HSNOWDRIFT=='R21W') .OR. (HSNOWDRIFT=='R21R')) THEN
 !          3rd Option : parameterization of Vionnet et al (2013) that allows
 !       simulatneous snow transport and snowfall for wind speed higher than 6 m/s
       !PSNOWSPHERIF(JJ) = MIN(MAX(0.14/4.*(ZWIND_GRAIN(JJ)-2.)+0.5,0.5),0.9)
@@ -5843,9 +5902,9 @@ SUBROUTINE SNOWDRIFT(PTSTEP,PVMOD,PSNOWRHO,PSNOWDZ,PSNOW,HSNOWMETAMO,        &
 USE MODD_CSTS,ONLY : XTT
 USE MODE_THERMOS
 
-USE MODD_SNOW_PAR, ONLY : XVTIME, XVROMAX, XVROMIN, XVMOB1,  &
+USE MODD_SNOW_PAR, ONLY : XVTIME, XVROMAX, XVROMIN, XVROMAX_R21, XVMOB1,  &
                           XVMOB2, XVMOB3, XVMOB4, XVDRIFT1, XVDRIFT2, XVDRIFT3, &
-                          XVSIZEMIN, XCOEF_FF, XCOEF_EFFECT, XQS_REF
+                          XVSIZEMIN, XCOEF_FF, XCOEF_EFFECT, XCOEF_EFFECT_R21, XQS_REF
 USE MODE_SNOW3L, ONLY : GETGRAINSIZE_B21
 !
 IMPLICIT NONE
@@ -5874,7 +5933,8 @@ REAL, DIMENSION(:), INTENT(OUT)     :: PSNDRIFT !blowing snow sublimation (kg/m2
 !
 !*      0.2    declarations of local variables
 !
-REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2)) :: ZSNOWRHO2
+REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2)) :: ZSNOWRHO2, &
+                                                      ZSNOW_JST  ! Snow layer height (m) Royer et al 2021
 REAL, DIMENSION(SIZE(PSNOWRHO,1)                 ) :: ZSNOWDZ1
 !
 REAL, DIMENSION(SIZE(PSNOWRHO,1))   :: ZQSATI, ZFF ! QS wrt ice, gust speed
@@ -5928,6 +5988,14 @@ END IF
 !
 DO JJ=1, SIZE(PSNOW)
   !
+  IF (HSNOWCOMP == 'R21' .OR. HSNOWCOMP == 'R2D') THEN
+    ! Calculate the height of each snow layer (Royer et al 2021)
+    ZSNOW_JST(JJ,1) = PSNOW(JJ) - 0.5*PSNOWDZ(JJ,1)
+    DO JST=2, KNLVLS_USE(JJ)
+       ZSNOW_JST(JJ,JST) = ZSNOW_JST(JJ,JST-1) - 0.5 * (PSNOWDZ(JJ,JST-1) + PSNOWDZ(JJ,JST))
+    ENDDO
+  ENDIF
+  !
   ! gust speed at 5m above the snowpack
   ! Computed from PVMOD at PUREF (m) assuming a log profile in the SBL 
   ! and a roughness length equal to PZ0EFF
@@ -5970,7 +6038,13 @@ DO JJ=1, SIZE(PSNOW)
       IF ( PSNOWHIST(JJ,JST) >= 2. ) ZRMOB = MIN(ZRMOB, XVMOB4)
       !      
       ! computation of drift index supposing no overburden snow
+      !
       ZRDRIFT = ZRMOB - ( XVDRIFT1 * EXP( -XVDRIFT2*ZFF(JJ) ) - 1.)
+      IF (HSNOWCOMP == 'R21' .OR. HSNOWCOMP == 'R2D') THEN 
+        IF (ZSNOW_JST(JJ,JST) <= SNOW_VEG_H) THEN
+             ZRDRIFT = 0.
+        ENDIF
+      ENDIF
       ! modif_EB exit loop if there is no drift
       IF ( ZRDRIFT<=0. ) EXIT
       !    
@@ -6002,18 +6076,30 @@ DO JJ=1, SIZE(PSNOW)
       END IF
       !
       ZQS_EFFECT    = MIN( 3., MAX( 0.,ZQS )/XQS_REF ) * ZRT
+      IF (HSNOWDRIFT=='R21W' .OR. HSNOWDRIFT=='R21F') THEN
+        ZWIND_EFFECT = XCOEF_EFFECT_R21 * ZRT
+      ELSE
       ZWIND_EFFECT  = XCOEF_EFFECT * ZRT
+      ENDIF
       ZDRIFT_EFFECT(JJ,JST) = ( ZQS_EFFECT + ZWIND_EFFECT ) * PTSTEP / XCOEF_FF / XVTIME
       ! WRITE(*,*) 'ZQS_EFFECT,ZWIND_EFFECT,ZDRIFT_EFFECT:',ZQS_EFFECT,ZWIND_EFFECT,ZDRIFT_EFFECT
       !
       ! settling by wind transport only in case of not too dense snow
+      IF (HSNOWDRIFT=='R21R' .OR. HSNOWDRIFT=='R21F') THEN 
+          IF( PSNOWRHO(JJ,JST) <= XVROMAX_R21 ) THEN 
+                ZDRO = ZDRIFT_EFFECT(JJ,JST) * ( XVROMAX_R21 - PSNOWRHO(JJ,JST) )
+                PSNOWRHO(JJ,JST) = MIN( XVROMAX_R21 , PSNOWRHO(JJ,JST) + ZDRO )
+                PSNOWDZ (JJ,JST) = PSNOWDZ(JJ,JST) * ZSNOWRHO2(JJ,JST) / PSNOWRHO(JJ,JST)
+          ENDIF
+      ELSE
       IF( PSNOWRHO(JJ,JST) < XVROMAX ) THEN
         ZDRO = ZDRIFT_EFFECT(JJ,JST) * ( XVROMAX - PSNOWRHO(JJ,JST) )
         PSNOWRHO(JJ,JST) = MIN( XVROMAX , PSNOWRHO(JJ,JST) + ZDRO )
         PSNOWDZ (JJ,JST) = PSNOWDZ(JJ,JST) * ZSNOWRHO2(JJ,JST) / PSNOWRHO(JJ,JST)
-      !
+         ENDIF
       ENDIF
-
+      !
+      !
       IF (HSNOWMETAMO=='B21') THEN
         !metamorphism with new proposition from M.Baron
         CALL CHECK_DENDRITIC( PSNOWDIAMOPT(JJ,JST),PSNOWSPHERI(JJ,JST),GDENDRITIC)
@@ -6320,23 +6406,13 @@ ENDIF
 
 ! Compute snow temperature from enthalpy
 ZSCAP     (1:KLAYERS) = PSNOWRHO(1:KLAYERS) * XCI
-
-DO JST=1,KLAYERS
-    IF(PSNOWDZ(JST)>0) THEN
-         ZSNOWTEMP (JST) =  XTT + ( ((PSNOWHEAT(JST)/PSNOWDZ(JST))                   &
-                     + XLMTT*PSNOWRHO(JST))/ZSCAP(JST) )  
+IF (ALL(PSNOWDZ(1:KLAYERS)>0.) .AND. ALL(ZSCAP(1:KLAYERS)>0.)) THEN
+  ZSNOWTEMP (1:KLAYERS) = XTT + &
+                          ( ( PSNOWHEAT(1:KLAYERS)/PSNOWDZ(1:KLAYERS) + XLMTT*PSNOWRHO(1:KLAYERS) )/ZSCAP(1:KLAYERS) )
 ELSE
-          ZSNOWTEMP (JST) = -999.
+  PRINT*, "WARNING: UNABLE TO COMPUTE ZSNOWTEMP"
+  ZSNOWTEMP (1:KLAYERS) = -999.
 ENDIF
-ENDDO
-
-!IF (ALL(PSNOWDZ(1:KLAYERS)>0.) .AND. ALL(ZSCAP(1:KLAYERS)>0.)) THEN
-!  ZSNOWTEMP (1:KLAYERS) = XTT + &
-!                          ( ( PSNOWHEAT(1:KLAYERS)/PSNOWDZ(1:KLAYERS) + XLMTT*PSNOWRHO(1:KLAYERS) )/ZSCAP(1:KLAYERS) )
-!ELSE
-!  PRINT*, "WARNING: UNABLE TO COMPUTE ZSNOWTEMP"
-!  ZSNOWTEMP (1:KLAYERS) = -999.
-!ENDIF
 
 IF (OPRINTGRAN) THEN
   !
