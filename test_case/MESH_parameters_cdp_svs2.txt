@@ -91,10 +91,13 @@ lout_snow_profile  .true.  ! Create output file containing detailed information 
 nprofile_day     4          ! Number of snow profiles per day (can be  1, 2, 4, 6, 12, 24)
 lout_snow_enbal  .false.    ! Create output file containing information about the snowpack energy and mass budget
 
-! Activate canopy module
-lsnow_interception_svs2  .false.
-lcano_ref_level_above .false.
-lcano_svs2 .false.
+!> Canopy module SVS
+lsnow_interception_svs2  .false. ! Use interception
+lcano_svs2 .false.     ! Use canopy module of SVS1 (false) or SVS2 (true)
+
+!> Provenance of met forcing for canopy module in SVS2: FOR (forest below canopy) 
+! or O2F (from open below canopy height transfered to forest below canopy) or ABV (above canopy)
+cano_ref_forcing O2F
 
 ! Specify a canopy cover density (high vegetation)
 VGH_DENS    0.

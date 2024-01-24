@@ -132,11 +132,10 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_LUNIQUE_PROFILE_SVS2 = 'LUNIQUE_PROFILE_SVS2' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LBCHEAT_SVS2 = 'LBCHEAT_SVS2'! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LSNOW_INTERCEPTION_SVS2 = 'LSNOW_INTERCEPTION_SVS2' ! For svs2 only    
-    character(len = *), parameter, public :: VN_SVS_LCANO_REF_LEVEL_ABOVE = 'LCANO_REF_LEVEL_ABOVE' ! For svs2 only   
+    character(len = *), parameter, public :: VN_SVS_CANO_REF_FORCING = 'CANO_REF_FORCING' ! For svs2 only   
     character(len = *), parameter, public :: VN_SVS_LCANO_SVS2 = 'LCANO_SVS2' ! For svs2 only         
     character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_VEGH = 'LOUT_SNOW_VEGH' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_VGH_DENS = 'VGH_DENS' ! For svs2 only 
-    
 
     !> SVS variables names for I/O (modifiers/special conditions).
     character(len = *), parameter, public :: VN_SVS_SAND_N = 'SAND_N'
@@ -237,7 +236,7 @@ module runsvs_mesh
         logical :: lunique_profile_svs2 = .true. 
         character(len = DEFAULT_FIELD_LENGTH) :: lbcheat_svs2 = 'TPERM'
         logical :: lsnow_interception_svs2 = .false.  
-        logical :: lcano_ref_level_above = .false.   
+        character(len = DEFAULT_FIELD_LENGTH) :: cano_ref_forcing = 'FOR'   
         logical :: lcano_svs2 = .false.         
         real :: xvaging_noglacier = -1 
         real, dimension(:), allocatable :: vgh_dens 
@@ -621,9 +620,6 @@ module runsvs_mesh
                 if (allocated(svs_mesh%vs%sncma))  svs_bus(a1(sncma):z1(sncma)) = svs_mesh%vs%sncma
             end if
 
-            if(svs_mesh%vs%lcano_ref_level_above) then
-                if (allocated(svs_mesh%vs%sncma))  svs_bus(a1(sncma):z1(sncma)) = svs_mesh%vs%sncma
-            end if
             if(svs_mesh%vs%lcano_svs2) then
                 if (allocated(svs_mesh%vs%sncma))  svs_bus(a1(sncma):z1(sncma)) = svs_mesh%vs%sncma
             end if
@@ -870,9 +866,9 @@ module runsvs_mesh
                 lsnow_interception_svs2 = svs_mesh%vs%lsnow_interception_svs2
         endif
 
-        ! Activate or not using a reference level for computation of turbulent fluxes above canopy in SVS2
+        ! Choice of the canopy case study in SVS2, i.e., open to forest (under canopy), forest (under canopy), above canopy
         if(svs_mesh%vs%schmsol=='SVS2') then
-                lcano_ref_level_above = svs_mesh%vs%lcano_ref_level_above
+                cano_ref_forcing = svs_mesh%vs%cano_ref_forcing
         endif
 
         ! Activate or not the canopy module for snow under the canopy

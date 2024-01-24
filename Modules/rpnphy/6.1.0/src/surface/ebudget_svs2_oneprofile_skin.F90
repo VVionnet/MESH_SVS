@@ -29,7 +29,7 @@
                    TSNS, & 
                    RNETSV, HFLUXSV,LESLVNOFRAC, LESVNOFRAC, ESVNOFRAC,  &
                    ALPHASV, & 
-                   TSVS, & 
+                   TSVS, PHM_CAN, & 
                    VEGH, VEGL, VGHEIGHT,  & 
                    SKYVIEW,SKYVIEWA, &
                    SOILHCAP, SOILCOND, &  
@@ -87,7 +87,7 @@
       REAL RNETSV(N), HFLUXSV(N),LESLVNOFRAC(N),LESVNOFRAC(N), ESVNOFRAC(N)
       REAL ALPHASV(N)
       REAL ALFAT(N), ALFAQ(N), LESV(N)
-      REAL VEGH(N), VEGL(N)
+      REAL VEGH(N), VEGL(N), PHM_CAN(N)
       REAL SKYVIEW(N),SKYVIEWA(N), ILMO(N), HST(N), TRAD(N), VTRA(N)
       REAL WR_VL(N), WR_VH(N), RR(N),SNM(N),SVM(N)
       REAL VGHEIGHT(N)
@@ -195,7 +195,7 @@
 ! LESSNOFRAC latent heat flux of sublimation from the snow surface (W/m2)
 ! ALPHAS    albedo of snow
 ! TSNS      snow temperature at time t+dt (update in snow_svs.F90)
-!
+! PHM_CAN   Heat mass for the high vegetation layer (J K-1 m-2)
 ! RNETSV    net radiation over snow-under-vegetation
 ! HFLUXSV   sensible heat flux over snow-under-vegetation
 ! ESVNOFRAC water vapor flux from the snow-under-vegetation  (kg/m2/s)
@@ -210,6 +210,8 @@
 ! WR_VL    Water retained by low vegetation
 ! WR_VH    Water retained by high vegetation
 ! SVM      snow water equivalent (SWE) for snow under high veg [kg/m2]
+! SKYVIEW  Sky view factor for tall/high vegetation
+! SKYVIEWA Averaged sky view factor for vegetation
 !
 !           - Output -
 ! ALBT      total surface albedo (snow + vegetation + bare ground)
@@ -300,8 +302,11 @@
                                TA4FLX,QA4FLX,ZU4FLX,ZT4FLX,VIT,Z0M4FLX,Z0H4FLX, &
                                CTUGRV,RORAGRV,DIFTEMP,ZQSATGRVT
 
-       real, dimension(n) :: ABG, BBG, ABGV, BBGV, SKINCOND_BG,AVL, BVL,SKINCOND_VL, &
-                       SKINCOND_GV
+       real, dimension(n) :: ABG, BBG, ABGV, BBGV, SKINCOND_BG,AVL, BVL,AVH, BVH,CVH, &
+                       SKINCOND_GV, SKINCOND_VL
+
+       real LW_UVH, SIGMA_F, ALB_UVH, EMISS_UVH,EMSNV ! Albedo under high vegetation
+
 
 !************************************************************************
 !
@@ -315,6 +320,7 @@
       RHOW   = 1000.  
       KCOEF  = 1.E-6
       BFREEZ = 4.
+      EMSNV = 1. ! Emissivity of snow below high vegetation
 !                                Albedo of Bark (S. Wang, Ecological Modelling, 2005)
       ABARK  = 0.15
 !
@@ -478,74 +484,146 @@
 !        3B2. Calculation for high vegetation       
 !               --------------------------------------------      
 !
-       DO I=1,N      
-          IF ( VEGH(I).GE.EPSILON_SVS ) THEN
-             ! HIGH VEGETATION PRESENT
+       IF (.not. LCANO_SVS2) THEN 
+!               formulation SVS1, force restore
+
+           DO I=1,N      
+              IF ( VEGH(I).GE.EPSILON_SVS ) THEN
+                 ! HIGH VEGETATION PRESENT
+!    
+!                    Thermodynamic functions
+!    
+                 
+                 ZQSATVGH(I)  = FOQST( TVGHS(I),PS(I) )
+                 ZDQSATVGH(I) = FODQS( ZQSATVGH(I),TVGHS(I) )
+!    
+!                         function zrsra      
+!    
+                 RORAVGH(I) = RHOA(I) / RESA_VH(I)
+!    
+!    
+!                             terms za, zb, and zc for the
+!                               calculation of tvgs(t)
+                 A3H(I) = 1. / DT + CVP(I) *  & 
+                        (4. * EMISVH(I) * STEFAN * (TVGHS(I)**3)  &  
+                        +  RORAVGH(I) * ZDQSATVGH(I) * CHLC * HV_VH(I) &  
+                        +  RORAVGH(I) * CPD )  & 
+                        + 2. * PI / 86400.
 !
-!                            Thermodynamic functions
+                 B3H(I) = 1. / DT + CVP(I) *   &
+                        (3. * EMISVH(I) * STEFAN * (TVGHS(I)** 3)  &   
+                        + RORAVGH(I) * ZDQSATVGH(I) * CHLC* HV_VH(I) )
 !
-             
-             ZQSATVGH(I)  = FOQST( TVGHS(I),PS(I) )
-             ZDQSATVGH(I) = FODQS( ZQSATVGH(I),TVGHS(I) )
-!
-!                              function zrsra      
-!
-             RORAVGH(I) = RHOA(I) / RESA_VH(I)
-!
-!
-!                                        terms za, zb, and zc for the
-!                                              calculation of tvgs(t)
-             A3H(I) = 1. / DT + CVP(I) *  & 
-                    (4. * EMISVH(I) * STEFAN * (TVGHS(I)**3)  &  
-                    +  RORAVGH(I) * ZDQSATVGH(I) * CHLC * HV_VH(I) &  
-                    +  RORAVGH(I) * CPD )  & 
-                    + 2. * PI / 86400.
-!
-             B3H(I) = 1. / DT + CVP(I) *   &
-                    (3. * EMISVH(I) * STEFAN * (TVGHS(I)** 3)  &   
-                    + RORAVGH(I) * ZDQSATVGH(I) * CHLC* HV_VH(I) )
-           
-!
-             C3H(I) = 2. * PI * TVGHD(I) / 86400. &   
-                     + CVP(I) *  & 
-                     ( RORAVGH(I) * CPD * THETAA(I)  &  
-                     + RG(I) * (1. - ALVGLAI(I)) + EMISVH(I)*RAT(I)  & 
-                     - RORAVGH(I)  & 
-                     * CHLC * HV_VH(I) * (ZQSATVGH(I)-HU(I)) )
+                 C3H(I) = 2. * PI * TVGHD(I) / 86400. &   
+                         + CVP(I) *  & 
+                         ( RORAVGH(I) * CPD * THETAA(I)  &  
+                         + RG(I) * (1. - ALVGLAI(I)) + EMISVH(I)*RAT(I)  & 
+                         - RORAVGH(I) * CHLC * HV_VH(I) * (ZQSATVGH(I)-HU(I)) )
 
 
-             TVGHST(I) =  ( TVGHS(I)*B3H(I) + C3H(I) ) / A3H(I)
+                 TVGHST(I) =  ( TVGHS(I)*B3H(I) + C3H(I) ) / A3H(I)
 
-          ELSE
-             ! NO VEGETATION -- USE BARE GROUND VALUES or ZERO to fill arrays to avoid numerical errors
-             ZQSATVGH(I)  =  ZQSATGR(I)
-             ZDQSATVGH(I) = ZDQSATGR(I)
-             RORAVGH(I) = RORAGR(I)
-!             FRACH(I) = 0.0
-             TVGHST(I) = TGRST(I)
-          ENDIF
-
-
-       ENDDO
+              ELSE
+                 ! NO VEGETATION -- USE BARE GROUND VALUES or ZERO to fill arrays to avoid numerical errors
+                 ZQSATVGH(I)  =  ZQSATGR(I)
+                 ZDQSATVGH(I) = ZDQSATGR(I)
+                 RORAVGH(I) = RORAGR(I)
+!                 FRACH(I) = 0.0
+                 TVGHST(I) = TGRST(I)
+              ENDIF
 
 
-!!           TVGD AT TIME 'T+DT': Mean temperature from FR scheme for
-!                      high veg
-!               -----------------
+           ENDDO
+
+
+!!               TVGD AT TIME 'T+DT': Mean temperature from FR scheme for
+!                          high veg
+!                   -----------------
 !
-      DO I=1,N
-!                   Note that as an added precaution,
-!                   we set the vegetation temperature to
-!                   that of the ground, when no vegetation is present
+           DO I=1,N
+!                       Note that as an added precaution,
+!                       we set the vegetation temperature to
+!                       that of the ground, when no vegetation is present
 !
-         IF(VEGH(I).ge.EPSILON_SVS)THEN
-            TVGHDT(I) = (TVGHD(I) + DT*TVGHST(I)/86400.) / (1.+DT/86400.)
-         ELSE
-            TVGHDT(I) = TGRDT(I)
-         ENDIF
-            
-      END DO
+             IF(VEGH(I).ge.EPSILON_SVS)THEN
+                TVGHDT(I) = (TVGHD(I) + DT*TVGHST(I)/86400.) / (1.+DT/86400.)
+             ELSE
+                TVGHDT(I) = TGRDT(I)
+             ENDIF
+                
+           END DO
 
+       ELSE 
+!              Formulation SVS2, (1LHM, Gouttevin et al., 2015)
+               ! Emissivity of canopy is neglected 
+
+           DO I=1,N      
+              IF ( VEGH(I).GE.EPSILON_SVS ) THEN
+                 ! HIGH VEGETATION PRESENT
+                 
+
+                 SIGMA_F = 1. - SKYVIEW(I) 
+    
+                 ! Calculate albedo and LW from the surface below high vegetation
+                 LW_UVH = WTG(I,indx_svs2_sv) *(EMSNV * STEFAN * TSVS(I,1)**4) + &
+                         WTG(I,indx_svs2_gv) *(EMGRV(I) * STEFAN * TGRVS(I)**4)
+                 ALB_UVH = WTG(I,indx_svs2_sv) * ALPHASV(I) + WTG(I,indx_svs2_gv) * ALGRV(I)
+
+!    
+!                    Thermodynamic functions
+!    
+                 
+                 ZQSATVGH(I)  = FOQST( TVGHS(I),PS(I) )
+                 ZDQSATVGH(I) = FODQS( ZQSATVGH(I),TVGHS(I) )
+
+                 RORAVGH(I) = RHOA(I) / RESA_VH(I)
+
+
+                 AVH(I) = PHM_CAN(I)  / DT &
+                        + 8.*EMISVH(I)*STEFAN*SIGMA_F*(TVGHS(I)**3) &
+                        + RORAVGH(I) * CPD + &
+                        + RORAVGH(I) * CHLC * HV_VH(I) * ZDQSATVGH(I) 
+
+
+                 BVH(I) = PHM_CAN(I) / DT + &
+                       +  6.*EMISVH(I)*SIGMA_F*STEFAN*(TVGHS(I)**3) & 
+                       + RORAVGH(I)*CHLC * HV_VH(I)*ZDQSATVGH(I)
+
+                 CVH(I) = RG(I) * (1.-ALVH(I))*SIGMA_F & 
+                           * (1.+(ALB_UVH*SKYVIEW(I)/(1.-SIGMA_F*ALB_UVH*ALVH(I))))  &
+                        + SIGMA_F * EMISVH(I) * RAT(I) & 
+                        + SIGMA_F * EMISVH(I)*LW_UVH  &
+                        + RORAVGH(I) * CPD * THETAA(I)  &
+                        + RORAVGH(I) * CHLC  * HV_VH(I)* (HU(I) - ZQSATVGH(I)) 
+
+
+                 TVGHST(I) = (BVH(I) *TVGHS(I) + CVH(I))/ AVH(I)
+
+
+              ELSE
+                 ! NO VEGETATION -- USE BARE GROUND VALUES or ZERO to fill arrays to avoid numerical errors
+                 ZQSATVGH(I)  =  ZQSATGR(I)
+                 ZDQSATVGH(I) = ZDQSATGR(I)
+                 RORAVGH(I) = RORAGR(I)
+!                 FRACH(I) = 0.0
+                 TVGHST(I) = TGRST(I)
+              ENDIF
+
+           ENDDO
+
+           DO I=1,N
+!                       Note that as an added precaution,
+!                       we set the vegetation temperature to
+!                       that of the ground, when no vegetation is present
+!
+             IF(VEGH(I).ge.EPSILON_SVS)THEN
+                TVGHDT(I) = TVGHST(I) ! No deep temperature here
+             ELSE
+                TVGHDT(I) = TGRDT(I)
+             ENDIF
+                
+           END DO
+       ENDIF
 !
 !
 !

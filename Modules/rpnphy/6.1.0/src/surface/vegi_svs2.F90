@@ -19,7 +19,7 @@
            VGH_HEIGHT,VGH_DENS, CLUMPING,  &
            RS, SKYVIEW,  &
            SKYVIEWA, VTR, VTRA, &    
-           FCD, ACROOT, WRMAX_VL, WRMAX_VH,N  )
+           FCD, ACROOT, WRMAX_VL, WRMAX_VH, PHM_CAN,N  )
 !
         use tdpack
         use svs_configs
@@ -34,7 +34,7 @@
       REAL WFC(N,NL_SVS), RS(N), SKYVIEW(N), VTR(N), DRZ(N)
       REAL SKYVIEWA(N),VTRA(N)
       REAL D50(N), D95(N), ACROOT(N,NL_SVS) , WRMAX_VL(N),  WRMAX_VH(N)
-      REAL Z0MVH(N),  VGH_HEIGHT(N), VGH_DENS(N)
+      REAL Z0MVH(N),  VGH_HEIGHT(N), VGH_DENS(N), PHM_CAN(N)
       REAL CLUMPING 
 !
 !Author
@@ -89,19 +89,36 @@
 ! ACROOT(NL_SVS) Active fraction of roots (0-1) in the soil layer
 ! WRMAX_VL    Max volumetric water content retained on low vegetation
 ! WRMAX_VH    Max volumetric water content retained on high vegetation
-
-
+! PHM_CAN ! Heat mass for the high vegetation layer (J K-1 m-2)
 !
 !
       INTEGER I, K
       REAL CSHAPE, f2_k(nl_svs)
-     
+      real zhm_leaves, zhm_trunk
+      real :: e_leaf, &   ! Leaf thickness (m)
+              rho_bio, &  ! Biomass density (kg m-3)
+              cp_bio , &  ! Biomass specific heat mass (J kg-1 K-1)
+              ZB          ! Basal tree area (m2 m-2)
       real, dimension(n) :: extinct, f, f1, f2, f3, f4, qsat
 
 !
 !***********************************************************************
 !
 !
+!
+!
+!
+!
+!*       0.     PARAMETERS FOR HEAT MASS OF HIGH VEGETATION
+!               ---------------
+!                      From Gouttevin et al. (2015)
+
+!
+       
+       E_LEAF = 0.001
+       RHO_BIO = 900.
+       CP_BIO = 2800.
+       ZB = 40. / 10000. ! m2 ha-1 to m2 m-2
 !
 !
 !
@@ -276,7 +293,16 @@
 !             ELSE
 !                VGH_DENS(I) =   0.
 !             ENDIF
-             
+!
+!
+!*       11.     HEAT MASS FOR HIGH VEGETATION
+!               ------------------------------
+!
+             ZHM_LEAVES = LAI_VH(I) * E_LEAF * RHO_BIO * CP_BIO
+             ZHM_TRUNK = 0.5 * ZB* VGH_HEIGHT(I) * RHO_BIO * CP_BIO 
+             PHM_CAN(I) = ZHM_LEAVES + ZHM_TRUNK
+!
+!
           ELSE
           !  NO VEGETATION
              f1(i)=0.0
@@ -297,6 +323,7 @@
              WRMAX_VH(I)=EPSILON_SVS  ! To avoid division by zero
              VGH_HEIGHT(I) = 0.
              VGH_DENS(I)   = 0.
+             PHM_CAN(I) = 0.
           ENDIF
        ENDDO
 !

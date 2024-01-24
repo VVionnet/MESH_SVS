@@ -365,12 +365,12 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
                     call assign_line_args(svs_mesh%vs%lsnow_interception_svs2, args(2), istat)
                 end if     
 
-            case (VN_SVS_LCANO_REF_LEVEL_ABOVE)
+            case (VN_SVS_CANO_REF_FORCING)
                 if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS' ) then
                     istat = istat + radix(istat)**pstat%INACTIVE
                 else
                     p = 1
-                    call assign_line_args(svs_mesh%vs%lcano_ref_level_above, args(2), istat)
+                    call assign_line_args(svs_mesh%vs%cano_ref_forcing, args(2), istat)
                 end if   
             case (VN_SVS_LCANO_SVS2)
                 if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS' ) then

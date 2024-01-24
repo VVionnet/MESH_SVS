@@ -115,7 +115,7 @@
 ! CLUMPING   coefficient to convert LAI to effective LAI  
 ! VGH_DENS   Density of trees in areas of high vegeation (m)
 ! VEGHEIGHT Height of trees in areas of high vegeation (m)     
-! ZVCAN   Wind speed within or above the canopy depending on LCANO_REF_ABOVE (m/s)  
+! ZVCAN   Wind speed within or above the canopy depending on CANO_REF_FORCING (m/s)  
 !
 !           - Output -
 ! HRSURF   relative humidity of the bare ground surface (1st layer)
@@ -414,7 +414,7 @@
 
       else
 
-         IF (LCANO_REF_LEVEL_ABOVE) THEN ! Reference height above the canopy. In this case, z0 should be the canopy roughness lengths and the heights above canopy
+         IF (CANO_REF_FORCING == 'ABV') THEN ! Reference height above the canopy. In this case, z0 should be the canopy roughness lengths and the heights above canopy
             DO I=1,N     
                  ! WARNING NL: Might need to be updated following conversation with Stephane B. and Maria A.
                  ZUGV(I) = ZUSL(I) + VEGHEIGHT(I)
@@ -422,9 +422,10 @@
                  ZDH(I) = VEGHEIGHT(I)*ZRCHD
             ENDDO
 
+
              ! This CTUGRV should be for high vegetation
              i = sl_sfclayer( THETAA, HU, ZVCAN, VDIR, ZUGV, ZTGV, &
-                  TGRVS, HUSURF, Z0MVH, Z0HVH, LAT, FCOR, &
+                  TGRVS, HUSURF, Z0MVH, ZZ0HVH, LAT, FCOR, &
                   L_min=sl_Lmin_soil, &
                   coeft=CTUGRV )
 
@@ -446,7 +447,7 @@
                  ! Compute aerodymanical resistance for neutral stability 
                  ! cf sfclayer_mod (L.588-605 for computation of lzz0 and lzz0t (z0ref== T)
                  LZZ0 = LOG((ZUGV(I) + Z0MVH(I)) / Z0MVH(I))
-                 LZZ0T = LOG((ZTGV(I) + Z0HVH(I)) / Z0HVH(I)) 
+                 LZZ0T = LOG((ZTGV(I) + ZZ0HVH(I)) / ZZ0HVH(I)) 
                  RESAGRV_NEUTRAL = 1. / (VMOD(I) * KARMAN * KARMAN / (LZZ0 * LZZ0T))
 
                 ! Apply stability correction  to ZRSURF
@@ -454,6 +455,10 @@
 
                 CTUGRV(I) = 1. / (RESAGRV(I) + ZRSURF)
              ENDDO
+
+             do i=1,N
+                Z0HGV(i) = ZZ0HGV(i)
+             enddo
          ELSE
 
              i = sl_sfclayer( THETAA, HU, ZVCAN, VDIR, ZUSL, ZTSL, &
