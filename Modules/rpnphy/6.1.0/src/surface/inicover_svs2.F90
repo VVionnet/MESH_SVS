@@ -75,7 +75,7 @@ subroutine inicover_svs2(kount, ni, trnch)
       REAL RSMINDAT(NCLASS)
       REAL LAIDAT(NCLASS), VEGDAT(NCLASS),EMISDAT(NCLASS) 
       REAL CVDAT(NCLASS), RGLDAT(NCLASS), GAMMADAT(NCLASS)
-      REAL Z0MDAT(NCLASS), MAXPDAT(NCLASS)
+      REAL Z0MDAT(NCLASS), MAXPDAT(NCLASS), HVEGPOLDAT(NCLASS)
 !
       DATA ALDAT/ &
                      0.13   , 0.70   , 0.13   , 0.14   , 0.12   , &
@@ -175,6 +175,17 @@ subroutine inicover_svs2(kount, ni, trnch)
                      0.981  , 0.981  , 0.981  , 0.981  , 0.981  , &
                      1.000  , 0.992  , 0.995  , 0.941  , 0.993  , & 
                      0.993  /
+
+      ! Values are boosted to account for the contribution of bare ground
+      ! in the final aggregated field. Another solution would be to 
+      ! modifiy VEGDAT      
+      DATA HVEGPOLDAT/ &
+                     0.00   , 0.00   , 0.00   , 0.00   , 0.00   , & 
+                     0.00   , 0.00   , 0.00   , 0.00   , 0.60   , & 
+                     0.60   , 0.60   , 0.00   , 0.00   , 0.00   , & 
+                     0.00   , 0.00   , 0.00   , 0.00   , 0.00   , & 
+                     0.00   , 0.15    , 0.00   , 0.00   , 0.00   , & 
+                     0.00   / 
 
 !
 !
@@ -303,17 +314,14 @@ subroutine inicover_svs2(kount, ni, trnch)
          logz0mloc(i) = log(z0mdat(i))
       end do
 
-      ! Modify vegdat for high vegetation when density if trees is taken 
-      ! from an external database
+      ! Modify vegdat for high vegetation since density of trees is taken 
+      ! from an external database or provided by the user as input
       ! Use a value of 0.99 to make sure that open pixel are present everywhere.
-      read_vgh_dens  = .true.
-      if(read_vgh_dens) then
-          do i=1,ntypeh  
+       do i=1,ntypeh  
            k=vh_type(i)  ! loop on HIGH vegetation classes
            vegdatdn(k)  = 0.99
            vegdatds(k)  = 0.99
-          enddo
-      endif
+       enddo
 
       ! Fill the laidatd and vegdatd fields for
       ! land use classes varying with seasons
@@ -445,6 +453,9 @@ subroutine inicover_svs2(kount, ni, trnch)
            PTR1D(dlat), ni, nclass)
       call aggveglow(PTR1D(vegf), cvdat, cvdat, PTR1D(cvl), &
            PTR1D(dlat), ni, nclass)
+      call aggveglow(PTR1D(vegf), hvegpoldat, hvegpoldat, PTR1D(hveglpol), &
+           PTR1D(dlat), ni, nclass)
+   
 !
 !         aggregate logs ...
 !

@@ -142,7 +142,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    real,dimension(n) :: pct, pz0hnat, pz0, pzenith
    real,dimension(n) :: pgfluxsnow
    real,dimension(n) :: pforest
-   real,dimension(n) :: pgfluxsnow_v,pforest_v
+   real,dimension(n) :: pgfluxsnow_v,pforest_v,phvegapol_v
    real,dimension(n) ::  prsurf ! Aerodynamic surface resistance for snow under canopy (cf. Gouttevin et al. 2013)
 
    real,dimension(n) :: ptvege  ! Average skin temperature of the vegetation (low and high veg)
@@ -301,6 +301,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
              PFOREST(I)=0.
              PFOREST_V(I)=1.
              PRSURF(I)=0.
+             PHVEGAPOL_V(I) = 0. ! Effect of basal vegetation on snowpack properties are not taken into account in high vegetation. 
+             
 
             ! TO BE CHECKED======================
             PCT(I)= 1.E-4
@@ -434,7 +436,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            BUS(x(WSOIL ,1,1)),  &
            RGLA                ,  &   
            bus(x(LAIVA  ,1,1))     , bus(x(LAIVH   ,1,1)),   &  
-           bus(x(LAIVL   ,1,1)), STOMRA,     &
+           bus(x(LAIVL   ,1,1)), BUS(x(HVEGLPOL,1,1)),  STOMRA,     &
            GAMVA, bus(x(WWILT   ,1,1)),      &
            bus(x(WFC     ,1,1)), SUNCOSA,     &
            bus(x(ROOTDP     ,1,1)),  bus(x(D50   ,1,1)),    &
@@ -445,7 +447,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            bus(x(SKYVIEW ,1,1)), bus(x(SKYVIEWA ,1,1)), &
            bus(x(VEGTRANS,1,1)), bus(x(VEGTRANSA,1,1)),   &   
            bus(x(frootd   ,1,1)), bus(x(acroot ,1,1)), WRMAX_VL, &
-           WRMAX_VH,  N)
+           WRMAX_VH,BUS(x(HVEGAPOL,1,1)),  N)
 
       IF(KOUNT.EQ.1) then
          DO I=1,N
@@ -538,7 +540,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                          bus(x(HPSA ,1,1)),  bus(x(PSNGRVL ,1,1)), PZ0,PZ0,PZ0HNAT, &
                          LESNOFRAC, LESLNOFRAC, bus(x(ESA,1,1)), PZENITH, &
                          bus(x (DLAT,1,1)), bus(x (DLON,1,1)),PFOREST,bus(x(SNOTYPE_SVS,1,1)),  &
-                         N, NL_SVS)
+                         BUS(x(HVEGAPOL,1,1)),N, NL_SVS)
       if (phy_error_L) return
 
 
@@ -610,7 +612,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                              bus(x(HPSV ,1,1)),bus(x(PSNVH ,1,1)), ZZ0NAT,PZ0,ZZ0HNAT,  &
                              LESVNOFRAC, LESVLNOFRAC, bus(x(ESV,1,1)),PZENITH, &
                              bus(x (DLAT,1,1)), bus(x (DLON,1,1)), PFOREST_V,bus(x(SNOTYPEV_SVS,1,1)), &
-                             N, NL_SVS)
+                             PHVEGAPOL_V, N, NL_SVS)
  
 
       if (phy_error_L) return

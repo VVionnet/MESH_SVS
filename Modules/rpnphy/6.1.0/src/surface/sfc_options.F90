@@ -195,8 +195,8 @@ module sfc_options
    namelist /surface_cfgs/ read_z0vh
 
    !# read-in high vegetation density for SVS if .true.
-   logical           :: read_vgh_dens     = .false.
-   namelist /surface_cfgs/ read_vgh_dens
+   !logical           :: read_vgh_dens     = .false.
+   !namelist /surface_cfgs/ read_vgh_dens
 
 
    !# Takes into account effect of ocean salinity on saturation specific

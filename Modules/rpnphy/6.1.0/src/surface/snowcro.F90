@@ -25,7 +25,7 @@
                       PSPEC_ALB, PDIFF_RATIO,PSPEC_TOT,PSNOWFLUX,PIMPWET,PIMPDRY,&
                       HSNOWFALL, HSNOWCOND,HSNOWHOLD,HSNOWCOMP,HSNOWZREF,       &
                       PSNOWMAK, OSNOWCOMPACT_BOOL, OSNOWMAK_BOOL, OSNOWTILLER,  &
-                      OSELF_PROD, OSNOWMAK_PROP )
+                      OSELF_PROD, OSNOWMAK_PROP, PHVEGPOL )
 
 !     ##########################################################################
 !
@@ -146,7 +146,7 @@ USE MODD_TYPE_DATE_SURF, ONLY: DATE_TIME
 USE MODD_CSTS, ONLY : XTT, XRHOLW, XLMTT,XLSTT,XLVTT, XCL, XCI, XPI, XRHOLI
 USE MODD_SNOW_PAR, ONLY : XZ0ICEZ0SNOW, XRHOTHRESHOLD_ICE, XPERCENTAGEPORE, &
                           XPERCENTAGEPORE_FRZ, XPERCENTAGEPORE_ICE, XIMPUR_EFOLD, &
-                          XIMPUR_DRY,XIMPUR_WET,XRHO_SNOWMAK, XPSR_SNOWMAK, SNOW_VEG_H
+                          XIMPUR_DRY,XIMPUR_WET,XRHO_SNOWMAK, XPSR_SNOWMAK
 USE MODD_SNOW_METAMO
 USE MODD_SURF_PAR, ONLY : XUNDEF
 USE MODD_PREP_SNOW, ONLY : NIMPUR
@@ -213,8 +213,8 @@ REAL, DIMENSION(:,:), INTENT(IN)       :: P_DIR_SW, P_SCA_SW ! direct and diffus
 !
 REAL, DIMENSION(:,:), INTENT(IN)       :: PIMPWET, PIMPDRY  !Dry and wet deposit coefficient from Forcing File(g/m²/s)
 !
-!REAL, DIMENSION(:,:), INTENT(IN)       :: PHVEG ! Vegetation mean height under 1m to stop snow compaction by wind (m)
-!                                                 Royer et al. 2021 Modification
+REAL, DIMENSION(:), INTENT(IN)       :: PHVEGPOL ! Mean polar vegetation height used to reduce snow compaction and snow drift 
+                                                    ! below veg height Only used with options from Royer et al. 2021 
 !
 REAL, DIMENSION(:), INTENT(IN)         :: PTG, PSOILCOND, PD_G, PPSN3L
 !                                      PTG       = Surface soil temperature (effective
@@ -881,7 +881,7 @@ ENDIF
  CALL SNOWCROCOMPACTN(PTSTEP,PSNOWRHO,PSNOWDZ,ZSNOWTEMP,ZSNOW,                      &
                       PSNOWDIAMOPT,PSNOWSPHERI,PSNOWHIST,PSNOWSWE,PSNOWAGE,            &
                       ZSNOWDSSA,PSNOWLIQ,INLVLS_USE,PDIRCOSZW,                      &
-                      HSNOWMETAMO,HSNOWCOMP, OSNOWCOMPACT_BOOL)
+                      HSNOWMETAMO,HSNOWCOMP, OSNOWCOMPACT_BOOL, PHVEGPOL)
 !
 !***************************************DEBUG IN**********************************************
 IF (GCRODEBUGDETAILSPRINT) THEN
@@ -899,7 +899,7 @@ ENDIF
 IF (HSNOWDRIFT  .NE. 'NONE') THEN
   CALL SNOWDRIFT(PTSTEP, PWIND_DRIFT, PSNOWRHO,PSNOWDZ, ZSNOW, HSNOWMETAMO,                      &
                  PSNOWDIAMOPT,PSNOWSPHERI,PSNOWHIST,INLVLS_USE,PTA,PQA,PPS,PRHOA,&
-                 PZ0EFF,ZUREF,OSNOWDRIFT_SUBLIM,PSNDRIFT)
+                 PZ0EFF,ZUREF,OSNOWDRIFT_SUBLIM,PSNDRIFT, PHVEGPOL)
 ENDIF
 !***************************************DEBUG IN**********************************************
 IF (GCRODEBUGDETAILSPRINT) THEN
@@ -1621,7 +1621,8 @@ SUBROUTINE SNOWCROCOMPACTN(PTSTEP,PSNOWRHO,PSNOWDZ,                         &
                            PSNOWTEMP,PSNOW,PSNOWDIAMOPT,PSNOWSPHERI,PSNOWHIST, &
                            PSNOWSWE, PSNOWAGE, PSNOWDSSA, PSNOWLIQ,         &
                            INLVLS_USE,PDIRCOSZW,                            &
-                           HSNOWMETAMO,HSNOWCOMP, OSNOWCOMPACT_BOOL) 
+                           HSNOWMETAMO,HSNOWCOMP, OSNOWCOMPACT_BOOL,   &
+                           PHVEGPOL) 
 !
 !!    PURPOSE
 !!    -------
@@ -1673,8 +1674,7 @@ REAL, DIMENSION(:,:), INTENT(INOUT) :: PSNOWRHO, PSNOWDZ   ! Density UNIT : kg m
 !
 REAL, DIMENSION(:), INTENT(OUT)     :: PSNOW        ! Snowheight UNIT : m
 !
-!REAL, DIMENSION(:), INTENT(IN)      :: PHVEG        ! Vegetation mean height under 1m to stop snow compaction by wind 
-!                                                     UNIT: m (Royer et al 2021)
+REAL, DIMENSION(:), INTENT(IN)      :: PHVEGPOL        ! Mean polar low vegetation height 
 !
 REAL, DIMENSION(:,:), INTENT(INOUT) :: PSNOWDIAMOPT, PSNOWSPHERI, PSNOWHIST
 REAL, DIMENSION(:,:), INTENT(IN)    :: PSNOWDSSA    !Snowtype variables
@@ -1815,13 +1815,18 @@ DO JST = 1,IMAX_USE
       !
     ! Increase snow viscosity for snow layer height <= vegetation threshold / M. Barrere
     IF (HSNOWCOMP == 'R21' .OR. HSNOWCOMP == 'R2V' ) THEN
-       IF ( PSNOWLIQ(JJ,JST)<=XUEPSI .AND. SNOW_VEG_H > 0. ) THEN ! only for dry snow layers when shrubs are present (SNOW_VEG_H>0.)
+       IF ( PSNOWLIQ(JJ,JST)<=XUEPSI_SMP .AND. PHVEGPOL(JJ) > 0. ) THEN ! only for dry snow layers when shrubs are present (PHVEGPOL>0.)
         IF(ZSNOW_JST(JJ,JST) <= MIN(0.1,SNOW_VEG_H)) THEN
            ZVISCOSITY(JJ,JST) = 100. * ZVISCOSITY(JJ,JST)
         ELSE IF ( ZSNOW_JST(JJ,JST) <= SNOW_VEG_H ) THEN
            ZVISCOSITY(JJ,JST) = 10. * ZVISCOSITY(JJ,JST)
         ENDIF
+        ! Version proposed by Domine et al. (xxx)     
+        !IF ( ZSNOW_JST(JJ,JST) <= PHVEGPOL(JJ) ) THEN 
+        !   ZVISCOSITY(JJ,JST) = 10. * ZVISCOSITY(JJ,JST)
+        !ENDIF
        ENDIF
+
     ENDIF
       !
       ! Calculate new snow snow density: compaction from weight/over-burden
@@ -4564,7 +4569,7 @@ USE MODD_SNOW_PAR, ONLY : XRHOSMIN_ES, XSNOWDMIN, XANSMAX, XAGLAMAX, XSNOWCRITD,
                           XSNOWFALL_A_SN_GW2, XSNOWFALL_B_SN_GW2, XSNOWFALL_C_SN_GW2,&
                           XRHOS_A76_1, XRHOS_A76_2, XRHOS_A76_3, XRHOS_S02_1,      &
                           XRHOS_S02_2, XRHOS_S02_3, XRHOS_S02_4, XRHOS_S02_5,      &
-                          XRHOS_S02_6, XIMPUR_WET, XRHO_SNOWMAK, XPSR_SNOWMAK, SNOW_VEG_H
+                          XRHOS_S02_6, XIMPUR_WET, XRHO_SNOWMAK, XPSR_SNOWMAK
 !
 USE MODE_SNOW3L
 !
@@ -5872,7 +5877,7 @@ END SUBROUTINE SNOWNLGRIDFRESH_1D
 SUBROUTINE SNOWDRIFT(PTSTEP,PVMOD,PSNOWRHO,PSNOWDZ,PSNOW,HSNOWMETAMO,        &
                      PSNOWDIAMOPT,PSNOWSPHERI,PSNOWHIST,KNLVLS_USE, &
                      PTA,PQA,PPS,PRHOA,PZ0EFF,PUREF,             &
-                     OSNOWDRIFT_SUBLIM,PSNDRIFT      )
+                     OSNOWDRIFT_SUBLIM,PSNDRIFT, PHVEGPOL      )
 !
 !!    PURPOSE
 !!    -------
@@ -5924,6 +5929,9 @@ REAL, DIMENSION(:),INTENT(IN)       :: PZ0EFF,PUREF
 CHARACTER(3),INTENT(IN)             :: HSNOWMETAMO        
 !
 LOGICAL,INTENT(IN)                  :: OSNOWDRIFT_SUBLIM
+!
+REAL, DIMENSION(:), INTENT(IN)      :: PHVEGPOL
+
 !
 !
 REAL, DIMENSION(:,:), INTENT(INOUT) :: PSNOWRHO, PSNOWDZ,PSNOWDIAMOPT, &
@@ -6041,7 +6049,7 @@ DO JJ=1, SIZE(PSNOW)
       !
       ZRDRIFT = ZRMOB - ( XVDRIFT1 * EXP( -XVDRIFT2*ZFF(JJ) ) - 1.)
       IF (HSNOWCOMP == 'R21' .OR. HSNOWCOMP == 'R2D') THEN 
-        IF (ZSNOW_JST(JJ,JST) <= SNOW_VEG_H) THEN
+        IF (ZSNOW_JST(JJ,JST) <= PHVEGPOL(JJ)) THEN
              ZRDRIFT = 0.
         ENDIF
       ENDIF

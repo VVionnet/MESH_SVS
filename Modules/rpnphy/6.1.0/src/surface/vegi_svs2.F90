@@ -14,12 +14,12 @@
 !CANADA, H9P 1J3; or send e-mail to service.rpn@ec.gc.ca
 !-------------------------------------- LICENCE END --------------------------------------
       SUBROUTINE VEGI_SVS2 ( RG, T, TVEG, HU, PS, &
-           WD , RGL, LAI, LAI_VH, LAI_VL, RSMIN, GAMMA, WWILT, WFC, &   
+           WD , RGL, LAI, LAI_VH, LAI_VL, HVEGLPOL, RSMIN, GAMMA, WWILT, WFC, &   
            SUNCOS, DRZ, D50, D95, PSNGRVL, VEGH, VEGL, Z0MVH,  &
            VGH_HEIGHT,VGH_DENS, CLUMPING,  &
            RS, SKYVIEW,  &
            SKYVIEWA, VTR, VTRA, &    
-           FCD, ACROOT, WRMAX_VL, WRMAX_VH,N  )
+           FCD, ACROOT, WRMAX_VL, WRMAX_VH, HVEGAPOL, N  )
 !
         use tdpack
         use svs_configs
@@ -34,6 +34,7 @@
       REAL WFC(N,NL_SVS), RS(N), SKYVIEW(N), VTR(N), DRZ(N)
       REAL SKYVIEWA(N),VTRA(N)
       REAL D50(N), D95(N), ACROOT(N,NL_SVS) , WRMAX_VL(N),  WRMAX_VH(N)
+      REAL HVEGLPOL(N), HVEGAPOL(N)  
       REAL Z0MVH(N),  VGH_HEIGHT(N), VGH_DENS(N)
       REAL CLUMPING 
 !
@@ -75,9 +76,11 @@
 ! VEGL     fraction of LOW vegetation
 ! Z0MVH    Local roughness associated with HIGH vegetation only (no
 !            orography)      
-! VGH_HEIGHT Height of trees in areas of high vegeation (m)     
-! VGH_DENS  Density of trees in areas of high vegeation (m)  
+! HVEGLPOL Polar low vegetation height   
 ! CLUMPING   coefficient to convert LAI to effective LAI  
+!     
+!          - Input/Output -
+! VGH_DENS  Density of trees in areas of high vegeation (m)  
 !      
 !          - Output -
 ! RS       Surface or stomatal resistance
@@ -89,6 +92,8 @@
 ! ACROOT(NL_SVS) Active fraction of roots (0-1) in the soil layer
 ! WRMAX_VL    Max volumetric water content retained on low vegetation
 ! WRMAX_VH    Max volumetric water content retained on high vegetation
+! VGH_HEIGHT Height of trees in areas of high vegeation (m)     
+! HVEGAPOL Polar mean vegetation height (including bare soil)
 
 
 !
@@ -217,6 +222,13 @@
 !*       6.     TRANSMISSIVITY OF CANOPY (HIGH VEG ONLY)
 !               ----------------------------------------
 !
+!                 Adjust density of tree in high vegetation 
+
+             IF(VEGH(I)>0) THEN
+                VGH_DENS(I) = MIN(1., MAX(0.2, VGH_DENS(I))) ! Impose of minimum tree cover density of 0.2
+             ELSE   
+                VGH_DENS(I) = 0.
+             ENDIF             
 !
 !                 Calculate the extinction coefficient... 
 !                 the constant 0.5 is a first approximation
@@ -263,19 +275,14 @@
 !*       9.     HEIGHT OF TREES in HIGH VEGETATION
 !               ------------------------------
 !
-             VGH_HEIGHT(I) =  10. *  Z0MVH(I) ! Derived from the roughness
+             IF( VEGH(I)>0)  THEN 
+                 VGH_HEIGHT(I) =  10. *  Z0MVH(I) ! Derived from the roughness
                                             ! lenght for high veg. Z0MVH is computed in GenPhySx using a
                                             ! database that contains information about the vegetation height 
-!
-!*       10.     DENSITY OF TREES in HIGH VEGETATION
-!               ------------------------------
-!
-!             IF(LAIH(I) > 0.) THEN                               
-!                VGH_DENS(I) =   0.29 * LOG(LAIH(I))+ 0.55   ! Based on LAI of high vegetation following Pomeroy et al (HP, 2002)
-!                VGH_DENS(I) = MIN(1., MAX(0., VGH_DENS(I)))
-!             ELSE
-!                VGH_DENS(I) =   0.
-!             ENDIF
+                 VGH_HEIGHT(I) = MAX(4., VGH_HEIGHT(I)) ! Impose a minimal height of 4 meters for trees.                            
+             ELSE
+                 VGH_HEIGHT(I) = 0.
+             ENDIF         
              
           ELSE
           !  NO VEGETATION
@@ -300,6 +307,21 @@
           ENDIF
        ENDDO
 !
+!
+!
+!       11.      Polar mean vegetation height
+!               ------------------------------------------
+!
+       DO I=1,N
+            IF((1 - VEGH(I))>EPSILON_SVS) THEN ! Low vegetation/bare ground is present
+                HVEGAPOL(I) = VEGL(I)*HVEGLPOL(I)/(1 - VEGH(I)) 
+                IF(HVEGAPOL(I)<0.05) THEN
+                        HVEGAPOL(I) = 0.  ! Remove polar vegetation where contribution is non significant  
+                ENDIF
+            ELSE
+                HVEGAPOL(I) = 0.
+           ENDIF
+       END DO
 !
       RETURN
       END
