@@ -206,7 +206,7 @@ REAL, PARAMETER       :: XRHOSMAX_ES = 750.  ! (kg m-3)
 !
 ! Height of basal vegetation for Royer 2021
 !
-!REAL, PARAMETER       :: SNOW_VEG_H = 0.1   ! (kg m-3)
+REAL, PARAMETER       :: SNOW_VEG_H = 0.1   ! (kg m-3)
 !
 ! ISBA-ES Critical snow depth at which snow grid thicknesses constant
 !
@@ -446,7 +446,7 @@ REAL, PARAMETER :: XVSIZEMIN = 3.E-4 !  minimum size decrease
 ! on en tient compte egalement pour diminuer la duree de l'effet
 REAL, PARAMETER :: XCOEF_FF = 1.25 ! coefficient for gust diagnosis from average wind 
 REAL, PARAMETER :: XCOEF_EFFECT = 1.0 ! coefficient for impact on density du drift
-REAL, PARAMETER :: XCOEF_EFFECT_R21 = 1.5 ! increase in coefficient for impact on density due
+REAL, PARAMETER :: XCOEF_EFFECT_R21 = 3.0 ! increase in coefficient for impact on density due
 ! to drift to account for high Arctic wind speeds
 REAL, PARAMETER :: XQS_REF = 2.E-5 ! valeur de reference de ZQS pour effet neige
 !
