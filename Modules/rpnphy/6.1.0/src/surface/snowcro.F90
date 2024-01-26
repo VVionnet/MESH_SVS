@@ -1814,6 +1814,7 @@ DO JST = 1,IMAX_USE
       !
     ! Increase snow viscosity for snow layer height <= vegetation threshold / M. Barrere
     IF (HSNOWCOMP == 'R21' .OR. HSNOWCOMP == 'R2V' ) THEN
+
        IF ( PSNOWLIQ(JJ,JST)<=XUEPSI_SMP .AND. PHVEGPOL(JJ) > 0. ) THEN ! only for dry snow layers when shrubs are present (PHVEGPOL>0.)
         IF(ZSNOW_JST(JJ,JST) <= MIN(0.1,PHVEGPOL(JJ) )) THEN
            ZVISCOSITY(JJ,JST) = 100. * ZVISCOSITY(JJ,JST)

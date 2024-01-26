@@ -102,5 +102,9 @@ cano_ref_forcing O2F
 ! Specify a canopy cover density (high vegetation)
 VGH_DENS    0.
 
+! Specify the height of polar low vegetation 
+! Only useful for Arctic options in Crocus
+!HVEGLPOL    0.2
+
 !> Physical constant for snowpack scheme (uncomment to use)
 !>xvaging_noglacier  60 ! Aging coefficient (in days) used for albedo calculation in visible range (see modd_snow_par)

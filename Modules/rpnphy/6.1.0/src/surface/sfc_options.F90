@@ -198,6 +198,10 @@ module sfc_options
    !logical           :: read_vgh_dens     = .false.
    !namelist /surface_cfgs/ read_vgh_dens
 
+   !# read-in height of polar low vegetation for SVS2 if .true.
+   logical           :: read_hveglpol     = .false.
+   namelist /surface_cfgs/ read_hveglpol
+
 
    !# Takes into account effect of ocean salinity on saturation specific
    !# humidity at ocean surface (boundary condition for LH flux calculation)

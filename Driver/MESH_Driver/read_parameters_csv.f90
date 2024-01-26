@@ -391,6 +391,18 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
                     call assign_line_args(svs_mesh%vs%vgh_dens, p, args(2:), istat)
                 end if
 
+           case (VN_SVS_HVEGLPOL)
+                if (.not. svs_mesh%PROCESS_ACTIVE) then
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    if (SHDFILEFMT == 2) then
+                        p = shd%lc%NML
+                    else
+                        p = shd%lc%NTYPE
+                    end if
+                    call assign_line_args(svs_mesh%vs%hveglpol, p, args(2:), istat)
+                end if
+
             case (VN_SVS_NPROFILE_DAY)
                 if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS') then
                     istat = istat + radix(istat)**pstat%INACTIVE

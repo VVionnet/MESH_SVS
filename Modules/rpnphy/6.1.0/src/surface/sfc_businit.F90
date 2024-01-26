@@ -109,7 +109,7 @@ subroutine sfc_businit(moyhr,ni,nk)
    character(len=2) :: ns
    integer :: algrv,emisgrv,egv,  legv,qaf,    &
         hpsa,hpsv, husurfgv, hv_vl, hv_vh, &
-        hveglpol,hvegapol, &
+        hveglpol,hveglpolen,hvegapol, &
         gfluxsa, gfluxsv,      &
         lesc,lescaf, &
         ler_vl, ler_vh, letr_vl, letr_vh, levl, levh,  & 
@@ -522,7 +522,9 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR2D1(hfluxsv,      'VN=hfluxsv      ;ON=HFSV;VD=sensible heat flux (snow under veg. only)                         ;VB=p0')
       PHYVAR2D1(hpsa,         'VN=hpsa         ;ON=HPSA;VD=heat from rainfall falling on snow over lv/ bg o                  ;VB=p0')
       PHYVAR2D1(hpsv,         'VN=hpsv         ;ON=HPSV;VD=heat from rainfall falling on  under high veg.                    ;VB=p0')
-      PHYVAR2D1(hveglpol,     'VN=hveglpol     ;ON=HVLP;VD=polar low vegetation height                                       ;VB=p0')  
+      PHYVAR2D1(hveglpol,     'VN=hveglpol     ;ON=HVLP;VD=polar low vegetation height                                       ;VB=p0') 
+      if(read_hveglpol) &      
+      PHYVAR2D1(hveglpolen,   'VN=hveglpolen   ;ON=HVL1;VD=polar low vegetation height (E.)                                  ;VB=e1; IN=HVLP;MIN=0')  
       PHYVAR2D1(hvegapol,     'VN=hvegapol     ;ON=HVAP;VD=polar mean vegetation height (aggregated)                         ;VB=p0')        
       PHYVAR2D1(husurf,       'VN=husurf       ;ON=FH  ;VD=spec. humid. of the surface                                       ;VB=v0        ;MIN=0')
       PHYVAR2D1(husurfgv,     'VN=husurfgv     ;ON=FHGV;VD=spec. humid. of the snow-free ground below high veg.              ;VB=v0        ;MIN=0')

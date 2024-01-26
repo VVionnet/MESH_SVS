@@ -23,6 +23,7 @@
 !
         use tdpack
         use svs_configs
+        use sfc_options 
       implicit none
 !!!#include <arch_specific.hf>
 !
@@ -348,7 +349,8 @@
 !       11.      Polar mean vegetation height
 !               ------------------------------------------
 !
-       DO I=1,N
+       IF( .NOT. READ_HVEGLPOL) THEN 
+         DO I=1,N
             IF((1 - VEGH(I))>EPSILON_SVS) THEN ! Low vegetation/bare ground is present
                 HVEGAPOL(I) = VEGL(I)*HVEGLPOL(I)/(1 - VEGH(I)) 
                 IF(HVEGAPOL(I)<0.05) THEN
@@ -357,7 +359,15 @@
             ELSE
                 HVEGAPOL(I) = 0.
            ENDIF
-       END DO
+         END DO
+
+       ELSE
+         DO I=1,N
+              HVEGAPOL(I) = HVEGLPOL(I) ! Value is directly taken from external databases. 
+         END DO
+       ENDIF
+
+
 !
       RETURN
       END

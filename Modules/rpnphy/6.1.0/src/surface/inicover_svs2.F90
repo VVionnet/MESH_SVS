@@ -453,8 +453,11 @@ subroutine inicover_svs2(kount, ni, trnch)
            PTR1D(dlat), ni, nclass)
       call aggveglow(PTR1D(vegf), cvdat, cvdat, PTR1D(cvl), &
            PTR1D(dlat), ni, nclass)
-      call aggveglow(PTR1D(vegf), hvegpoldat, hvegpoldat, PTR1D(hveglpol), &
+
+      if ( .not. read_hveglpol ) then
+         call aggveglow(PTR1D(vegf), hvegpoldat, hvegpoldat, PTR1D(hveglpol), &
            PTR1D(dlat), ni, nclass)
+      endif
    
 !
 !         aggregate logs ...

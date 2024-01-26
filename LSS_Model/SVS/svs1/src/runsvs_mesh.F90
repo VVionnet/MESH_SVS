@@ -136,6 +136,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_LCANO_SVS2 = 'LCANO_SVS2' ! For svs2 only         
     character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_VEGH = 'LOUT_SNOW_VEGH' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_VGH_DENS = 'VGH_DENS' ! For svs2 only 
+    character(len = *), parameter, public :: VN_SVS_HVEGLPOL = 'HVEGLPOL' ! For svs2 only 
 
     !> SVS variables names for I/O (modifiers/special conditions).
     character(len = *), parameter, public :: VN_SVS_SAND_N = 'SAND_N'
@@ -240,6 +241,8 @@ module runsvs_mesh
         logical :: lcano_svs2 = .false.         
         real :: xvaging_noglacier = -1 
         real, dimension(:), allocatable :: vgh_dens 
+        real, dimension(:), allocatable :: hveglpol 
+        logical :: read_hveglpol = .true. 
     end type
 
     !* PROCESS_ACTIVE: Variable to enable SVS.
@@ -568,6 +571,7 @@ module runsvs_mesh
 
         if(svs_mesh%vs%schmsol=='SVS2') then
            if (allocated(svs_mesh%vs%vgh_dens)) svs_bus(a1(vgh_dens):z1(vgh_dens)) = svs_mesh%vs%vgh_dens
+           if (allocated(svs_mesh%vs%hveglpol)) svs_bus(a1(hveglpol):z1(hveglpol)) = svs_mesh%vs%hveglpol
         endif
 
         if(svs_mesh%vs%schmsol=='SVS' .and. svs_mesh%vs%lsoil_freezing_svs1) then
@@ -875,6 +879,11 @@ module runsvs_mesh
         if(svs_mesh%vs%schmsol=='SVS2') then
                 lcano_svs2 = svs_mesh%vs%lcano_svs2
         endif
+
+        ! Activate or not the use of user-entered height of low veg. 
+        if(svs_mesh%vs%schmsol=='SVS2') then
+                read_hveglpol = svs_mesh%vs%read_hveglpol
+        endif
         
         ierr =0
         ! Initialize number of snow layers (for multilayer snowpack schemes in SVS2)
@@ -1018,6 +1027,7 @@ module runsvs_mesh
              call runsvs_mesh_append_phyentvar('tpsoilv')
              call runsvs_mesh_append_phyentvar('tperm')
              call runsvs_mesh_append_phyentvar('vgh_dens')
+             call runsvs_mesh_append_phyentvar('hveglpol')
 
              call runsvs_mesh_append_phyentvar('snoden_svs')
              call runsvs_mesh_append_phyentvar('snoage_svs')
@@ -1549,6 +1559,7 @@ ierr = 200
             if (.not. allocated(svs_mesh%vs%tsnowv_svs)) allocate(svs_mesh%vs%tsnowv_svs(ni,svs_mesh%vs%nsl))
             if (.not. allocated(svs_mesh%vs%wsnowv_svs)) allocate(svs_mesh%vs%wsnowv_svs(ni,svs_mesh%vs%nsl))
             if (.not. allocated(svs_mesh%vs%vgh_dens)) allocate(svs_mesh%vs%vgh_dens(ni))
+            if (.not. allocated(svs_mesh%vs%hveglpol)) allocate(svs_mesh%vs%hveglpol(ni))
 
             do i = 1, nl_svs
                svs_mesh%vs%tpsoil(:, i) = svs_bus(a2(tpsoil, i - 1):z2(tpsoil, i - 1))
@@ -1557,6 +1568,7 @@ ierr = 200
 
             svs_mesh%vs%tperm = svs_bus(a1(tperm):z1(tperm ))
             svs_mesh%vs%vgh_dens = svs_bus(a1(vgh_dens):z1(vgh_dens))
+            svs_mesh%vs%hveglpol = svs_bus(a1(hveglpol):z1(hveglpol))
         
             do i = 1, svs_mesh%vs%nsl
                svs_mesh%vs%snoage_svs(:, i) = svs_bus(a2(snoage_svs, i - 1):z2(snoage_svs, i - 1))
