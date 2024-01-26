@@ -51,7 +51,7 @@ module runsvs_mesh
     integer :: iout_svs1_snow = 161
     integer :: iout_svs1_watbal = 162
 
-    real preacc_tot,wsoil_tot,isoil_tot     
+    real preacc_tot,wsoil_tot,isoil_tot,snow_tot,veg_tot     
 
     real preacc_tot,wsoil_tot,isoil_tot,snow_tot,veg_tot
 
@@ -1498,8 +1498,8 @@ ierr = 200
           open(iout_svs1_watbal, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs1_watbal_hourly.csv', action = 'write')
           write(iout_svs1_watbal, FMT_CSV, advance = 'no') 'YEAR', 'JDAY', 'HOUR', 'MINS'
           write(iout_svs1_watbal, FMT_CSV, advance = 'no') 'PCP_AC','EVP_AC', 'LAT_AC', 'DRA_AC', 'ROF_AC','ROF_INS'
-          write(iout_svs1_watbal, FMT_CSV, advance = 'no') 'WSOIL_TOT','ISOIL_TOT' 
-          write(iout_svs1_watbal, FMT_CSV, advance = 'no') 'SWE', 'SWE_VEG', 'WSN', 'WSN_VEG', 'WVEG', 'VEGH', 'VEGL'       
+          write(iout_svs1_watbal, FMT_CSV, advance = 'no') 'WSOIL_TOT','ISOIL_TOT','SNOW_TOT','VEG_TOT' 
+          write(iout_svs1_watbal, *)
        endif
 
 
@@ -1993,7 +1993,7 @@ ierr = 200
 
        else if(svs_mesh%vs%schmsol=='SVS') then
 
-
+           ! Compute variable for water mass balance
            preacc_tot = preacc_tot +  1000.*sum(busptr(vd%rainrate%i)%ptr(:, trnch))*ic%dts +  1000.*sum(busptr(vd%snowrate%i)%ptr(:,trnch))*ic%dts 
            call layer_thickness()
            wsoil_tot=0.
@@ -2002,6 +2002,10 @@ ierr = 200
                wsoil_tot = wsoil_tot + 1000.0*busptr(vd%wsoil%i)%ptr(j, trnch)*delz(j) !mm
                isoil_tot = isoil_tot + 1000.0*busptr(vd%isoil%i)%ptr(j, trnch)*delz(j) !mm
            end do
+           snow_tot = (busptr(vd%snoma%i)%ptr(1, trnch)+busptr(vd%wsnow%i)%ptr(1, trnch))*(1 - busptr(vd%vegh%i)%ptr(1, trnch)) +  &
+                      (busptr(vd%snvma%i)%ptr(1, trnch)+busptr(vd%wsnv%i)%ptr(1, trnch))*busptr(vd%vegh%i)%ptr(1, trnch)
+              
+           veg_tot =  busptr(vd%wveg%i)%ptr(1, trnch) * (busptr(vd%vegh%i)%ptr(1, trnch) + busptr(vd%vegl%i)%ptr(1, trnch))
 
 
            if (ic%now%mins ==0) then! Full hour
@@ -2042,10 +2046,7 @@ ierr = 200
                  write(iout_svs1_watbal, FMT_CSV, advance = 'no') preacc_tot,busptr(vd%accevap%i)%ptr(:, trnch)
                  write(iout_svs1_watbal, FMT_CSV, advance = 'no') busptr(vd%latflaf%i)%ptr(:, trnch),busptr(vd%drainaf%i)%ptr(:,trnch)
                  write(iout_svs1_watbal, FMT_CSV, advance = 'no') busptr(vd%runofftotaf%i)%ptr(1, trnch),busptr(vd%runofftot%i)%ptr(1, trnch)
-                 write(iout_svs1_watbal, FMT_CSV, advance = 'no') wsoil_tot,isoil_tot
-                 write(iout_svs1_watbal, FMT_CSV, advance = 'no') busptr(vd%snoma%i)%ptr(:, trnch),busptr(vd%snvma%i)%ptr(:,trnch), &
-              busptr(vd%wsnow%i)%ptr(:, trnch), busptr(vd%wsnv%i)%ptr(:, trnch)
-                 write(iout_svs1_watbal, FMT_CSV, advance = 'no') busptr(vd%wveg%i)%ptr(:, trnch), busptr(vd%vegh%i)%ptr(:, trnch),busptr(vd%vegl%i)%ptr(:, trnch)
+                 write(iout_svs1_watbal, FMT_CSV, advance = 'no') wsoil_tot,isoil_tot,snow_tot,veg_tot
                  write(iout_svs1_watbal, *)
               end if
 
