@@ -206,7 +206,7 @@ REAL, PARAMETER       :: XRHOSMAX_ES = 750.  ! (kg m-3)
 !
 ! Height of basal vegetation for Royer 2021
 !
-REAL, PARAMETER       :: SNOW_VEG_H = 0.1   ! (kg m-3)
+! REAL, PARAMETER       :: SNOW_VEG_H = 0.1   ! (m) Value defined in ini_surf_csts.F90
 !
 ! ISBA-ES Critical snow depth at which snow grid thicknesses constant
 !

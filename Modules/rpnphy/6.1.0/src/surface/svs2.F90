@@ -689,11 +689,11 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 !
 !     Update the soil liquid water content after the aggregation of phase changes
 !
-!      DO I=1,N
-!         DO J=1,NL_SVS  
-!            WSOILT(I,J) = WSOILTT(I,J) 
-!         END DO 
-!     END DO
+     DO I=1,N
+         DO J=1,NL_SVS  
+            WSOILT(I,J) = WSOILTT(I,J) 
+         END DO 
+     END DO
 !
       CALL UPDATE_SVS ( WSOILT, ISOILT, WVEGT, &
                        bus(x(latflw  ,1,1)), bus(x(watflow ,1,1)),  &

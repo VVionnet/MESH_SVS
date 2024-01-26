@@ -236,7 +236,7 @@ XZ0ICEZ0SNOW = 10.
 !
 ! Vegetation height to reduce snow compaction (Royer 2021 & Lackner 2022)
 !
-SNOW_VEG_H = 0.1
+SNOW_VEG_H = 0.1 ! (m)
 !
 ! 3 bands spectral albedo for glacier ice (CROCUS)
 ! Default values from Lejeune et al 2009 (Zongo, Bolivia)
