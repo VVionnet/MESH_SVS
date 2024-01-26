@@ -319,9 +319,8 @@ REAL, PARAMETER :: XSNOWTHRMCOND_J91_4 = 2.29 ! [W(/m K)] Thermal conductivity o
 !
 ! Fourteau et al 2021, Crocus thermal conductivity coefficients from Fourteau et al. 2021 for 263K
 REAL, PARAMETER :: XSNOWTHRMCOND_F21_1 = 1.985 !
-REAL, PARAMETER :: XSNOWTHRMCOND_F21_2 = 917 ! (kg/m3) Density of ice
-REAL, PARAMETER :: XSNOWTHRMCOND_F21_3 = 0.073 !
-REAL, PARAMETER :: XSNOWTHRMCOND_F21_4 = 0.0336 !
+REAL, PARAMETER :: XSNOWTHRMCOND_F21_2 = 0.073 !
+REAL, PARAMETER :: XSNOWTHRMCOND_F21_3 = 0.0336 !
 !
 ! Thermal conductivity of ice and water at 273K (for freezing rain)
 REAL, PARAMETER :: XTHRMCOND_ICE = 2.22    ! [W/(m K)]
