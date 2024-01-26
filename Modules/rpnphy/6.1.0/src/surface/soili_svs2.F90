@@ -254,7 +254,7 @@ include "isbapar.cdk"
 
              !PSNGRVL(I) = MIN( SNM(I) / (SNM(I) + RHOS(I)* 5000.* z0_snow_low(i) ) , 1.0)
 
-             ! Snow cover fraction close eqals to one as soon as snow is present on the ground
+             ! Snow cover fraction close equals to one as soon as snow is present on the ground
              ! NEED to BE REVISITED. Used for test with Crocus
              PSNGRVL(I) = MIN( SNM(I) / (1.0) , 1.0)
 
@@ -295,7 +295,7 @@ include "isbapar.cdk"
          CLUMPING = 0.5
          IF(VEGH(I) .GE.EPSILON_SVS) THEN
             PSURFVHA(I)  = EXP( - CLUMPING * LAIVH(I) * VGH_DENS(I))
-            ! PSURFVHA(I)  = (EVER(I) * 0.2 + DECI(I) * MAX(LAI0 - LAID(I), 0.2))
+            !PSURFVHA(I)  = (EVER(I) * 0.2 + DECI(I) * MAX(LAI0 - LAID(I), 0.2))
          ELSE
             PSURFVHA(I)  = 0.
          ENDIF
@@ -308,7 +308,7 @@ include "isbapar.cdk"
 !               --------------------------
       ! Seen from atm. 
       call weights_svs2(VEGH,VEGL,PSNGRVL,PSNVH, PSURFVHA,'ATM', N,WTA)
-
+!
       ! Seen from ground. 
       call weights_svs2(VEGH,VEGL,PSNGRVL,PSNVH, PSURFVHA,'GROUND', N,WTG)
 

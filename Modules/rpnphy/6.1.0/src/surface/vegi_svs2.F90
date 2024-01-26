@@ -19,7 +19,7 @@
            VGH_HEIGHT,VGH_DENS, CLUMPING,  &
            RS, SKYVIEW,  &
            SKYVIEWA, VTR, VTRA, &    
-           FCD, ACROOT, WRMAX_VL, WRMAX_VH, HVEGAPOL, N  )
+           FCD, ACROOT, WRMAX_VL, WRMAX_VH, PHM_CAN, HVEGAPOL, N  )
 !
         use tdpack
         use svs_configs
@@ -35,7 +35,7 @@
       REAL SKYVIEWA(N),VTRA(N)
       REAL D50(N), D95(N), ACROOT(N,NL_SVS) , WRMAX_VL(N),  WRMAX_VH(N)
       REAL HVEGLPOL(N), HVEGAPOL(N)  
-      REAL Z0MVH(N),  VGH_HEIGHT(N), VGH_DENS(N)
+      REAL Z0MVH(N),  VGH_HEIGHT(N), VGH_DENS(N), PHM_CAN(N)
       REAL CLUMPING 
 !
 !Author
@@ -94,19 +94,35 @@
 ! WRMAX_VH    Max volumetric water content retained on high vegetation
 ! VGH_HEIGHT Height of trees in areas of high vegeation (m)     
 ! HVEGAPOL Polar mean vegetation height (including bare soil)
-
-
-!
+! PHM_CAN ! Heat mass for the high vegetation layer (J K-1 m-2)
 !
       INTEGER I, K
       REAL CSHAPE, f2_k(nl_svs)
-     
+      real zhm_leaves, zhm_trunk
+      real :: e_leaf, &   ! Leaf thickness (m)
+              rho_bio, &  ! Biomass density (kg m-3)
+              cp_bio , &  ! Biomass specific heat mass (J kg-1 K-1)
+              ZB          ! Basal tree area (m2 m-2)
       real, dimension(n) :: extinct, f, f1, f2, f3, f4, qsat
 
 !
 !***********************************************************************
 !
 !
+!
+!
+!
+!
+!*       0.     PARAMETERS FOR HEAT MASS OF HIGH VEGETATION
+!               ---------------
+!                      From Gouttevin et al. (2015)
+
+!
+       
+       E_LEAF = 0.001
+       RHO_BIO = 900.
+       CP_BIO = 2800.
+       ZB = 40. / 10000.  ! m2 ha-1 to m2 m-2  TO_DO NL: parameterizing this parameter?
 !
 !
 !
@@ -283,7 +299,27 @@
              ELSE
                  VGH_HEIGHT(I) = 0.
              ENDIF         
-             
+
+!
+!*       10.     DENSITY OF TREES in HIGH VEGETATION
+!               ------------------------------
+!
+!             IF(LAIH(I) > 0.) THEN                               
+!                VGH_DENS(I) =   0.29 * LOG(LAIH(I))+ 0.55   ! Based on LAI of high vegetation following Pomeroy et al (HP, 2002)
+!                VGH_DENS(I) = MIN(1., MAX(0., VGH_DENS(I)))
+!             ELSE
+!                VGH_DENS(I) =   0.
+!             ENDIF
+!
+!
+!*       11.     HEAT MASS FOR HIGH VEGETATION
+!               ------------------------------
+!
+             ZHM_LEAVES = LAI_VH(I) * E_LEAF * RHO_BIO * CP_BIO
+             ZHM_TRUNK = 0.5 * ZB* VGH_HEIGHT(I) * RHO_BIO * CP_BIO 
+             PHM_CAN(I) = ZHM_LEAVES + ZHM_TRUNK
+!
+!
           ELSE
           !  NO VEGETATION
              f1(i)=0.0

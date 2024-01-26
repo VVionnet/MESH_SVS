@@ -23,7 +23,7 @@
 
       use tdpack
       use sfclayer_mod,   only : sl_prelim,sl_sfclayer,SL_OK
-      use sfc_options, only: lcano_ref_level_above
+      use sfc_options, only: cano_ref_forcing
       USE MODE_THERMOS 
       use svs_configs
       implicit none
@@ -108,7 +108,7 @@
            T_CAN(I) = T(I)
            HU_CAN(I) = HU(I)
 
-           IF (LCANO_REF_LEVEL_ABOVE) THEN 
+           IF (CANO_REF_FORCING == 'ABV') THEN 
 
               !
               !  xxxx. All forcings are above the canopy and using the surface resistance in the computation of the turbulent fluxes
@@ -145,7 +145,7 @@
                PWIND_DRIFT(I) = PWIND_DRIFT(I) * LOG(PUREF_VEG(I)/Z0SNOW(I))/LOG(HSUBCANO/Z0SNOW(I))
 
 
-           ELSE ! Reference height below the canopy
+           ELSE IF (CANO_REF_FORCING == 'O2F') THEN! Reference height below the canopy
 
                !
                !  xxxx. Compute impact of forest on wind speed
@@ -168,6 +168,14 @@
                ! Wind speed for snow drift calculation under the canopy at PUREF_VEG below the canopy
                PWIND_DRIFT(I) = VMOD_CAN(I)
 
+           ELSE  ! Forcing already in forest below canopy
+               PUREF_VEG(I) =  ZU(I)   
+               PTREF_VEG(I) =  ZT(I)    
+               VMOD_CAN(I) = VMOD(I)
+               VMOD_TOP(I) = VMOD(I) ! In that case, should not be used as interception should be off
+               T_CAN(I) = T(I)
+               HU_CAN(I) = HU(I)
+
            ENDIF
 
          ELSE  
@@ -185,60 +193,67 @@
 
       DO I=1,N
         IF(VEGH(I)>EPSILON_SVS) THEN   ! High vegetation present in the grid cell
-          !
-          !  xxxx. Compute impact of forest on incoming radiative fluxes 
-          !
+
+          IF (CANO_REF_FORCING == 'FOR') THEN  ! Forcing already in forest below canopy
+               ILW_CAN(I) = ILW(I) 
+               ISW_CAN(I) = ISW(I)
+          ELSE ! 'O2F' or 'ABV', radiation should be determined under canopy
+
+              !
+              !  xxxx. Compute impact of forest on incoming radiative fluxes 
+              !
 
 
-          ! Compute sky clearness
-          ! SUNCOS: cos of zenithal angle (max when sun is at its
-          ! highest above the horizon).
+              ! Compute sky clearness
+              ! SUNCOS: cos of zenithal angle (max when sun is at its
+              ! highest above the horizon).
 
-          IF(SUNCOS(I)>0) THEN
-              KT = ISW(I)/ (1367.*SUNCOS(I))
-          ELSE
-              KT = 0.
+              IF(SUNCOS(I)>0) THEN
+                  KT = ISW(I)/ (1367.*SUNCOS(I))
+              ELSE
+                  KT = 0.
+              ENDIF
+
+              ! Compute fraction of diffuse radiation 
+              IF(KT>0.8) THEN
+                   DFRAC  = 0.165
+              ELSE IF(KT>0.22) THEN
+                   DFRAC = 0.95 - 0.16*KT + 4.39*KT**2. - 16.64*KT**3. +12.34*KT**4. 
+              ELSE
+                    DFRAC = 1 - 0.09*KT
+              ENDIF
+
+              ! Compute solar diffuse and direct radiation
+              SCA_SW = DFRAC*ISW(I)  ! Diffuse incoming SW
+              DIR_SW = (1.-DFRAC)*ISW(I) ! Direct incoming SW
+
+              ! Compute transmissivity of diffuse radiation 
+              ! Need to double check if VEGDENS should be employed here
+              ! to derive an effective LAI. 
+              TDIF = SKYVIEW(I)
+
+              ! Compute transmissivity of direct radiation 
+              IF(SUNCOS(I)>0) THEN
+                 TDIR = EXP(-KEXT*VGH_DENS(I)*LAIVH(I)*CLUMPING/SUNCOS(I))
+              ELSE
+                 TDIR = TDIF
+              ENDIF
+
+              ! Subcanopy total shortwave radiation
+              ISW_CAN(I) = TDIF * SCA_SW + TDIR *DIR_SW
+
+              IF (CANO_REF_FORCING == 'ABV') THEN 
+                  ! Subcanopy longwave radiation with skin canopy temperature
+                  ILW_CAN(I) = TDIF * ILW(I) + (1.-TDIF)*STEFAN *TVEG(I)**4
+              ELSE IF (CANO_REF_FORCING == 'O2F') THEN 
+                  ! Subcanopy longwave radiation with canopy temperature
+                  ! taken as forcing air temperature as a proxy
+                  ILW_CAN(I) = TDIF * ILW(I) + (1.-TDIF)*STEFAN *T_CAN(I)**4
+              ENDIF
+
           ENDIF
 
-          ! Compute fraction of diffuse radiation 
-          IF(KT>0.8) THEN
-               DFRAC  = 0.165
-          ELSE IF(KT>0.22) THEN
-               DFRAC = 0.95 - 0.16*KT + 4.39*KT**2. - 16.64*KT**3. +12.34*KT**4. 
-          ELSE
-                DFRAC = 1 - 0.09*KT
-          ENDIF
-
-          ! Compute solar diffuse and direct radiation
-          SCA_SW = DFRAC*ISW(I)  ! Diffuse incoming SW
-          DIR_SW = (1.-DFRAC)*ISW(I) ! Direct incoming SW
-
-          ! Compute transmissivity of diffuse radiation 
-          ! Need to double check if VEGDENS should be employed here
-          ! to derive an effective LAI. 
-          TDIF = SKYVIEW(I)
-
-          ! Compute transmissivity of direct radiation 
-          IF(SUNCOS(I)>0) THEN
-             TDIR = EXP(-KEXT*VGH_DENS(I)*LAIVH(I)*CLUMPING/SUNCOS(I))
-          ELSE
-             TDIR = TDIF
-          ENDIF
-
-          ! Subcanopy total shortwave radiation
-          ISW_CAN(I) = TDIF * SCA_SW + TDIR *DIR_SW
-
-          IF (LCANO_REF_LEVEL_ABOVE) THEN 
-              ! Subcanopy longwave radiation with skin canopy temperature
-              ILW_CAN(I) = TDIF * ILW(I) + (1.-TDIF)*STEFAN *TVEG(I)**4
-          ELSE
-              ! Subcanopy longwave radiation with canopy temperature
-              ! taken as forcing air temperature as a proxy
-              ILW_CAN(I) = TDIF * ILW(I) + (1.-TDIF)*STEFAN *T_CAN(I)**4
-          ENDIF
-
-       ENDIF
-
+        ENDIF
 
       ENDDO
 

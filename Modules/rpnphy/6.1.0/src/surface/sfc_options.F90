@@ -370,9 +370,18 @@ module sfc_options
    logical           :: lsnow_interception_svs2 = .false.
    namelist /surface_cfgs/ lsnow_interception_svs2
 
-   !# If .true., SVS2 solves the energy balance using forcing above the canopy
-   logical           :: lcano_ref_level_above = .false.
-   namelist /surface_cfgs/ lcano_ref_level_above
+
+   !#  Options for transfer of the forcing in the canopy module of SVS2
+   !# * 'FOR'   :  forcing is below the canopy
+   !# * 'O2F'   :  met forcing is below canopy height in the open and is transfered below canopy
+   !# * 'ABV'   :  met forcing is above canopy
+   character(len=3) :: cano_ref_forcing    = 'FOR'
+   namelist /surface_cfgs/ cano_ref_forcing 
+   character(len=*), parameter :: CANO_REF_FORCING_OPT(3) = (/ &
+        'FOR',  &
+        'O2F',  &
+        'ABV'   &
+        /)
 
    !# If .true., SVS2 utilizes the canopy module to modify T, U, VMOD, SW, and LW to account for canopy
    logical           :: lcano_svs2 = .false.

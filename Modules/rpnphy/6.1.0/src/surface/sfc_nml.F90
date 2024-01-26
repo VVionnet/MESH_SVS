@@ -342,11 +342,18 @@ contains
 
          if (.not.any(lbcheat_svs2 == LBCHEAT_SVS2_OPT)) then
             call str_concat(msg_S, LBCHEAT_SVS2_OPT, ', ')
-            call msg(MSG_ERROR, '(sfc_nml_check) soiltext = '//trim(lbcheat_svs2)//&
+            call msg(MSG_ERROR, '(sfc_nml_check) lbcheat_svs2 = '//trim(lbcheat_svs2)//&
                  ' : Should be one of: '//trim(msg_S))
             return
          endif
 
+
+         if (.not.any(cano_ref_forcing == CANO_REF_FORCING_OPT)) then
+            call str_concat(msg_S, CANO_REF_FORCING_OPT, ', ')
+            call msg(MSG_ERROR, '(sfc_nml_check) cano_ref_forcing = '//trim(cano_ref_forcing)//&
+                 ' : Should be one of: '//trim(msg_S))
+            return
+         endif
 
          if (.not.any(vf_type == VFTYPE_OPT)) then
             call str_concat(msg_S, VFTYPE_OPT,', ')
