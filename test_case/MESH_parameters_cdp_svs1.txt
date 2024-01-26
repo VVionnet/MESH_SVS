@@ -81,3 +81,6 @@ snodpl           0.0 !m
 snoden           0.0 !kg m**-3, replaces 'snoro'; replaced if 'snoro' is listed after this line
 snoal            0.0 !fraction
 wsnow            0.0 !kg m**-2
+
+!> Output
+lout_svs1_watbal .true. ! Add water balance output for SVS1.

@@ -426,6 +426,15 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
                     call assign_line_args(svs_mesh%vs%hveglpol, p, args(2:), istat)
                 end if
 
+            case (VN_SVS_LOUT_SVS1_WATBAL)
+                if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS2' ) then
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    p = 1
+                    call assign_line_args(svs_mesh%vs%lout_svs1_watbal, args(2), istat)
+                end if
+                
+
             case (VN_SVS_NPROFILE_DAY)
                 if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS') then
                     istat = istat + radix(istat)**pstat%INACTIVE
