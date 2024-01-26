@@ -1659,7 +1659,6 @@ USE MODD_CSTS,     ONLY : XTT, XG
 USE MODD_SNOW_PAR, ONLY : XRHOSMAX_ES
 USE MODD_SNOW_METAMO
 USE MODE_SNOW3L, ONLY : GETGRAINSIZE_B21
-USE MODD_SNOW_PAR, ONLY: SNOW_VEG_H
 !
 IMPLICIT NONE
 !
@@ -1816,9 +1815,9 @@ DO JST = 1,IMAX_USE
     ! Increase snow viscosity for snow layer height <= vegetation threshold / M. Barrere
     IF (HSNOWCOMP == 'R21' .OR. HSNOWCOMP == 'R2V' ) THEN
        IF ( PSNOWLIQ(JJ,JST)<=XUEPSI_SMP .AND. PHVEGPOL(JJ) > 0. ) THEN ! only for dry snow layers when shrubs are present (PHVEGPOL>0.)
-        IF(ZSNOW_JST(JJ,JST) <= MIN(0.1,SNOW_VEG_H)) THEN
+        IF(ZSNOW_JST(JJ,JST) <= MIN(0.1,PHVEGPOL(JJ) )) THEN
            ZVISCOSITY(JJ,JST) = 100. * ZVISCOSITY(JJ,JST)
-        ELSE IF ( ZSNOW_JST(JJ,JST) <= SNOW_VEG_H ) THEN
+        ELSE IF ( ZSNOW_JST(JJ,JST) <= PHVEGPOL(JJ)  ) THEN
            ZVISCOSITY(JJ,JST) = 10. * ZVISCOSITY(JJ,JST)
         ENDIF
         ! Version proposed by Domine et al. (xxx)     
