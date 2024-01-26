@@ -292,18 +292,14 @@
 !                         there is a specific treatment for dew
 !                         (see Mahfouf and Noilhan, jam, 1991)
 !
-!                         first calculate the saturation vapor
-!                         pressure and specific humidity
-      
-!
-          DO I=1,N
-              QSATGRV(I) = FOQST( TGRVS(I), PS(I) )
-          END DO
-!
-!
           DO I=1,N
 !
               IF(VEGH(I) > EPSILON_SVS) THEN ! High vegetation is present
+
+!                         first calculate the saturation vapor
+!                         pressure and specific humidity
+                          QSATGRV(I) = FOQST( TGRVS(I), PS(I) )
+
 !                         when hu*qsat < qa, there are two
 !                         possibilities
 !
