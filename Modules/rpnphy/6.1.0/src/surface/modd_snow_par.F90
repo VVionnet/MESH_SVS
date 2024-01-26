@@ -108,6 +108,9 @@ REAL, SAVE       :: XZ0HSN
 ! Roughness length ratio between ice and snow
 REAL, SAVE       :: XZ0ICEZ0SNOW
 !
+! Vegetation height for reduction in snow compaction (Royer 2021 & Lackner 2022)
+REAL, SAVE       :: SNOW_VEG_H
+!
 ! Snow Melt timescale with D95 (s): needed to prevent time step 
 ! dependence of melt when snow fraction < unity.
 !
@@ -191,11 +194,19 @@ REAL, PARAMETER       :: XRHOSMAX = 300.       ! (kg m-3)   Veg (Default value)
 REAL, PARAMETER       :: XRHOSMAX_ROOF = 300.  ! (kg m-3)   Roofs
 REAL, PARAMETER       :: XRHOSMAX_ROAD = 350.  ! (kg m-3)   Roads
 !
+! Increased maximum value of the density of snow (Royer et al. 2021)
+!
+REAL, PARAMETER       :: XRHOSMAX_R21 = 600.   ! (kg m-3)  
+!
 ! Minimum and maximum values of the density of snow 
 ! for ISBA-ES snow option
 !
 REAL, PARAMETER       :: XRHOSMIN_ES =  50.  ! (kg m-3)
 REAL, PARAMETER       :: XRHOSMAX_ES = 750.  ! (kg m-3)
+!
+! Height of basal vegetation for Royer 2021
+!
+!REAL, PARAMETER       :: SNOW_VEG_H = 0.1   ! (kg m-3)
 !
 ! ISBA-ES Critical snow depth at which snow grid thicknesses constant
 !
@@ -290,7 +301,28 @@ REAL, PARAMETER :: XVRKZ6 = 1.88
 !
 REAL, PARAMETER :: XSNOWTHRMCOND_C11_1 = 2.5E-6   ! (W m5 K-1 kg-2)
 REAL, PARAMETER :: XSNOWTHRMCOND_C11_2 = -1.23E-4 ! (W m2 K-1 km-1)
-REAL, PARAMETER :: XSNOWTHRMCOND_C11_3 = 0.024    ! (W m-1 K-1) 
+REAL, PARAMETER :: XSNOWTHRMCOND_C11_3 = 0.024    ! (W m-1 K-1)
+!
+! Sturm et al., 1997, Crocus thermal conductivity coefficients from Sturm et al. 1997
+!
+REAL, PARAMETER :: XSNOWTHRMCOND_S97_1 = 0.023
+REAL, PARAMETER :: XSNOWTHRMCOND_S97_2 = 0.234
+REAL, PARAMETER :: XSNOWTHRMCOND_S97_3 = 0.138
+REAL, PARAMETER :: XSNOWTHRMCOND_S97_4 = -1.01
+REAL, PARAMETER :: XSNOWTHRMCOND_S97_5 = 3.233
+! 
+! Jordan et al 1991, Crocus thermal conductivity coefficients from Jordan et al. 1991
+REAL, PARAMETER :: XSNOWTHRMCOND_J91_1 = 0.023 ! [(W/(m K)] Thermal conductivity of air 
+REAL, PARAMETER :: XSNOWTHRMCOND_J91_2 = 7.75E-5 !
+REAL, PARAMETER :: XSNOWTHRMCOND_J91_3 = 1.105E-6 !
+REAL, PARAMETER :: XSNOWTHRMCOND_J91_4 = 2.29 ! [W(/m K)] Thermal conductivity of ice
+!
+! Fourteau et al 2021, Crocus thermal conductivity coefficients from Fourteau et al. 2021 for 263K
+REAL, PARAMETER :: XSNOWTHRMCOND_F21_1 = 1.985 !
+REAL, PARAMETER :: XSNOWTHRMCOND_F21_2 = 917 ! (kg/m3) Density of ice
+REAL, PARAMETER :: XSNOWTHRMCOND_F21_3 = 0.073 !
+REAL, PARAMETER :: XSNOWTHRMCOND_F21_4 = 0.0336 !
+!
 ! Thermal conductivity of ice and water at 273K (for freezing rain)
 REAL, PARAMETER :: XTHRMCOND_ICE = 2.22    ! [W/(m K)]
 REAL, PARAMETER :: XTHRMCOND_WATER = 0.561    ! [W/(m K)]
@@ -319,7 +351,26 @@ REAL, PARAMETER :: XSNOWFALL_A_SN_P75 = 109.0  ! kg/m3
 REAL, PARAMETER :: XSNOWFALL_B_SN_P75 =   8.0  ! kg/(m3 K) this one is different from Brun 89
 REAL, PARAMETER :: XSNOWFALL_C_SN_P75 =  26.0  ! kg/(m7/2 s1/2)
 
-!
+! Coefficients for R21 (Royer et al., 2021)
+REAL, PARAMETER :: XSNOWFALL_A_SN_R21 = 109.0 ! kg/m3
+REAL, PARAMETER :: XSNOWFALL_B_SN_R21 =   6.0 ! kg/(m3 K)
+REAL, PARAMETER :: XSNOWFALL_C_SN_R21 =  52.0 ! kg/(m7/2 s1/2) different from Brun 89 (*2)
+
+! Coefficients for L22 (Lackner et al., 2022)
+REAL, PARAMETER :: XSNOWFALL_A_SN_L22 = 218.0 ! kg/m3 different from Brun 89 (*2)
+REAL, PARAMETER :: XSNOWFALL_B_SN_L22 =   6.0 ! kg/(m3 K)
+REAL, PARAMETER :: XSNOWFALL_C_SN_L22 = 260.0 ! kg/(m7/2 s1/2) different from Brun 89 (*5)
+
+! Coefficients for GW23 
+REAL, PARAMETER :: XSNOWFALL_A_SN_GW1 = 109.0 ! kg/m3 
+REAL, PARAMETER :: XSNOWFALL_B_SN_GW1 =   6.0 ! kg/(m3 K)
+REAL, PARAMETER :: XSNOWFALL_C_SN_GW1 =  39.0 ! kg/(m7/2 s1/2) 1.5 * Default of Brun 89 (V12) 
+
+! Coefficients for GW23 
+REAL, PARAMETER :: XSNOWFALL_A_SN_GW2 = 109.0 ! kg/m3
+REAL, PARAMETER :: XSNOWFALL_B_SN_GW2 =   6.0 ! kg/(m3 K)
+REAL, PARAMETER :: XSNOWFALL_C_SN_GW2 =  32.5 ! kg(m7/2 s1/2) 1 * Default of Brun 89 (V12)
+
 !
 ! Coefficients for the optimal vertical grid calculation
 REAL, PARAMETER :: XDZ1 = 0.01
@@ -371,6 +422,8 @@ REAL, PARAMETER :: XVROMAX = 350. !  maximum density for
 ! drift compaction     UNIT : kg m-3
 REAL, PARAMETER :: XVROMIN = 50.  !  minimum density for
 ! mobility computation UNIT : kg m-3
+REAL, PARAMETER :: XVROMAX_R21 = 600. ! increase in maximum density
+! drift compaction to account for high Arctic wind speeds UNIT : kg m-3 
 REAL, PARAMETER :: XVMOB1 = 0.295  !  coefficient for computing
 ! the mobility index
 REAL, PARAMETER :: XVMOB2 = 0.833  !  coefficient for computing
@@ -393,6 +446,8 @@ REAL, PARAMETER :: XVSIZEMIN = 3.E-4 !  minimum size decrease
 ! on en tient compte egalement pour diminuer la duree de l'effet
 REAL, PARAMETER :: XCOEF_FF = 1.25 ! coefficient for gust diagnosis from average wind 
 REAL, PARAMETER :: XCOEF_EFFECT = 1.0 ! coefficient for impact on density du drift
+REAL, PARAMETER :: XCOEF_EFFECT_R21 = 3.0 ! increase in coefficient for impact on density due
+! to drift to account for high Arctic wind speeds
 REAL, PARAMETER :: XQS_REF = 2.E-5 ! valeur de reference de ZQS pour effet neige
 !
 !--------------------------------------------------------------------------------

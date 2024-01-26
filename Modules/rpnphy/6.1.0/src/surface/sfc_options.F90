@@ -195,8 +195,8 @@ module sfc_options
    namelist /surface_cfgs/ read_z0vh
 
    !# read-in high vegetation density for SVS if .true.
-   logical           :: read_vgh_dens     = .false.
-   namelist /surface_cfgs/ read_vgh_dens
+   !logical           :: read_vgh_dens     = .false.
+   !namelist /surface_cfgs/ read_vgh_dens
 
 
    !# Takes into account effect of ocean salinity on saturation specific
@@ -488,13 +488,19 @@ module sfc_options
    !       'DFLT': falling snow falls as purely dendritic
    !       'GA01': Gallee et al 2001
    !       'VI13': Vionnet et al 2013 (Default in SVS2)
+   !       'R21R': Royer et al 2021 (Increase in Maximum Density)
+   !       'R21W': Royer et al 2021 (Increase in Wind_Effect)
+   !       'R21F': Royer et al 2021 (Increase in Max Density and Wind Effect)
    character(len=16) :: hsnowdrift_cro = 'VI13'
    namelist /surface_cfgs/ hsnowdrift_cro
-   character(len=*), parameter :: HSNOWDRIFT_CRO_OPT(4) = (/ &
+   character(len=*), parameter :: HSNOWDRIFT_CRO_OPT(7) = (/ &
         'NONE',  &
         'DFLT',  &
         'GA01',  &  
-        'VI13'  &  
+        'VI13',  &
+        'R21F', &
+        'R21W', &
+        'R21R' &  
          /)
 
    ! Option for the snowdrift scheme for ES: Mechanical transformation of snow grain and compaction 
@@ -517,13 +523,17 @@ module sfc_options
    !    HSNOWMETAMO=C13 Carmagnola et al 2014 
    !    HSNOWMETAMO=T07 Taillandier et al 2007
    !    HSNOWMETAMO=F06 Flanner et al 2006
+   !    HSNOWMETAMO=S-F Schlef et al 2014
+   !    HSNOWMETAMO=S-B Schlef et al 2014
    character(len=16) :: hsnowmetamo = 'B21'
    namelist /surface_cfgs/ hsnowmetamo
-   character(len=*), parameter :: HSNOWMETAMO_OPT(4) = (/ &
+   character(len=*), parameter :: HSNOWMETAMO_OPT(6) = (/ &
         'C13',  &
         'T07',  &  
         'F06',  &  
-        'B21'  &  
+        'B21',  &
+        'S-F',  &
+        'S-B'   &  
          /)
 
    ! Option for the radiative transfer scheme for Crocus
@@ -541,27 +551,41 @@ module sfc_options
    !   HSNOWFALL=A76 Anderson et al. 1976
    !   HSNOWFALL=S02 Lehning el al. 2002
    !   HSNOWFALL=P75 Pahaut 1975
-   !   HSNOWFALL=NZE Constant density 200 kg/m3 (defined snowcro.F90 )         
+   !   HSNOWFALL=NZE Constant density 200 kg/m3 (defined snowcro.F90 )
+   !   HSNOWFALL=R21 Royer et al. 2021
+   !   HSNOWFALL=L22 Lackner et al. 2022
+   !   HSNOWFALL=GW1 
+   !   HSNOWFALL=GW2         
    character(len=16) :: hsnowfall = 'V12'
    namelist /surface_cfgs/ hsnowfall
-   character(len=*), parameter :: HSNOWFALL_OPT(5) = (/ &
+   character(len=*), parameter :: HSNOWFALL_OPT(9) = (/ &
         'V12',  &
         'A76',  &  
         'S02',  &  
         'P75',  &  
-        'NZE'  &  
+        'NZE',  &
+        'R21',  &
+        'L22',  &  
+        'GW1',  &
+        'GW2'   &   
          /)
 
    ! Option for the thermal conductivity scheme for Crocus
    !    HSNOWCOND=Y81 default Crocus from Yen et al. 1981 (Default in SVS2)
    !    HSNOWCOND=I02 ISBA_ES snow conductivity parametrization (Boone et al. 2002)
    !    HSNOWCOND=C11 Calonne et al. 2011 snow conductivity parametrization
+   !    HSNOWCOND=S97 Sturm et al. 1997
+   !    HSNOWCOND=J91 Jordan et al. 1991
+   !    HSNOWCOND=F21 Fourteau et al. 2021
    character(len=16) :: hsnowcond = 'Y81'
    namelist /surface_cfgs/ hsnowcond
-   character(len=*), parameter :: HSNOWCOND_OPT(3) = (/ &
+   character(len=*), parameter :: HSNOWCOND_OPT(6) = (/ &
         'Y81',  &
         'I02',  &  
-        'C11'   &  
+        'C11',  &
+        'S97',  &  
+        'J91',  &
+        'F21'   &
          /)
 
    ! Option for the liquid water content scheme for Crocus
@@ -581,13 +605,19 @@ module sfc_options
    ! Option for the compaction scheme for Crocus
    !   HSNOWCOMP=B92 default Crocus from Brun et al. 1992 or Vionnet et al. 2012 (Default in SVS2)
    !   HSNOWCOMP=S14 use the settling param of Schleef et al. (2014) for fresh snow (less than 2 days) 
-   !   HSNOWCOMP=T11 param of snow viscosity from Teufelsbauer (2011)   
+   !   HSNOWCOMP=T11 param of snow viscosity from Teufelsbauer (2011)
+   !   HSNOWCOMP=R21 Reduction in snow compaction due to basal vegetation and no snowdrift below veg height (Royer 2021 & Lackner 2022)   
+   !   HSNOWCOMP=R2V Reduction in snow compaction due to basal vegetation only  (Royer 2021 & Lackner 2022) 
+   !   HSNOWCOMP=R2D No snowdrift below veg height (Royer 2021)
    character(len=16) :: hsnowcomp = 'B92'
    namelist /surface_cfgs/ hsnowcomp
-   character(len=*), parameter :: HSNOWCOMP_OPT(3) = (/ &
+   character(len=*), parameter :: HSNOWCOMP_OPT(6) = (/ &
         'B92',  &
         'S14',  &  
-        'T11'   &  
+        'T11',  &
+        'R21',   &
+        'R2V',  &
+        'R2D'   &
          /)
 
    ! Option for the turbulent fluxes in Crocus

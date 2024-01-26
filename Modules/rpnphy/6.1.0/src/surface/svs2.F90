@@ -142,7 +142,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    real,dimension(n) :: pct, pz0hnat, pz0, pzenith
    real,dimension(n) :: pgfluxsnow
    real,dimension(n) :: pforest
-   real,dimension(n) :: pgfluxsnow_v,pforest_v
+   real,dimension(n) :: pgfluxsnow_v,pforest_v,phvegapol_v
    real,dimension(n) ::  prsurf ! Aerodynamic surface resistance for snow under canopy (cf. Gouttevin et al. 2013)
 
    real,dimension(n) :: ptvege  ! Average skin temperature of the vegetation (low and high veg)
@@ -156,7 +156,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    real,dimension(n) :: pzohvh  ! Canopy roughness length for heat
    real,dimension(n) :: zz0nat, zz0hnat ! Local variables for grid box average roughness length
    real,dimension(n) :: zrsurf_forest, zrsurf_open ! Surface aerodynamic resistances for turbulent fluxes
-   real,dimension(n) :: PHM_CAN ! Heat mass for the high vegetation layer (J K-1 m-2)
+   real,dimension(n) :: phm_can ! Heat mass for the high vegetation layer (J K-1 m-2)
 
      ! NL_SVS VARIABLES
    real, dimension(n,nl_svs) ::  pd_g, pdzg
@@ -225,6 +225,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
          uu       (1:n) => bus( x(umoins,1,nk)      : )
          vv       (1:n) => bus( x(vmoins,1,nk)      : )
       endif
+
 
 
 
@@ -301,6 +302,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
              PFOREST(I)=0.
              PFOREST_V(I)=1.
              PRSURF(I)=0.
+             PHVEGAPOL_V(I) = 0. ! Effect of basal vegetation on snowpack properties are not taken into account in high vegetation. 
+             
 
             ! TO BE CHECKED======================
             PCT(I)= 1.E-4
@@ -434,7 +437,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            BUS(x(WSOIL ,1,1)),  &
            RGLA                ,  &   
            bus(x(LAIVA  ,1,1))     , bus(x(LAIVH   ,1,1)),   &  
-           bus(x(LAIVL   ,1,1)), STOMRA,     &
+           bus(x(LAIVL   ,1,1)), BUS(x(HVEGLPOL,1,1)),  STOMRA,     &
            GAMVA, bus(x(WWILT   ,1,1)),      &
            bus(x(WFC     ,1,1)), SUNCOSA,     &
            bus(x(ROOTDP     ,1,1)),  bus(x(D50   ,1,1)),    &
@@ -445,7 +448,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            bus(x(SKYVIEW ,1,1)), bus(x(SKYVIEWA ,1,1)), &
            bus(x(VEGTRANS,1,1)), bus(x(VEGTRANSA,1,1)),   &   
            bus(x(frootd   ,1,1)), bus(x(acroot ,1,1)), WRMAX_VL, &
-           WRMAX_VH, PHM_CAN, N)
+           WRMAX_VH, PHM_CAN,BUS(x(HVEGAPOL,1,1)),  N)
 
       IF(KOUNT.EQ.1) then
          DO I=1,N
@@ -558,8 +561,9 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                          bus(x(HPSA ,1,1)),  bus(x(PSNGRVL ,1,1)), PZ0,PZ0,PZ0HNAT, &
                          LESNOFRAC, LESLNOFRAC, bus(x(ESA,1,1)), PZENITH, &
                          bus(x (DLAT,1,1)), bus(x (DLON,1,1)),PFOREST,bus(x(SNOTYPE_SVS,1,1)),  &
-                         N, NL_SVS)
+                         BUS(x(HVEGAPOL,1,1)),N, NL_SVS)
       if (phy_error_L) return
+
 
      IF(LSNOW_INTERCEPTION_SVS2) THEN
 
@@ -613,7 +617,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
          ZZ0HNAT(I) = PZ0HNAT(I)
         ENDDO
       ENDIF
-    
+
       CALL SNOW_SVS2(   bus(x(SNOMAV_SVS,1,1)), bus(x(TSNOWV_SVS,1,1)), bus(x(WSNOWV_SVS,1,1)),    &
                              bus(x(SNODENV_SVS,1,1)), bus(x(SNVAL,1,1)),bus(x(SNOAGEV_SVS,1,1)),    &
                              bus(x(SNODIAMOPTV_SVS,1,1)), bus(x(SNOSPHERIV_SVS,1,1)),bus(x(SNOHISTV_SVS,1,1)),   &
@@ -629,7 +633,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                              bus(x(HPSV ,1,1)),bus(x(PSNVH ,1,1)), ZZ0NAT,PZ0,ZZ0HNAT,  &
                              LESVNOFRAC, LESVLNOFRAC, bus(x(ESV,1,1)),PZENITH, &
                              bus(x (DLAT,1,1)), bus(x (DLON,1,1)), PFOREST_V,bus(x(SNOTYPEV_SVS,1,1)), &
-                             N, NL_SVS)
+                             PHVEGAPOL_V, N, NL_SVS)
  
 
       if (phy_error_L) return
@@ -660,6 +664,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       ENDDO  
 
 !
+
       CALL EBUDGET_SVS2_ONEPROFILE_SKIN(bus(x(TSA ,1,1)),  &  
                   bus(x(WSOIL     ,1,1)) , bus(x(ISOIL,1,1)),  &   
                   bus(x(TGROUND   ,1,1)) , bus(x(TGROUND,1,2)), bus(x(TGROUNDV,1,1)),  & 
@@ -717,6 +722,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                   TRAD, N,   &
                   bus(x(QVEG ,1,1)), bus(x(QGV   ,1,1)), bus(x(QGR   ,1,1)), & 
                   RPP, bus(x(Z0HA ,1,1)))
+
 
       ! Update vegetation temperature with average of low and high vegetation. 
       ! VV TO BE MODIFIED: Intermediate step during developement. 

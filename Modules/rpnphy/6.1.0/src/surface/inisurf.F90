@@ -63,6 +63,7 @@ subroutine inisurf4(kount, ni, nk, trnch)
         zresa_vh, zresa_vl, &
         zresasa, zresasv, zslop, zsnoal, zsnoalen, zsnoagen, zsnodpl, zsnoden, &
         zsnoma, zsnoro, zsnvden, zsnvdp, zsnvma, ztsrad, ztwater, &
+        zvgh_dens,zvgh_densen,                                     &
         zz0en, zz0mland, zz0mlanden, zz0mvh, zz0mvhen, zz0veg, zz0tveg
    real, pointer, dimension(:,:) :: &
         zalvis, zclay, zclayen, zsand, zsanden, zsnodp, &
@@ -108,6 +109,8 @@ subroutine inisurf4(kount, ni, nk, trnch)
    MKPTR1D(zsnvma,snvma)
    MKPTR1D(ztsrad,tsrad)
    MKPTR1D(ztwater,twater)
+   MKPTR1D(zvgh_dens,vgh_dens)
+   MKPTR1D(zvgh_densen,vgh_densen)
    MKPTR1D(zz0en,z0en)
    MKPTR1D(zz0mland,z0mland)
    MKPTR1D(zz0mlanden,z0mlanden)
@@ -637,6 +640,17 @@ subroutine inisurf4(kount, ni, nk, trnch)
            end do
         endif
      endif
+
+
+    if (any('vgh_densen' == phyinread_list_s(1:phyinread_n))) then
+          ! impose minimum value of 0. for vgh_dens
+          ! A minimum value of 0.2 is set later in vegi_svsv2 for grid points with VEGH>0
+          do i=1,ni
+              zvgh_dens(i)         = max( zvgh_densen(i) , 0.)
+          end do
+    endif
+
+     
 
 !
 !                          Initialize the parameters that depend

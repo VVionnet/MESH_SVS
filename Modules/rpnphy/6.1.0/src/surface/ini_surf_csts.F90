@@ -73,7 +73,8 @@ USE MODD_SNOW_PAR,  ONLY : XEMISSN, XANSMIN, XANSMAX,          &
                            XPP_H2, XPP_H3, XPP_H4, XWT, XPTR , &
                            XTIMESNOWMAK,                       &
                            XPROD_SCHEME, XSM_END, XFREQ_GRO,   & !Grooming and Snowmaking option by P.Spandre 20160211
-                           XSCAVEN_COEF
+                           XSCAVEN_COEF, SNOW_VEG_H
+!
 USE MODD_SNOW_METAMO, ONLY : XVVISC3
 !
 USE MODD_SURF_ATM, ONLY: XRIMAX,LALDTHRES,XCISMIN, XVMODMIN
@@ -233,6 +234,10 @@ XTAU_SMELT = 300.
 ! Roughness length ratio between ice and snow
 XZ0ICEZ0SNOW = 10.
 !
+! Vegetation height to reduce snow compaction (Royer 2021 & Lackner 2022)
+!
+SNOW_VEG_H = 0.1
+!
 ! 3 bands spectral albedo for glacier ice (CROCUS)
 ! Default values from Lejeune et al 2009 (Zongo, Bolivia)
 XALBICE1 = 0.38
@@ -269,7 +274,7 @@ XFREQ_GRO = 0
 XRHOTHRESHOLD_ICE = 850.
 !
 ! Parameters for ageing effect on albedo
-XVAGING_NOGLACIER = 60.
+XVAGING_NOGLACIER = 900.
 XVAGING_GLACIER   = 900.
 
 ! percentage of the total pore volume to compute the max liquid water holding capacity   !Pahaut 1976

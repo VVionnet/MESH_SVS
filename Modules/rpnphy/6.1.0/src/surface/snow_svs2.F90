@@ -14,7 +14,7 @@ SUBROUTINE SNOW_SVS2(  PSNOWSWE,PSNOWTEMP, PSNOWLIQ,PSNOWRHO,PSNOWALB,  &
                       PHPSNOW, PPSN,PZ0NAT, PZ0EFF, PZ0HNAT, &
                       PLES3L, PLEL3L, PEVAP, &
                       PZENITH, PLAT, PLON, PFOREST,      &
-                      PSNOWTYPE, & !N , NSL, NSOIL)
+                      PSNOWTYPE, PHVEGAPOL, &
                       N ,  NSOIL)
 !     ######################################################################################
 !
@@ -167,6 +167,8 @@ REAL, DIMENSION(N), INTENT(IN)      :: PZREF, PUREF,PRHOA, PALB
 !                                      PUREF     = reference height of the wind
 !                                      PRHOA     = air density
 !                                      PALB      = soil/vegetation albedo
+!
+REAL, DIMENSION(N), INTENT(IN)      :: PHVEGAPOL   ! Mean polar vegetation height (m)
 !
 REAL, DIMENSION(N), INTENT(INOUT)   :: PLES3L, PLEL3L, PEVAP, PGRNDFLUX
 !                                      PLEL3L        = evaporation heat flux from snow (W/m2)
@@ -373,6 +375,8 @@ PSWNETSNOW(:)  = 0.0
 PLWNETSNOW(:)  = 0.0 
 PSUBLDRIFT(:)    = 0.
 ZEVAPCOR(:)    = 0.0
+ZSOILCOR(:)    = 0.0
+ZSNOW_MASS_BUDGET(:) = 0.0
 ZQS(:)         = XUNDEF
 !
 ZSNOW(:)       = 0.0
@@ -839,6 +843,7 @@ REAL, DIMENSION(KSIZE1)        :: ZP_CHSNOW
 REAL, DIMENSION(KSIZE1)        :: ZP_SNOWHMASS
 REAL, DIMENSION(KSIZE1)        :: ZP_VEGTYPE
 REAL, DIMENSION(KSIZE1)        :: ZP_FOREST
+REAL, DIMENSION(KSIZE1)        :: ZP_HVEGAPOL
 REAL, DIMENSION(KSIZE1)        :: ZP_PEW_A_COEF
 REAL, DIMENSION(KSIZE1)        :: ZP_PEW_B_COEF
 REAL, DIMENSION(KSIZE1)        :: ZP_PET_A_COEF
@@ -1101,6 +1106,8 @@ DO JJ=1,KSIZE1
 !                   + PVEGTYPE(JI,NVT_TRBD) + PVEGTYPE(JI,NVT_TEBE) + PVEGTYPE(JI,NVT_TENE)   & 
 !                   + PVEGTYPE(JI,NVT_BOBD) + PVEGTYPE(JI,NVT_BOND) + PVEGTYPE(JI,NVT_SHRB)   
      ZP_FOREST  (JJ) =  PFOREST(JI)
+
+     ZP_HVEGAPOL (JJ) = PHVEGAPOL(JI)
 ENDDO
 !
 !
@@ -1179,7 +1186,7 @@ IF (HSNOWSCHEME=='CRO') THEN
                 HSNOWFALL, HSNOWCOND, HSNOWHOLD, HSNOWCOMP,                   &
                 CSNOWZREF,ZP_SNOWMAK, LSNOWCOMPACT_BOOL,                      &
                 LSNOWMAK_BOOL,LSNOWTILLER,LSELF_PROD,                         &
-                LSNOWMAK_PROP)
+                LSNOWMAK_PROP, ZP_HVEGAPOL)
 
       ! Purely diagnostic, this routine can be called only at output time steps
       CALL SNOWCRO_DIAG(HSNOWHOLD, HSNOWMETAMO, ZP_SNOWDZ, ZP_SNOWSWE, ZP_SNOWRHO, ZP_SNOWDIAMOPT, ZP_SNOWSPHERI, ZP_SNOWAGE,  &

@@ -109,6 +109,7 @@ subroutine sfc_businit(moyhr,ni,nk)
    character(len=2) :: ns
    integer :: algrv,emisgrv,egv,  legv,qaf,    &
         hpsa,hpsv, husurfgv, hv_vl, hv_vh, &
+        hveglpol,hvegapol, &
         gfluxsa, gfluxsv,      &
         lesc,lescaf, &
         ler_vl, ler_vh, letr_vl, letr_vh, levl, levh,  & 
@@ -521,6 +522,8 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR2D1(hfluxsv,      'VN=hfluxsv      ;ON=HFSV;VD=sensible heat flux (snow under veg. only)                         ;VB=p0')
       PHYVAR2D1(hpsa,         'VN=hpsa         ;ON=HPSA;VD=heat from rainfall falling on snow over lv/ bg o                  ;VB=p0')
       PHYVAR2D1(hpsv,         'VN=hpsv         ;ON=HPSV;VD=heat from rainfall falling on  under high veg.                    ;VB=p0')
+      PHYVAR2D1(hveglpol,     'VN=hveglpol     ;ON=HVLP;VD=polar low vegetation height                                       ;VB=p0')  
+      PHYVAR2D1(hvegapol,     'VN=hvegapol     ;ON=HVAP;VD=polar mean vegetation height (aggregated)                         ;VB=p0')        
       PHYVAR2D1(husurf,       'VN=husurf       ;ON=FH  ;VD=spec. humid. of the surface                                       ;VB=v0        ;MIN=0')
       PHYVAR2D1(husurfgv,     'VN=husurfgv     ;ON=FHGV;VD=spec. humid. of the snow-free ground below high veg.              ;VB=v0        ;MIN=0')
       PHYVAR2D1(hv_vl,        'VN=hv_vl        ;ON=HVVL;VD=relative humidity of low veg. canopy                              ;VB=v0        ;MIN=0')
@@ -659,8 +662,7 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR3D1(vgctem,       'VN=vgctem       ;ON=VGCT;VD=CTEM vegetation type fractions                 ;VS=A*9            ;VB=p0')
       PHYVAR2D1(vgh_height,   'VN=vgh_height   ;ON=VGHH;VD=height for high vegetation                                        ;VB=p0')
       PHYVAR2D1(vgh_dens,     'VN=vgh_dens     ;ON=VGHD;VD=density for high vegetation (openness)                            ;VB=p0')      
-      if(read_vgh_dens) &
-        PHYVAR2D1(vgh_densen, 'VN=vgh_densen;ON=VHD1;VD=density of trees in areas of high vegetation (openness) (E.)         ;VB=e1; IN=VGHD;MIN=0')       
+      PHYVAR2D1(vgh_densen,   'VN=vgh_densen;ON=VHD1;VD=density of trees in areas of high vegetation (openness) (E.)         ;VB=e1; IN=VGHD;MIN=0')       
       PHYVAR3D1(watflow,      'VN=watflow      ;ON=WFL ;VD=waterflow between layers                       ;VS=A*'//nglp1//'  ;VB=p0')
       PHYVAR3D1(wfc,          'VN=wfc          ;ON=WFC ;VD=vol. water content at field cap.               ;VS=A*'//ngl//'    ;VB=p0')
       PHYVAR2D1(wfcdp,        'VN=wfcdp        ;ON=WFCD;VD=vol. water content at field cap. at lowst layer                   ;VB=p0')

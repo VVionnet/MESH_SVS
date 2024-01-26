@@ -200,6 +200,8 @@ module sfcbus_mod
       SFCVAR(hv, 'hv')
       SFCVAR(hv_vl, 'hv_vl')
       SFCVAR(hv_vh, 'hv_vh')
+      SFCVAR(hveglpol, 'hveglpol')   
+      SFCVAR(hvegapol, 'hvegapol')   
       SFCVAR(icedp, 'icedp')
       SFCVAR(iceline, 'iceline')
       SFCVAR(ilmo, 'ilmo')
