@@ -45,6 +45,9 @@ module runsvs_mesh
     !> SVS1 output
     integer :: iout_svs1_soil = 160
     integer :: iout_svs1_snow = 161
+    integer :: iout_svs1_watbal = 162
+
+    real preacc_tot,wsoil_tot,isoil_tot     
 
     !> SVS variables names for I/O (direct variables).
     character(len = *), parameter, public :: VN_SVS_DEGLAT = 'DEGLAT'
@@ -109,6 +112,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_WSNOW_SVS = 'WSNOW_ML'
     character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_PROFILE = 'LOUT_SNOW_PROFILE' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_ENBAL = 'LOUT_SNOW_ENBAL' ! For svs2 only 
+    character(len = *), parameter, public :: VN_SVS_LOUT_SVS1_WATBAL = 'LOUT_SVS1_WATBAL ' ! For svs1 only 
     character(len = *), parameter, public :: VN_SVS_NPROFILE_DAY = 'NPROFILE_DAY' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LSOIL_FREEZING_SVS1 = 'LSOIL_FREEZING_SVS1' ! For svs1 only 
     character(len = *), parameter, public :: VN_SVS_LWATER_PONDING_SVS1 = 'LWATER_PONDING_SVS1' ! For svs1 only 
@@ -196,6 +200,7 @@ module runsvs_mesh
         logical :: lsnowdrift_sublim = .true.
         logical :: lout_snow_profile = .false.
         logical :: lout_snow_enbal = .false.
+        logical :: lout_svs1_watbal = .false.
         integer :: nprofile_day = 4 !
         logical :: lsoil_freezing_svs1 = .false.
         logical :: lwater_ponding_svs1 = .false.
@@ -1266,6 +1271,14 @@ ierr = 200
        write(iout_svs1_snow, FMT_CSV, advance = 'no') 'SNVMA', 'SNVDP','SNVDEN','SNVALB','WSNV','TSNV_1','TSNV_2'
        write(iout_svs1_snow, *)
 
+       if(svs_mesh%vs%lout_svs1_watbal) then 
+          open(iout_svs1_watbal, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs1_watbal_hourly.csv', action = 'write')
+          write(iout_svs1_watbal, FMT_CSV, advance = 'no') 'YEAR', 'JDAY', 'HOUR', 'MINS'
+          write(iout_svs1_watbal, FMT_CSV, advance = 'no') 'PCP_AC','EVP_AC', 'LAT_AC', 'DRA_AC', 'ROF_AC','ROF_INS'
+          write(iout_svs1_watbal, FMT_CSV, advance = 'no') 'WSOIL_TOT','ISOIL_TOT' 
+          write(iout_svs1_watbal, FMT_CSV, advance = 'no') 'SWE', 'SWE_VEG', 'WSN', 'WSN_VEG', 'WVEG', 'VEGH', 'VEGL'       
+       endif
+
 
    endif
 
@@ -1515,6 +1528,17 @@ ierr = 200
 
        else if(svs_mesh%vs%schmsol=='SVS') then
 
+
+           preacc_tot = preacc_tot +  1000.*sum(busptr(vd%rainrate%i)%ptr(:, trnch))*ic%dts +  1000.*sum(busptr(vd%snowrate%i)%ptr(:,trnch))*ic%dts 
+           call layer_thickness()
+           wsoil_tot=0.
+           isoil_tot=0.
+           do j = 1, svs_mesh%vs%khyd
+               wsoil_tot = wsoil_tot + 1000.0*busptr(vd%wsoil%i)%ptr(j, trnch)*delz(j) !mm
+               isoil_tot = isoil_tot + 1000.0*busptr(vd%isoil%i)%ptr(j, trnch)*delz(j) !mm
+           end do
+
+
            if (ic%now%mins ==0) then! Full hour
 
               k=1 !>  Identity of the tile (offset relative to node-indexing).
@@ -1546,6 +1570,19 @@ ierr = 200
                         busptr(vd%snvden%i)%ptr(:, trnch), busptr(vd%snval%i)%ptr(:, trnch),busptr(vd%wsnv%i)%ptr(:, trnch), &                    
                         busptr(vd%tsnowveg%i)%ptr(1:ni, trnch),busptr(vd%tsnowveg%i)%ptr((ni+1):2*ni, trnch)
               write(iout_svs1_snow, *)
+
+              ! Write file containing bulk snow outputs
+              if(svs_mesh%vs%lout_svs1_watbal) then 
+                 write(iout_svs1_watbal, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
+                 write(iout_svs1_watbal, FMT_CSV, advance = 'no') preacc_tot,busptr(vd%accevap%i)%ptr(:, trnch)
+                 write(iout_svs1_watbal, FMT_CSV, advance = 'no') busptr(vd%latflaf%i)%ptr(:, trnch),busptr(vd%drainaf%i)%ptr(:,trnch)
+                 write(iout_svs1_watbal, FMT_CSV, advance = 'no') busptr(vd%runofftotaf%i)%ptr(1, trnch),busptr(vd%runofftot%i)%ptr(1, trnch)
+                 write(iout_svs1_watbal, FMT_CSV, advance = 'no') wsoil_tot,isoil_tot
+                 write(iout_svs1_watbal, FMT_CSV, advance = 'no') busptr(vd%snoma%i)%ptr(:, trnch),busptr(vd%snvma%i)%ptr(:,trnch), &
+              busptr(vd%wsnow%i)%ptr(:, trnch), busptr(vd%wsnv%i)%ptr(:, trnch)
+                 write(iout_svs1_watbal, FMT_CSV, advance = 'no') busptr(vd%wveg%i)%ptr(:, trnch), busptr(vd%vegh%i)%ptr(:, trnch),busptr(vd%vegl%i)%ptr(:, trnch)
+                 write(iout_svs1_watbal, *)
+              end if
 
            end if
 
@@ -1723,6 +1760,11 @@ ierr = 200
         do i = 2, 2
             vs%tile%tsol(:, i) = busptr(vd%tground%i)%ptr((ni + 1):, trnch)
         end do
+
+        ! Cumulate surface runoff for land surface tile
+         busptr(vd%runofftotaf%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch) =   &
+                           busptr(vd%runofftotaf%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch)   + &
+                           busptr(vd%runofftot%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch)        
 
 
     end subroutine
