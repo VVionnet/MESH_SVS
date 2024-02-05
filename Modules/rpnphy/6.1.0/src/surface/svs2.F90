@@ -149,7 +149,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
    real,dimension(n) :: prg_veg    ! Surface incoming shortwave radiation under high vegetation
    real,dimension(n) :: prat_veg   ! Surface incoming longwave radiation under high vegetation
-   real,dimension(n) ::  pwind_drift ! Aerodynamic surface resistance for snow under canopy (cf. Gouttevin et al. 2013)
+   real,dimension(n) :: pwind_drift_open ! Wind speed for snowdrift routine in open terrain 
+   real,dimension(n) :: pwind_drift_forest ! Wind speed for snowdrift routine in forested terrain 
    real,dimension(n) :: pwind_top  ! Wind speed at canopy top
    real,dimension(n) :: puref_veg  ! Forcing height for wind under high vegetation
    real,dimension(n) :: ptref_veg  ! Forcing height for temperature/humidity under high vegetation
@@ -303,8 +304,9 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
              PFOREST_V(I)=1.
              PRSURF(I)=0.
              PHVEGAPOL_V(I) = 0. ! Effect of basal vegetation on snowpack properties are not taken into account in high vegetation. 
-             
 
+             PWIND_DRIFT_OPEN(I) = VMOD(I) ! In open terrain, use the wind speed from the forcing when computing snowdrift effect. 
+             
             ! TO BE CHECKED======================
             PCT(I)= 1.E-4
             !PCT(I)= 1./(30000.)
@@ -316,6 +318,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
             PZ0(I)    = Z0MSNOW_CRO
             ZRSURF_OPEN(I) = 0.
             ZRSURF_FOREST(I) = 0.
+
+
 
             DO J=1,NL_SVS
                PD_G(I,J)=DL_SVS(J)
@@ -481,7 +485,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
             bus(x(QCA,I,1))  = HU(I)  ! Air specific humidity in the canopy
             bus(x(VCA,I,1))  = VMOD(I) 
             PWIND_TOP(I) = VMOD(I)
-            PWIND_DRIFT(I) = VMOD(I)
+            PWIND_DRIFT_FOREST(I) = VMOD(I)
             bus(x(SWCA,I,1))    = zfsolis(I) 
             bus(x(LWCA,I,1))  = bus(x(FDSI,I,1)) 
          ENDDO
@@ -493,7 +497,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                          BUS(x(Z0MVH  ,1,1)),PZ0, BUS(x(VEGH   ,1,1)), &
                          BUS(x(LAIVH  ,1,1)),bus(x(SKYVIEW,1,1)) ,bus(x(SWCA,1,1)), bus(x(LWCA,1,1)), &
                          bus(x(VCA,1,1)), bus(x(TCA,1,1)), bus(x(QCA,1,1)) , PWIND_TOP,  & 
-                         PUREF_VEG,PTREF_VEG,  ZRSURF_FOREST, PWIND_DRIFT, N) 
+                         PUREF_VEG,PTREF_VEG,  ZRSURF_FOREST, PWIND_DRIFT_FOREST, N) 
          ELSE   ! SVS1 method    
              DO I=1,N
                 IF (CANO_REF_FORCING .EQ. 'ABV') THEN ! For SVS1 with above, there is ZSURF_FOREST = 0
@@ -507,7 +511,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                 bus(x(QCA,I,1))  = HU(I)  ! Air specific humidity in the canopy
                 bus(x(VCA,I,1))  = VMOD(I) ! Wind speed in the canopy
                 PWIND_TOP(I) = VMOD(I)
-                PWIND_DRIFT(I) = VMOD(I)
+                PWIND_DRIFT_FOREST(I) = VMOD(I)
                 ! Prepare radiation for snow under high veg --> Impact of vegetation on incoming SW and LW 
                 bus(x(SWCA,I,1))    = zfsolis(I) * bus(x(VEGTRANS,I,1))              ! Incoming SW under VEG
                 bus(x(LWCA,I,1))  = bus(x(SKYVIEW,I,1)) * bus(x(FDSI,I,1)) +    &  ! Incoming LW under veg
@@ -551,7 +555,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                          bus(x(SNODIAMOPT_SVS,1,1)), bus(x(SNOSPHERI_SVS,1,1)),bus(x(SNOHIST_SVS,1,1)),   &
                          DT, bus(x(TPSOIL    ,1,1)) ,  PCT, bus(x(SOILHCAPZ,1,1)), bus(x(SOILCONDZ,1,1)),                 &
                          ps,tt,zfsolis,     &
-                         hu, VMOD, 0., &
+                         hu, VMOD, PWIND_DRIFT_OPEN, &
                          bus(x(FDSI,1,1)),         &
                          RAINRATE_MM, SNOWRATE_MM,    ZRSURF_OPEN,                    &
                          RHOA, bus(x(zusl,1,1)),  bus(x(ztsl,1,1)),             &
@@ -623,7 +627,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                              bus(x(SNODIAMOPTV_SVS,1,1)), bus(x(SNOSPHERIV_SVS,1,1)),bus(x(SNOHISTV_SVS,1,1)),   &
                              DT,PSOIL_TEMP_VGH, PCT, bus(x(SOILHCAPZ,1,1)), bus(x(SOILCONDZ,1,1)),               &
                              ps, bus(x(TCA,1,1)),bus(x(SWCA,1,1)),     &
-                             bus(x(QCA,1,1)), bus(x(VCA,1,1)), PWIND_DRIFT, &
+                             bus(x(QCA,1,1)), bus(x(VCA,1,1)), PWIND_DRIFT_FOREST, &
                              bus(x(LWCA,1,1)),         &
                              RAINRATE_MM_VEG, SNOWRATE_MM_VEG,  ZRSURF_FOREST,                                   &
                              RHOA,  PUREF_VEG,   PTREF_VEG,            &
