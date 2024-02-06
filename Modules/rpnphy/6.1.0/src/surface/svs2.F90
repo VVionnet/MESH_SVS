@@ -305,8 +305,6 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
              PRSURF(I)=0.
              PHVEGAPOL_V(I) = 0. ! Effect of basal vegetation on snowpack properties are not taken into account in high vegetation. 
 
-             PWIND_DRIFT_OPEN(I) = VMOD(I) ! In open terrain, use the wind speed from the forcing when computing snowdrift effect. 
-             
             ! TO BE CHECKED======================
             PCT(I)= 1.E-4
             !PCT(I)= 1./(30000.)
@@ -384,6 +382,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
          i = sl_prelim(tt,hu,uu,vv,ps,zzusl,VMOD,VDIR,TVA,RHOA, &
               min_wind_speed=2.5,min_wind_reduc='linear')
       endif
+
 
 
       if (i /= SL_OK) then
@@ -549,6 +548,11 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
 
 !     Snow over bare/low ground
+
+      ! Compute wind speed for snow drift effect
+      do I=1,N
+            PWIND_DRIFT_OPEN(I) = VMOD(I)
+      enddo
       
       CALL SNOW_SVS2(   bus(x(SNOMA_SVS,1,1)), bus(x(TSNOW_SVS,1,1)), bus(x(WSNOW_SVS,1,1)),    &
                          bus(x(SNODEN_SVS,1,1)),  bus(x(SNOAL,1,1)),bus(x(SNOAGE_SVS,1,1)),    &
