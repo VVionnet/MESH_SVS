@@ -35,7 +35,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 !!!#include <arch_specific.hf>
 !
 !Author
-!          S. Belair (January 1997), M. Abrahamowicz, S.Z. Husain (2012)
+!          S. Belair (January 1997), M. Abrahamowicz, S.Z. Husain (2012) 
 !Revisions
 !
 ! 001      Rewrite ISBA into SVS (multi-budget, multi-layer isba)
@@ -82,11 +82,11 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
 
 
-!
-! LOCAL ARRAYS defined for variables passed to
+!     
+! LOCAL ARRAYS defined for variables passed to 
 ! explicit interface in sl_prelim, sl_sfcmod ... need to pass arrays not address of first
 ! element, so use:
-! bus(x(varname,i,k) :)        instead of
+! bus(x(varname,i,k) :)        instead of 
 ! bus(x(varname,i,k)  )
 ! PASSING BUSES WILL NOT WORK FOR EXPLICIT INTERFACE... DIMENSION of VARIABLES
 ! DEFINED LOCALLY based on size of first variable... which in this case is WHOLE! BUS
@@ -98,7 +98,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    real,pointer,dimension(:) :: vv
    real,pointer,dimension(:) :: z0h
    real,pointer,dimension(:) :: z0m
-   real,pointer,dimension(:) :: z0mland
+   real,pointer,dimension(:) :: z0mland   
    real,pointer,dimension(:) :: zdlat
    real,pointer,dimension(:) :: zfcor
    real,pointer,dimension(:) :: zqdiag
@@ -129,12 +129,12 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
    real,dimension(n) :: alva, cg, cvpa, del_vl, del_vh,  dwaterdt
    real,dimension(n) :: eva, gamva
-   real,dimension(n) :: leff, lesnofrac, lesvnofrac, rainrate_mm, rainrate_mm_veg
+   real,dimension(n) :: leff, lesnofrac, lesvnofrac, rainrate_mm, rainrate_mm_veg 
    real,dimension(n) :: hrsurf, hrsurfgv, leslnofrac, lesvlnofrac
    real,dimension(n) :: rgla, rhoa, snowrate_mm,snowrate_mm_veg, stom_rs, stomra, rpp
    real,dimension(n) :: suncosa, sunother1, sunother2, sunother3
    real,dimension(n) :: sunother4, trad, tva, vdir, vmod, vmod_lmin, wrmax_vl, wrmax_vh, wveglt, wveght
-!
+! 
    real, dimension(n,nl_svs) :: isoilt, wsoilt
    real clumping ! Clumping coefficient to switch from LAI to effective LAI
 !
@@ -149,7 +149,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
    real,dimension(n) :: prg_veg    ! Surface incoming shortwave radiation under high vegetation
    real,dimension(n) :: prat_veg   ! Surface incoming longwave radiation under high vegetation
-   real,dimension(n) ::  pwind_drift ! Aerodynamic surface resistance for snow under canopy (cf. Gouttevin et al. 2013)
+   real,dimension(n) :: pwind_drift_open ! Wind speed for snowdrift routine in open terrain 
+   real,dimension(n) :: pwind_drift_forest ! Wind speed for snowdrift routine in forested terrain 
    real,dimension(n) :: pwind_top  ! Wind speed at canopy top
    real,dimension(n) :: puref_veg  ! Forcing height for wind under high vegetation
    real,dimension(n) :: ptref_veg  ! Forcing height for temperature/humidity under high vegetation
@@ -177,11 +178,11 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 !******************************************************
 !
       real,pointer,dimension(:) :: zfsolis
-!
+!     
       integer yy, mo, dd, hh, mn, sec
       REAL HZ, HZ0, JULIEN
 
-      integer(INT64), parameter :: MU_JDATE_HALFDAY = 43200
+      integer(INT64), parameter :: MU_JDATE_HALFDAY = 43200    
 !
 !     In the offline mode the t-step 0 is (correctly) not performed
       if (atm_external .and. kount == 0) return
@@ -204,7 +205,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       zsnodp   (1:n) => bus( x(snodp,1,indx_sfc) : )
       ztdiag   (1:n) => bus( x(tdiag,1,1)        : )
       ztdiagtyp(1:n) => bus( x(tdiagtyp,1,indx_sfc) : )
-      ztsa     (1:n) => bus( x(tsa,1,1)          : )
+      ztsa     (1:n) => bus( x(tsa,1,1)          : )     
       zudiag   (1:n) => bus( x(udiag,1,1)        : )
       zudiagtyp(1:n) => bus( x(udiagtyp,1,indx_sfc) : )
       zvdiag   (1:n) => bus( x(vdiag,1,1)        : )
@@ -231,7 +232,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
 
 
-!
+!  
 !
       IF (RADSLOPE) THEN
          zFSOLIS(1:n)   => bus( x(fluslop,1,1)      : )
@@ -239,21 +240,21 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
          zFSOLIS(1:n)   => bus( x(flusolis,1,1)     : )
       ENDIF
 
-
+     
       ! CONVERT RAINRATE AND SNOWRATE FROM M/S TO MM/S TO MATCH UNITS OF
       ! OTHER WATER FLUXES (EVAPORATION etc.)
-
+      
       DO I=1,N
           rainrate_mm(i) = bus(x(rainrate,i,1)) * M_TO_MM
           snowrate_mm(i) = bus(x(snowrate,i,1)) * M_TO_MM
       ENDDO
 
 
-      ! Calculate greenwich hour
+      ! Calculate greenwich hour 
       call mu_js2ymdhms(jdateo, yy, mo, dd, hh, mn, sec)
       hz0 = hh + float(mn)/60. + float(sec)/3600.
       hz = amod(hz0+ (float(kount)*dt)/3600., 24.)
-
+      
       !Determine the current julian day
       julien = real(jdate_day_of_year(jdateo + kount*int(dt) + MU_JDATE_HALFDAY))
       !Get local solar angle
@@ -276,29 +277,29 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
       IF(KOUNT.EQ.1) then
 
-         ! ---------------- Initialize variables for ES and Crocus snowpack schemes--------------------
+         ! ---------------- Initialize variables for ES and Crocus snowpack schemes--------------------  
 
          DO I=1,N
             PGFLUXSNOW(I)=0.0
             IF(bus(x(SNOMA_SVS,I,1))>0.) THEN
-                bus(x(SNOAL,I,1))=0.8
+                bus(x(SNOAL,I,1))=0.8                
             ELSE
-                bus(x(SNOAL,I,1))=0.1
+                bus(x(SNOAL,I,1))=0.1                    
             ENDIF
-
+            
             PGFLUXSNOW_V(I)=0.0
             IF(bus(x(SNOMA_SVS,I,1))>0.) THEN
                 bus(x(SNVAL,I,1))=0.8
-
+                
             ELSE
                 bus(x(SNVAL,I,1))=0.1
-            ENDIF
+            ENDIF    
          END DO
       ENDIF
 
 
-! ---------------- For Crocus and ES scheme--------------------
-      DO I=1,N
+! ---------------- For Crocus and ES scheme--------------------     
+      DO I=1,N          
 
              PZENITH(I) =  ACOS(SUNCOSA(I))
              PFOREST(I)=0.
@@ -377,7 +378,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
       if (sl_Lmin_soil > 0.) then
          ! option using minimun Monin?Obukhov Length ( vmod=max(uv,vamin) )
-         ! impose minimum wind = VAMIN
+         ! impose minimum wind = VAMIN 
          i = sl_prelim(tt,hu,uu,vv,ps,zzusl,VMOD,VDIR,TVA,RHOA,min_wind_speed=VAMIN)
       else
          ! option using minimum wind speed vmod=max(uv,2.5)
@@ -389,7 +390,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       if (i /= SL_OK) then
          call physeterror('svs', 'error returned by sl_prelim()')
          return
-      endif
+      endif 
 
 
 
@@ -499,7 +500,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                STOM_RS(I) = bus(x(RST,I,1))
             END DO
          ENDIF
-
+      
       endif
 
 !
@@ -513,9 +514,9 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
             bus(x(QCA,I,1))  = HU(I)  ! Air specific humidity in the canopy
             bus(x(VCA,I,1))  = VMOD(I)
             PWIND_TOP(I) = VMOD(I)
-            PWIND_DRIFT(I) = VMOD(I)
-            bus(x(SWCA,I,1))    = zfsolis(I)
-            bus(x(LWCA,I,1))  = bus(x(FDSI,I,1))
+            PWIND_DRIFT_FOREST(I) = VMOD(I)
+            bus(x(SWCA,I,1))    = zfsolis(I) 
+            bus(x(LWCA,I,1))  = bus(x(FDSI,I,1)) 
          ENDDO
      ELSE
          IF(LCANO_SVS2) THEN
@@ -524,9 +525,9 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                          SUNCOSA, bus(x(VGH_HEIGHT,1,1)),bus(x(VGH_DENS,1,1)),CLUMPING, &
                          BUS(x(Z0MVH  ,1,1)),PZ0, BUS(x(VEGH   ,1,1)), &
                          BUS(x(LAIVH  ,1,1)),bus(x(SKYVIEW,1,1)) ,bus(x(SWCA,1,1)), bus(x(LWCA,1,1)), &
-                         bus(x(VCA,1,1)), bus(x(TCA,1,1)), bus(x(QCA,1,1)) , PWIND_TOP,  &
-                         PUREF_VEG,PTREF_VEG,  ZRSURF_FOREST, PWIND_DRIFT, N)
-         ELSE   ! SVS1 method
+                         bus(x(VCA,1,1)), bus(x(TCA,1,1)), bus(x(QCA,1,1)) , PWIND_TOP,  & 
+                         PUREF_VEG,PTREF_VEG,  ZRSURF_FOREST, PWIND_DRIFT_FOREST, N) 
+         ELSE   ! SVS1 method    
              DO I=1,N
                 IF (CANO_REF_FORCING .EQ. 'ABV') THEN ! For SVS1 with above, there is ZSURF_FOREST = 0
                     PUREF_VEG(I) = bus(x(zusl,I,1)) + bus(x(VGH_HEIGHT,I,1))
@@ -539,8 +540,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                 bus(x(QCA,I,1))  = HU(I)  ! Air specific humidity in the canopy
                 bus(x(VCA,I,1))  = VMOD(I) ! Wind speed in the canopy
                 PWIND_TOP(I) = VMOD(I)
-                PWIND_DRIFT(I) = VMOD(I)
-                ! Prepare radiation for snow under high veg --> Impact of vegetation on incoming SW and LW
+                PWIND_DRIFT_FOREST(I) = VMOD(I)
+                ! Prepare radiation for snow under high veg --> Impact of vegetation on incoming SW and LW 
                 bus(x(SWCA,I,1))    = zfsolis(I) * bus(x(VEGTRANS,I,1))              ! Incoming SW under VEG
                 bus(x(LWCA,I,1))  = bus(x(SKYVIEW,I,1)) * bus(x(FDSI,I,1)) +    &  ! Incoming LW under veg
                      (1. - bus(x(SKYVIEW,I,1))) * EVA(I) * STEFAN * (bus(x(TVEGEH,I,1)))**4.  ! add EVA--nathalie
@@ -578,12 +579,17 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
 !     Snow over bare/low ground
 
+      ! Compute wind speed for snow drift effect
+      do I=1,N
+            PWIND_DRIFT_OPEN(I) = VMOD(I)
+      enddo
+      
       CALL SNOW_SVS2(   bus(x(SNOMA_SVS,1,1)), bus(x(TSNOW_SVS,1,1)), bus(x(WSNOW_SVS,1,1)),    &
                          bus(x(SNODEN_SVS,1,1)),  bus(x(SNOAL,1,1)),bus(x(SNOAGE_SVS,1,1)),    &
                          bus(x(SNODIAMOPT_SVS,1,1)), bus(x(SNOSPHERI_SVS,1,1)),bus(x(SNOHIST_SVS,1,1)),   &
                          DT, bus(x(TPSOIL    ,1,1)) ,  PCT, bus(x(SOILHCAPZ,1,1)), bus(x(SOILCONDZ,1,1)),                 &
                          ps,tt,zfsolis,     &
-                         hu, VMOD, VMOD, &
+                         hu, VMOD, PWIND_DRIFT_OPEN, &
                          bus(x(FDSI,1,1)),         &
                          RAINRATE_MM, SNOWRATE_MM,    ZRSURF_OPEN,                    &
                          RHOA, bus(x(zusl,1,1)),  bus(x(ztsl,1,1)),             &
@@ -599,17 +605,17 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
 
 
-! Define temperature use as a lower boundary condition for the snowpack below high vegetation
+! Define temperature use as a lower boundary condition for the snowpack below high vegetation  
       DO I=1,N
           DO J=1,NL_SVS
              PSOIL_TEMP_VGH(I,J) = bus(x(TPSOIL,I,J))
           ENDDO
       ENDDO
 
-!
+!  
 !     Snow under high veg  as in SVS1
 !     WARNING VV : just for technical tests at the moment
-!     Snow-vegetation interactions need to be fully rewritten in SVS-2
+!     Snow-vegetation interactions need to be fully rewritten in SVS-2 
 !     NOTE NL: changes in the 2 of the roughness length used PZ0NAT and PZ0HNAT
 !     which are used in the energy balance and should be the canopy roughness length
 !     PZ0EFF stays the snow roughness length that is needed for SNOWDRIFT and SNOWFALL_UPGRID
@@ -632,7 +638,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                              bus(x(SNODIAMOPTV_SVS,1,1)), bus(x(SNOSPHERIV_SVS,1,1)),bus(x(SNOHISTV_SVS,1,1)),   &
                              DT,PSOIL_TEMP_VGH, PCT, bus(x(SOILHCAPZ,1,1)), bus(x(SOILCONDZ,1,1)),               &
                              ps, bus(x(TCA,1,1)),bus(x(SWCA,1,1)),     &
-                             bus(x(QCA,1,1)), bus(x(VCA,1,1)), PWIND_DRIFT, &
+                             bus(x(QCA,1,1)), bus(x(VCA,1,1)), PWIND_DRIFT_FOREST, &
                              bus(x(LWCA,1,1)),         &
                              RAINRATE_MM_VEG, SNOWRATE_MM_VEG,  ZRSURF_FOREST,                                   &
                              RHOA,  PUREF_VEG,   PTREF_VEG,            &
@@ -643,7 +649,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                              LESVNOFRAC, LESVLNOFRAC, bus(x(ESV,1,1)),PZENITH, &
                              bus(x (DLAT,1,1)), bus(x (DLON,1,1)), PFOREST_V,bus(x(SNOTYPEV_SVS,1,1)), &
                              PHVEGAPOL_V, N, NL_SVS)
-
+ 
 
       if (phy_error_L) return
 
@@ -752,8 +758,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            bus(x(etr_vh  ,1,1)), rainrate_mm         ,&
            bus(x(rsnowsa ,1,1)), bus(x(rsnowsv ,1,1)),&
            bus(x(impervu ,1,1)), bus(x(vegl    ,1,1)),&
-           bus(x(vegh    ,1,1)), bus(x(svs_wta ,1,1)),&
-           bus(x(svs_wtg ,1,1)), bus(x(acroot  ,1,1)),&
+           bus(x(vegh    ,1,1)), bus(x(svs_wta ,1,1)),& 
+           bus(x(svs_wtg ,1,1)), bus(x(acroot  ,1,1)),&  
            wrmax_vl,wrmax_vh,  bus(x(wsat    ,1,1)),&
            bus(x(ksat    ,1,1)), bus(x(psisat  ,1,1)),&
            bus(x(bcoef   ,1,1)), bus(x(fbcof   ,1,1)),&
@@ -771,7 +777,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
       IF( USE_PHOTO ) THEN
 
-         if(vf_type == "CCILCECO") then
+         if(vf_type == "CCILCECO") then            
             CALL PHTSYN_SVS_CCILCECO( BUS(x(LAIVF26,1,1))  , BUS(x(VEGF_EVOL   ,1,1)), &
                         PTVEGE  , ps, &
                         BUS(x(RESAVG ,1,1))  , hu, &
@@ -786,7 +792,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
          else
 
-            ! WARNING:
+            ! WARNING: 
             ! USING VEGF in call below
             ! SHould probably use VEGF_EVOL
             !
@@ -845,8 +851,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       i = sl_sfclayer(zthetaa,hu,vmod,vdir,zzusl,zztsl,ztsa,zqsurf, &
            z0m,z0h,zdlat,zfcor,L_min=sl_Lmin_soil,spdlim=vmod_lmin, &
            hghtm_diag=zu,hghtt_diag=zt,t_diag=ztdiag,q_diag=zqdiag, &
-           u_diag=zudiag,v_diag=zvdiag,tdiaglim=TDIAGLIM_FALSE)
-
+           u_diag=zudiag,v_diag=zvdiag,tdiaglim=TDIAGLIM_FALSE) 
+      
       if (i /= SL_OK) then
          call physeterror('svs', 'error 2 returned by sl_sfclayer()')
          return
