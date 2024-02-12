@@ -1467,6 +1467,9 @@ ierr = 200
 
    else if(svs_mesh%vs%schmsol=='SVS') then
 
+       ! Initialize variable for water balance
+       preacc_tot = 0.     
+
        open(iout_svs1_soil, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs1_soil_hourly.csv', action = 'write')
        write(iout_svs1_soil, FMT_CSV, advance = 'no') 'YEAR', 'JDAY', 'HOUR', 'MINS'
        do j = 1, nl_svs
