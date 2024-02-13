@@ -118,95 +118,97 @@
 
 
       DO I=1,N
-         IF(SNCMA(I)> 0. .OR. SR(I)>0.) THEN  ! Snow is present on the canopy or occurrence of snowfall
+        IF (VEGH(I).GE.EPSILON_SVS) THEN
+            IF(SNCMA(I)> 0. .OR. SR(I)>0.) THEN  ! Snow is present on the canopy or occurrence of snowfall
 
 
-                !!!!!!!!
-                ! Interception Code (Simple version of HP98)
-                !!!!!!!!
+                    !!!!!!!!
+                    ! Interception Code (Simple version of HP98)
+                    !!!!!!!!
 
-                ! Compute Canopy interception, check Pomeroy VGH_DENS position
-                INTCPT(I) = (SCAP(I) - SNCMA(I))*(1. -exp(-VGH_DENS(I) * SR(I)*DT/SCAP(I)))
+                    ! Compute Canopy interception, check Pomeroy VGH_DENS position
+                    INTCPT(I) = (SCAP(I) - SNCMA(I))*(1. -exp(-VGH_DENS(I) * SR(I)*DT/SCAP(I)))
 
-                ! Update intercepted snow mass
-                SNCMA(I) = SNCMA(I) + INTCPT(I)
+                    ! Update intercepted snow mass
+                    SNCMA(I) = SNCMA(I) + INTCPT(I)
 
-                ! Update the amount of snow that falls below high vegetation
-                DIRECT_SNOW(I)  = SR(I)*DT - INTCPT(I)
+                    ! Update the amount of snow that falls below high vegetation
+                    DIRECT_SNOW(I)  = SR(I)*DT - INTCPT(I)
 
-                ! Remove mass of intercepted lost by sublimation
-                ! Sublimation calculated in the previous time step so should be
-                ! applied to snow already on canopy
+                    ! Remove mass of intercepted lost by sublimation
+                    ! Sublimation calculated in the previous time step so should be
+                    ! applied to snow already on canopy
 
-                IF(ESUBSNWC(I)>0) THEN
-                    IF (SNCMA(I)>0) THEN
-                        SNCMA(I) = SNCMA(I) - ESUBSNWC(I)*DT
-                    ENDIF
-                ELSE
-                    IF (TVEG(I) < 273.15) THEN
-                        SNCMA(I) = SNCMA(I) - ESUBSNWC(I)*DT
-                    ENDIF
-                ENDIF
-
-                SNCMA(I) = MAX(0.,SNCMA(I))
-
-                SUBSNWC_CUM(I) = SUBSNWC_CUM(I) +  ESUBSNWC(I)*DT
-
-                !!!!!!!!
-                ! Unloading Code
-                !!!!!!!!
-
-                ! Unloading time constant
-                IF(TVEG(I) >= 273.15) THEN ! Melting conditions
-                    TUNL = TCNM
-                ELSE
-                    TUNL = TCNC
-                ENDIF
-
-                ! Compute unloaded snow mass
-                UNLOAD(I) = SNCMA(I)  * DT / TUNL
-
-                ! Update intercepted snow mass
-                SNCMA(I)  = SNCMA(I) - UNLOAD(I)
-
-                NET_SNOW(I) = DIRECT_SNOW(I) + UNLOAD(I)
-
-
-                !!!!!!!!
-                ! Melting of snow canopy
-                !!!!!!!!
-
-                HM_CAN(I) = HM_CAN_INI(I) + CPI * SNCMA(I)
-
-                IF(TVEG(I)>273.15 .AND. SNCMA(I) > 0) THEN
-
-                    !MELT = CPI * SNCMA(I) * (TVEG(I) - 273.15) / CHLF
-                    !MELT = HM_CAN(I) * (TVEG(I) - 273.15) / CHLF
-                    MELT = 5.56E-6 * DT * (SNCMA(I)/SCAP(I)) * (TVEG(I) - 273.15)
-
-                    IF (MELT  > SNCMA(I)) THEN
-                        MELT = SNCMA(I)
+                    IF(ESUBSNWC(I)>0) THEN
+                        IF (SNCMA(I)>0) THEN
+                            SNCMA(I) = SNCMA(I) - ESUBSNWC(I)*DT
+                        ENDIF
+                    ELSE
+                        IF (TVEG(I) < 273.15) THEN
+                            SNCMA(I) = SNCMA(I) - ESUBSNWC(I)*DT
+                        ENDIF
                     ENDIF
 
-                    DRIP_CPY(I) = MELT
+                    SNCMA(I) = MAX(0.,SNCMA(I))
 
-                    !TVEG(I) = TVEG(I) - CHLF * MELT / HM_CAN(I)
-                    !TVEG(I) = TVEG(I) - CHLF * MELT / (CPI * SNCMA(I))
-                    TVEG(I) = TVEG(I) -   CHLF * MELT / HM_CAN(I)
+                    SUBSNWC_CUM(I) = SUBSNWC_CUM(I) +  ESUBSNWC(I)*DT
 
-                    SNCMA(I) = SNCMA(I) - MELT
+                    !!!!!!!!
+                    ! Unloading Code
+                    !!!!!!!!
 
-                ELSE
-                    DRIP_CPY(I) = 0.    ! Unload considered as solid
-                ENDIF
+                    ! Unloading time constant
+                    IF(TVEG(I) >= 273.15) THEN ! Melting conditions
+                        TUNL = TCNM
+                    ELSE
+                        TUNL = TCNC
+                    ENDIF
+
+                    ! Compute unloaded snow mass
+                    UNLOAD(I) = SNCMA(I)  * DT / TUNL
+
+                    ! Update intercepted snow mass
+                    SNCMA(I)  = SNCMA(I) - UNLOAD(I)
+
+                    NET_SNOW(I) = DIRECT_SNOW(I) + UNLOAD(I)
 
 
-                ! Canopy layer snowcover fractions Boone
-                FCANS(I) = 0.89*(SNCMA(I)/SCAP(I))**0.3/(1.+EXP(-4.7*(SNCMA(I)/SCAP(I)-0.45)))
+                    !!!!!!!!
+                    ! Melting of snow canopy
+                    !!!!!!!!
 
-                ! Update canopy heat mass with new intercepted snow
-                HM_CAN(I) = HM_CAN_INI(I) + CPI * SNCMA(I)
+                    HM_CAN(I) = HM_CAN_INI(I) + CPI * SNCMA(I)
 
+                    IF(TVEG(I)>273.15 .AND. SNCMA(I) > 0) THEN
+
+                        !MELT = CPI * SNCMA(I) * (TVEG(I) - 273.15) / CHLF
+                        !MELT = HM_CAN(I) * (TVEG(I) - 273.15) / CHLF
+                        MELT = 5.56E-6 * DT * (SNCMA(I)/SCAP(I)) * (TVEG(I) - 273.15)
+
+                        IF (MELT  > SNCMA(I)) THEN
+                            MELT = SNCMA(I)
+                        ENDIF
+
+                        DRIP_CPY(I) = MELT
+
+                        !TVEG(I) = TVEG(I) - CHLF * MELT / HM_CAN(I)
+                        !TVEG(I) = TVEG(I) - CHLF * MELT / (CPI * SNCMA(I))
+                        TVEG(I) = TVEG(I) -   CHLF * MELT / HM_CAN(I)
+
+                        SNCMA(I) = SNCMA(I) - MELT
+
+                    ELSE
+                        DRIP_CPY(I) = 0.    ! Unload considered as solid
+                    ENDIF
+
+
+                    ! Canopy layer snowcover fractions Boone
+                    FCANS(I) = 0.89*(SNCMA(I)/SCAP(I))**0.3/(1.+EXP(-4.7*(SNCMA(I)/SCAP(I)-0.45)))
+
+                    ! Update canopy heat mass with new intercepted snow
+                    HM_CAN(I) = HM_CAN_INI(I) + CPI * SNCMA(I)
+
+            ENDIF
          ENDIF
        END DO
 
