@@ -86,6 +86,7 @@ hsnowfall V12     ! Option for the falling snow density for Crocus
 hsnowcond Y81     ! Option for the thermal conductivity scheme for Crocus
 hsnowhold B92     ! Option for the liquid water content scheme for Crocus
 hsnowcomp B92     ! Option for the compaction scheme for Crocus
+hsnowres RIL      ! Option for the turbulent fluxes in Crocus
 
 lout_snow_profile  .true.  ! Create output file containing detailed information on snowpack layering. 
 nprofile_day     4          ! Number of snow profiles per day (can be  1, 2, 4, 6, 12, 24)

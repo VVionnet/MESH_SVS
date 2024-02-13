@@ -43,11 +43,13 @@ module runsvs_mesh
     integer :: iout_snow_profile = 152
     integer :: iout_snow_enbal = 153
     integer :: iout_snow_bulk_vegh = 154
-
+    integer :: iout_svs2_watbal = 155    
 
     !> SVS1 output
     integer :: iout_svs1_soil = 160
     integer :: iout_svs1_snow = 161
+
+    real preacc_tot,wsoil_tot,isoil_tot,snow_tot,veg_tot     
 
     !> SVS variables names for I/O (direct variables).
     character(len = *), parameter, public :: VN_SVS_DEGLAT = 'DEGLAT'
@@ -125,8 +127,9 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_TSNOWV_SVS = 'TSNOWV_ML'
     character(len = *), parameter, public :: VN_SVS_WSNOWV_SVS = 'WSNOWV_ML' 
     character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_PROFILE = 'LOUT_SNOW_PROFILE' ! For svs2 only 
-    character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_ENBAL = 'LOUT_SNOW_ENBAL' ! For svs2 only 
+    character(len = *), parameter, public :: VN_SVS_LOUT_SNOW_ENBAL = 'LOUT_SNOW_ENBAL' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_NPROFILE_DAY = 'NPROFILE_DAY' ! For svs2 only 
+    character(len = *), parameter, public :: VN_SVS_LOUT_SVS2_WATBAL = 'LOUT_SVS2_WATBAL ' ! For svs2 only     
     character(len = *), parameter, public :: VN_SVS_LSOIL_FREEZING_SVS1 = 'LSOIL_FREEZING_SVS1' ! For svs1 only 
     character(len = *), parameter, public :: VN_SVS_LWATER_PONDING_SVS1 = 'LWATER_PONDING_SVS1' ! For svs1 only 
     character(len = *), parameter, public :: VN_SVS_LUNIQUE_PROFILE_SVS2 = 'LUNIQUE_PROFILE_SVS2' ! For svs2 only 
@@ -231,6 +234,7 @@ module runsvs_mesh
         logical :: lout_snow_profile = .false.
         logical :: lout_snow_enbal = .false.
         logical :: lout_snow_vegh = .false.
+        logical :: lout_svs2_watbal = .false.        
         integer :: nprofile_day = 4 !
         logical :: lsoil_freezing_svs1 = .false.
         logical :: lwater_ponding_svs1 = .false.
@@ -1333,6 +1337,9 @@ ierr = 200
 
     if(svs_mesh%vs%schmsol=='SVS2') then
 
+       ! Initialize variable for water mass balance
+       preacc_tot = 0.
+
        open(iout_soil, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs2_soil_hourly.csv', action = 'write')
        write(iout_soil, FMT_CSV, advance = 'no') 'YEAR', 'JDAY', 'HOUR', 'MINS'
        do j = 1, nl_svs
@@ -1412,6 +1419,14 @@ ierr = 200
           endif
           write(iout_snow_profile, *)
        endif
+
+       if(svs_mesh%vs%lout_svs2_watbal) then 
+          open(iout_svs2_watbal, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs2_watbal_hourly.csv', action = 'write')
+          write(iout_svs2_watbal, FMT_CSV, advance = 'no') 'YEAR', 'JDAY', 'HOUR', 'MINS'
+          write(iout_svs2_watbal, FMT_CSV, advance = 'no') 'PCP_AC','EVP_AC', 'LAT_AC', 'DRA_AC', 'ROF_AC','ROF_INS'
+          write(iout_svs2_watbal, FMT_CSV, advance = 'no') 'WSOIL_TOT','ISOIL_TOT','SNOW_TOT','VEG_TOT' 
+          write(iout_svs2_watbal, *)
+       endif       
 
 
    else if(svs_mesh%vs%schmsol=='SVS') then
@@ -1658,6 +1673,21 @@ ierr = 200
 
         if(svs_mesh%vs%schmsol=='SVS2') then
 
+           ! Compute variable for water mass balance
+           preacc_tot = preacc_tot +  1000.*sum(busptr(vd%rainrate%i)%ptr(:, trnch))*ic%dts +  1000.*sum(busptr(vd%snowrate%i)%ptr(:,trnch))*ic%dts 
+           call layer_thickness()
+           wsoil_tot=0.
+           isoil_tot=0.
+           do j = 1, svs_mesh%vs%khyd
+               wsoil_tot = wsoil_tot + 1000.0*busptr(vd%wsoil%i)%ptr(j, trnch)*delz(j) !mm
+               isoil_tot = isoil_tot + 1000.0*busptr(vd%isoil%i)%ptr(j, trnch)*delz(j) !mm
+           end do
+           snow_tot = busptr(vd%snoma%i)%ptr(1, trnch)*(1 - busptr(vd%vegh%i)%ptr(1, trnch)) +  &
+                      busptr(vd%snvma%i)%ptr(1, trnch)*busptr(vd%vegh%i)%ptr(1, trnch)
+
+           veg_tot =  busptr(vd%wveg_vl%i)%ptr(1, trnch)*busptr(vd%vegl%i)%ptr(1, trnch) +  &
+                      busptr(vd%wveg_vh%i)%ptr(1, trnch)*busptr(vd%vegh%i)%ptr(1, trnch)
+
            !if (ic%now%hour /= ic%next%hour) then !last time-step of hour
            if (ic%now%mins ==0) then! Full hour
 
@@ -1749,6 +1779,16 @@ ierr = 200
                 endif
                 write(iout_snow_profile, *)
 
+              end if
+
+              ! Write file containing water balance information
+              if(svs_mesh%vs%lout_svs2_watbal) then 
+                 write(iout_svs2_watbal, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
+                 write(iout_svs2_watbal, FMT_CSV, advance = 'no') preacc_tot,busptr(vd%accevap%i)%ptr(:, trnch)
+                 write(iout_svs2_watbal, FMT_CSV, advance = 'no') busptr(vd%latflaf%i)%ptr(:, trnch),busptr(vd%drainaf%i)%ptr(:,trnch)
+                 write(iout_svs2_watbal, FMT_CSV, advance = 'no') busptr(vd%runofftotaf%i)%ptr(1, trnch),busptr(vd%runofftot%i)%ptr(1, trnch)
+                 write(iout_svs2_watbal, FMT_CSV, advance = 'no') wsoil_tot,isoil_tot,snow_tot,veg_tot
+                 write(iout_svs2_watbal, *)
               end if
 
            end if
