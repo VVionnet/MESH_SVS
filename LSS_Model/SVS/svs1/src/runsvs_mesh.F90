@@ -2017,6 +2017,10 @@ ierr = 200
             vs%tile%tsol(:, i) = busptr(vd%tground%i)%ptr((ni + 1):, trnch)
         end do
 
+        ! Cumulate surface runoff for land surface tile
+         busptr(vd%runofftotaf%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch) =   &
+                           busptr(vd%runofftotaf%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch)   + &
+                           busptr(vd%runofftot%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch)         
 
     end subroutine
 
