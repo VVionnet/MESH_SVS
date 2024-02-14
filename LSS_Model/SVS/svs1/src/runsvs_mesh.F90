@@ -1373,6 +1373,11 @@ ierr = 200
                svs_mesh%vs%tperm = svs_bus(a1(tperm):z1(tperm ))
         end if
 
+        if(svs_mesh%vs%schmsol=='SVS' .and. svs_mesh%vs%lwater_ponding_svs1) then 
+               if (.not. allocated(svs_mesh%vs%watpond)) allocate(svs_mesh%vs%watpond(ni))
+               svs_mesh%vs%watpond = svs_bus(a1(watpond):z1(watpond ))
+        end if
+
         if(svs_mesh%vs%schmsol=='SVS2') then 
             if (.not. allocated(svs_mesh%vs%tpsoil)) allocate(svs_mesh%vs%tpsoil(ni, nl_svs))
             if (.not. allocated(svs_mesh%vs%tpsoilv)) allocate(svs_mesh%vs%tpsoilv(ni, nl_svs))
