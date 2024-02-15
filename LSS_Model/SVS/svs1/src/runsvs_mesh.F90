@@ -1737,7 +1737,7 @@ ierr = 200
                ! Write file containing bulk snow outputs
                  write(iout_snow_bulk_vegh, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
                  write(iout_snow_bulk_vegh, FMT_CSV, advance = 'no') busptr(vd%snvma%i)%ptr(:, trnch),busptr(vd%snvdp%i)%ptr(:, trnch), &
-                        busptr(vd%snvdp%i)%ptr(:, trnch), busptr(vd%snval%i)%ptr(:, trnch),busptr(vd%wsnv%i)%ptr(:, trnch), &                    
+                        busptr(vd%snvden%i)%ptr(:, trnch), busptr(vd%snval%i)%ptr(:, trnch),busptr(vd%wsnv%i)%ptr(:, trnch), &                    
                         busptr(vd%tsnowv_svs%i)%ptr(1:ni, trnch),busptr(vd%rsnowsv_acc%i)%ptr(:, trnch),  & 
                         busptr(vd%rainrate_vgh%i)%ptr(:, trnch),busptr(vd%snowrate_vgh%i)%ptr(:, trnch)
                  if( svs_mesh%vs%lsnow_interception_svs2) then 
@@ -2017,6 +2017,10 @@ ierr = 200
             vs%tile%tsol(:, i) = busptr(vd%tground%i)%ptr((ni + 1):, trnch)
         end do
 
+        ! Cumulate surface runoff for land surface tile
+         busptr(vd%runofftotaf%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch) =   &
+                           busptr(vd%runofftotaf%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch)   + &
+                           busptr(vd%runofftot%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch)         
 
     end subroutine
 

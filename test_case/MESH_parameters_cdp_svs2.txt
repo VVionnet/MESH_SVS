@@ -88,7 +88,8 @@ hsnowhold B92     ! Option for the liquid water content scheme for Crocus
 hsnowcomp B92     ! Option for the compaction scheme for Crocus
 hsnowres RIL      ! Option for the turbulent fluxes in Crocus
 
-lout_snow_profile  .true.  ! Create output file containing detailed information on snowpack layering. 
+lout_snow_profile  .true.  ! Create output file containing detailed information on snowpack layering.
+lout_snow_vegh .true.
 nprofile_day     4          ! Number of snow profiles per day (can be  1, 2, 4, 6, 12, 24)
 lout_snow_enbal  .false.    ! Create output file containing information about the snowpack energy and mass budget
 
