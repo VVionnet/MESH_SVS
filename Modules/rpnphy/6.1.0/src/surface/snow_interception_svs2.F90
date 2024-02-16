@@ -101,7 +101,7 @@
       CHARACTER(LEN=4) :: HDIFU  ! Option to compute the molecular diffusivity of water vapour in air
       CHARACTER(LEN=4) HSUBL_CANO ! Option used for the snow canopy sulimation
 
-      REAL XI2,EXT2, WINDEXT2, UVENT, EVAP, LAMBDA, SSTAR, A1, B1,  LS, J
+      REAL XI2,EXT2, WINDEXT2, EVAP, LAMBDA, SSTAR, A1, B1,  LS, J
       REAL C1, SIGMA, SVDENS, SUB_RATE,SUB_POT, MPM, CE
       REAL NU, NR, MU,DVAP
      
@@ -263,7 +263,7 @@
                    ENDIF
 
                    ! Compute Reynolds Number     [-]
-                   NR  = 2.0 * RADIUS_ICESPH * UVENT / MU
+                   NR  = 2.0 * RADIUS_ICESPH * VSUBL(I) / MU
 
                    ! Compute the Nusselt Number  [-]
                    NU = 1.79 + 0.606 * SQRT(NR)
