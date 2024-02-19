@@ -303,7 +303,6 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
              PFOREST(I)=0.
              PFOREST_V(I)=1.
              PRSURF(I)=0.
-             PHVEGAPOL_V(I) = 0. ! Effect of basal vegetation on snowpack properties are not taken into account in high vegetation. 
 
             ! TO BE CHECKED======================
             PCT(I)= 1.E-4
@@ -625,6 +624,13 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
          ZZ0HNAT(I) = PZ0HNAT(I)
         ENDDO
       ENDIF
+
+
+      !
+      ! The effect of low basal vegetation is also considered for snow in forested environment
+      DO I = 1,N
+          PHVEGAPOL_V(I) = BUS(x(HVEGAPOL  ,I,1))
+      ENDDO
 
       CALL SNOW_SVS2(   bus(x(SNOMAV_SVS,1,1)), bus(x(TSNOWV_SVS,1,1)), bus(x(WSNOWV_SVS,1,1)),    &
                              bus(x(SNODENV_SVS,1,1)), bus(x(SNVAL,1,1)),bus(x(SNOAGEV_SVS,1,1)),    &
