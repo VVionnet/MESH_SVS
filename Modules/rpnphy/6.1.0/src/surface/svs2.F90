@@ -150,7 +150,6 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    real,dimension(n) :: prg_veg    ! Surface incoming shortwave radiation under high vegetation
    real,dimension(n) :: prat_veg   ! Surface incoming longwave radiation under high vegetation
    real,dimension(n) :: pwind_drift_open ! Wind speed for snowdrift routine in open terrain 
-   real,dimension(n) :: pwind_drift_forest ! Wind speed for snowdrift routine in forested terrain 
    real,dimension(n) :: pwind_top  ! Wind speed at canopy top
    real,dimension(n) :: puref_veg  ! Forcing height for wind under high vegetation
    real,dimension(n) :: ptref_veg  ! Forcing height for temperature/humidity under high vegetation
@@ -483,7 +482,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
             bus(x(QCA,I,1))  = HU(I)  ! Air specific humidity in the canopy
             bus(x(VCA,I,1))  = VMOD(I) 
             PWIND_TOP(I) = VMOD(I)
-            PWIND_DRIFT_FOREST(I) = VMOD(I)
+            bus(x(VCA_DRIFT,I,1)) = VMOD(I) ! Wind speed forcing used for the snow drift routine
             bus(x(SWCA,I,1))    = zfsolis(I) 
             bus(x(LWCA,I,1))  = bus(x(FDSI,I,1)) 
          ENDDO
@@ -495,7 +494,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                          BUS(x(Z0MVH  ,1,1)),PZ0, BUS(x(VEGH   ,1,1)), &
                          BUS(x(LAIVH  ,1,1)),bus(x(SKYVIEW,1,1)) ,bus(x(SWCA,1,1)), bus(x(LWCA,1,1)), &
                          bus(x(VCA,1,1)), bus(x(TCA,1,1)), bus(x(QCA,1,1)) , PWIND_TOP,  & 
-                         PUREF_VEG,PTREF_VEG,  ZRSURF_FOREST, PWIND_DRIFT_FOREST, N) 
+                         PUREF_VEG,PTREF_VEG,  ZRSURF_FOREST, bus(x(VCA_DRIFT,1,1)), N) 
          ELSE   ! SVS1 method    
              DO I=1,N
                 IF (CANO_REF_FORCING .EQ. 'ABV') THEN ! For SVS1 with above, there is ZSURF_FOREST = 0
@@ -509,7 +508,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                 bus(x(QCA,I,1))  = HU(I)  ! Air specific humidity in the canopy
                 bus(x(VCA,I,1))  = VMOD(I) ! Wind speed in the canopy
                 PWIND_TOP(I) = VMOD(I)
-                PWIND_DRIFT_FOREST(I) = VMOD(I)
+                bus(x(VCA_DRIFT,I,1)) = VMOD(I) ! Wind speed forcing used for the snow drift routine
                 ! Prepare radiation for snow under high veg --> Impact of vegetation on incoming SW and LW 
                 bus(x(SWCA,I,1))    = zfsolis(I) * bus(x(VEGTRANS,I,1))              ! Incoming SW under VEG
                 bus(x(LWCA,I,1))  = bus(x(SKYVIEW,I,1)) * bus(x(FDSI,I,1)) +    &  ! Incoming LW under veg
@@ -637,7 +636,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                              bus(x(SNODIAMOPTV_SVS,1,1)), bus(x(SNOSPHERIV_SVS,1,1)),bus(x(SNOHISTV_SVS,1,1)),   &
                              DT,PSOIL_TEMP_VGH, PCT, bus(x(SOILHCAPZ,1,1)), bus(x(SOILCONDZ,1,1)),               &
                              ps, bus(x(TCA,1,1)),bus(x(SWCA,1,1)),     &
-                             bus(x(QCA,1,1)), bus(x(VCA,1,1)), PWIND_DRIFT_FOREST, &
+                             bus(x(QCA,1,1)), bus(x(VCA,1,1)), bus(x(VCA_DRIFT,1,1)), &
                              bus(x(LWCA,1,1)),         &
                              RAINRATE_MM_VEG, SNOWRATE_MM_VEG,  ZRSURF_FOREST,                                   &
                              RHOA,  PUREF_VEG,   PTREF_VEG,            &

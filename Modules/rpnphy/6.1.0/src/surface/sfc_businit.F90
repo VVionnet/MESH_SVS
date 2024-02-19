@@ -132,7 +132,7 @@ subroutine sfc_businit(moyhr,ni,nk)
         tpsoilv, tgroundv, &
         tsnow_svs,tsnowv_svs,   &
         tvegel,tvegeh,  &
-        vaf, vca, vegtransa, vgh_height,   &
+        vaf, vca,vca_drift, vegtransa, vgh_height,   &
         vgh_dens, vgh_densen, &
         wveg_vl, wveg_vh,     &       
         wsnow_svs,wsnowv_svs, &
@@ -655,6 +655,7 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR3D1(tvege,        'VN=tvege        ;ON=TVG ;VD=skin and mean vegetation temp.                 ;VS=A*2            ;VB=p1')
       PHYVAR2D1(vaf,          'VN=vaf          ;ON=VAF ;VD=wind inside canopy                                                ;VB=p0')
       PHYVAR2D1(vca,          'VN=vca          ;ON=VCA ;VD=wind inside canopy (FSM2 approach)                                ;VB=p0')
+      PHYVAR2D1(vca_drift,    'VN=vca_drift    ;ON=VCAD;VD=wind inside canopy used for snowdrift                             ;VB=p0')
       PHYVAR3D1(vegdati,      'VN=vegdati      ;ON=SPAR;VD=sparsness of each vegtation class                 ;VS=A*26        ;VB=p0')
       PHYVAR3D1(vegf_evol,    'VN=vegf_evol    ;ON=VFEV;VD=vegetation fraction * vegdat: actual veg. fraction;VS=A*26        ;VB=p0')
       PHYVAR2D1(vegh,         'VN=vegh         ;ON=VEGH;VD=fraction of grid covered by high vegetation                       ;VB=p0')

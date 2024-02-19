@@ -1369,7 +1369,7 @@ ierr = 200
           open(iout_snow_bulk_vegh, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs2_snow_bulk_veg_hourly.csv', action = 'write')
           write(iout_snow_bulk_vegh, FMT_CSV, advance = 'no') 'YEAR', 'JDAY', 'HOUR', 'MINS'
           write(iout_snow_bulk_vegh, FMT_CSV, advance = 'no') 'SNVMA',   &
-          'SNVDP','SNVDEN','SNVALB','WSNV','TSNV_SURF','RSNV_AC','RAINRATE_VGH', 'SNOWRATE_VGH'  
+          'SNVDP','SNVDEN','SNVALB','WSNV','TSNV_SURF','RSNV_AC','RAINRATE_VGH', 'SNOWRATE_VGH','WDRIFT_VGH'  
           if(svs_mesh%vs%lsnow_interception_svs2) then 
               write(iout_snow_bulk_vegh, FMT_CSV, advance = 'no') 'SNCMA', 'LESC','LESCAF'
           endif
@@ -1739,7 +1739,7 @@ ierr = 200
                  write(iout_snow_bulk_vegh, FMT_CSV, advance = 'no') busptr(vd%snvma%i)%ptr(:, trnch),busptr(vd%snvdp%i)%ptr(:, trnch), &
                         busptr(vd%snvden%i)%ptr(:, trnch), busptr(vd%snval%i)%ptr(:, trnch),busptr(vd%wsnv%i)%ptr(:, trnch), &                    
                         busptr(vd%tsnowv_svs%i)%ptr(1:ni, trnch),busptr(vd%rsnowsv_acc%i)%ptr(:, trnch),  & 
-                        busptr(vd%rainrate_vgh%i)%ptr(:, trnch),busptr(vd%snowrate_vgh%i)%ptr(:, trnch)
+                        busptr(vd%rainrate_vgh%i)%ptr(:, trnch),busptr(vd%snowrate_vgh%i)%ptr(:,trnch),busptr(vd%vca_drift%i)%ptr(:, trnch)
                  if( svs_mesh%vs%lsnow_interception_svs2) then 
                       write(iout_snow_bulk_vegh, FMT_CSV, advance = 'no')  busptr(vd%sncma%i)%ptr(:, trnch),busptr(vd%lesc%i)%ptr(:, trnch), busptr(vd%lescaf%i)%ptr(:, trnch)
                  endif
