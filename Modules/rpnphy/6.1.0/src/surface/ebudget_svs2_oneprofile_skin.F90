@@ -991,7 +991,7 @@
         ENDIF
 
 !       Water vapor flux from low vegetation (including fraction)
-        EVLF(I) =  WTA(I,indx_svs2_vh)  * EV_VL(I)/ RHOA(I)
+        EVLF(I) =  WTA(I,indx_svs2_vl)  * EV_VL(I)/ RHOA(I)
 
 !       Latent heat of evaporation from low vegetation (including fraction)
         LEVL(I) = RHOA(I) * CHLC * EVLF(I)
