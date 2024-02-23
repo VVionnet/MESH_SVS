@@ -16,27 +16,27 @@
 
       SUBROUTINE CANOPY_MET_SVS2 (T, HU,VMOD, ISW, ILW, TVEG, ZU,ZT,          &
                                  SUNCOS,VGH_HEIGHT,VGH_DENS, CLUMPING,    &
-                                 Z0MVH,Z0SNOW, VEGH,LAIVH,SKYVIEW, &
+                                 Z0MVH,Z0SNOW, VEGH,LAIVH,SKYVIEW,EMISVH, &
                                  ISW_CAN,ILW_CAN,VMOD_CAN,T_CAN,HU_CAN,   &
-                                 VMOD_TOP, PUREF_VEG, PTREF_VEG,  & 
+                                 VMOD_TOP, PUREF_VEG, PTREF_VEG,  &
                                  PRSURF, PWIND_DRIFT, N )
 
       use tdpack
       use sfclayer_mod,   only : sl_prelim,sl_sfclayer,SL_OK
       use sfc_options, only: cano_ref_forcing
-      USE MODE_THERMOS 
+      USE MODE_THERMOS
       use svs_configs
       implicit none
 
       INTEGER N
 
       REAL T(N), HU(N), VMOD(N)
-      REAL ISW(N), ILW(N),SUNCOS(N) 
+      REAL ISW(N), ILW(N),SUNCOS(N)
       REAL TVEG(N)
       REAL ZU(N), ZT(N),Z0MVH(N)
       REAL SKYVIEW(N), LAIVH(N),VGH_HEIGHT(N),VEGH(N)
       REAL VGH_DENS(N), Z0SNOW(N)
-      REAL ISW_CAN(N), ILW_CAN(N)
+      REAL ISW_CAN(N), ILW_CAN(N), EMISVH(N)
       REAL VMOD_CAN(N),T_CAN(N),HU_CAN(N),PUREF_VEG(N),PTREF_VEG(N),VMOD_TOP(N), PWIND_DRIFT(N)
       REAL PRSURF(N)  ! aerodynamic resistance between surface and canopy
 !
@@ -51,16 +51,24 @@
 !                 - wind speed
 !                 - air temperature and relative humidity
 !
+!Arguments
+!
+!
+!          - Input/Output -
+!
+!          - Input -
+! EMISVH    emissivity of high vegetation
 
-      
+
+
       INTEGER I,J
 
 
       REAL KT ! Sky clearness index
-      REAL DFRAC ! Fraction of diffuse radiation 
+      REAL DFRAC ! Fraction of diffuse radiation
       REAL DIR_SW,SCA_SW ! Incoming direct and diffuse radiation
       REAL TDIF, TDIR ! Canopy transmittivity for direct and diffuse radiation
-      LOGICAL LRAD_SVS ! Use the formulation of SVS for the impact of forest on radiative fluxes 
+      LOGICAL LRAD_SVS ! Use the formulation of SVS for the impact of forest on radiative fluxes
                        ! Else use the FSM approach
 
       REAL VMOD_SUB ! Wind speed below canopy at sub-canopy reference height
@@ -68,39 +76,39 @@
       REAL DH       ! Displacement height
       REAL ZUREF     ! Height of the wind speed forcing above the ground
       !LOGICAL LFORCING_ABOVE ! True if wind forcing height is given above the canopy  (forcing from NWP system or reanalysis)
-                                 ! False is wind forcing height is the absolute height above the ground (mdoel driven by observed forcing) 
+                                 ! False is wind forcing height is the absolute height above the ground (mdoel driven by observed forcing)
       REAL CLUMPING
-      REAL WCAN          ! Canopy wind decay coefficient   
+      REAL WCAN          ! Canopy wind decay coefficient
       REAL USTAR,  &
            Z0H, & ! Canopy roughness length for heat
-           FSURF ! Function used in the calculation of RSURF   
+           FSURF ! Function used in the calculation of RSURF
 
 
 
      ! Parameters used in the radiative code
-      REAL, PARAMETER :: KEXT = 0.5    ! Vegetation light extinction coefficient              
+      REAL, PARAMETER :: KEXT = 0.5    ! Vegetation light extinction coefficient
 
       ! Parameters used in the wind code
       REAL, PARAMETER :: RCHD = 0.67    ! Ratio of displacement height to canopy height
-      REAL, PARAMETER :: HSUBCANO = 1.5 ! Sub canopy reference height for wind, tair and hu  
+      REAL, PARAMETER :: HSUBCANO = 1.5 ! Sub canopy reference height for wind, tair and hu
       REAL, PARAMETER :: ZRALAI = 3.! Parameter for excess resistance introduced by canopy between surface and ref level (cf Table 1, Gouttevin et al. 2015)
       REAL, PARAMETER :: ZBETA = 0.9 ! Constant used in the canopy wind decay coefficient WCAN ( Marke et al., 2016; Liston and Elder, 2006)
 
      !
-     ! 0. Initialize parameters 
+     ! 0. Initialize parameters
      !
 
 
       DO I=1,N
-         
+
         PRSURF(I) = 0.
 
         IF(VEGH(I)>EPSILON_SVS) THEN   ! High vegetation present in the grid cell
 
 
 
-           ! Displacement height 
-           DH = VGH_HEIGHT(I)*RCHD 
+           ! Displacement height
+           DH = VGH_HEIGHT(I)*RCHD
 
            ZUREF =  VGH_HEIGHT(I) + ZU(I)
 
@@ -108,12 +116,12 @@
            T_CAN(I) = T(I)
            HU_CAN(I) = HU(I)
 
-           IF (CANO_REF_FORCING == 'ABV') THEN 
+           IF (CANO_REF_FORCING == 'ABV') THEN
 
               !
               !  xxxx. All forcings are above the canopy and using the surface resistance in the computation of the turbulent fluxes
-              !  
-              ! 
+              !
+              !
                PUREF_VEG(I) =  ZUREF
                PTREF_VEG(I) = ZT(I) + VGH_HEIGHT(I)
 
@@ -132,7 +140,7 @@
                ! Calculation of the wind speed for snow drift under the canopy
                ! Wind speed for snow drift calculation under the canopy at PUREF_VEG
 
-               ! Wind speed at canopy top, assuming logarithmic profile above canopy, dense canopy 
+               ! Wind speed at canopy top, assuming logarithmic profile above canopy, dense canopy
                VMOD_TOP(I) = VMOD(I) * LOG((VGH_HEIGHT(I)-DH)/Z0MVH(I))/LOG((ZUREF-DH)/Z0MVH(I))
 
                ! Wind speed at canopy base height, dense canopy, assuming exp profile between canopy top and canopy base height
@@ -149,14 +157,14 @@
 
                !
                !  xxxx. Compute impact of forest on wind speed
-               !  
-               !  
+               !
+               !
 
                PUREF_VEG(I) =  HSUBCANO
-               PTREF_VEG(I) = ZT(I) 
+               PTREF_VEG(I) = ZT(I)
 
 
-               ! Wind speed at canopy top, assuming logarithmic profile above canopy, dense canopy 
+               ! Wind speed at canopy top, assuming logarithmic profile above canopy, dense canopy
                VMOD_TOP(I) = VMOD(I) * LOG((VGH_HEIGHT(I)-DH)/Z0MVH(I))/LOG((ZUREF-DH)/Z0MVH(I))
 
 
@@ -169,8 +177,8 @@
                PWIND_DRIFT(I) = VMOD_CAN(I)
 
            ELSE  ! Forcing already in forest below canopy
-               PUREF_VEG(I) =  ZU(I)   
-               PTREF_VEG(I) =  ZT(I)    
+               PUREF_VEG(I) =  ZU(I)
+               PTREF_VEG(I) =  ZT(I)
                VMOD_CAN(I) = VMOD(I)
                VMOD_TOP(I) = VMOD(I) ! In that case, should not be used as interception should be off
                T_CAN(I) = T(I)
@@ -178,29 +186,30 @@
 
            ENDIF
 
-         ELSE  
-             ! No high vegetation present 
-             PUREF_VEG(I) =  ZU(I)   
-             PTREF_VEG(I) =  ZT(I)    
+         ELSE
+             ! No high vegetation present
+             PUREF_VEG(I) =  ZU(I)
+             PTREF_VEG(I) =  ZT(I)
              VMOD_CAN(I) = VMOD(I)
              VMOD_TOP(I) = VMOD(I)
              T_CAN(I) = T(I)
              HU_CAN(I) = HU(I)
 
-         ENDIF    
+         ENDIF
 
       ENDDO
 
+      ! Radiation under canopy
       DO I=1,N
         IF(VEGH(I)>EPSILON_SVS) THEN   ! High vegetation present in the grid cell
 
           IF (CANO_REF_FORCING == 'FOR') THEN  ! Forcing already in forest below canopy
-               ILW_CAN(I) = ILW(I) 
+               ILW_CAN(I) = ILW(I)
                ISW_CAN(I) = ISW(I)
           ELSE ! 'O2F' or 'ABV', radiation should be determined under canopy
 
               !
-              !  xxxx. Compute impact of forest on incoming radiative fluxes 
+              !  xxxx. Compute impact of forest on incoming radiative fluxes
               !
 
 
@@ -214,11 +223,11 @@
                   KT = 0.
               ENDIF
 
-              ! Compute fraction of diffuse radiation 
+              ! Compute fraction of diffuse radiation
               IF(KT>0.8) THEN
                    DFRAC  = 0.165
               ELSE IF(KT>0.22) THEN
-                   DFRAC = 0.95 - 0.16*KT + 4.39*KT**2. - 16.64*KT**3. +12.34*KT**4. 
+                   DFRAC = 0.95 - 0.16*KT + 4.39*KT**2. - 16.64*KT**3. +12.34*KT**4.
               ELSE
                     DFRAC = 1 - 0.09*KT
               ENDIF
@@ -227,12 +236,12 @@
               SCA_SW = DFRAC*ISW(I)  ! Diffuse incoming SW
               DIR_SW = (1.-DFRAC)*ISW(I) ! Direct incoming SW
 
-              ! Compute transmissivity of diffuse radiation 
+              ! Compute transmissivity of diffuse radiation
               ! Need to double check if VEGDENS should be employed here
-              ! to derive an effective LAI. 
+              ! to derive an effective LAI.
               TDIF = SKYVIEW(I)
 
-              ! Compute transmissivity of direct radiation 
+              ! Compute transmissivity of direct radiation
               IF(SUNCOS(I)>0) THEN
                  TDIR = EXP(-KEXT*VGH_DENS(I)*LAIVH(I)*CLUMPING/SUNCOS(I))
               ELSE
@@ -242,10 +251,10 @@
               ! Subcanopy total shortwave radiation
               ISW_CAN(I) = TDIF * SCA_SW + TDIR *DIR_SW
 
-              IF (CANO_REF_FORCING == 'ABV') THEN 
+              IF (CANO_REF_FORCING == 'ABV') THEN
                   ! Subcanopy longwave radiation with skin canopy temperature
-                  ILW_CAN(I) = TDIF * ILW(I) + (1.-TDIF)*STEFAN *TVEG(I)**4
-              ELSE IF (CANO_REF_FORCING == 'O2F') THEN 
+                  ILW_CAN(I) = TDIF * ILW(I) + (1.-TDIF)*STEFAN *EMISVH(I)*TVEG(I)**4
+              ELSE IF (CANO_REF_FORCING == 'O2F') THEN
                   ! Subcanopy longwave radiation with canopy temperature
                   ! taken as forcing air temperature as a proxy
                   ILW_CAN(I) = TDIF * ILW(I) + (1.-TDIF)*STEFAN *T_CAN(I)**4
