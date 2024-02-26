@@ -1,16 +1,16 @@
 !-------------------------------------- LICENCE BEGIN ------------------------------------
-!Environment Canada - Atmospheric Science and Technology License/Disclaimer, 
+!Environment Canada - Atmospheric Science and Technology License/Disclaimer,
 !                     version 3; Last Modified: May 7, 2008.
-!This is free but copyrighted software; you can use/redistribute/modify it under the terms 
-!of the Environment Canada - Atmospheric Science and Technology License/Disclaimer 
-!version 3 or (at your option) any later version that should be found at: 
-!http://collaboration.cmc.ec.gc.ca/science/rpn.comm/license.html 
+!This is free but copyrighted software; you can use/redistribute/modify it under the terms
+!of the Environment Canada - Atmospheric Science and Technology License/Disclaimer
+!version 3 or (at your option) any later version that should be found at:
+!http://collaboration.cmc.ec.gc.ca/science/rpn.comm/license.html
 !
-!This software is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
-!without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+!This software is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+!without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 !See the above mentioned License/Disclaimer for more details.
-!You should have received a copy of the License/Disclaimer along with this software; 
-!if not, you can write to: EC-RPN COMM Group, 2121 TransCanada, suite 500, Dorval (Quebec), 
+!You should have received a copy of the License/Disclaimer along with this software;
+!if not, you can write to: EC-RPN COMM Group, 2121 TransCanada, suite 500, Dorval (Quebec),
 !CANADA, H9P 1J3; or send e-mail to service.rpn@ec.gc.ca
 !-------------------------------------- LICENCE END --------------------------------------
 SUBROUTINE HYDRO_SVS2 ( DT, &
@@ -23,15 +23,15 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
   !
   use sfc_options
   use svs_configs
-  use svs2_tile_configs  
+  use svs2_tile_configs
 
   implicit none
 !!!#include <arch_specific.hf>
 
-  !     
-  INTEGER N,K 
+  !
+  INTEGER N,K
   ! CONSTANTS for horizontal decay of GRKSAT
-  ! 
+  !
   REAL, PARAMETER :: GRKSAT_C1=10.0
   REAL, PARAMETER :: GRKSAT_C2=5.0
 
@@ -41,13 +41,13 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
   INTEGER KFICE ! Option for the correction factor for hydraulic conductivity
   !    0: Correction factor taken from Zhang and Gray (1997). Same as CLASS 3.6
   !    1: Impedance factor taken from SURFEX (Boone et al., 2000)
-  !    3: No modification of hydraulic conductivity in presence of ice 
+  !    3: No modification of hydraulic conductivity in presence of ice
 
   INTEGER WAT_REDIS ! Option for the redistribution of water in case of over-saturation after the soil_fluxes solver
   !    0: Default param:
-  !    1: New param:  - in case of vertical redistribution, liquid water that flows to the next layer is limited by 
+  !    1: New param:  - in case of vertical redistribution, liquid water that flows to the next layer is limited by
   !                       the effective porosity. Any water in excess is added to the lateral flow
-  !                   - harmonic mean of the hydraulic conductivity  
+  !                   - harmonic mean of the hydraulic conductivity
 
   ! input
   real, dimension(n)        :: eg, egv, er_vl, etr_vl, er_vh, etr_vh, rr, impervu
@@ -55,7 +55,7 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
   real, dimension(n,svs2_tilesp1) :: wta, wtg
   real, dimension(n,nl_svs) :: bcoef, fbcof, acroot, ksat
   real, dimension(n,nl_svs) :: psisat, wfcint, wsat
-  real, dimension(n)        :: grkef, rsnow, rsnowv, wrmax_vl, wrmax_vh, snm, svm 
+  real, dimension(n)        :: grkef, rsnow, rsnowv, wrmax_vl, wrmax_vh, snm, svm
   ! prognostic vars (I/0)
   real, dimension(n)        :: wr_vl, wr_vh, wr_vlt, wr_vht
   real, dimension(n,nl_svs) :: wd , wdt, wf, wft
@@ -65,18 +65,18 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
   real, dimension(n)        :: wfcdp
   real, dimension(n,nl_svs+1):: f
   real, dimension(n,nl_svs) :: latflw
-  real, dimension(n)        :: runoff 
+  real, dimension(n)        :: runoff
   real, dimension(n),optional :: watpnd, maxpnd
 
   !
   !Author
-  !          N.Alavi, S.Zhang, E. Gaborit, V. Fortin, S. Belair, V. Vionnet et al.  (June 2015) 
+  !          N.Alavi, S.Zhang, E. Gaborit, V. Fortin, S. Belair, V. Vionnet et al.  (June 2015)
   !Revisions
   !
-  ! 001  
+  ! 001
   !Object
   !     Calculates the evolution of the soil water contents
-  !     liquid water retained in the vegetation canopy (Wr).  
+  !     liquid water retained in the vegetation canopy (Wr).
   !     Also determine the runoff, lateral flow and drainage
   !     using interflow parametrization for sloping train
   !     (based on Soulis et al. 2000 and 2011)
@@ -201,22 +201,22 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
   ! Option for soil freezing
   !    0: Correction factor taken from Zhang and Gray (1997). Same as CLASS 3.6
   !    1: Impedance factor taken from SURFEX (Boone et al., 2000)
-  !    3: No modification of hydraulic conductivity in presence of ice 
+  !    3: No modification of hydraulic conductivity in presence of ice
   KFICE = 0
 
   !
   ! Option for the redistribution of water in case of over-saturation after the soil_fluxes solver
   !    0: Default param:
-  !    1: New param:  - in case of vertical redistribution, liquid water that flows to the next layer is limited by 
+  !    1: New param:  - in case of vertical redistribution, liquid water that flows to the next layer is limited by
   !                       the effective porosity. Any water in excess is added to the lateral flow
-  !                   - harmonic mean of the hydraulic conductivity  
+  !                   - harmonic mean of the hydraulic conductivity
   WAT_REDIS = 1
 
   !
   !
   !-------------------------------------
   !   1.        EVOLUTION OF THE EQUVALENT WATER CONTENT WR_VL and WR_VH
-  !           
+  !
   !                                  Remove evaporation from canopy reservoir
   !                                  Then add precipitation. Careful: rain falls
   !                                  on canopy only if there is no snow under the
@@ -243,7 +243,7 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
         WR_VHT(I) = MAX(0., WR_VH(I) - DT * (ER_VH(I) -  RR(I)))
         !                                  Compute canopy drip
         !                                  if Wr > Wrmax, there is runoff
-        RVEG_VH(I) = MAX(0., (WR_VHT(I) - WRMAX_VH(I)) / DT ) 
+        RVEG_VH(I) = MAX(0., (WR_VHT(I) - WRMAX_VH(I)) / DT )
         !
         !                                  Wr must be smaller than Wrmax
         !                                  after runoff is removed
@@ -274,7 +274,7 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
         WR_VLT(I) = MAX(0., WR_VL(I) - DT * (ER_VL(I) -  RR(I)))
         !                                  Compute canopy drip
         !                                  if Wr > Wrmax, there is runoff
-        RVEG_VL(I) = MAX(0., (WR_VLT(I) - WRMAX_VL(I)) / DT ) 
+        RVEG_VL(I) = MAX(0., (WR_VLT(I) - WRMAX_VL(I)) / DT )
         !
         !                                  Wr must be smaller than Wrmax
         !                                  after runoff is removed
@@ -289,7 +289,7 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
   END DO
 
   !
-  !        2.     CALCULATE PRECIPITATIO and VEGETATION+SNOW RUNOFF REACHING THE GROUND 
+  !        2.     CALCULATE PRECIPITATIO and VEGETATION+SNOW RUNOFF REACHING THE GROUND
   !               ------------------------------------------
 
   !
@@ -299,49 +299,51 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
   !
   DO I=1,N
       IF( (WTG(I,indx_svs2_vh)+ WTG(I,indx_svs2_vl)) .ge.EPSILON_SVS) THEN
-         ! have vegetation -- have vegetation runoff 
+         ! have vegetation -- have vegetation runoff
+         PG(I) = (1.-WTG(I,indx_svs2_vh)) * RSNOW(I) + WTG(I,indx_svs2_vh) * RSNOWV(I)
 
          IF( SNM(I).GE.CRITSNOWMASS .AND. SVM(I).GE. CRITSNOWMASS ) THEN
             !both snow packs exists, rain falls directly to snow, consider runoff from vegetation also.
-            PG(I) = WTG(I,indx_svs2_sn) * RSNOW(I) + WTG(I,indx_svs2_sv) * RSNOWV(I) &
+            PG(I) = PG(I) +  &
                  + WTG(I,indx_svs2_vl)*RVEG_VL(I) + WTG(I,indx_svs2_vh) * RVEG_VH(I)
 
 
          ELSE IF ( SNM(I).GE.CRITSNOWMASS .AND. SVM(I).LT.CRITSNOWMASS ) THEN
             ! only low vegetation snow pack present, rain for low vegetation portion
             ! falls through to snow. No rain reaches bare ground because snowpack on low veg. and bare ground exists
-            PG(I) = WTG(I,indx_svs2_sn) * RSNOW(I) &
+            PG(I) = PG(I) +  &
                  + WTG(I,indx_svs2_vl) *RVEG_VL(I) + WTG(I,indx_svs2_vh) * RVEG_VH(I)
 
 
          ELSE IF ( SNM(I).LT.CRITSNOWMASS .AND. SVM(I).GE.CRITSNOWMASS ) THEN
             !only high vegetation snow pack present, rain for high vegetation portion
             ! falls through to snow. No snow on low veg. and bare ground, so rain can reach bare ground directly
-            PG(I) = WTG(I,indx_svs2_sv) * RSNOWV(I) &
+            PG(I) = PG(I) +  &
                + WTG(I,indx_svs2_vl) *RVEG_VL(I) + WTG(I,indx_svs2_vh)* RVEG_VH(I) &
                + WTG(I,indx_svs2_bg) * RR(I)
-         ELSE 
+         ELSE
             ! no snow present, rain can reach bare ground directly
-            PG(I) = WTG(I,indx_svs2_vl)*RVEG_VL(I) + WTG(I,indx_svs2_vh) * RVEG_VH(I) &
-                 +  WTG(I,indx_svs2_bg)  * RR(I)           
+            PG(I) = PG(I) +  &
+                 + WTG(I,indx_svs2_vl)*RVEG_VL(I) + WTG(I,indx_svs2_vh) * RVEG_VH(I) &
+                 +  WTG(I,indx_svs2_bg)  * RR(I)
          ENDIF
 
       ELSE
          ! bare ground only
-         IF ( SNM(I).GE.CRITSNOWMASS) THEN
-            ! have snow on bare ground, only consider snow runoff
-            PG(I) = RSNOW(I)
-         ELSE
+
+         ! have snow on bare ground, only consider snow runoff
+         PG(I) = RSNOW(I)
+         IF ( SNM(I).LT.CRITSNOWMASS) THEN
             ! have 100% bare ground and now snow, all rain reaches surface
-            PG(I) = RR(I)
+            PG(I) = PG(I) + RR(I)
          ENDIF
-      ENDIF    
+      ENDIF
 
   ENDDO
 
   !
   !
-  !        3.     CALCULATE THE REQUIRED PARAMETERS FOR NEW HYDRLOGY ROUTINE 
+  !        3.     CALCULATE THE REQUIRED PARAMETERS FOR NEW HYDRLOGY ROUTINE
   !               ------------------------------------------
 
   DO I=1,N
@@ -352,13 +354,13 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
         !Adjust ksat and wsat for presence of ice
         IF(KFICE==0) THEN
             FICE = (1.0-MAX(0.0,MIN((WSAT(I,K)-CRITWATER)/WSAT(I,K),WF(I,K)/WSAT(I,K))))**2.
-        ELSE IF (KFICE ==1) THEN    
+        ELSE IF (KFICE ==1) THEN
             FICE =  EXP(LOG(10.0)*(-6*WF(I,K)/(WF(I,K)+WD(I,K))))
-        ELSE IF (KFICE ==3) THEN    
-            FICE = 1.   
+        ELSE IF (KFICE ==3) THEN
+            FICE = 1.
         ELSE
-            FICE = 1.   
-        ENDIF 
+            FICE = 1.
+        ENDIF
         KSATC(I,K) = KSAT(I,K)*FICE
         WSATC(I,K)= MAX((WSAT(I,K)-WF(I,K)-0.00001), CRITWATER)
 
@@ -384,7 +386,7 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
 
   DO I=1,N
      !use ksat to calculate runoff (mm/s)
-     RUNOFF(I) = MAX( (SATSFC(I)*PG(I)+(1-SATSFC(I))*MAX(PG(I)-KSATC(I,1)*1000.,0.0)) , 0.0 )   
+     RUNOFF(I) = MAX( (SATSFC(I)*PG(I)+(1-SATSFC(I))*MAX(PG(I)-KSATC(I,1)*1000.,0.0)) , 0.0 )
 
 ! EG_code related to ponding of water
      IF (lwater_ponding_svs1) THEN
@@ -393,9 +395,9 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
      ELSE
         abstract(I) = 0.0
      END IF
-          
+
      ! assuming that 33% of urban cover is totally impervious (RUNOFF = PG over impervious surface)
-     RUNOFF(I) = RUNOFF(I) * (1. - IMPERVU(I) ) + PG(I) * IMPERVU(I)        
+     RUNOFF(I) = RUNOFF(I) * (1. - IMPERVU(I) ) + PG(I) * IMPERVU(I)
      ! remove runoff from the ampount of water reaching the ground
      PG(I) = PG(I) - RUNOFF(I) - ( (1. - IMPERVU(I)) * abstract(I)/DT )           ! (mm/s)
      RUNOFF(I) = RUNOFF(I)*DT
@@ -404,7 +406,7 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
         ! update amount of ponding water
         watpnd(I) = watpnd(I) + (1. - IMPERVU(I) ) * abstract(I) / 1000.0
 
-     ENDIF 
+     ENDIF
 
   END DO
 
@@ -426,10 +428,10 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
 
   DO I=1,N
 
-     IF(WD(I,NL_SVS).GT.WFCDP(I)) THEN  
+     IF(WD(I,NL_SVS).GT.WFCDP(I)) THEN
         !baseflow only happens when soil water contant of last layer exceeds field capacity
         F(I,NL_SVS+1)=BASFLW(I)
-     ELSE 
+     ELSE
         F(I,NL_SVS+1)=0.0
      END IF
 
@@ -450,19 +452,19 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
      END DO
   END DO
   !
-  !Compute water fluxes between soil layers based on Richard's equation 
+  !Compute water fluxes between soil layers based on Richard's equation
 
-  ! Boundary condition at the top is net precipitation      
+  ! Boundary condition at the top is net precipitation
   DO I=1,N
-     F(I,1)=(PG(I) - WTG(I,indx_svs2_bg) * EG(I)   & 
+     F(I,1)=(PG(I) - WTG(I,indx_svs2_bg) * EG(I)   &
                    - WTG(I,indx_svs2_gv) * EGV(I) )*DT/1000.
   END DO
 
-  !Compute water fluxes between soil layers, find K AND PSI at the boundaries     
-  ! do it for all layers except NL_SVS (water flux is computed above from watdrain).       
+  !Compute water fluxes between soil layers, find K AND PSI at the boundaries
+  ! do it for all layers except NL_SVS (water flux is computed above from watdrain).
 
   IF (hydro_svs_method.EQ.0) THEN
-     ! First-order forward method       
+     ! First-order forward method
      CALL SOIL_FLUXES( DT, &
           WSATC, KSATC, PSISAT, BCOEF, ETR_GRID, WD, &
           F, WDT, DWD_RK1, OVER_RK1, KHC, PSI, N)
@@ -485,7 +487,7 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
      ! k1=f(y*(t0),t0)
      CALL SOIL_FLUXES( DT/2., &
           WSATC, KSATC, PSISAT, BCOEF, ETR_GRID, WD, &
-          F_RK, WD_RK, DWD_RK1, OVER_RK1, KHC, PSI, N)      
+          F_RK, WD_RK, DWD_RK1, OVER_RK1, KHC, PSI, N)
      ! k2=(f(y*(t0)+k1*h/2,t0+h/2)
      CALL SOIL_FLUXES( DT/2., &
           WSATC, KSATC, PSISAT, BCOEF, ETR_GRID, WD_RK, &
@@ -520,7 +522,7 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
 
   ! Check if the calculated WDT is between critical water (0.01) and wsat
   !if WDT is less than CRITWATER get water from the next layer
-  !if WD is more than saturation, add eccess water to lateral flow or baseflow (F) 
+  !if WD is more than saturation, add eccess water to lateral flow or baseflow (F)
   !update water flow (f) of each layer based on the new soil moisture
 
   DO I=1,N
@@ -538,23 +540,23 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
            IF (K.NE.KHYD) THEN
 
               IF(WAT_REDIS==1) THEN
-                    IF(K.NE.NL_SVS) THEN 
+                    IF(K.NE.NL_SVS) THEN
                          KSATMEAN(I,K)=KSATC(I,K)*KSATC(I,K+1)*(DELZ(K)+&
                           DELZ(K+1))/(KSATC(I,K)*DELZ(K+1)+KSATC(I,K+1)*DELZ(K))
                     ELSE
                       KSATMEAN(I,K) = KSATC(I,K)
                     ENDIF
-              ELSE 
+              ELSE
                       KSATMEAN(I,K) = KSATC(I,K)
-              ENDIF    
+              ENDIF
 	      ! excess water removal via a combination of a downward and a lateral flux
               ! fraction of excess water going into layer below
               !VV W = KSATC(I,K)/(KSATC(I,K)+GRKEFL(I,K)*DELZ(K))
               W = KSATMEAN(I,K)/(KSATMEAN(I,K)+GRKEFL(I,K)*DELZ(K))
 
               IF(WAT_REDIS==1) THEN
-                  ! Downward liquid water flux is limited to avoid the saturation of the layer below  
-                  IF(K.NE.NL_SVS) THEN   
+                  ! Downward liquid water flux is limited to avoid the saturation of the layer below
+                  IF(K.NE.NL_SVS) THEN
                      WAT_DOWN = MIN(W*(WDT(I,K)-WSATC(I,K))*DELZ(K),  &
                                    MAX(0.,(WSATC(I,K+1)-WDT(I,K+1))*DELZ(K+1)) )
                   ELSE
@@ -577,25 +579,25 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
               ! excess water removal via lateral flow
               LATFLW(I,K)=(WDT(I,K)-WSATC(I,K))*DELZ(K)
            END IF
-           WDT(I,K)=WSATC(I,K)         
+           WDT(I,K)=WSATC(I,K)
 
         END IF
-     END DO  
+     END DO
   END DO
 
   !        7.      CALCULATE LATERAL FLOW
   !              -----------------------------------------
-  !calculate parameter needed for WATDRAIN based on new WDT 
+  !calculate parameter needed for WATDRAIN based on new WDT
 
   DO I=1,N
      DO K=1,NL_SVS
-        ASAT0 (I,K) = WDT(I,K) / WSATC(I,K)     
+        ASAT0 (I,K) = WDT(I,K) / WSATC(I,K)
      END DO
   END DO
 
-  !Call WATDRAIN to calculate SUBFLW from each layer 
+  !Call WATDRAIN to calculate SUBFLW from each layer
 
-  DO K=1,NL_SVS   
+  DO K=1,NL_SVS
 
      CALL WATDRN_(DELZVEC(:,K),BCOEF(:,K),WSATC(:,K),GRKSAT(:,K),GRKEFL(:,K), &
           ASATFC(:,K),ASAT0(:,K),ASAT1,SUBFLW,BASFLW,SATSFC,N,1,N,DT)
@@ -623,7 +625,7 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
   DO I=1,N
      !        TODO
      do k=1,nl_svs
-        WFT(I,K) = WF(I,K)   
+        WFT(I,K) = WF(I,K)
      enddo
   END DO
   !
@@ -639,14 +641,14 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
            WDT(I,K) = CRITWATER
            WFT(I,K) = 0.0
         END IF
-        WFT(I,K) = MAX( WFT(I,K), 0.0   ) 
+        WFT(I,K) = MAX( WFT(I,K), 0.0   )
      ENDDO
      !
 
   END DO
   !--------------------------------------------------------
   !--------------------------------------------------
-  ! CALCULATE DIAGNOSTICS, CONVERT UNITS, AND ACCUMULATORS 
+  ! CALCULATE DIAGNOSTICS, CONVERT UNITS, AND ACCUMULATORS
 
   DO I=1,N
 
@@ -657,7 +659,7 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
 
      DO K=1,NL_SVS+1
         ! CONVERT TO MM
-        F(I,K) = F(I,K) * M_TO_MM           
+        F(I,K) = F(I,K) * M_TO_MM
      ENDDO
 
   END DO
