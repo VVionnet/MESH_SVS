@@ -300,7 +300,9 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
 ! ---------------- For Crocus and ES scheme--------------------
       DO I=1,N
-
+             bus(x(RSNOWSA,I,1)) = 0.
+             bus(x(RSNOWSV,I,1)) = 0.
+             
              PZENITH(I) =  ACOS(SUNCOSA(I))
              PFOREST(I)=0.
              PFOREST_V(I)=1.
@@ -308,7 +310,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
              PHVEGAPOL_V(I) = 0. ! Effect of basal vegetation on snowpack properties are not taken into account in high vegetation.
              PFCANS(I) = 0.
              PSCAP(I) = 0.
-	     PRES_SNCA(I) = 0.
+	         PRES_SNCA(I) = 0.
 
             ! TO BE CHECKED======================
             PCT(I)= 1.E-4
@@ -432,8 +434,12 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       ! VV TO BE MODIFIED: Intermediate step during developement.
       !
       DO I=1,N
-          PTVEGE(I)   =  (BUS(x(VEGL,1,1)) *bus(x(TVEGEL,I,1)) + BUS(x(VEGH,1,1)) *bus(x(TVEGEH,I,1)) )/ &
-                                             (BUS(x(VEGL,1,1)) + BUS(x(VEGH,1,1)))
+          IF (BUS(x(VEGL,1,1)) + BUS(x(VEGH,I,1))  .GT. 0) THEN
+              PTVEGE(I)   =  (BUS(x(VEGL,I,1)) *bus(x(TVEGEL,I,1)) + BUS(x(VEGH,I,1)) *bus(x(TVEGEH,I,1)) )/ &
+                                                 (BUS(x(VEGL,1,1)) + BUS(x(VEGH,I,1)))
+          ELSE ! There is no low or high veg, here we are just putting a value in PTVEGE
+              PTVEGE(I)   =  BUS(x(VEGL,I,1))
+          ENDIF
       ENDDO
 !
       CALL VEGI_SVS2 ( zfsolis,   &

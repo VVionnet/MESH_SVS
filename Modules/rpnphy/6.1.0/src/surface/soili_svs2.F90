@@ -542,7 +542,7 @@ include "isbapar.cdk"
   
       else
 
-         DO I = 1, N
+         DO I = 1, N           
 !
 !                      AGGREGATED VEG. EMISSIVITY  (VEGETATION NOT COVERED BY SNOW)
 !
