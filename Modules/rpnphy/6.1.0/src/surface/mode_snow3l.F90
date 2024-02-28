@@ -3160,6 +3160,8 @@ USE MODD_SNOW_PAR, ONLY : XSNOWTHRMCOND1, XSNOWTHRMCOND2, XSNOWTHRMCOND_AVAP, &
                           XSNOWTHRMCOND_J91_4,&
                           XSNOWTHRMCOND_F21_1, XSNOWTHRMCOND_F21_2, XSNOWTHRMCOND_F21_3,&
                           XSNOWTHRMCOND_F21_4,&
+                          KSNOW_TUNDRA_D22, KSNOW_SALIX_D22_1, KSNOW_SALIX_D22_2,&
+                          KSNOW_SALIX_D22_3,&
                           XTHRMCOND_ICE, XTHRMCOND_WATER
 !
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
@@ -3193,7 +3195,10 @@ IF ( HSNOWCOND=='Y81') THEN
     DO JJ = 1,SIZE(PSNOWRHO,1)
       PSCOND(JJ,JST) = XCONDI * EXP( XVRKZ6 * LOG( PSNOWRHO(JJ,JST)/XRHOLW ) )
       ! Snow thermal conductivity is set to be above 0.04 W m-1 K-1
-      PSCOND(JJ,JST) = MAX( 0.04, PSCOND(JJ,JST) )    
+      PSCOND(JJ,JST) = MAX( 0.04, PSCOND(JJ,JST) ) 
+      PSCOND(JJ,JST) = PSCOND(JJ,JST) * KSNOW_TUNDRA_D22   
+    !
+    !
     ENDDO
     !
   ENDDO
