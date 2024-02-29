@@ -3137,7 +3137,7 @@ END SUBROUTINE SNOW3LTRANSF
 !####################################################################
 !####################################################################
 SUBROUTINE SNOWCROTHRM(PSNOWRHO,PSCOND,PSNOWTEMP,PPS,PSNOWLIQ, &
-                       HSNOWCOND)
+                       HSNOWCOND,PSNOW,PHVEGPOL)
 !
 !!    PURPOSE
 !!    -------
@@ -3173,6 +3173,8 @@ IMPLICIT NONE
 REAL, DIMENSION(:), INTENT(IN)      :: PPS
 REAL, DIMENSION(:,:), INTENT(IN)    :: PSNOWTEMP, PSNOWRHO, PSNOWLIQ
 REAL, DIMENSION(:,:), INTENT(OUT)   :: PSCOND
+REAL, DIMENSION(:,:), INTENT(IN)    :: PSNOW
+REAL, DIMENSION(:), INTENT(IN)    :: PHVEGPOL
 !
 CHARACTER(3), INTENT(IN)              :: HSNOWCOND ! conductivity option
 !
@@ -3195,8 +3197,7 @@ IF ( HSNOWCOND=='Y81') THEN
     DO JJ = 1,SIZE(PSNOWRHO,1)
       PSCOND(JJ,JST) = XCONDI * EXP( XVRKZ6 * LOG( PSNOWRHO(JJ,JST)/XRHOLW ) )
       ! Snow thermal conductivity is set to be above 0.04 W m-1 K-1
-      PSCOND(JJ,JST) = MAX( 0.04, PSCOND(JJ,JST) ) 
-      PSCOND(JJ,JST) = PSCOND(JJ,JST) * KSNOW_TUNDRA_D22   
+      PSCOND(JJ,JST) = MAX( 0.04, PSCOND(JJ,JST) )
     !
     !
     ENDDO
@@ -3254,9 +3255,21 @@ ELSEIF(HSNOWCOND == 'S97') THEN
                        XSNOWTHRMCOND_S97_5 * (PSNOWRHO(JJ,JST)/1000) * (PSNOWRHO(JJ,JST)/1000)
     ENDIF
     !  
+  ENDDO
+  !
+ENDDO
     ! In older versions, snow thermal conductivity is annihilated in presence of liquid water.
     ! We decided to remove this incorrect parameterization (May 2016)
      !    
+ELSEIF(HSNOWCOND == 'C11' .OR. HSNOWCOND == 'F21' .OR. HSNOWCOND == 'J91') THEN
+  DO JST = 1,SIZE(PSNOWRHO,2)
+    !
+    DO JJ = 1,SIZE(PSNOWRHO,1)
+    ! Domine et al., 2022: Account for thermal bridging by shrubs
+      IF (PSNOW(JJ,JST) == PHVEGPOL(JJ) .AND. PSNOW(JJ,JST) < PHVEGPOL(JJ)) THEN ! If total snow depth is equal to or less than polar veg height 
+      PSCOND(JJ,JST) = PSCOND(JJ,JST) * KSNOW_TUNDRA_D22 ! Modify KSNOW_TUNDRA_D22 depending on location and multiplier (will implement in code)
+      !
+      ENDIF
     ENDDO
     !
   ENDDO

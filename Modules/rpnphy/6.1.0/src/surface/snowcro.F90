@@ -25,7 +25,7 @@
                       PSPEC_ALB, PDIFF_RATIO,PSPEC_TOT,PSNOWFLUX,PIMPWET,PIMPDRY,&
                       HSNOWFALL, HSNOWCOND,HSNOWHOLD,HSNOWCOMP,HSNOWZREF,       &
                       PSNOWMAK, OSNOWCOMPACT_BOOL, OSNOWMAK_BOOL, OSNOWTILLER,  &
-                      OSELF_PROD, OSNOWMAK_PROP, PHVEGPOL )
+                      OSELF_PROD, OSNOWMAK_PROP, PHVEGPOL, PSNOW)
 
 !     ##########################################################################
 !
@@ -213,7 +213,7 @@ REAL, DIMENSION(:,:), INTENT(IN)       :: P_DIR_SW, P_SCA_SW ! direct and diffus
 !
 REAL, DIMENSION(:,:), INTENT(IN)       :: PIMPWET, PIMPDRY  !Dry and wet deposit coefficient from Forcing File(g/m²/s)
 !
-REAL, DIMENSION(:), INTENT(IN)       :: PHVEGPOL ! Mean polar vegetation height used to reduce snow compaction and snow drift 
+REAL, DIMENSION(:), INTENT(INOUT)       :: PHVEGPOL ! Mean polar vegetation height used to reduce snow compaction and snow drift 
                                                     ! below veg height Only used with options from Royer et al. 2021 
 !
 REAL, DIMENSION(:), INTENT(IN)         :: PTG, PSOILCOND, PD_G, PPSN3L
@@ -255,7 +255,7 @@ REAL, DIMENSION(:), INTENT(OUT)   :: PSNOWALB
 !                                               (does not include anything but
 !                                               the actual snow cover)
 !
-REAL, DIMENSION(:,:), INTENT(INOUT)    :: PSNOWHEAT, PSNOWRHO, PSNOWSWE
+REAL, DIMENSION(:,:), INTENT(INOUT)    :: PSNOWHEAT, PSNOWRHO, PSNOWSWE, PSNOW
 !                                      PSNOWHEAT = Snow layer(s) heat content (J/m2)
 !                                      PSNOWRHO  = Snow layer(s) averaged density (kg/m3)
 !                                      PSNOWSWE  = Snow layer(s) Water Equivalent (SWE:kg m-2)
@@ -1046,7 +1046,7 @@ ENDIF
 !               ---------------------------------------
 ! Snow thermal conductivity:
 !
- CALL SNOWCROTHRM(PSNOWRHO,ZSCOND,ZSNOWTEMP,PPS,PSNOWLIQ,HSNOWCOND)
+ CALL SNOWCROTHRM(PSNOWRHO,ZSCOND,ZSNOWTEMP,PPS,PSNOWLIQ,HSNOWCOND,PSNOW,PHVEGPOL)
 !
 !***************************************DEBUG IN**********************************************
 IF (GCRODEBUGDETAILSPRINT) THEN
