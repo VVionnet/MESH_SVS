@@ -3238,8 +3238,8 @@ ELSEIF(HSNOWCOND == 'F21') THEN
    !
    DO JJ = 1,SIZE(PSNOWRHO,1)
      PSCOND(JJ,JST) = XSNOWTHRMCOND_F21_1 * (PSNOWRHO(JJ,JST)/XRHOLI) * &
-                      (PSNOWRHO(JJ,JST)/XRHOLI) + XSNOWTHRMCOND_F21_3 * &
-                      (PSNOWRHO(JJ,JST)/XSNOWTHRMCOND_F21_2) + XSNOWTHRMCOND_F21_4
+                      (PSNOWRHO(JJ,JST)/XRHOLI) + XSNOWTHRMCOND_F21_2 * &
+                      (PSNOWRHO(JJ,JST)/XRHOLI) + XSNOWTHRMCOND_F21_3
    ENDDO
    !
   ENDDO
@@ -3265,7 +3265,7 @@ ELSEIF(HSNOWCOND == 'C11' .OR. HSNOWCOND == 'F21' .OR. HSNOWCOND == 'S97') THEN
     !
     DO JJ = 1,SIZE(PSNOWRHO,1)
     ! Domine et al., 2022: Account for thermal bridging by shrubs
-      IF (PSNOW(JJ,JST) == PHVEGPOL(JJ) .AND. PSNOW(JJ,JST) < PHVEGPOL(JJ)) THEN ! If total snow depth is equal to or less than polar veg height 
+      IF (PSNOW(JJ,JST) == PHVEGPOL(JJ) .OR. PSNOW(JJ,JST) < PHVEGPOL(JJ)) THEN ! If total snow depth is equal to or less than polar veg height 
       PSCOND(JJ,JST) = PSCOND(JJ,JST) * KSNOW_TUNDRA_D22 ! Modify KSNOW_TUNDRA_D22 depending on location and multiplier (will implement in code)
       !
       ENDIF
