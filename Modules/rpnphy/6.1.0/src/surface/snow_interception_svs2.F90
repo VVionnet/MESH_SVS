@@ -58,8 +58,11 @@
 
 ! RR          liquid precipitation rate at the top of the high-vegetation [kg/m2/s]
 ! SR          solid  precipitation rate at the top of the high-vegetation [kg/m2/s]
+! T           air temperature within the high vegetation [K]
+! HU          Specific humidity of air within the high vegetation [kg kg-1]
 ! TVEG           Canopy temperature within the high vegetation [K]
 ! WIND_TOP    Wind speed at canopy top [m/s]
+! PS          Surface pressure [Pa]
 ! ISWR        Solar radiation incident at the top of the high-vegetation [W m-2]
 ! ESUBSNWC      sublimation rate from incercepted snow [kg m-2 s-1]
 !
