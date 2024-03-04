@@ -3260,18 +3260,18 @@ ENDDO
     ! In older versions, snow thermal conductivity is annihilated in presence of liquid water.
     ! We decided to remove this incorrect parameterization (May 2016)
      !    
-ELSEIF(HSNOWCOND == 'C11' .OR. HSNOWCOND == 'F21' .OR. HSNOWCOND == 'S97') THEN
-  DO JST = 1,SIZE(PSNOWRHO,2)
+!ELSEIF(HSNOWCOND == 'C11' .OR. HSNOWCOND == 'F21' .OR. HSNOWCOND == 'S97') THEN
+ ! DO JST = 1,SIZE(PSNOWRHO,2)
     !
-    DO JJ = 1,SIZE(PSNOWRHO,1)
+  !  DO JJ = 1,SIZE(PSNOWRHO,1)
     ! Domine et al., 2022: Account for thermal bridging by shrubs
-      IF (PSNOW(JJ,JST) == PHVEGPOL(JJ) .OR. PSNOW(JJ,JST) < PHVEGPOL(JJ)) THEN ! If total snow depth is equal to or less than polar veg height 
-      PSCOND(JJ,JST) = PSCOND(JJ,JST) * KSNOW_TUNDRA_D22 ! Modify KSNOW_TUNDRA_D22 depending on location and multiplier (will implement in code)
+   !   IF (PSNOW(JJ,JST) == PHVEGPOL(JJ) .OR. PSNOW(JJ,JST) < PHVEGPOL(JJ)) THEN ! If total snow depth is equal to or less than polar veg height 
+    !  PSCOND(JJ,JST) = PSCOND(JJ,JST) * KSNOW_TUNDRA_D22 ! Modify KSNOW_TUNDRA_D22 depending on location and multiplier (will implement in code)
       !
-      ENDIF
-    ENDDO
+     ! ENDIF
+    !ENDDO
     !
-  ENDDO
+  !ENDDO
 ENDIF
 !
 IF (LHOOK) CALL DR_HOOK('SNOWCROTHRM',1,ZHOOK_HANDLE)
