@@ -470,6 +470,7 @@ module sfcbus_mod
       SFCVAR(urban, 'urban')
       SFCVAR(vaf, 'vaf')
       SFCVAR(vca, 'vca')
+      SFCVAR(vca_drift, 'vca_drift')
       SFCVAR(vdiag, 'vdiag')
       SFCVAR(vdiagstn, 'vdiagstn')
       SFCVAR(vdiagstnv, 'vdiagstnv')
