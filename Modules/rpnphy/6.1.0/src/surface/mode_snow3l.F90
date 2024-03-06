@@ -3161,7 +3161,7 @@ USE MODD_SNOW_PAR, ONLY : XSNOWTHRMCOND1, XSNOWTHRMCOND2, XSNOWTHRMCOND_AVAP, &
                           XSNOWTHRMCOND_F21_1, XSNOWTHRMCOND_F21_2, XSNOWTHRMCOND_F21_3,&
                           KSNOW_TUNDRA_D22, KSNOW_SALIX_D22_1, KSNOW_SALIX_D22_2,&
                           KSNOW_SALIX_D22_3,&
-                          XTHRMCOND_ICE, XTHRMCOND_WATER
+                          XTHRMCOND_ICE, XTHRMCOND_WATER, PSHRUBPOL
 !
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 USE PARKIND1  ,ONLY : JPRB
@@ -3253,27 +3253,29 @@ ELSEIF(HSNOWCOND == 'S97') THEN
       PSCOND(JJ,JST) = XSNOWTHRMCOND_S97_3 + XSNOWTHRMCOND_S97_4 * (PSNOWRHO(JJ,JST)/1000) +&
                        XSNOWTHRMCOND_S97_5 * (PSNOWRHO(JJ,JST)/1000) * (PSNOWRHO(JJ,JST)/1000)
     ENDIF
-    !  
-  ENDDO
-  !
-ENDDO
+    ! 
     ! In older versions, snow thermal conductivity is annihilated in presence of liquid water.
     ! We decided to remove this incorrect parameterization (May 2016)
      !    
-!ELSEIF(HSNOWCOND == 'C11' .OR. HSNOWCOND == 'F21' .OR. HSNOWCOND == 'S97') THEN
- ! DO JST = 1,SIZE(PSNOWRHO,2)
+    ENDDO
     !
-  !  DO JJ = 1,SIZE(PSNOWRHO,1)
-    ! Domine et al., 2022: Account for thermal bridging by shrubs
-   !   IF (PSNOW(JJ,JST) == PHVEGPOL(JJ) .OR. PSNOW(JJ,JST) < PHVEGPOL(JJ)) THEN ! If total snow depth is equal to or less than polar veg height 
-    !  PSCOND(JJ,JST) = PSCOND(JJ,JST) * KSNOW_TUNDRA_D22 ! Modify KSNOW_TUNDRA_D22 depending on location and multiplier (will implement in code)
-      !
-     ! ENDIF
-    !ENDDO
-    !
-  !ENDDO
+  ENDDO
 ENDIF
 !
+IF(HSNOWCOND == 'C11' .OR. HSNOWCOND == 'F21' .OR. HSNOWCOND == 'S97') THEN
+  DO JST = 1,SIZE(PSNOWRHO,2)
+    !
+   DO JJ = 1,SIZE(PSNOWRHO,1)
+    ! Domine et al., 2022: Account for thermal bridging by shrub
+   IF (PSNOW(JJ,JST) == PSHRUBPOL .OR. PSNOW(JJ,JST) < PSHRUBPOL) THEN ! If total snow depth is equal t>
+   !    
+   PSCOND(JJ,JST) = PSCOND(JJ,JST) * KSNOW_TUNDRA_D22 ! Modify KSNOW_TUNDRA_D22 depending on location and mul>      
+     ! 
+  ENDIF
+  ENDDO
+  !
+ ENDDO
+ENDIF
 IF (LHOOK) CALL DR_HOOK('SNOWCROTHRM',1,ZHOOK_HANDLE)
 !
 END SUBROUTINE SNOWCROTHRM

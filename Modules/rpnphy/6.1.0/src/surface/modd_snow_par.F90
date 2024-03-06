@@ -323,6 +323,9 @@ REAL, PARAMETER :: KSNOW_SALIX_D22_1 = 1.55 ! Multi-factor for testing at Salix 
 REAL, PARAMETER :: KSNOW_SALIX_D22_2 = 1.40 ! Multi-factor for pre 31st December at Salix site
 REAL, PARAMETER :: KSNOW_SALIX_D22_3 = 1.70 ! Multi-factor for post 31st December at Salix site
 !
+! Domine et al., 2022: Height of polar shrubs that protrude snowpack
+REAL, PARAMETER :: PSHRUBPOL = 1.0 ! Modify depending on site location
+!
 ! Thermal conductivity of ice and water at 273K (for freezing rain)
 REAL, PARAMETER :: XTHRMCOND_ICE = 2.22    ! [W/(m K)]
 REAL, PARAMETER :: XTHRMCOND_WATER = 0.561    ! [W/(m K)]
