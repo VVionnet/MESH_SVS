@@ -113,7 +113,7 @@
       REAL, PARAMETER ::  CVAI = 4.4 ! Intercepted snow capacity per unit lai (kg/m^2) from Essery et a. (2003)
                   ! Note that HP98 are using a temperature-dependant param for falling snow density that could be considered later
                   ! The maximum canopy snow interception load in HP98 also depends on the type of trees.
-
+      REAL, PARAMETER ::  m_scap = 5. ! Intercepted snow coefficient per unit lai (kg/m^2) from Andreadis et a. (2009)
 !
 !***********************************************************************
 !
@@ -307,7 +307,16 @@
 !
             ! Compute canopy snow interception capacity (kg m-2) (Eq 12 in HP98)
             ! CVAI may depends on type of trees and density of falling snow (see comment above)
-            SCAP(I) =  CVAI *LAI_VH(I)
+            !SCAP(I) =  CVAI *LAI_VH(I)
+            
+           ! Compute Canopy interception, check Andreadis et al. (2009)
+           IF ((T(I)-273.15) .GT. -1) THEN
+              SCAP(I) = 4* m_scap * LAI_VH(I)
+           ELSE IF (((T(I)-273.15) .GT. -3) .AND.  ((T(I)-273.15) .LE. -1)) THEN
+              SCAP(I) = (1.5*(T(I)-273.15) + 5.5) * m_scap *LAI_VH(I)
+           ELSE
+              SCAP(I) = m_scap * LAI_VH(I)
+           ENDIF
 !
 !
 !*       9.     HEIGHT OF TREES in HIGH VEGETATION

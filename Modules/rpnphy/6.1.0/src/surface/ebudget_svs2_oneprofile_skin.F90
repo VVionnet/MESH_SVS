@@ -325,6 +325,12 @@
       EMSNV = 1. ! Emissivity of snow below high vegetation
 !                                Albedo of Bark (S. Wang, Ecological Modelling, 2005)
       ABARK  = 0.15
+      
+      ! Initialize the latent heat used for the high vegetation
+      ! It is only modified if there is intercepted snow on the canopy
+      DO I=1,N
+        LCAN(I) = CHLC
+      ENDDO
 !
 !
 !
@@ -604,7 +610,6 @@
                   ELSE
                      ! The air temperature, relative humidity, and wind forcing are below the canopy
                      ! The temprature of the vegetation is assumed to be the air temperature
-                     LCAN(I) = CHLC
                      TVGHST(I) = THETAA(I)
                   ENDIF
 

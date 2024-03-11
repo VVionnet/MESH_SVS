@@ -107,7 +107,7 @@ subroutine sfc_businit(moyhr,ni,nk)
 
    !--------   Speficic parameter FOR SVS 2 -----------------
    character(len=2) :: ns
-   integer :: algrv,emisgrv,egv,  legv,qaf,    &
+   integer :: algrv,emisgrv,egv,  legv,    &
         hpsa,hpsv, husurfgv, hv_vl, hv_vh, &
         hveglpol,hveglpolen,hvegapol, &
         gfluxsa, gfluxsv,      &
@@ -128,11 +128,11 @@ subroutine sfc_businit(moyhr,ni,nk)
         subldrifta, subldriftv,     &
         svs_wtg, &
         swnetsa, swnetsv, swca,        &
-        tca,taf, &
+        tca, &
         tpsoilv, tgroundv, &
         tsnow_svs,tsnowv_svs,   &
         tvegel,tvegeh,  &
-        vaf, vca,vca_drift, vegtransa, vgh_height,   &
+        vca,vca_drift, vegtransa, vgh_height,   &
         vgh_dens, vgh_densen, &
         wveg_vl, wveg_vh,     &       
         wsnow_svs,wsnowv_svs, &
@@ -566,7 +566,6 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR2D1(psnvh,        'VN=psnvh        ;ON=PSVH;VD=fraction of high vegetation covered by snow                       ;VB=p0')
       PHYVAR2D1(psnvha,       'VN=psnvha       ;ON=PSVA;VD=frac. of high veg. covered by snow from atm.                      ;VB=p0')
       PHYVAR2D1(psurfvha,     'VN=psurfvha     ;ON=PSUH;VD=frac. of surface seen through sparse high veg from atm.           ;VB=p0')
-      PHYVAR2D1(qaf,          'VN=qaf          ;ON=QAF; VD=specific humidity of air in canopy                               ;VB=p0')
       PHYVAR2D1(qca,          'VN=qca          ;ON=QCA; VD=specific humidity of air in canopy (FSM2 approach)               ;VB=p0')
       PHYVAR3D1(quartz,       'VN=quartz       ;ON=QRTZ;VD=quartz contain of the soil layer               ;VS=A*'//ngl//'  ;VB=p0') 
       PHYVAR2D1(qgr,          'VN=qgr          ;ON=QGR; VD=specific humidity over bare ground                                ;VB=p0')
@@ -653,7 +652,6 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR2D1(tvegel,       'VN=tvegel       ;ON=TVGL;VD=skin low vegetation temp.                                         ;VB=p1')
       PHYVAR3D1(tvegeh,       'VN=tvegeh       ;ON=TVGH;VD=skin and mean high vegetation temp.            ;VS=A*2            ;VB=p1')
       PHYVAR3D1(tvege,        'VN=tvege        ;ON=TVG ;VD=skin and mean vegetation temp.                 ;VS=A*2            ;VB=p1')
-      PHYVAR2D1(vaf,          'VN=vaf          ;ON=VAF ;VD=wind inside canopy                                                ;VB=p0')
       PHYVAR2D1(vca,          'VN=vca          ;ON=VCA ;VD=wind inside canopy (FSM2 approach)                                ;VB=p0')
       PHYVAR2D1(vca_drift,    'VN=vca_drift    ;ON=VCAD;VD=wind inside canopy used for snowdrift                             ;VB=p0')
       PHYVAR3D1(vegdati,      'VN=vegdati      ;ON=SPAR;VD=sparsness of each vegtation class                 ;VS=A*26        ;VB=p0')

@@ -92,6 +92,7 @@ lout_snow_profile  .true.  ! Create output file containing detailed information 
 lout_snow_vegh .true.
 nprofile_day     4          ! Number of snow profiles per day (can be  1, 2, 4, 6, 12, 24)
 lout_snow_enbal  .false.    ! Create output file containing information about the snowpack energy and mass budget
+lout_svs2_watbal  .true.  ! Create output file containing water budget variables
 
 !> Canopy module SVS
 lsnow_interception_svs2  .false. ! Use interception

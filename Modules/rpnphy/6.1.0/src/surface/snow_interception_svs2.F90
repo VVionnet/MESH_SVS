@@ -255,7 +255,7 @@
                   ! Limit sublimation to canopy snow available and take sublimated snow away from canopy snow at timestep start
                   SUB_CPY = MAX(0.,-SNCMA(I)*SUB_POT*DT)  ! Ensure that only sublimation is computed (neglect solid condensation)
 
-                  !!!! Remove mass of intercepted lost by sublimation
+                  !!!! Remove mass of intercepted snow lost by sublimation
                   IF(SUB_CPY>SNCMA(I)) THEN
                      SUB_CPY = SNCMA(I)
                      SNCMA(I) = 0.
@@ -295,7 +295,7 @@
                ! Unload and Melting of snow canopy
                !!!!!!!!
                IF (CANO_REF_FORCING .EQ.'ABV') THEN
-               
+
                   HM_CAN(I) = HM_CAN_INI(I) + CPI * SNCMA(I)
 
                   IF(TVEG(I)>273.15 .AND. SNCMA(I) > 0) THEN

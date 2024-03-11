@@ -207,6 +207,7 @@ XZ0HSN = 0.0001
 !
 ! Maximum Richardson number limit for very stable conditions over snow using the 'RIL' option
 X_RI_MAX = 0.2
+!X_RI_MAX = 0.026
 !
 ! Snow Melt timescale with D95 (s): needed to prevent time step 
 ! dependence of melt when snow fraction < unity.
