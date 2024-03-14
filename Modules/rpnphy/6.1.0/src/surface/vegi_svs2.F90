@@ -242,7 +242,7 @@
 !                 Adjust density of tree in high vegetation 
 
              IF(VEGH(I)>0) THEN
-                VGH_DENS(I) = MIN(1., MAX(0.2, VGH_DENS(I))) ! Impose of minimum tree cover density of 0.2
+                VGH_DENS(I) = MIN(1., MAX(0.1, VGH_DENS(I))) ! Impose of minimum tree cover density of 0.2
              ELSE   
                 VGH_DENS(I) = 0.
              ENDIF             

@@ -3262,20 +3262,20 @@ ELSEIF(HSNOWCOND == 'S97') THEN
   ENDDO
 ENDIF
 !
-IF(HSNOWCOND == 'C11' .OR. HSNOWCOND == 'F21' .OR. HSNOWCOND == 'S97') THEN
-  DO JST = 1,SIZE(PSNOWRHO,2)
+!IF(HSNOWCOND == 'C11' .OR. HSNOWCOND == 'F21' .OR. HSNOWCOND == 'S97') THEN
+!  DO JST = 1,SIZE(PSNOWRHO,2)
     !
-   DO JJ = 1,SIZE(PSNOWRHO,1)
+!   DO JJ = 1,SIZE(PSNOWRHO,1)
     ! Domine et al., 2022: Account for thermal bridging by shrub
-   IF (PSNOW(JJ,JST) == PSHRUBPOL .OR. PSNOW(JJ,JST) < PSHRUBPOL) THEN ! If total snow depth is equal t>
+!   IF (PSNOW(JJ,JST) == PSHRUBPOL .OR. PSNOW(JJ,JST) < PSHRUBPOL) THEN ! If total snow depth is equal to or less than height of polar shrubs
    !    
-   PSCOND(JJ,JST) = PSCOND(JJ,JST) * KSNOW_TUNDRA_D22 ! Modify KSNOW_TUNDRA_D22 depending on location and mul>      
+!   PSCOND(JJ,JST) = PSCOND(JJ,JST) * KSNOW_TUNDRA_D22 ! Modify KSNOW_TUNDRA_D22 depending on location and multiplier      
      ! 
-  ENDIF
-  ENDDO
+!  ENDIF
+!  ENDDO
   !
- ENDDO
-ENDIF
+! ENDDO
+!ENDIF
 IF (LHOOK) CALL DR_HOOK('SNOWCROTHRM',1,ZHOOK_HANDLE)
 !
 END SUBROUTINE SNOWCROTHRM
