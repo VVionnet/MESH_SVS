@@ -89,7 +89,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_SNVDP = 'SNVDP'
     character(len = *), parameter, public :: VN_SVS_SNVDEN = 'SNVDEN'
     character(len = *), parameter, public :: VN_SVS_SNVAL = 'SNVAL'
-    character(len = *), parameter, public :: VN_SVS_WATPOND = 'WATPOND' !  For svs1 (with water ponding)
+    character(len = *), parameter, public :: VN_SVS_WATPOND = 'WATPOND' !  For svs1 and svs2 (with water ponding)
     character(len = *), parameter, public :: VN_SVS_WSNV = 'WSNV'
     character(len = *), parameter, public :: VN_SVS_TPSOIL = 'TPSOIL' ! For svs2  and svs1 (with soil freezing)
     character(len = *), parameter, public :: VN_SVS_TPSOILV = 'TPSOILV'! For svs2 only
@@ -131,7 +131,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_NPROFILE_DAY = 'NPROFILE_DAY' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_LOUT_SVS2_WATBAL = 'LOUT_SVS2_WATBAL ' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_LSOIL_FREEZING_SVS1 = 'LSOIL_FREEZING_SVS1' ! For svs1 only
-    character(len = *), parameter, public :: VN_SVS_LWATER_PONDING_SVS1 = 'LWATER_PONDING_SVS1' ! For svs1 only
+    character(len = *), parameter, public :: VN_SVS_LWATER_PONDING_SVS = 'LWATER_PONDING_SVS' ! For svs1 and svs2
     character(len = *), parameter, public :: VN_SVS_LUNIQUE_PROFILE_SVS2 = 'LUNIQUE_PROFILE_SVS2' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_LBCHEAT_SVS2 = 'LBCHEAT_SVS2'! For svs2 only
     character(len = *), parameter, public :: VN_SVS_LSNOW_INTERCEPTION_SVS2 = 'LSNOW_INTERCEPTION_SVS2' ! For svs2 only
@@ -237,7 +237,7 @@ module runsvs_mesh
         logical :: lout_svs2_watbal = .false.
         integer :: nprofile_day = 4 !
         logical :: lsoil_freezing_svs1 = .false.
-        logical :: lwater_ponding_svs1 = .false.
+        logical :: lwater_ponding_svs = .false.
         logical :: lunique_profile_svs2 = .true.
         character(len = DEFAULT_FIELD_LENGTH) :: lbcheat_svs2 = 'TPERM'
         logical :: lsnow_interception_svs2 = .false.
@@ -585,7 +585,7 @@ module runsvs_mesh
            if (allocated(svs_mesh%vs%tperm)) svs_bus(a1(tperm):z1(tperm)) = svs_mesh%vs%tperm
         endif
 
-        if(svs_mesh%vs%schmsol=='SVS' .and. svs_mesh%vs%lwater_ponding_svs1) then
+        if((svs_mesh%vs%schmsol=='SVS' .or. svs_mesh%vs%schmsol=='SVS2') .and. svs_mesh%vs%lwater_ponding_svs) then
            if (allocated(svs_mesh%vs%watpond)) svs_bus(a1(watpond):z1(watpond)) = svs_mesh%vs%watpond
         endif
 
@@ -856,9 +856,9 @@ module runsvs_mesh
                 lsoil_freezing_svs1 = svs_mesh%vs%lsoil_freezing_svs1
         endif
 
-        ! Activate or not the water ponding module in SVS1
-        if(svs_mesh%vs%schmsol=='SVS') then
-                lwater_ponding_svs1 = svs_mesh%vs%lwater_ponding_svs1
+        ! Activate or not the water ponding module in SVS1 and SVS2
+        if(svs_mesh%vs%schmsol=='SVS' .or. svs_mesh%vs%schmsol=='SVS2') then
+                lwater_ponding_svs = svs_mesh%vs%lwater_ponding_svs
         endif
 
         ! Activate or not the unique soil column in SVS2
@@ -1017,7 +1017,7 @@ module runsvs_mesh
             call runsvs_mesh_append_phyentvar('tpsoil')
             call runsvs_mesh_append_phyentvar('tperm')
         endif
-        if(svs_mesh%vs%schmsol=='SVS' .and. svs_mesh%vs%lwater_ponding_svs1) then
+        if( (svs_mesh%vs%schmsol=='SVS' .or. svs_mesh%vs%schmsol=='SVS2') .and. svs_mesh%vs%lwater_ponding_svs) then
             call runsvs_mesh_append_phyentvar('watpond')
         endif
 
@@ -1549,6 +1549,11 @@ ierr = 200
                end do
                if (.not. allocated(svs_mesh%vs%tperm)) allocate(svs_mesh%vs%tperm(ni))
                svs_mesh%vs%tperm = svs_bus(a1(tperm):z1(tperm ))
+        end if
+
+        if( (svs_mesh%vs%schmsol=='SVS' .or. svs_mesh%vs%schmsol=='SVS2') .and. svs_mesh%vs%lwater_ponding_svs) then 
+               if (.not. allocated(svs_mesh%vs%watpond)) allocate(svs_mesh%vs%watpond(ni))
+               svs_mesh%vs%watpond = svs_bus(a1(watpond):z1(watpond ))
         end if
 
         if(svs_mesh%vs%schmsol=='SVS2') then

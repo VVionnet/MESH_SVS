@@ -222,12 +222,12 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
                     call assign_line_args(svs_mesh%vs%lsoil_freezing_svs1, args(2), istat)
                 end if
 
-            case (VN_SVS_LWATER_PONDING_SVS1)
-                if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS2' ) then
+            case (VN_SVS_LWATER_PONDING_SVS)
+                if (.not. svs_mesh%PROCESS_ACTIVE ) then
                     istat = istat + radix(istat)**pstat%INACTIVE
                 else
                     p = 1
-                    call assign_line_args(svs_mesh%vs%lwater_ponding_svs1, args(2), istat)
+                    call assign_line_args(svs_mesh%vs%lwater_ponding_svs, args(2), istat)
                 end if
 
             case (VN_SVS_LUNIQUE_PROFILE_SVS2)

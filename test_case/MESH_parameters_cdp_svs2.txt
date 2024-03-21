@@ -26,6 +26,10 @@ draindens       50.0 !m m**-2
 ! > Select land surface scheme
 schmsol  SVS2
 
+! Water ponding scheme
+lwater_ponding_svs  .false.    ! Activate water ponding in SVS2 
+watpond 0  ! Heigh in m of ponded water
+
 !> Soils.
 soiltext                 NIL !NIL: required to use soil_levels.txt as-is
 !> By default, values for 3 layers are required and only read. The values of the third layer are applied to all deeper layers.

@@ -383,7 +383,7 @@ SUBROUTINE HYDRO_SVS ( DT, &
      RUNOFF(I) = MAX( (SATSFC(I)*PG(I)+(1-SATSFC(I))*MAX(PG(I)-KSATC(I,1)*1000.,0.0)) , 0.0 )   
 
 ! EG_code related to ponding of water
-     IF (lwater_ponding_svs1) THEN
+     IF (lwater_ponding_svs) THEN
         abstract(I) = min( RUNOFF(I)*DT , (maxpnd(I)-watpnd(I))*1000.0 )
         RUNOFF(I) = RUNOFF(I) - abstract(I)/DT
      ELSE
@@ -396,7 +396,7 @@ SUBROUTINE HYDRO_SVS ( DT, &
      PG(I) = PG(I) - RUNOFF(I) - ( (1. - IMPERVU(I)) * abstract(I)/DT )           ! (mm/s)
      RUNOFF(I) = RUNOFF(I)*DT
 
-     IF (lwater_ponding_svs1) THEN
+     IF (lwater_ponding_svs) THEN
         ! update amount of ponding water
         watpnd(I) = watpnd(I) + (1. - IMPERVU(I) ) * abstract(I) / 1000.0
 
