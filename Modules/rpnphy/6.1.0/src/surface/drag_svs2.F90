@@ -718,7 +718,7 @@
          ! NL: Updated with roughn. lengths for VH instead of averaged roughn. length for veg
          i = sl_sfclayer( THETAA, HU, VMOD, VDIR, ZUSL, ZTSL, &
               TVGHS, ZQS_VH, Z0MVH, ZZ0HVH, LAT, FCOR, &
-              L_min=20., &
+              L_min=sl_Lmin_soil, &
               coeft=CTUVG)
 
          if (i /= SL_OK) then
