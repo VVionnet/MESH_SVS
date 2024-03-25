@@ -300,9 +300,9 @@ module sfc_options
    logical           :: lsoil_freezing_svs1 = .false.
    namelist /surface_cfgs/ lsoil_freezing_svs1 
 
-   !# If .true., SVS1 simulates water ponding at the surface
-   logical           :: lwater_ponding_svs1 = .false.
-   namelist /surface_cfgs/ lwater_ponding_svs1 
+   !# If .true., SVS1 and SVS2 simulate water ponding at the surface
+   logical           :: lwater_ponding_svs = .false.
+   namelist /surface_cfgs/ lwater_ponding_svs 
 
    !# If .true., SVS2 uses only a unique column for the soil
    logical           :: lunique_profile_svs2 = .true.

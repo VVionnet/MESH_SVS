@@ -19,7 +19,7 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
      WSAT, KSAT, PSISAT, BCOEF, FBCOF, WFCINT, GRKEF, &
      SNM, SVM, WR_VL, WR_VH, WR_VLT, WR_VHT, WD, WDT, WF, WFT, &
      KSATC, KHC, PSI, GRKSAT, WFCDP, &
-     F, LATFLW, RUNOFF, N,  WATPND, MAXPND)
+     F, LATFLW, RUNOFF,WATPND, MAXPND, N)
   !
   use sfc_options
   use svs_configs
@@ -66,7 +66,7 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
   real, dimension(n,nl_svs+1):: f
   real, dimension(n,nl_svs) :: latflw
   real, dimension(n)        :: runoff
-  real, dimension(n),optional :: watpnd, maxpnd
+  real, dimension(n)        :: watpnd, maxpnd
 
   !
   !Author
@@ -389,7 +389,7 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
      RUNOFF(I) = MAX( (SATSFC(I)*PG(I)+(1-SATSFC(I))*MAX(PG(I)-KSATC(I,1)*1000.,0.0)) , 0.0 )
 
 ! EG_code related to ponding of water
-     IF (lwater_ponding_svs1) THEN
+     IF (lwater_ponding_svs) THEN
         abstract(I) = min( RUNOFF(I)*DT , (maxpnd(I)-watpnd(I))*1000.0 )
         RUNOFF(I) = RUNOFF(I) - abstract(I)/DT
      ELSE
@@ -402,7 +402,7 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
      PG(I) = PG(I) - RUNOFF(I) - ( (1. - IMPERVU(I)) * abstract(I)/DT )           ! (mm/s)
      RUNOFF(I) = RUNOFF(I)*DT
 
-     IF (lwater_ponding_svs1) THEN
+     IF (lwater_ponding_svs) THEN
         ! update amount of ponding water
         watpnd(I) = watpnd(I) + (1. - IMPERVU(I) ) * abstract(I) / 1000.0
 
