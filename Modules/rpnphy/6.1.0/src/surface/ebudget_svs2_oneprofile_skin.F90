@@ -672,6 +672,7 @@
                    ! Use value from exposed bare ground to fill the gaps
 !
               TGRVST(I) = TGRST(I)
+              SKINCOND_GV(I) = 0.
 !
           ENDIF
 !
@@ -780,7 +781,7 @@
 
        DO I=1,N
 
-
+        
           IF(LBCHEAT_SVS2=='TPERM') THEN
             !  Prescribed T at bottom
 

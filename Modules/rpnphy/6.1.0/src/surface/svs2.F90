@@ -327,6 +327,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
 ! ---------------- For Crocus and ES scheme--------------------
       DO I=1,N
+             bus(x(RSNOWSA,I,1)) = 0.
+             bus(x(RSNOWSV,I,1)) = 0.
 
              PZENITH(I) =  ACOS(SUNCOSA(I))
              PFOREST(I)=0.
