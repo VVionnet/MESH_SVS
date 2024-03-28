@@ -949,7 +949,7 @@ module runsvs_mesh
 
              if (.not.any(hsnowres == hsnowres_opt)) then
                  call str_concat(msg_S, hsnowres_opt,', ')
-                 call print_error('hsnowhold = '//trim(hsnowres)//' is not a valid option. Choose among: '//trim(msg_S))
+                 call print_error('hsnowres = '//trim(hsnowres)//' is not a valid option. Choose among: '//trim(msg_S))
                  ierr = 1
              endif
 

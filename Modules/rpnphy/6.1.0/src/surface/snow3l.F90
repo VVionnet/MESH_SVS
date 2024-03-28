@@ -125,6 +125,10 @@ CHARACTER(LEN=*),     INTENT(IN)    :: HSNOWRES
 !                                      'DEF' = Default: Louis (ISBA: Noilhan and Mahfouf 1996)
 !                                      'RIL' = Limit Richarson number under very stable
 !                                              conditions (currently testing)
+!                                      'RI1' = Limit Richarson number under very stable
+!                                              conditions to 0.1
+!                                      'RI2' = Limit Richarson number under very stable
+!                                              conditions to 0.026
 !
 LOGICAL, INTENT(IN)                 :: OMEB       ! True = coupled to MEB. This means surface fluxes ae IMPOSED
 !                                                 ! as an upper boundary condition to the explicit snow schemes. 
@@ -1208,7 +1212,7 @@ REAL, INTENT(IN)                    :: PTSTEP, PSNOWDZMIN
  CHARACTER(LEN=*),     INTENT(IN)    :: HSNOWRES ! type of sfc resistance
 !                                      DEFAULT=Louis (1979), standard ISBA
 !                                      method. Option to limit Ri number
-!                                      for very stable conditions
+!                                      for very stable conditions (RIL, RI1, RI2)
 !
  CHARACTER(LEN=*),     INTENT(IN)  :: HIMPLICIT_WIND   ! wind implicitation option
 !                                                     ! 'OLD' = direct

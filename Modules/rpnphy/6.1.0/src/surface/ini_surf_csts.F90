@@ -78,7 +78,7 @@ USE MODD_SNOW_PAR,  ONLY : XEMISSN, XANSMIN, XANSMAX,          &
 USE MODD_SNOW_METAMO, ONLY : XVVISC3
 !
 USE MODD_SURF_ATM, ONLY: XRIMAX,LALDTHRES,XCISMIN, XVMODMIN
-
+USE sfc_options, ONLY: HSNOWRES
 !VV #ifndef CROCUS_EXT
 !VV USE MODI_GET_LUOUT
 !VV USE MODI_OPEN_NAMELIST
@@ -205,9 +205,15 @@ XZ0SN = 0.001
 !
 XZ0HSN = 0.0001
 !
-! Maximum Richardson number limit for very stable conditions over snow using the 'RIL' option
-X_RI_MAX = 0.2
-!X_RI_MAX = 0.026
+! Maximum Richardson number limit for very stable conditions over snow using the 'RIL', 'RI1', or 'RI2' option
+IF (HSNOWRES .EQ.'RIL') THEN
+    X_RI_MAX = 0.2
+ELSE IF (HSNOWRES .EQ.'RI1') THEN
+    X_RI_MAX = 0.1
+ELSE IF (HSNOWRES .EQ.'RI2') THEN
+    X_RI_MAX = 0.026
+END IF
+
 !
 ! Snow Melt timescale with D95 (s): needed to prevent time step 
 ! dependence of melt when snow fraction < unity.
