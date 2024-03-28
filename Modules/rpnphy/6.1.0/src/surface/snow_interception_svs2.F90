@@ -279,7 +279,7 @@
                !!!!!!!!
 
                ! Unloading time constant
-               IF(T(I) >= 273.15) THEN ! Melting conditions
+               IF(TVEG(I) >= 273.15) THEN ! Melting conditions
                   TUNL = TCNM
                ELSE
                   TUNL = TCNC
@@ -294,7 +294,7 @@
                !!!!!!!!
                ! Unload and Melting of snow canopy
                !!!!!!!!
-               IF (CANO_REF_FORCING .EQ.'ABV') THEN
+               IF (CANO_REF_FORCING .EQ.'ABV') THEN ! From Boone et al. (2017)
 
                   HM_CAN(I) = HM_CAN_INI(I) + CPI * SNCMA(I)
 
@@ -318,7 +318,7 @@
 
                   NET_SNOW(I) = DIRECT_SNOW(I)  + UNLOAD(I)
 
-               ELSE
+               ELSE ! Open 2 Forest
                   !!!!!!!
                   !Update snowfall and rainfall rate sent to snow below high-veh
                   !!!!!!!

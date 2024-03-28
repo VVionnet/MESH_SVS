@@ -241,7 +241,7 @@ module sfc_options
    namelist /surface_cfgs/ sl_Lmin_seaice
    
    !# Mimimum Obukhov length (L) for soil surfaces
-   real           :: sl_Lmin_soil = 20.
+   real           :: sl_Lmin_soil = -1.
    namelist /surface_cfgs/ sl_Lmin_soil
 
    !# Minimum Obukhov length (L) for water
