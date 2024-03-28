@@ -304,9 +304,11 @@
                                CTUGRV,RORAGRV,DIFTEMP,ZQSATGRVT
 
        real, dimension(n) :: ABG, BBG, ABGV, BBGV, SKINCOND_BG,AVL, BVL,AVH, BVH,CVH, &
-                       SKINCOND_GV, SKINCOND_VL, LESNVH(N), LCAN(N)
+                       SKINCOND_GV, SKINCOND_VL, LESNVH, &
+                       LCAN, & ! Latent heat used for the canopy  (Boone et al., 2017)
+                       ALVH_SN ! Albedo of the canopy including intercepted snow
 
-       real LW_UVH, SIGMA_F, ALB_UVH, EMISS_UVH,EMSNV
+       real LW_UVH, SIGMA_F, ALB_UVH, EMISS_UVH,EMSNV, ALSNV
 
 
 
@@ -325,9 +327,10 @@
       EMSNV = 1. ! Emissivity of snow below high vegetation
 !                                Albedo of Bark (S. Wang, Ecological Modelling, 2005)
       ABARK  = 0.15
+      ALSNV = 0.3 ! Snow-covered canopy albedo (Goottevin et al. 2015)
       
-      ! Initialize the latent heat used for the high vegetation
-      ! It is only modified if there is intercepted snow on the canopy
+      ! Initialize the latent heat used for the high vegetation by the latent heat of condensation
+      ! It is only modified if there is intercepted snow on the canopy (latent heat of fusion is added)
       DO I=1,N
         LCAN(I) = CHLC
       ENDDO
@@ -347,7 +350,7 @@
          ALBT(I)  = AG_SVS2( WTA(I,indx_svs2_bg), WTA(I,indx_svs2_vl), &
                       WTA(I,indx_svs2_vh),WTA(I,indx_svs2_sn),    &
                       WTA(I,indx_svs2_sv), WTA(I,indx_svs2_gv), &
-                      ALGR(I),ALVL(I),ALVH(I),            &
+                      ALGR(I),ALVL(I),ALVH_SN(I),            &
                       ALPHAS(I),ALPHASV(I), ALGRV(I))
 !
 !
@@ -577,6 +580,7 @@
                      LW_UVH = WTG(I,indx_svs2_sv) *(EMSNV * STEFAN * TSVS(I,1)**4) + &
                               WTG(I,indx_svs2_gv) *(EMGRV(I) * STEFAN * TGRVS(I)**4)
                      ALB_UVH = WTG(I,indx_svs2_sv) * ALPHASV(I) + WTG(I,indx_svs2_gv) * ALGRV(I)
+                     ALVH_SN(I) = FCANS(I) * ALSNV + (1.-FCANS(I)) * ALVH(I)
 
       !
       !                    Thermodynamic functions
@@ -597,8 +601,8 @@
                            +  6.*EMISVH(I)*SIGMA_F*STEFAN*(TVGHS(I)**3) &
                            + RORAVGH(I)* HV_VH(I)*ZDQSATVGH(I)
 
-                     CVH(I) = RG(I) * (1.-ALVH(I))*SIGMA_F &
-                                 * (1.+(ALB_UVH*SKYVIEW(I)/(1.-SIGMA_F*ALB_UVH*ALVH(I))))  &
+                     CVH(I) = RG(I) * (1.-ALVH_SN(I))*SIGMA_F &
+                                 * (1.+(ALB_UVH*SKYVIEW(I)/(1.-SIGMA_F*ALB_UVH*ALVH_SN(I))))  &
                               + SIGMA_F * EMISVH(I) * RAT(I) &
                               + SIGMA_F * EMISVH(I)*LW_UVH  &
                               + RORAVGH(I) * CPD * THETAA(I)  &

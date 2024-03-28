@@ -284,7 +284,8 @@ module runsvs_mesh
     integer, allocatable, private :: bus_ptr(:)
     real, private :: time_dt = 0
     real, private :: lmo_winter = -1.0
-    logical, private :: lvar_lmin_stable = .true. ! If true, use new value of 20 m for lmin_soil
+    logical, private :: lvar_lmin_stable = .true. ! If true, use a user specified value for lmin_soil (lmin_stable)
+    real :: lmin_stable = 20.
     integer :: kount_reset = 0
     integer, private :: kount = 0
     integer, parameter, private :: trnch = 1
@@ -1868,7 +1869,7 @@ ierr = 200
 
         !> Update 'lmin' if active (greater than zero).
         if (lvar_lmin_stable) then ! Use new value of 20 m for lmin_soil to avoid underestimation of turbulent fluxes under very stable atm 
-            sl_lmin_soil = 20.
+            sl_lmin_soil = lmin_stable
         else
             if (lmo_winter > 0.0) then
                 if (ic%now%jday < 210) then
