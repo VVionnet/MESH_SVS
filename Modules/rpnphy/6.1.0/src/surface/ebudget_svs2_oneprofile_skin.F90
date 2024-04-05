@@ -691,6 +691,7 @@
                    ! Use value from exposed bare ground to fill the gaps
 !
               TGRVST(I) = TGRST(I)
+              SKINCOND_GV(I) = 0.
 !
           ENDIF
 !
@@ -1092,15 +1093,15 @@
 !                           Calculate latent heat snow weighted
 !                           by grid-cell snow-coverage fraction
 !
-        LES(I)  =  WTA(I,indx_svs2_sn) *  (LESLNOFRAC(I) + LESNOFRAC(I))
-        ESF(I)  =  WTA(I,indx_svs2_sn) *  ESNOFRAC(I)
+        LES(I)  =  WTA(I,indx_svs2_sn) * (LESLNOFRAC(I) + LESNOFRAC(I))
+        ESF(I)  =  WTA(I,indx_svs2_sn) * ESNOFRAC(I) / RHOA(I)
 !
 !        ------------------
 !        SNOW BELOW HIGH VEGETATION
 !                           Same for snow-under-vegetation
 !
         LESV(I) =  WTA(I,indx_svs2_sv)   *  (LESLVNOFRAC(I) + LESVNOFRAC(I))
-        ESVF(I) =  WTA(I,indx_svs2_sv)   *  ESVNOFRAC(I)
+        ESVF(I) =  WTA(I,indx_svs2_sv)   *  ESVNOFRAC(I) / RHOA(I)
 !
 !
 !        ------------------

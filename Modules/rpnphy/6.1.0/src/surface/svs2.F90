@@ -170,7 +170,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    real,dimension(n) :: pscap ! Vegetation layer snow capacities (kg m-2)
    real,dimension(n) :: pfcans ! Canopy layer snowcover fractions from FSM2
    real,dimension(n) :: pres_snca ! Resistance for intercepted snow in high canopy
-     ! SVS VARIABLES
+     ! NL_SVS VARIABLES
    real, dimension(n,nl_svs) ::  pd_g, pdzg
    real, dimension(n,nl_svs) ::  psoilhcapz_v
    real,dimension(n,nl_svs) :: psoil_temp_vgh  ! Soil temperature at the bottom of the snowpack under high vegetation
