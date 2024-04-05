@@ -305,8 +305,9 @@
 
        real, dimension(n) :: ABG, BBG, ABGV, BBGV, SKINCOND_BG,AVL, BVL,AVH, BVH,CVH, &
                        SKINCOND_GV, SKINCOND_VL, LESNVH, &
-                       LCAN, & ! Latent heat used for the canopy  (Boone et al., 2017)
-                       ALVH_SN ! Albedo of the canopy including intercepted snow
+                       LCAN, &    ! Latent heat used for the canopy  (Boone et al., 2017)
+                       ALVH_SN, & ! Albedo of the canopy including intercepted snow
+                       EMVH_SN ! Emissivity of the canopy including intercepted snow
 
        real LW_UVH, SIGMA_F, ALB_UVH, EMISS_UVH,EMSNV, ALSNV
 
@@ -332,7 +333,9 @@
       ! Initialize the latent heat used for the high vegetation by the latent heat of condensation
       ! It is only modified if there is intercepted snow on the canopy (latent heat of fusion is added)
       DO I=1,N
-        LCAN(I) = CHLC
+         LCAN(I) = CHLC
+         ALVH_SN(I) = FCANS(I) * ALSNV + (1.-FCANS(I)) * ALVH(I)
+         EMVH_SN(I) = FCANS(I) * EMSNV + (1.-FCANS(I)) * EMISVH(I)
       ENDDO
 !
 !
@@ -516,19 +519,19 @@
 !                             terms za, zb, and zc for the
 !                               calculation of tvgs(t)
                  A3H(I) = 1. / DT + CVP(I) *  &
-                        (4. * EMISVH(I) * STEFAN * (TVGHS(I)**3)  &
+                        (4. * EMVH_SN(I) * STEFAN * (TVGHS(I)**3)  &
                         +  RORAVGH(I) * ZDQSATVGH(I) * CHLC * HV_VH(I) &
                         +  RORAVGH(I) * CPD )  &
                         + 2. * PI / 86400.
 !
                  B3H(I) = 1. / DT + CVP(I) *   &
-                        (3. * EMISVH(I) * STEFAN * (TVGHS(I)** 3)  &
+                        (3. * EMVH_SN(I) * STEFAN * (TVGHS(I)** 3)  &
                         + RORAVGH(I) * ZDQSATVGH(I) * CHLC* HV_VH(I) )
 !
                  C3H(I) = 2. * PI * TVGHD(I) / 86400. &
                          + CVP(I) *  &
                          ( RORAVGH(I) * CPD * THETAA(I)  &
-                         + RG(I) * (1. - ALVGLAI(I)) + EMISVH(I)*RAT(I)  &
+                         + RG(I) * (1. - ALVGLAI(I)) + EMVH_SN(I)*RAT(I)  &
                          - RORAVGH(I) * CHLC * HV_VH(I) * (ZQSATVGH(I)-HU(I)) )
 
 
@@ -580,7 +583,6 @@
                      LW_UVH = WTG(I,indx_svs2_sv) *(EMSNV * STEFAN * TSVS(I,1)**4) + &
                               WTG(I,indx_svs2_gv) *(EMGRV(I) * STEFAN * TGRVS(I)**4)
                      ALB_UVH = WTG(I,indx_svs2_sv) * ALPHASV(I) + WTG(I,indx_svs2_gv) * ALGRV(I)
-                     ALVH_SN(I) = FCANS(I) * ALSNV + (1.-FCANS(I)) * ALVH(I)
 
       !
       !                    Thermodynamic functions
@@ -592,19 +594,19 @@
                      RORAVGH(I) = RHOA(I) / RESA_VH(I)
 
                      AVH(I) = PHM_CAN(I)  / DT &
-                              + 8.*EMISVH(I)*STEFAN*SIGMA_F*(TVGHS(I)**3) &
+                              + 8.*EMVH_SN(I)*STEFAN*SIGMA_F*(TVGHS(I)**3) &
                               + RORAVGH(I) * CPD &
                               + RORAVGH(I) * HV_VH(I) * ZDQSATVGH(I)
 
 
                      BVH(I) = PHM_CAN(I) / DT + &
-                           +  6.*EMISVH(I)*SIGMA_F*STEFAN*(TVGHS(I)**3) &
+                           +  6.*EMVH_SN(I)*SIGMA_F*STEFAN*(TVGHS(I)**3) &
                            + RORAVGH(I)* HV_VH(I)*ZDQSATVGH(I)
 
                      CVH(I) = RG(I) * (1.-ALVH_SN(I))*SIGMA_F &
                                  * (1.+(ALB_UVH*SKYVIEW(I)/(1.-SIGMA_F*ALB_UVH*ALVH_SN(I))))  &
-                              + SIGMA_F * EMISVH(I) * RAT(I) &
-                              + SIGMA_F * EMISVH(I)*LW_UVH  &
+                              + SIGMA_F * EMVH_SN(I) * RAT(I) &
+                              + SIGMA_F * EMVH_SN(I)*LW_UVH  &
                               + RORAVGH(I) * CPD * THETAA(I)  &
                               + RORAVGH(I) * HV_VH(I) * (HU(I) - ZQSATVGH(I)) 
 
@@ -877,7 +879,7 @@
 
 !                                            Net radiation over high vegetation
 !
-        RNETVGH(I) = (1. - ALVGLAI(I)) * RG(I) + EMISVH(I) *&
+        RNETVGH(I) = (1. - ALVGLAI(I)) * RG(I) + EMVH_SN(I) *&
                  (RAT(I) - STEFAN * (TVGHST(I)** 4))! VV TO BE MODIFIED
 !
 !                                            Net radiation over snow-free ground
