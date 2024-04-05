@@ -781,7 +781,7 @@
 
        DO I=1,N
 
-        
+
           IF(LBCHEAT_SVS2=='TPERM') THEN
             !  Prescribed T at bottom
 
@@ -1056,15 +1056,15 @@
 !                           Calculate latent heat snow weighted
 !                           by grid-cell snow-coverage fraction
 !
-        LES(I)  =  WTA(I,indx_svs2_sn) *  (LESLNOFRAC(I) + LESNOFRAC(I))
-        ESF(I)  =  WTA(I,indx_svs2_sn) *  ESNOFRAC(I)
+        LES(I)  =  WTA(I,indx_svs2_sn) * (LESLNOFRAC(I) + LESNOFRAC(I))
+        ESF(I)  =  WTA(I,indx_svs2_sn) * ESNOFRAC(I) / RHOA(I)
 !
 !        ------------------
 !        SNOW BELOW HIGH VEGETATION
 !                           Same for snow-under-vegetation
 !
         LESV(I) =  WTA(I,indx_svs2_sv)   *  (LESLVNOFRAC(I) + LESVNOFRAC(I))
-        ESVF(I) =  WTA(I,indx_svs2_sv)   *  ESVNOFRAC(I)
+        ESVF(I) =  WTA(I,indx_svs2_sv)   *  ESVNOFRAC(I) / RHOA(I)
 !
 !
 !        ------------------

@@ -425,9 +425,9 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 ! EG CODE RELATED TO PONDING OPTION
       IF (lwater_ponding_svs) then
           DO I=1,N
-             
+
              wsaturc1(I)= max((wsatur1(I)-isoil1(I)-0.00001), CRITWATER)
-             if (wsoil1(I).lt.wsaturc1(I).and.zwatpond(I).gt.0.0) then 
+             if (wsoil1(I).lt.wsaturc1(I).and.zwatpond(I).gt.0.0) then
                transfer = min(zwatpond(I),(wsaturc1(I)-wsoil1(I))*dl_svs(1))
                wsoil1(I) = wsoil1(I) + transfer / dl_svs(1)
                zwatpond(I) = zwatpond(I) - transfer
@@ -479,8 +479,12 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       ! VV TO BE MODIFIED: Intermediate step during developement.
       !
       DO I=1,N
-          PTVEGE(I)   =  (BUS(x(VEGL,1,1)) *bus(x(TVEGEL,I,1)) + BUS(x(VEGH,1,1)) *bus(x(TVEGEH,I,1)) )/ &
-                                             (BUS(x(VEGL,1,1)) + BUS(x(VEGH,1,1)))
+          IF (BUS(x(VEGL,I,1)) + BUS(x(VEGH,I,1))  .GT. 0) THEN
+              PTVEGE(I)   =  (BUS(x(VEGL,I,1)) *bus(x(TVEGEL,I,1)) + BUS(x(VEGH,I,1)) *bus(x(TVEGEH,I,1)) )/ &
+                                                 (BUS(x(VEGL,1,1)) + BUS(x(VEGH,I,1)))
+          ELSE ! There is no low or high veg, here we are just putting a value in PTVEGE equal to the skin temp of bg
+              PTVEGE(I)   =  bus(x(TGROUND,I,1))
+          ENDIF
       ENDDO
 !
       CALL VEGI_SVS2 ( zfsolis,   &
@@ -792,8 +796,12 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       ! VV TO BE MODIFIED: Intermediate step during developement.
       !
       DO I=1,N
-          PTVEGE(I)   =  (BUS(x(VEGL,1,1)) *bus(x(TVEGEL,I,1)) + BUS(x(VEGH,1,1)) *bus(x(TVEGEH,I,1)) )/ &
-                                             (BUS(x(VEGL,1,1)) + BUS(x(VEGH,1,1)))
+         IF (BUS(x(VEGL,I,1)) + BUS(x(VEGH,I,1))  .GT. 0) THEN
+               PTVEGE(I)   =  (BUS(x(VEGL,I,1)) *bus(x(TVEGEL,I,1)) + BUS(x(VEGH,I,1)) *bus(x(TVEGEH,I,1)) )/ &
+                                                (BUS(x(VEGL,1,1)) + BUS(x(VEGH,I,1)))
+         ELSE ! There is no low or high veg, here we are just putting a value in PTVEGE equal to the skin temp of bg
+               PTVEGE(I)   =  bus(x(TGROUND,I,1))
+         ENDIF
       ENDDO
 
 
