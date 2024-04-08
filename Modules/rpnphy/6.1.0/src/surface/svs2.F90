@@ -768,11 +768,11 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                   bus(x(RESAGR,1,1)), bus(x(RESA_VL,1,1)),bus(x(RESA_VH,1,1)),   &
                   bus(x(RESASA,1,1)), bus(x(RESASV,1,1)) ,bus(x(RESAGRV,1,1)),pres_snca, &
                   bus(x(RNETSA     ,1,1)) , bus(x(HFLUXSA,1,1)),   &
-                  LESLNOFRAC, LESNOFRAC        , bus(x(ESA,1,1)),   &
+                  LESLNOFRAC, LESNOFRAC        , bus(x(ESA,1,1)), bus(x(SUBLDRIFTA,1,1)),  &
                   bus(x(SNOAL      ,1,1)) ,    &
                   bus(x(TSNOW_SVS  ,1,1)) ,    &
                   bus(x(RNETSV     ,1,1)) , bus(x(HFLUXSV ,1,1)),   &
-                  LESVLNOFRAC, LESVNOFRAC              , bus(x(ESV,1,1)),    &
+                  LESVLNOFRAC, LESVNOFRAC              , bus(x(ESV,1,1)),  bus(x(SUBLDRIFTV,1,1)),  &
                   bus(x(SNVAL      ,1,1)) ,    &
                   bus(x(TSNOWV_SVS ,1,1)) , PHM_CAN,  bus(x(SNCMA     ,1,1)), &
                   bus(x(VEGH       ,1,1)) , bus(x(VEGL   ,1,1)), bus(x(VGH_HEIGHT   ,1,1)),  &

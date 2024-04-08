@@ -24,10 +24,10 @@
                    HRSURF,HRSURFGV, HV_VL, HV_VH, DEL_VL, DEL_VH, RS, &
                    CG,CVP, EMISVL, EMISVH, &
                    RESAGR, RESA_VL, RESA_VH, RESASA, RESASV, RESAGRV, RES_SNCA, &
-                   RNETSN, HFLUXSN,LESLNOFRAC, LESNOFRAC, ESNOFRAC, &
+                   RNETSN, HFLUXSN,LESLNOFRAC, LESNOFRAC, ESNOFRAC, SUBLDRIFT, &
                    ALPHAS, &
                    TSNS, &
-                   RNETSV, HFLUXSV,LESLVNOFRAC, LESVNOFRAC, ESVNOFRAC,  &
+                   RNETSV, HFLUXSV,LESLVNOFRAC, LESVNOFRAC, ESVNOFRAC, SUBLDRIFTV, &
                    ALPHASV, &
                    TSVS, PHM_CAN, SNCMA, &
                    VEGH, VEGL, VGHEIGHT,  &
@@ -83,8 +83,8 @@
       REAL EG(N), EGV(N), HRSURF(N), HRSURFGV(N)
       REAL RESAGR(N), RESA_VL(N), RESA_VH(N), RESASA(N), RESASV(N), RESAEF(N)
       REAL RESAGRV(N)
-      REAL RNETSN(N), HFLUXSN(N),LESLNOFRAC(N),LESNOFRAC(N), ESNOFRAC(N)
-      REAL RNETSV(N), HFLUXSV(N),LESLVNOFRAC(N),LESVNOFRAC(N), ESVNOFRAC(N)
+      REAL RNETSN(N), HFLUXSN(N),LESLNOFRAC(N),LESNOFRAC(N), ESNOFRAC(N), SUBLDRIFT(N)
+      REAL RNETSV(N), HFLUXSV(N),LESLVNOFRAC(N),LESVNOFRAC(N), ESVNOFRAC(N), SUBLDRIFTV(N)
       REAL ALPHASV(N), RES_SNCA(N)
       REAL ALFAT(N), ALFAQ(N), LESV(N)
       REAL VEGH(N), VEGL(N), PHM_CAN(N), FCANS(N)
@@ -213,6 +213,8 @@
 ! SKYVIEWA Averaged sky view factor for vegetation
 ! FCANS        Canopy layer snowcover fractions
 ! SNCMA       mass of intercepted snow in the canopy [kg/m2]
+! SUBLDRIFT    rate of mass loss due to blowing snow sublimation for snow over bare ground/low veg (kg/m2/s)
+! SUBLDRIFTV    rate of mass loss due to blowing snow sublimation for snow under high veg (kg/m2/s)
 !
 !           - Output -
 ! ALBT      total surface albedo (snow + vegetation + bare ground)
@@ -1096,14 +1098,14 @@
 !                           by grid-cell snow-coverage fraction
 !
         LES(I)  =  WTA(I,indx_svs2_sn) * (LESLNOFRAC(I) + LESNOFRAC(I))
-        ESF(I)  =  WTA(I,indx_svs2_sn) * ESNOFRAC(I) / RHOA(I)
+        ESF(I)  =  WTA(I,indx_svs2_sn) * (ESNOFRAC(I) + SUBLDRIFT(I)) / RHOA(I)
 !
 !        ------------------
 !        SNOW BELOW HIGH VEGETATION
 !                           Same for snow-under-vegetation
 !
         LESV(I) =  WTA(I,indx_svs2_sv)   *  (LESLVNOFRAC(I) + LESVNOFRAC(I))
-        ESVF(I) =  WTA(I,indx_svs2_sv)   *  ESVNOFRAC(I) / RHOA(I)
+        ESVF(I) =  WTA(I,indx_svs2_sv)   *  (ESVNOFRAC(I)+SUBLDRIFTV(I)) / RHOA(I)
 !
 !
 !        ------------------
