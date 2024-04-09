@@ -333,7 +333,7 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
 
          ! have snow on bare ground, only consider snow runoff
          PG(I) = RSNOW(I)
-         IF ( SNM(I).LT.CRITSNOWMASS) THEN
+         IF ( WTG(I,indx_svs2_sn) .le. EPSILON_SVS) THEN
             ! have 100% bare ground and now snow, all rain reaches surface
             PG(I) = PG(I) + RR(I)
          ENDIF
