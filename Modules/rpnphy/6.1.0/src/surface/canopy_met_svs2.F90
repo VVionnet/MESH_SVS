@@ -85,8 +85,8 @@
 
       ! Choice of the method to calculate the wind in the forest
       ! 'VDENS_WCAN' uses the high canopy density (VDENS) in the calculation of WCAN
-      ! 'WEIGHTED_AVG' does a weighted average of open and closed forest wind speeds based on VDENS (Mazzotti et al. 2021)
-      LOGICAL :: lwind_forest = 'VDENS_WCAN' ! 'VDENS_WCAN' or 'WEIGHTED_AVG' 
+      ! 'WEIGHT_AVG' does a weighted average of open and closed forest wind speeds based on VDENS (Mazzotti et al. 2021)
+      character(10) :: lwind_forest = 'VDENS_WCAN' ! 'VDENS_WCAN' or 'WEIGHT_AVG' 
 
 
 
@@ -175,11 +175,17 @@
 
                ! Wind speed at canopy base height, dense canopy, assuming exp profile between canopy top and canopy base height
                IF (lwind_forest .EQ. 'VDENS_WCAN') THEN
+
                     WCAN = ZBETA * CLUMPING * LAIVH(I) * VGH_DENS(I)
                     VMOD_CAN(I) = VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1.))
-               ELSE IF  (lwind_forest .EQ. 'WEIGHTED_AVG') THEN
+
+               ELSE IF  (lwind_forest .EQ. 'WEIGHT_AVG') THEN
+
                     WCAN = ZBETA * CLUMPING * LAIVH(I) 
-                    VMOD_CAN(I) = (VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1.))) * VGH_DENS(I)**(0.5) + (1.-VGH_DENS(I)**(0.5))*VMOD(I) 
+                    VMOD_SUB = VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1.))
+                    VMOD_CLEARING = VMOD(I)*LOG(PUREF_VEG(I)/Z0SNOW(I))/LOG(ZUREF/Z0SNOW(I)) ! Transfer from ZUREF to PUREF_VEG(I)
+                    VMOD_CAN(I) = VMOD_SUB * VGH_DENS(I)**(0.5) + (1.-VGH_DENS(I)**(0.5))* VMOD_CLEARING
+
                ENDIF
 
 
