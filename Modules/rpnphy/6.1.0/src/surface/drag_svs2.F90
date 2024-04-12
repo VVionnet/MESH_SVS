@@ -521,7 +521,6 @@
              DEL_VL(I) =   MIN(WR_VL(I),WRMAX_VL(I)) / &
               ((1.-COEF_VL(I))*MIN(WR_VL(I),WRMAX_VL(I)) +COEF_VL(I)*WRMAX_VL(I) )
 !
-             DEL_VL(I) = MIN(DEL_VL(I),0.1)
 
          ELSE
              COEF_VL(I) = 1.
@@ -636,7 +635,6 @@
              DEL_VH(I) =   MIN(WR_VH(I),WRMAX_VH(I)) / &
                    ( (1.-COEF_VH(I))*MIN(WR_VH(I),WRMAX_VH(I)) + COEF_VH(I)*WRMAX_VH(I) )
 !
-             DEL_VH(I) = MIN(DEL_VH(I),0.1)
 
          ELSE
              COEF_VH(I) = 1.
@@ -735,6 +733,7 @@
 
         HV_VL(I) = 1. - MAX(0.,SIGN(1.,QSAT_VL(I)-HU(I)))&
                  *RS(I)*(1.-DEL_VL(I)) / (RESA_VL(I)+RS(I))
+
 
         HV_VH(I) = 1. - MAX(0.,SIGN(1.,QSAT_VH(I)-HU(I)))&
                  *RS(I)*(1.-DEL_VH(I)) / (RESA_VH(I)+RS(I))
