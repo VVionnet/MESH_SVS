@@ -1098,14 +1098,14 @@
 !                           by grid-cell snow-coverage fraction
 !
         LES(I)  =  WTA(I,indx_svs2_sn) * (LESLNOFRAC(I) + LESNOFRAC(I))
-        ESF(I)  =  WTA(I,indx_svs2_sn) * (ESNOFRAC(I) + SUBLDRIFT(I)) / RHOA(I)
+        ESF(I)  =  WTA(I,indx_svs2_sn) * (ESNOFRAC(I) + ABS(SUBLDRIFT(I))) / RHOA(I)
 !
 !        ------------------
 !        SNOW BELOW HIGH VEGETATION
 !                           Same for snow-under-vegetation
 !
         LESV(I) =  WTA(I,indx_svs2_sv)   *  (LESLVNOFRAC(I) + LESVNOFRAC(I))
-        ESVF(I) =  WTA(I,indx_svs2_sv)   *  (ESVNOFRAC(I)+SUBLDRIFTV(I)) / RHOA(I)
+        ESVF(I) =  WTA(I,indx_svs2_sv)   *  (ESVNOFRAC(I)+ABS(SUBLDRIFTV(I))) / RHOA(I)
 !
 !
 !        ------------------
