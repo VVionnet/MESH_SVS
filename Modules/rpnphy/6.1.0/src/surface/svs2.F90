@@ -764,7 +764,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                   z0m, z0mland , bus(x(Z0T,1,indx_soil)),&
                   HRSURF,HRSURFGV,       &
                   bus(x(HV_VL,1,1)) , bus(x(HV_VH,1,1)), DEL_VL, DEL_VH, STOM_RS ,&
-                  CG,CVPA,BUS(x(EMISVL ,1,1)), BUS(x(EMISVH ,1,1)) ,    &
+                  CG,CVPA,BUS(x(EMISVL ,1,1)), BUS(x(EMISVH ,1,1)) ,  BUS(x(SKINCOND_VL ,1,1)),  &
                   bus(x(RESAGR,1,1)), bus(x(RESA_VL,1,1)),bus(x(RESA_VH,1,1)),   &
                   bus(x(RESASA,1,1)), bus(x(RESASV,1,1)) ,bus(x(RESAGRV,1,1)),pres_snca, &
                   bus(x(RNETSA     ,1,1)) , bus(x(HFLUXSA,1,1)),   &

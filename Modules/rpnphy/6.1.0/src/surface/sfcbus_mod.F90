@@ -130,6 +130,7 @@ module sfcbus_mod
       SFCVAR(emsvc, 'emsvc')
       SFCVAR(emisvh, 'emisvh')
       SFCVAR(emisvl, 'emisvl')
+      SFCVAR(skincond_vl, 'skincond_vl')
       SFCVAR(emtw, 'emtw')
       SFCVAR(en, 'en')
       SFCVAR(er, 'er')

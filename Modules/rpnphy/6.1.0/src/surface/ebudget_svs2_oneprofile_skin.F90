@@ -22,7 +22,7 @@
                    RAT, RATCAN, THETAA, FCOR, ZUSL, ZTSL, HU, PS, &
                    RHOA, WTA, WTG, Z0, Z0LOC, Z0H, &
                    HRSURF,HRSURFGV, HV_VL, HV_VH, DEL_VL, DEL_VH, RS, &
-                   CG,CVP, EMISVL, EMISVH, &
+                   CG,CVP, EMISVL, EMISVH, SKINCOND_VL, &
                    RESAGR, RESA_VL, RESA_VH, RESASA, RESASV, RESAGRV, RES_SNCA, &
                    RNETSN, HFLUXSN,LESLNOFRAC, LESNOFRAC, ESNOFRAC, SUBLDRIFT, &
                    ALPHAS, &
@@ -71,7 +71,7 @@
       REAL HU(N), PS(N), RHOA(N), WTA(N,svs2_tilesp1),WTG(N,svs2_tilesp1), Z0(N)
       REAL Z0LOC(N), Z0H(N)
       REAL HV_VL(N), HV_VH(N), DEL_VL(N), DEL_VH(N),  RS(N)
-      REAL CG(N), CVP(N),   EMISVL(N), EMISVH(N)
+      REAL CG(N), CVP(N),   EMISVL(N), EMISVH(N), SKINCOND_VL(N)
       REAL LAI(N), GAMVEG(N), ALGR(N), EMGR(N), ALGRV(N), EMGRV(N)
       REAL RNET(N), HFLUX(N), LE(N), ALPHAS(N)
       REAL ALBT(N)
@@ -158,6 +158,7 @@
 ! EMGRV     emissivity of ground below high vegetation
 ! EMISVL    emissivity of low vegetation
 ! EMISVH    emissivity of high vegetation
+! SKINCOND_VL    skin thermal conductivity of low vegetation
 ! ALVL      albedo of low vegetation
 ! ALVH      albedo of high vegetation
 ! RAT       atmospheric radiation incident on the ground (NIR)
@@ -306,7 +307,7 @@
                                CTUGRV,RORAGRV,DIFTEMP,ZQSATGRVT
 
        real, dimension(n) :: ABG, BBG, ABGV, BBGV, SKINCOND_BG,AVL, BVL,AVH, BVH,CVH, &
-                       SKINCOND_GV, SKINCOND_VL, LESNVH, &
+                       SKINCOND_GV, LESNVH, &
                        LCAN, &    ! Latent heat used for the canopy  (Boone et al., 2017)
                        ALVH_SN, & ! Albedo of the canopy including intercepted snow
                        EMVH_SN ! Emissivity of the canopy including intercepted snow
@@ -468,7 +469,6 @@
 !
 !           Skin conductivity for low vegetation
 !
-            SKINCOND_VL(I) =  10.
 !
 !
             AVL(I) =  SKINCOND_VL(I) + 4.*EMISVL(I)*STEFAN*(TVGLS(I)**3)  &

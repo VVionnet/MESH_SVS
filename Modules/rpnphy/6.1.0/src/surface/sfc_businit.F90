@@ -84,7 +84,7 @@ subroutine sfc_businit(moyhr,ni,nk)
    !--------   FOR SVS and SVS2 -----------------
    character(len=2) :: ngl, nglp1, nstel, nstpl, iemib, iicel, izp, izvg2
    integer :: acroot, algr, alvl , alvh, avg_gwsol, clayen, co2i1, cvh, cvl, d50, d95, &
-        deciduous, draindens, eg, emis, emisgr, emistg, emistgen, emisvh, emisvl, &
+        deciduous, draindens, eg, emis, emisgr, emistg, emistgen, emisvh, emisvl, skincond_vl, &
         er, etr, evergreen, &
         fbcof, frootd, gamvh, gamvl, grkef, grksat, hfluxsa, hfluxsv, &
         impervu, &
@@ -341,6 +341,7 @@ subroutine sfc_businit(moyhr,ni,nk)
            PHYVAR2D1(emistgen,     'VN=emistgen     ;ON=ETG1;VD=avg. emissivity land surface with no snow (E)       ;VB=e1;IN=EMIB;MIN=0')
       PHYVAR2D1(emisvh,       'VN=emisvh       ;ON=EMVH;VD=emissivity of high vegetation                                     ;VB=p0')
       PHYVAR2D1(emisvl,       'VN=emisvl       ;ON=EMVL;VD=emissivity of low vegetation                                      ;VB=p0')
+      PHYVAR2D1(skincond_vl,  'VN=skincond_vl       ;ON=CONVL;VD=skin thermal conductivity of low vegetation                ;VB=p0')
       PHYVAR2D1(er,           'VN=er           ;ON=ER  ;VD=evapo rate from leaves(no frac)                                   ;VB=v0')
       PHYVAR2D1(etr,          'VN=etr          ;ON=ETR ;VD=evapotranspiration rate (no frac)                                 ;VB=v0')
       PHYVAR2D1(evergreen,    'VN=evergreen    ;ON=EVER;VD=frac. of high veg. that is evergreen                              ;VB=p0')
@@ -501,6 +502,7 @@ IF_SVS2: if (schmsol == 'SVS2') then
            PHYVAR2D1(emistgen,     'VN=emistgen     ;ON=ETG1;VD=avg. emissivity land surface with no snow (E)       ;VB=e1;IN=EMIB;MIN=0')
       PHYVAR2D1(emisvh,       'VN=emisvh       ;ON=EMVH;VD=emissivity of high vegetation                                     ;VB=p0')
       PHYVAR2D1(emisvl,       'VN=emisvl       ;ON=EMVL;VD=emissivity of low vegetation                                      ;VB=p0')
+      PHYVAR2D1(skincond_vl,  'VN=skincond_vl       ;ON=CONVL;VD=skin thermal conductivity of low vegetation                ;VB=p0')
       PHYVAR2D1(er_vl,       'VN=er_vl         ;ON=ERVL;VD=evapo rate from low veg leaves (no frac)                          ;VB=v0')
       PHYVAR2D1(er_vh,       'VN=er_vh         ;ON=ERVH;VD=evapo rate from high veg leaves (no frac)                         ;VB=v0')
       PHYVAR2D1(etr_vl,      'VN=etr_vl        ;ON=ETRL;VD=evapotranspiration rate from low veg  (no frac)                   ;VB=v0')
