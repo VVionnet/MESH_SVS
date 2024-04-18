@@ -9,7 +9,7 @@
                 PSNOWSWE,PSNOWRHO,PSNOWHEAT,PSNOWALB,                     &
                 PSNOWAGE,                                                 &                
                 PTSTEP,PPS,PSR,PRR,PPSN3L, PRSURF ,                       &
-                PTA,PTG,PSW_RAD,PQA,PVMOD,PLW_RAD, PRHOA,                 &
+                PTA,PTG,PSW_RAD,PQA,PVMOD,PWIND_DRIFT,PLW_RAD, PRHOA,                 &
                 PUREF,PEXNS,PEXNA,PDIRCOSZW,                              &
                 PZREF,PZ0,PZ0EFF,PZ0H,PALB,                               &
                 PSOILCOND,PD_G,PLVTT,PLSTT,                               &
@@ -140,13 +140,14 @@ CHARACTER(LEN=*),     INTENT(IN)  :: HIMPLICIT_WIND   ! wind implicitation optio
 !                                                     ! 'NEW' = Taylor serie, order 1
 !
 REAL, DIMENSION(:), INTENT(IN)    :: PPS, PTA, PSW_RAD, PQA,                       &
-                                         PVMOD, PLW_RAD, PSR, PRR  
+                                         PVMOD, PWIND_DRIFT, PLW_RAD, PSR, PRR  
 !                                      PSW_RAD = incoming solar radiation (W/m2)
 !                                      PLW_RAD = atmospheric infrared radiation (W/m2)
 !                                      PRR     = rain rate [kg/(m2 s)]
 !                                      PSR     = snow rate (SWE) [kg/(m2 s)]
 !                                      PTA     = atmospheric temperature at level za (K)
 !                                      PVMOD   = modulus of the wind parallel to the orography (m/s)
+!                                      PWIND_DRIFT   = modulus of the wind under canopy if PVMOD is above canopy, otherwise PWIND_DRIFT = PVMOD (m/s)
 !                                      PPS     = surface pressure
 !                                      PQA     = atmospheric specific humidity
 !                                                at level za
@@ -408,7 +409,7 @@ ENDDO
 ! Caluclate uppermost density and thickness changes due to snowfall,
 ! and add heat content of falling snow
 !
- CALL SNOW3LFALL(PTSTEP,PSR,PTA,PVMOD,ZSNOW,PSNOWRHO,PSNOWDZ,          &
+ CALL SNOW3LFALL(PTSTEP,PSR,PTA,PWIND_DRIFT,ZSNOW,PSNOWRHO,PSNOWDZ,          &
                  PSNOWHEAT,PSNOWHMASS,PSNOWAGE,PPERMSNOWFRAC  )
 !
 ! Caluclate new snow albedo at time t if snowfall
@@ -465,7 +466,7 @@ CALL SNOW3LCOMPACTN(PTSTEP,XSNOWDZMIN,PSNOWRHO,PSNOWDZ,ZSNOWTEMP,ZSNOW,PSNOWLIQ)
 !
 PSNDRIFT(:) = 0.0
 IF (HSNOWDRIFT == 'DFLT') THEN
-   CALL SNOW3LDRIFT(PTSTEP,PFORESTFRAC,PVMOD,PTA,PQA,PPS,PRHOA,&
+   CALL SNOW3LDRIFT(PTSTEP,PFORESTFRAC,PWIND_DRIFT,PTA,PQA,PPS,PRHOA,&
                     PSNOWRHO,PSNOWDZ,ZSNOW,OSNOWDRIFT_SUBLIM,PSNDRIFT)
 ENDIF
 !

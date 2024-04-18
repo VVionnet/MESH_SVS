@@ -8,7 +8,7 @@ INTERFACE
                 PSNOWSWE,PSNOWRHO,PSNOWHEAT,PSNOWALB,                     &
                 PSNOWAGE,                                                 &                
                 PTSTEP,PPS,PSR,PRR,PPSN3L,  PRSURF,                       &
-                PTA,PTG,PSW_RAD,PQA,PVMOD, PLW_RAD, PRHOA,         &
+                PTA,PTG,PSW_RAD,PQA,PVMOD, PWIND_DRIFT,PLW_RAD, PRHOA,         &
                 PUREF,PEXNS,PEXNA,PDIRCOSZW,                              &
                 PZREF,PZ0,PZ0EFF,PZ0H,PALB,                               &
                 PSOILCOND,PD_G,PLVTT,PLSTT,                               &
@@ -27,7 +27,7 @@ REAL, INTENT(IN)                       :: PTSTEP
  CHARACTER(LEN=*), INTENT(IN)          :: HSNOWRES
 LOGICAL, INTENT(IN)                    :: OMEB       ! True = coupled to MEB. This means surface fluxes ae IMPOSED
  CHARACTER(LEN=*), INTENT(IN)          :: HIMPLICIT_WIND   ! wind implicitation option
-REAL, DIMENSION(:), INTENT(IN)         :: PPS, PTA, PSW_RAD, PQA, PVMOD, PLW_RAD, PSR, PRR 
+REAL, DIMENSION(:), INTENT(IN)         :: PPS, PTA, PSW_RAD, PQA, PVMOD, PWIND_DRIFT,PLW_RAD, PSR, PRR 
 REAL, DIMENSION(:), INTENT(IN)         :: PTG, PSOILCOND, PD_G, PPSN3L
 REAL, DIMENSION(:), INTENT(IN)         :: PZREF, PUREF, PEXNS, PEXNA, PDIRCOSZW, PRHOA, PZ0, PZ0EFF, &
                                        PALB, PZ0H, PPERMSNOWFRAC, PFORESTFRAC 

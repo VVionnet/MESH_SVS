@@ -1221,7 +1221,7 @@ IF (HSNOWSCHEME=='CRO') THEN
              ZP_SNOWSWE, ZP_SNOWRHO, ZP_SNOWHEAT, ZP_SNOWALB,              &
              ZP_SNOWAGE, PTSTEP,                                           &
              ZP_PS, ZP_SRSNOW, ZP_RRSNOW, ZP_PSN3L, ZP_RSURF, ZP_TA, ZP_TG(:,1),  &
-             ZP_SW_RAD, ZP_QA, ZP_VMOD, ZP_LW_RAD, ZP_RHOA, ZP_UREF,       &
+             ZP_SW_RAD, ZP_QA, ZP_VMOD, ZP_VMOD_DRIFT, ZP_LW_RAD, ZP_RHOA, ZP_UREF,       &
              ZP_EXNS, ZP_EXNA, ZP_DIRCOSZW, ZP_ZREF, ZP_Z0NAT, ZP_Z0EFF,   &
              ZP_Z0HNAT, ZP_ALB, ZP_SOILCOND, ZP_D_G(:,1),                  &
              ZP_LVTT, ZP_LSTT, ZP_SNOWLIQ,                                 &
