@@ -59,9 +59,11 @@ USE MODD_CSTS
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 USE PARKIND1  ,ONLY : JPRB
 !
-!USE MODI_INI_CTURBS
+#ifndef CROCUS_EXT
+USE MODI_INI_CTURBS
 !
-!USE MODI_INI_OCEAN_CSTS
+USE MODI_INI_OCEAN_CSTS
+#endif
 !
 USE MODI_INI_SURF_CSTS
 !
@@ -164,6 +166,7 @@ XGAMI  = (XCI - XCPV) / XRV
 XBETAI = (XLSTT/XRV) + (XGAMI * XTT)
 XALPI  = LOG(XESTT) + (XBETAI /XTT) + (XGAMI *LOG(XTT))
 !
+#ifndef CROCUS_EXT
 !-------------------------------------------------------------------------------
 !
 !*       7.     TURBULENCE CONSTANTS
@@ -175,7 +178,8 @@ XALPI  = LOG(XESTT) + (XBETAI /XTT) + (XGAMI *LOG(XTT))
 !*       8.     OCEAN CONSTANTS
 !               ---------------
 !
-! CALL INI_OCEAN_CSTS
+ CALL INI_OCEAN_CSTS
+#endif
 !
 !*       9.     SURFACE CONSTANTS
 !               -----------------
