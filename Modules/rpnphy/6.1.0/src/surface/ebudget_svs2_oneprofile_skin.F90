@@ -238,7 +238,7 @@
 ! ETR_VL       evapotranspiration rate from low veg.  (no faction)
 ! ER_VH       direct evaporation rate (no fraction) from high veg. leaves
 ! ETR_VH       evapotranspiration rate from high veg. (no faction)
-! ESN_VH      sublimation rate of intercepted snow in high veg (no fraction) (kg m-2 s-2)
+! ESN_VH      sublimation rate of intercepted snow in high veg (no fraction) (kg m-2 s-1)
 !
 ! GFLUX     ground flux
 ! EFLUX     water vapor flux

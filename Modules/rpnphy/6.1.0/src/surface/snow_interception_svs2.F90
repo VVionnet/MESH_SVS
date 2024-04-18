@@ -264,14 +264,13 @@
 
                   ENDIF
 
-                  SUBSNWC_CUM(I) = SUBSNWC_CUM(I) +  SUB_CPY
                   ESUBSNWC(I) = SUB_CPY/DT
 
                ENDIF
 
                SNCMA(I) = MAX(0.,SNCMA(I))
 
-               SUBSNWC_CUM(I) = SUBSNWC_CUM(I) + ESUBSNWC(I)
+               SUBSNWC_CUM(I) = SUBSNWC_CUM(I) + ESUBSNWC(I) * DT
 
 
                !!!!!!!!
