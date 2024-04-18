@@ -108,7 +108,6 @@ REAL, SAVE       :: XZ0HSN
 ! Roughness length ratio between ice and snow
 REAL, SAVE       :: XZ0ICEZ0SNOW
 !
-!
 ! Snow Melt timescale with D95 (s): needed to prevent time step 
 ! dependence of melt when snow fraction < unity.
 !
@@ -122,7 +121,6 @@ REAL, DIMENSION(5), SAVE :: XSCAVEN_COEF !Scavenging efficiency of the differren
 !	 Grooming and Snowmaking option by P.Spandre 20160211
 REAL,SAVE                        :: XPSR_SNOWMAK
 REAL,SAVE                       :: XRHO_SNOWMAK
-REAL, SAVE                      :: XTIMESNOWMAK
 REAL, SAVE                      :: XPTA_SEUIL
 REAL, SAVE                      :: XPR_A
 REAL, SAVE                      :: XPR_B
@@ -201,7 +199,6 @@ REAL, PARAMETER       :: XRHOSMAX_R21 = 600.   ! (kg m-3)
 !
 REAL, PARAMETER       :: XRHOSMIN_ES =  50.  ! (kg m-3)
 REAL, PARAMETER       :: XRHOSMAX_ES = 750.  ! (kg m-3)
-!
 !
 ! ISBA-ES Critical snow depth at which snow grid thicknesses constant
 !

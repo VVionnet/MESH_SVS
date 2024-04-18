@@ -45,14 +45,14 @@ SUBROUTINE INI_SURF_CSTS
 !              ------------
 !
 USE MODD_SURF_PAR,  ONLY : XUNDEF
-!VV #ifndef CROCUS_EXT
-!VV USE MODD_SURF_CONF, ONLY : CPROGNAME
-!VV #endif
+#ifndef CROCUS_EXT
+USE MODD_SURF_CONF, ONLY : CPROGNAME
 !
-!VV USE MODD_WATER_PAR
-!VV USE MODD_FLOOD_PAR
-!VV USE MODD_MEB_PAR,   ONLY : XTAU_LW,                            &
-!VV                            XRAGNC_FACTOR, XKDELTA_WR
+USE MODD_WATER_PAR
+USE MODD_FLOOD_PAR
+USE MODD_MEB_PAR,   ONLY : XTAU_LW,                            &
+                            XRAGNC_FACTOR, XKDELTA_WR
+#endif
 USE MODD_SNOW_PAR,  ONLY : XEMISSN, XANSMIN, XANSMAX,          &
                            XAGLAMIN, XAGLAMAX, XHGLA,          &
                            XWSNV, XZ0SN, XZ0HSN,               &
@@ -71,26 +71,28 @@ USE MODD_SNOW_PAR,  ONLY : XEMISSN, XANSMIN, XANSMAX,          &
                            XPTA_SEUIL, XPR_A, XPR_B, XPT,      &
                            XPP_D1, XPP_D2, XPP_D3, XPP_H1,     &
                            XPP_H2, XPP_H3, XPP_H4, XWT, XPTR , &
-                           XTIMESNOWMAK,                       &
                            XPROD_SCHEME, XSM_END, XFREQ_GRO,   & !Grooming and Snowmaking option by P.Spandre 20160211
                            XSCAVEN_COEF
-!
 USE MODD_SNOW_METAMO, ONLY : XVVISC3
 !
+#ifdef CROCUS_EXT
 USE MODD_SURF_ATM, ONLY: XRIMAX,LALDTHRES,XCISMIN, XVMODMIN
+USE MODD_REPROD_OPER,  ONLY : CQSAT
 USE sfc_options, ONLY: HSNOWRES
-!VV #ifndef CROCUS_EXT
-!VV USE MODI_GET_LUOUT
-!VV USE MODI_OPEN_NAMELIST
-!VV USE MODI_CLOSE_NAMELIST
-!VV USE MODE_POS_SURF
-!VV !
+#endif
+!
+#ifndef CROCUS_EXT
+USE MODI_GET_LUOUT
+USE MODI_OPEN_NAMELIST
+USE MODI_CLOSE_NAMELIST
+USE MODE_POS_SURF
+!
  USE MODD_REPROD_OPER,  ONLY : XEVERG_RSMIN, XEVERG_VEG, &
                                     CDGAVG, CIMPLICIT_WIND,   &
                                     CQSAT, CCHARNOCK, CDGDIF
-!VV USE MODI_TEST_NAM_VAR_SURF
-!VV !
-!VV #endif
+USE MODI_TEST_NAM_VAR_SURF
+!
+#endif
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 USE PARKIND1  ,ONLY : JPRB
 !
@@ -104,33 +106,33 @@ LOGICAL               :: LREPROD_OPER
 !
 REAL(KIND=JPRB) :: ZHOOK_HANDLE
 !
-!VV #ifndef CROCUS_EXT
-!VV NAMELIST/NAM_SURF_CSTS/ XEMISSN, XANSMIN, XANSMAX, XAGLAMIN, XAGLAMAX, &
-!VV                         XALBWAT, XALBCOEF_TA96, XALBSCA_WAT, XEMISWAT, &
-!VV                         XALBWATICE, XEMISWATICE, XHGLA, XWSNV, XCFFV,  &
-!VV                         XZ0SN, XZ0HSN, XTAU_SMELT, XALBSEAICE,         &
-!VV                         XZ0FLOOD, XALBWATSNOW,                         &
-!VV                         LMEBREC,                                       &
-!VV                         XANSFRACMEL, XTEMPANS, XANSMINMEB,             &
-!VV                         XTAU_LW, XRAGNC_FACTOR
-!VV !
-!VV NAMELIST/NAM_SURF_SNOW_CSTS/ XZ0ICEZ0SNOW, XRHOTHRESHOLD_ICE,          &
-!VV                              XALBICE1, XALBICE2, XALBICE3,             &
-!VV                              XVAGING_NOGLACIER, XVAGING_GLACIER,       &
-!VV                              XPERCENTAGEPORE, XPERCENTAGEPORE_FRZ,     &
-!VV                              XVVISC3,X_RI_MAX,                         &
-!VV                              XIMPUR_WET, XIMPUR_DRY, XPSR_SNOWMAK,     &
-!VV                              XRHO_SNOWMAK, XPTA_SEUIL,                 &
-!VV                              XPR_A, XPR_B, XPT, XTIMESNOWMAK,          &
-!VV                              XPP_D1, XPP_D2, XPP_D3, XPP_H1,           &
-!VV                              XPP_H2, XPP_H3, XPP_H4, XWT, XPTR ,       &
-!VV                              XPROD_SCHEME, XSM_END, XFREQ_GRO,         &
-!VV                              XSCAVEN_COEF
-!VV !
-!VV NAMELIST/NAM_REPROD_OPER/ LREPROD_OPER, XEVERG_RSMIN, XEVERG_VEG, &
-!VV                           CDGAVG, CDGDIF, CIMPLICIT_WIND, CQSAT,  &
-!VV                           CCHARNOCK
-!VV #endif
+#ifndef CROCUS_EXT
+NAMELIST/NAM_SURF_CSTS/ XEMISSN, XANSMIN, XANSMAX, XAGLAMIN, XAGLAMAX, &
+                        XALBWAT, XALBCOEF_TA96, XALBSCA_WAT, XEMISWAT, &
+                        XALBWATICE, XEMISWATICE, XHGLA, XWSNV, XCFFV,  &
+                        XZ0SN, XZ0HSN, XTAU_SMELT, XALBSEAICE,         &
+                        XZ0FLOOD, XALBWATSNOW,                         &
+                        LMEBREC,                                       &
+                        XANSFRACMEL, XTEMPANS, XANSMINMEB,             &
+                        XTAU_LW, XRAGNC_FACTOR
+!
+NAMELIST/NAM_SURF_SNOW_CSTS/ XZ0ICEZ0SNOW, XRHOTHRESHOLD_ICE,          &
+                             XALBICE1, XALBICE2, XALBICE3,             &
+                             XVAGING_NOGLACIER, XVAGING_GLACIER,       &
+                             XPERCENTAGEPORE, XPERCENTAGEPORE_FRZ,     &
+                             XVVISC3,X_RI_MAX,                         &
+                             XIMPUR_WET, XIMPUR_DRY, XPSR_SNOWMAK,     &
+                             XRHO_SNOWMAK, XPTA_SEUIL,                 &
+                             XPR_A, XPR_B, XPT,                        &
+                             XPP_D1, XPP_D2, XPP_D3, XPP_H1,           &
+                             XPP_H2, XPP_H3, XPP_H4, XWT, XPTR ,       &
+                             XPROD_SCHEME, XSM_END, XFREQ_GRO,         &
+                             XSCAVEN_COEF
+!
+NAMELIST/NAM_REPROD_OPER/ LREPROD_OPER, XEVERG_RSMIN, XEVERG_VEG, &
+                          CDGAVG, CDGDIF, CIMPLICIT_WIND, CQSAT,  &
+                          CCHARNOCK
+#endif
 !
 !-------------------------------------------------------------------------------
 !*       0. INIT
@@ -159,10 +161,12 @@ XANSMAX = 0.85 ! (-)
 !
 XAGLAMIN = 0.8 ! (-)
 XAGLAMAX = 0.85 ! (-)
+#ifndef CROCUS_EXT
 !
 ! Use recommended settings for snow albedo (FALSE = ISBA default)
 ! 
-!VV LMEBREC=.FALSE.
+LMEBREC=.FALSE.
+#endif
 !
 ! Fraction of maximum value of the albedo of snow that is reached for melting
 ! snow
@@ -172,14 +176,17 @@ XANSFRACMEL = 1.0 ! (-)
 ! Threeshold temperature above which the snow albedo starts to decrease 
 !
 XTEMPANS = 274.15 ! (K)
+#ifndef CROCUS_EXT
 !
 ! Minimum value of the albedo of snow reached under canopy vegetation:
 !
-!VV XANSMINMEB = 0.30 ! (-)
+XANSMINMEB = 0.30 ! (-)
+#endif
 !
 ! Height of aged snow in glacier case (allows Pn=1)
 !
 XHGLA    = 33.3 !(m)
+#ifndef CROCUS_EXT
 ! 
 ! Coefficient for calculation of snow fraction over vegetation
 !
@@ -187,15 +194,16 @@ XWSNV = 5.0 !(-)
 !
 ! Water direct albedo coefficient (option "TA96")
 !
-!VV XALBCOEF_TA96 =  0.037
+XALBCOEF_TA96 =  0.037
 !
 ! Water diffuse albedo
 !
-!VV XALBSCA_WAT =  0.06
+XALBSCA_WAT =  0.06
 
 ! Coefficient for calculation of floodplain fraction over vegetation
 !
-!VV XCFFV = 4.0
+XCFFV = 4.0
+#endif
 !
 ! Roughness length of pure snow surface (m)
 !
@@ -219,10 +227,11 @@ END IF
 ! dependence of melt when snow fraction < unity.
 !
 XTAU_SMELT = 300.
+#ifndef CROCUS_EXT
 !
 ! Extinction coefficient for view factor for long-wave radiation 
 !
-!VV XTAU_LW = 0.5   ! -
+XTAU_LW = 0.5   ! -
 !
 ! MEB resistance increase factor for canopy air sapce.
 ! If=1, then NO effect. It is generally >=1
@@ -230,11 +239,12 @@ XTAU_SMELT = 300.
 ! does not account for extremely stable conditions,
 ! such as over a snowpack.
 !
-!VV XRAGNC_FACTOR= 200. ! -
+XRAGNC_FACTOR= 200. ! -
 !
 ! MEB maximum intercepted water fraction (on vegetation)
 !
-!VV XKDELTA_WR   = 0.25 ! -
+XKDELTA_WR   = 0.25 ! -
+#endif
 !
 ! NAM_SURF_SNOW_CSTS
 !
@@ -269,7 +279,6 @@ XPP_H3 = 0.
 XPP_H4 = 0.
 XWT = 0.
 XPTR = 0.
-XTIMESNOWMAK = 0.
 XPROD_SCHEME = 0.
 XSM_END = (/0,0,0,0/)
 XFREQ_GRO = 0
@@ -288,10 +297,12 @@ XPERCENTAGEPORE_ICE = 0.5
 !
 ! Snow viscosity coefficient
 XVVISC3= 0.023
+#ifndef CROCUS_EXT
 !
 ! Roughness length for flood (m)
 !
-!VV XZ0FLOOD = 0.0002
+XZ0FLOOD = 0.0002
+#endif
 
 !!! impurity value 
 XIMPUR_DRY(1)=0. ! BC dry deposition at top of snowpack (g m-2 s-1)
@@ -307,184 +318,192 @@ XIMPUR_WET(3:5)=0. ! Other types of impurities deposition of with precipitation 
 
 XSCAVEN_COEF=(/0.0,0.0,0.,0.,0./) 
 
-
-
+#ifdef CROCUS_EXT
 ! VV Add init needed for the externalized version of Crocus
-XRIMAX=0.2
+IF (HSNOWRES .EQ.'RIL') THEN
+    XRIMAX = 0.2
+ELSE IF (HSNOWRES .EQ.'RI1') THEN
+    XRIMAX = 0.1
+ELSE IF (HSNOWRES .EQ.'RI2') THEN
+    XRIMAX = 0.026
+END IF
 LALDTHRES = .FALSE. 
 XCISMIN = 0. ! Not used when LALDTHRES = .FALSE.
 XVMODMIN  = 0. ! Not used when LALDTHRES = .FALSE.
+#endif
 
-
-!VV #ifndef CROCUS_EXT
-!VV !-------------------------------------------------------------------------------
-!VV !
-!VV ! * Reproductibility for SURFEX OPER
-!VV !
-!VV LREPROD_OPER = .FALSE. ! default
-!VV !
-!VV ! * Vegetation parameters for tropical forest
-!VV !
-!VV !XEVERG_RSMIN : old = 250. (Manzi 1993) but observations range 
-!VV !               from 140 to 180. According to Delire et al. (1997) and 
-!VV !               new tests over 6 local sites, 175. is recommended
-!VV !               Should be the default after check with AROME/ALADIN
-!VV !
-!VV XEVERG_RSMIN = 175.  !Rsmin
-!VV !
-!VV !XEVERG_VEG : old = 0.99 (Manzi 1993) but according to Delire et al. (1997) and 
-!VV !             new tests over 6 local sites, 1.0 is recommended because 0.99
-!VV !             induces unrealistic bare soil evaporation for Tropical forest
-!VV !             Should be the default after check with AROME/ALADIN
-!VV !
-!VV XEVERG_VEG   = 1.0  !Veg fraction
-!VV !
-!VV ! * Soil depth average
-!VV !
-!VV CDGAVG = 'INV'
-!VV !
-!VV ! * Soil depth with ISBA-DF
-!VV !
-!VV CDGDIF = 'ROOT'
-!VV !
-!VV ! * wind implicitation option
-!VV !
-!VV CIMPLICIT_WIND = 'NEW'
-
+#ifndef CROCUS_EXT
+!-------------------------------------------------------------------------------
+!
+! * Reproductibility for SURFEX OPER
+!
+LREPROD_OPER = .FALSE. ! default
+!
+! * Vegetation parameters for tropical forest
+!
+!XEVERG_RSMIN : old = 250. (Manzi 1993) but observations range 
+!               from 140 to 180. According to Delire et al. (1997) and 
+!               new tests over 6 local sites, 175. is recommended
+!               Should be the default after check with AROME/ALADIN
+!
+XEVERG_RSMIN = 175.  !Rsmin
+!
+!XEVERG_VEG : old = 0.99 (Manzi 1993) but according to Delire et al. (1997) and 
+!             new tests over 6 local sites, 1.0 is recommended because 0.99
+!             induces unrealistic bare soil evaporation for Tropical forest
+!             Should be the default after check with AROME/ALADIN
+!
+XEVERG_VEG   = 1.0  !Veg fraction
+!
+! * Soil depth average
+!
+CDGAVG = 'INV'
+!
+! * Soil depth with ISBA-DF
+!
+CDGDIF = 'ROOT'
+!
+! * wind implicitation option
+!
+CIMPLICIT_WIND = 'NEW'
+#endif
 !
 ! * qsat computation
 !
 CQSAT = 'NEW'
-
-!VV !
-!VV ! * Charnock parameter
-!VV !
-!VV CCHARNOCK = 'NEW'
-!VV !
-!VV !-------------------------------------------------------------------------------
-!VV !*       2. User values
-!VV !-------------------------------------------------------------------------------
-!VV !
-!VV  CALL GET_LUOUT(CPROGNAME,ILUOUT)
-!VV !    
-!VV  CALL OPEN_NAMELIST(CPROGNAME,ILUNAM)
-!VV !
-!VV  CALL POSNAM(ILUNAM,'NAM_SURF_CSTS',GFOUND,ILUOUT)
-!VV IF (GFOUND) READ(UNIT=ILUNAM,NML=NAM_SURF_CSTS)
-!VV !
-!VV IF(LMEBREC)THEN
-!VV ! Fraction of maximum value of the albedo of snow that is reached for melting
-!VV ! snow
-!VV !
-!VV   XANSFRACMEL = 0.85 ! (-)
-!VV !
-!VV ! Threeshold temperature above which the snow albedo starts to decrease 
-!VV !
-!VV   XTEMPANS = 268.15 ! (K)
-!VV !
-!VV ENDIF
-!VV !
-!VV  CALL POSNAM(ILUNAM,'NAM_SURF_SNOW_CSTS',GFOUND,ILUOUT)
-!VV IF (GFOUND) READ(UNIT=ILUNAM,NML=NAM_SURF_SNOW_CSTS)
-!VV !
-!VV !-------------------------------------------------------------------------------
-!VV !*       3. For Reproductibility
-!VV !-------------------------------------------------------------------------------
-!VV !
-!VV  CALL POSNAM(ILUNAM,'NAM_REPROD_OPER',GFOUND,ILUOUT)
-!VV IF (GFOUND) READ(UNIT=ILUNAM,NML=NAM_REPROD_OPER)
-!VV !
-!VV  CALL TEST_NAM_VAR_SURF(ILUOUT,'CDGAVG',CDGAVG,'ARI','INV')
-!VV  CALL TEST_NAM_VAR_SURF(ILUOUT,'CDGDIF',CDGDIF,'SOIL','ROOT')
-!VV  CALL TEST_NAM_VAR_SURF(ILUOUT,'CIMPLICIT_WIND',CIMPLICIT_WIND,'NEW','OLD')
-!VV  CALL TEST_NAM_VAR_SURF(ILUOUT,'CQSAT',CIMPLICIT_WIND,'NEW','OLD')
-!VV  CALL TEST_NAM_VAR_SURF(ILUOUT,'CCHARNOCK',CIMPLICIT_WIND,'NEW','OLD')
-!VV !
-!VV  CALL TEST_NAM_VAR_SURF(ILUOUT,'XEVERG_RSMIN',XEVERG_RSMIN,175.0,250.0)
-!VV  CALL TEST_NAM_VAR_SURF(ILUOUT,'XEVERG_VEG',XEVERG_VEG,1.0,0.99) 
-!VV !
-!VV IF(LREPROD_OPER)THEN
-!VV   XEVERG_RSMIN   = 250.
-!VV   XEVERG_VEG     = 0.99
-!VV   CDGAVG         = 'ARI'
-!VV   CQSAT          = 'OLD'
-!VV   CCHARNOCK      = 'OLD'
-!VV ENDIF
-!VV !
-!VV ! Water global albedo (option "UNIF")
-!VV !
-!VV IF(XALBWAT==XUNDEF)THEN
-!VV   IF(LREPROD_OPER)THEN
-!VV     XALBWAT =  0.135
-!VV   ELSE
-!VV     XALBWAT =  0.065
-!VV   ENDIF
-!VV ENDIF
-!VV !
-!VV ! Sea ice albedo
-!VV !
-!VV IF(XALBSEAICE==XUNDEF)THEN
-!VV   IF(LREPROD_OPER)THEN
-!VV     XALBSEAICE =  0.85
-!VV   ELSE
-!VV     XALBSEAICE =  0.71
-!VV   ENDIF
-!VV ENDIF
-!VV !
-!VV ! water ice and snow albedo
-!VV !
-!VV IF(XALBWATICE==XUNDEF)THEN
-!VV   IF(LREPROD_OPER)THEN
-!VV     XALBWATICE =  0.85
-!VV   ELSE
-!VV     XALBWATICE =  0.40
-!VV   ENDIF
-!VV ENDIF
-!VV !
-!VV IF(XALBWATSNOW==XUNDEF)THEN
-!VV   IF(LREPROD_OPER)THEN
-!VV     XALBWATSNOW =  0.85
-!VV   ELSE
-!VV     XALBWATSNOW =  0.60
-!VV   ENDIF
-!VV ENDIF
-!VV !                   
-!VV ! Water emissivity
-!VV !
-!VV IF(XEMISWAT==XUNDEF)THEN
-!VV   IF(LREPROD_OPER)THEN
-!VV     XEMISWAT =  0.98
-!VV   ELSE
-!VV     XEMISWAT =  0.96
-!VV   ENDIF
-!VV ENDIF
-!VV !
-!VV ! Sea ice emissivity
-!VV !
-!VV IF(XEMISWATICE==XUNDEF)THEN
-!VV   IF(LREPROD_OPER)THEN
-!VV     XEMISWATICE =  1.0
-!VV   ELSE
-!VV     XEMISWATICE =  0.97
-!VV   ENDIF
-!VV ENDIF
-!VV !
-!VV !
-!VV ! Snow emissivity:
-!VV !
+#ifndef CROCUS_EXT
+!
+! * Charnock parameter
+!
+CCHARNOCK = 'NEW'
+!
+!-------------------------------------------------------------------------------
+!*       2. User values
+!-------------------------------------------------------------------------------
+!
+ CALL GET_LUOUT(CPROGNAME,ILUOUT)
+!    
+ CALL OPEN_NAMELIST(CPROGNAME,ILUNAM)
+!
+ CALL POSNAM(ILUNAM,'NAM_SURF_CSTS',GFOUND,ILUOUT)
+IF (GFOUND) READ(UNIT=ILUNAM,NML=NAM_SURF_CSTS)
+!
+IF(LMEBREC)THEN
+! Fraction of maximum value of the albedo of snow that is reached for melting
+! snow
+!
+  XANSFRACMEL = 0.85 ! (-)
+!
+! Threeshold temperature above which the snow albedo starts to decrease 
+!
+  XTEMPANS = 268.15 ! (K)
+!
+ENDIF
+!
+ CALL POSNAM(ILUNAM,'NAM_SURF_SNOW_CSTS',GFOUND,ILUOUT)
+IF (GFOUND) READ(UNIT=ILUNAM,NML=NAM_SURF_SNOW_CSTS)
+!
+!-------------------------------------------------------------------------------
+!*       3. For Reproductibility
+!-------------------------------------------------------------------------------
+!
+ CALL POSNAM(ILUNAM,'NAM_REPROD_OPER',GFOUND,ILUOUT)
+IF (GFOUND) READ(UNIT=ILUNAM,NML=NAM_REPROD_OPER)
+!
+ CALL TEST_NAM_VAR_SURF(ILUOUT,'CDGAVG',CDGAVG,'ARI','INV')
+ CALL TEST_NAM_VAR_SURF(ILUOUT,'CDGDIF',CDGDIF,'SOIL','ROOT')
+ CALL TEST_NAM_VAR_SURF(ILUOUT,'CIMPLICIT_WIND',CIMPLICIT_WIND,'NEW','OLD')
+ CALL TEST_NAM_VAR_SURF(ILUOUT,'CQSAT',CIMPLICIT_WIND,'NEW','OLD')
+ CALL TEST_NAM_VAR_SURF(ILUOUT,'CCHARNOCK',CIMPLICIT_WIND,'NEW','OLD')
+!
+ CALL TEST_NAM_VAR_SURF(ILUOUT,'XEVERG_RSMIN',XEVERG_RSMIN,175.0,250.0)
+ CALL TEST_NAM_VAR_SURF(ILUOUT,'XEVERG_VEG',XEVERG_VEG,1.0,0.99) 
+!
+IF(LREPROD_OPER)THEN
+  XEVERG_RSMIN   = 250.
+  XEVERG_VEG     = 0.99
+  CDGAVG         = 'ARI'
+  CQSAT          = 'OLD'
+  CCHARNOCK      = 'OLD'
+ENDIF
+!
+! Water global albedo (option "UNIF")
+!
+IF(XALBWAT==XUNDEF)THEN
+  IF(LREPROD_OPER)THEN
+    XALBWAT =  0.135
+  ELSE
+    XALBWAT =  0.065
+  ENDIF
+ENDIF
+!
+! Sea ice albedo
+!
+IF(XALBSEAICE==XUNDEF)THEN
+  IF(LREPROD_OPER)THEN
+    XALBSEAICE =  0.85
+  ELSE
+    XALBSEAICE =  0.71
+  ENDIF
+ENDIF
+!
+! water ice and snow albedo
+!
+IF(XALBWATICE==XUNDEF)THEN
+  IF(LREPROD_OPER)THEN
+    XALBWATICE =  0.85
+  ELSE
+    XALBWATICE =  0.40
+  ENDIF
+ENDIF
+!
+IF(XALBWATSNOW==XUNDEF)THEN
+  IF(LREPROD_OPER)THEN
+    XALBWATSNOW =  0.85
+  ELSE
+    XALBWATSNOW =  0.60
+  ENDIF
+ENDIF
+!                   
+! Water emissivity
+!
+IF(XEMISWAT==XUNDEF)THEN
+  IF(LREPROD_OPER)THEN
+    XEMISWAT =  0.98
+  ELSE
+    XEMISWAT =  0.96
+  ENDIF
+ENDIF
+!
+! Sea ice emissivity
+!
+IF(XEMISWATICE==XUNDEF)THEN
+  IF(LREPROD_OPER)THEN
+    XEMISWATICE =  1.0
+  ELSE
+    XEMISWATICE =  0.97
+  ENDIF
+ENDIF
+!
+!
+! Snow emissivity:
+!
  IF(XEMISSN==XUNDEF)THEN
-!VV   IF(LREPROD_OPER)THEN
-!VV     XEMISSN =  1.0
-!VV   ELSE
+  IF(LREPROD_OPER)THEN
+    XEMISSN =  1.0
+  ELSE
+#endif
+! In externalized Crocus LREPROD_OPER is not defined and XEMISS needs to be defined. 
      XEMISSN =  0.99
-!VV   ENDIF
+#ifndef CROCUS_EXT
  ENDIF
-!VV !
-!VV !-------------------------------------------------------------------------------
-!VV !
-!VV  CALL CLOSE_NAMELIST(CPROGNAME,ILUNAM)
-!VV !
-!VV #endif
+ENDIF
+!
+!-------------------------------------------------------------------------------
+!
+ CALL CLOSE_NAMELIST(CPROGNAME,ILUNAM)
+!
+#endif
 IF (LHOOK) CALL DR_HOOK('INI_SURF_CSTS',1,ZHOOK_HANDLE)
 !
 !-------------------------------------------------------------------------------

@@ -117,7 +117,7 @@ endif
 ifeq ($(DIST),intel)
 FC=ifort
 CC=icc
-GFLAG=-check bounds -fpe0 #-stand f03 #-assume realloc-lhs #-check all
+GFLAG=-check bounds -fpe0 -DCROCUS_EXT #-stand f03 #-assume realloc-lhs #-check all
 LFLAG=-c -g -traceback -fp-model source
 CFLAG=
 ifeq ($(shell test $$(icc -dumpversion | cut -d '.' -f 1) -lt 17; echo $$?), 0)
@@ -128,7 +128,7 @@ FTN90PPOPT=-Tf
 else
 FC=gfortran
 CC=gcc
-GFLAG=-fbounds-check -ffpe-trap=invalid,zero,overflow -Wconversion -Wsurprising -Wintrinsic-shadow -Wtarget-lifetime #-std=f2003 #-fcheck=all -ftrapv
+GFLAG=-fbounds-check -ffpe-trap=invalid,zero,overflow -Wconversion -Wsurprising -Wintrinsic-shadow -Wtarget-lifetime -DCROCUS_EXT #-std=f2003 #-fcheck=all -ftrapv
 ifeq ($(shell test $$(gcc -dumpversion | cut -d '.' -f 1) -gt 5; echo $$?), 0)
   GFLAG+= -Winteger-division
 endif

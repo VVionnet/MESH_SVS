@@ -140,7 +140,6 @@ REAL, DIMENSION(:),   INTENT(INOUT) :: PAVA_TYP            ! type of avalanche (
 REAL, DIMENSION(:,:,:), INTENT(OUT) :: PSNOWIMP_CONC
 REAL, DIMENSION(:,:,:), INTENT(IN) :: PSNOWIMP
 !
-!
 !########################Declaration of local variables############################################!
 ! scalar (no initialization required)
 REAL    :: ZDIAM,&                                         ! optical diameter for SSA diagnostic (m)
@@ -203,8 +202,10 @@ LOGICAL, DIMENSION(SIZE(PSNOWSWE,1)) :: GRAM,&             ! no ram>2 found yet
                                         GMEL_GRO,&         ! is there one layer in sup pro between depth > thr and height >thr with thermal state <= 2
                                         GTHERMSTATE_BOT    ! thermal_state <= 2 of bottom layer
 !
+REAL :: ZDRYDENSITY
 INTEGER :: IMAX_USE
 INTEGER, DIMENSION(SIZE(PSNOWSWE,1)) :: INLVLS_USE
+INTEGER, DIMENSION(SIZE(PSNOWSWE,1),SIZE(PSNOWSWE,2)) :: ISNOWHIST
 REAL(KIND=JPRB) :: ZHOOK_HANDLE
 !-------------------------------------------------------------------------------
 !
@@ -213,6 +214,8 @@ IF (LHOOK) CALL DR_HOOK('SNOWCRO_DIAG',0,ZHOOK_HANDLE)
 !-------------------------------------------------------------------------------
 !
 !########################Initialization of output and local variables##############################!
+! Type conversion to only deal with integers
+ISNOWHIST(:,:) = NINT(PSNOWHIST(:,:))
 !
 ! Two dimensional variables (intitalization not absolutely necessary)
 PSNOWDEND       = XUNDEF
@@ -335,7 +338,7 @@ DO JST=1,IMAX_USE
                                                  (PSNOWSPHER(JJ,JST) - 3.))) 
 !
 !       10 classes of dendricity 0:[0,0.1[, ..., 9:[0.9,1.0[ (value 1.0 does not exist)
-        ICLASS_DEND = INT(10 * PSNOWDEND(JJ,JST))
+        ICLASS_DEND = MIN(INT(10 * PSNOWDEND(JJ,JST)), 9)
 
 !       10 classes of sphericity 0:[0,0.05[, 1:[0.05,0.15[, ..., 9:[0.85,1.0]. Strange
         ICLASS_SPHER = MIN(INT(10 * PSNOWSPHER(JJ,JST) + 0.05),9)
@@ -372,14 +375,14 @@ DO JST=1,IMAX_USE
 !       Overall 10x3x6 classes from 1 to 180 (included)
 !       Historical variable {0,1,...,5} already defines 6 classes
         PSNOWTYPEMEPRA(JJ,JST) = JPTAB_NODEND(1 + ICLASS_SPHER + ICLASS_SIZE * 10 +&
-                                              NINT(PSNOWHIST(JJ,JST)) * 30)
+                                              ISNOWHIST(JJ,JST) * 30)
       ENDIF
 !     For all snow types (dendritic and non-dendritic)
 !
 !     Additional condition to define MF/RG
 !     WARNING: the rounding on ZSCW here and snowttols causes very slight differences an the condition
 !     WARNING: could be changed to 1e-6
-      IF ((ZSCW > XSURF_EPSILON) .AND. (PSNOWHIST(JJ,JST) < 2)) THEN
+      IF ((ZSCW > XSURF_EPSILON) .AND. (ISNOWHIST(JJ,JST) < 2)) THEN
         PSNOWTYPEMEPRA(JJ,JST) = JP_RG_MF
       ENDIF
 !
@@ -501,18 +504,20 @@ DO JST=1,IMAX_USE
 !       defined as 5% of pore volume in B92 option.
         ! Cluzet et al 2016 : different lwc options
         ! To be optimized
+        ZDRYDENSITY = PSNOWRHO(JJ,JST) - ZSCW
+        !
         IF ( HSNOWHOLD == 'B92' ) THEN
-          ZLWCMAX = XPERCENTAGEPORE * XRHOLW * (1 - (PSNOWRHO(JJ,JST) - ZSCW)/XRHOLI)
+          ZLWCMAX = XPERCENTAGEPORE * XRHOLW * (1 - ZDRYDENSITY/XRHOLI)
 !         ZLWCMAX =  SNOWCROHOLD_0D(PSNOWRHO(JJ,JST), PSNOWLIQ(JJ,JST), PSNOWDZ(JJ,JST) * PDIRCOSZW(JJ)) *  &
 !                   XRHOLW / (PSNOWDZ(JJ,JST) * PDIRCOSZW(JJ))
         ELSE IF ( HSNOWHOLD == 'B02' ) THEN 
           ZLWCMAX = SNOW3LHOLD(PSNOWRHO(JJ,JST), PSNOWDZ(JJ,JST) * PDIRCOSZW(JJ)) * &
               XRHOLW / (PSNOWDZ(JJ,JST) * PDIRCOSZW(JJ))
         ELSE IF ( HSNOWHOLD == 'SPK' ) THEN
-          ZLWCMAX = SNOWSPKHOLD(PSNOWRHO(JJ,JST), PSNOWLIQ(JJ,JST), PSNOWDZ(JJ,JST) * PDIRCOSZW(JJ)) *  &
+          ZLWCMAX = SNOWSPKHOLD(ZDRYDENSITY, PSNOWDZ(JJ,JST) * PDIRCOSZW(JJ)) *  &
               XRHOLW / (PSNOWDZ(JJ,JST) * PDIRCOSZW(JJ))
         ELSE IF ( HSNOWHOLD == 'O04' ) THEN
-          ZLWCMAX = SNOWO04HOLD_0D(PSNOWRHO(JJ,JST), PSNOWLIQ(JJ,JST), PSNOWDZ(JJ,JST) * PDIRCOSZW(JJ)) * &
+          ZLWCMAX = SNOWO04HOLD_0D(ZDRYDENSITY, PSNOWDZ(JJ,JST) * PDIRCOSZW(JJ)) * &
               XRHOLW / (PSNOWDZ(JJ,JST) * PDIRCOSZW(JJ))
         ENDIF
 !
@@ -531,7 +536,7 @@ DO JST=1,IMAX_USE
 !       resistant, even angular).
 !
         IF ((PSNOWSPHER(JJ,JST) > 0.8).AND.&
-           ((PSNOWHIST(JJ,JST)==3).OR.(PSNOWHIST(JJ,JST)==5))) THEN
+           ((ISNOWHIST(JJ,JST)==3).OR.(ISNOWHIST(JJ,JST)==5))) THEN
           ZSHE_SPH = 1.05
         ELSEIF (PSNOWSPHER(JJ,JST) <= 0.25) THEN
           ZSHE_SPH = 0.45  + 0.7  * PSNOWSPHER(JJ,JST)
@@ -593,12 +598,12 @@ DO JST=1,IMAX_USE
 !       In case of melt/freeze cycle snow, C_fre decreases from about 1.95 to 1 with
 !       liquid water content, with 1/scw trend.
 !
-        IF ((PSNOWHIST(JJ,JST) <= 1).OR.(ZEC > 0.5)) THEN
+        IF ((ISNOWHIST(JJ,JST) <= 1).OR.(ZEC > 0.5)) THEN
           ZSHE_FRE = 1.
         ELSEIF (ZEC<XSURF_EPSILON) THEN !Changed from==0 to <1e-16
 !         C_fre_sec = 1.5 * ((1.15 + 0.2 * (1.-spher)) / 1.15) * (1 + 0.2/C_mts)
           ZSHE_FRE = (1.7608695652 - 0.2608695652 * PSNOWSPHER(JJ,JST)) * (1. + 0.2/ZSHE_MTS)
-        ELSEIF (PSNOWHIST(JJ,JST) <= 3) THEN
+        ELSEIF (ISNOWHIST(JJ,JST) <= 3) THEN
           ZSHE_FRE = 1
         ELSEIF (ZEC <= 0.1) THEN
           ZSHE_FRE = -2. * ZEC + 1.5
@@ -961,7 +966,7 @@ DO JST=1,IMAX_USE
         GWET(JJ)=.FALSE.
       ENDIF
 !     Depth of top refrozen snow
-      IF (GREFROZEN(JJ).AND.(PSNOWHIST(JJ,JST)>=2).AND.(PSNOWTEMP(JJ,JST)<273.15)) THEN
+      IF (GREFROZEN(JJ).AND.(ISNOWHIST(JJ,JST)>=2).AND.(PSNOWTEMP(JJ,JST)<273.15)) THEN
         PSNOW_REFTHICKNESS(JJ) = PSNOW_REFTHICKNESS(JJ) + PSNOWDZ(JJ,JST)
       ELSE
         GREFROZEN(JJ)=.FALSE.
