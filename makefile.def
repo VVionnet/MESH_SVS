@@ -132,7 +132,8 @@ VPATH+=$(DIR_REPO)/Modules/modelutils/1.6.0/src/base: \
 	$(DIR_REPO)/Modules/modelutils/1.6.0/src/tmg_stubs: \
 	$(DIR_REPO)/Modules/modelutils/1.6.0/src/utils: \
 	$(DIR_REPO)/Modules/modelutils/1.6.0/src/CUSTOM_ADDINS:
-INC_DIRS+=-I$(DIR_REPO)/Modules/modelutils/1.6.0/include
+INC_DIRS+=-I$(DIR_REPO)/Modules/modelutils/1.6.0/include\
+          -DCROCUS_EXT
 #OBJECTS+=clib_itf_mod.o tdpack_const.o tdpack.o mu_jdate_c.o cmcdate.o \
 #	mu_jdate.o vslog.o vscos.o vssin.o
 OBJECTS+=clib_itf_mod.o tdpack_const.o tdpack.o cmcdate.o mu_jdate_c.o mu_jdate.o vslog.o str_mod.o str_split.o tracers_attributes.o gmmx_name.o tmg_stubs.o libopenmp_stub.o vscos.o vssin.o difuvd2.o
