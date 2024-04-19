@@ -15,14 +15,14 @@
 !-------------------------------------- LICENCE END ---------------------------
 
       SUBROUTINE DRAG_SVS2 ( TGRS, TGRVS, TVGLS, TVGHS, WD1, &
-                              WR_VL, WR_VH,  THETAA, VMOD, VDIR, HU,  &
+                              WR_VL, WR_VH,  THETAA, VMOD, VDIR, HU, RHOA, &
                               PS, RS, Z0, Z0LOC, Z0VG, WFC, WSAT, CLAY1,  &
                               SAND1, LAI_VL, LAI_VH, WRMAX_VL,WRMAX_VH,&
                               ZUSL, ZTSL, LAT, &
                               FCOR, Z0HA, VEGL, VEGH, CLUMPING,&
                               VGH_DENS, Z0MVH,Z0MVL, VEGHEIGHT,  &
-                              LAIVH, ZVCAN, &
-                              RESAGR,RESAGRV, RESA_VL, RESA_VH, &
+                              LAIVH, ZVCAN, FCANS,SNCMA, &
+                              RESAGR,RESAGRV, RESA_VL, RESA_VH, RES_SNCA, &
                               HUSURF,HUSURFGV, &
                               HRSURF,HRSURFGV, &
                               HV_VL, HV_VH, DEL_VL, DEL_VH,  &
@@ -31,6 +31,8 @@
       use sfc_options
       use sfclayer_mod, only: sl_sfclayer,SL_OK
       use svs_configs
+      use MODE_THERMOS
+      use MODD_CSTS
 !
       implicit none
 !!!#include <arch_specific.hf>
@@ -39,12 +41,12 @@
       REAL TGRS(N), TVGLS(N), TVGHS(N), WR_VL(N), WR_VH(N), THETAA(N), VMOD(N), VDIR(N), HU(N), CLAY1(N)
       REAL SAND1(N), PS(N), RS(N), Z0(N),Z0LOC(N), Z0VG(N), WFC(N,NL_SVS), WSAT(N,NL_SVS)
       REAL LAI_VL(N), LAI_VH(N),WRMAX_VH(N),WRMAX_VL(N), ZUSL(N), ZTSL(N), LAT(N)
-      REAL FCOR(N), Z0HA(N), Z0HBG(N), Z0HVL(N), Z0HVH(N), Z0HGV(N)
+      REAL FCOR(N), Z0HA(N), Z0HBG(N), Z0HVL(N), Z0HVH(N), Z0HGV(N), FCANS(N)
       REAL VGH_DENS(N), Z0MVH(N), Z0MVL(N), VEGHEIGHT(N), LAIVH(N), ZVCAN(N)
-      REAL RESAGR(N),RESAGRV(N), RESA_VL(N), RESA_VH(N)
+      REAL RESAGR(N),RESAGRV(N), RESA_VL(N), RESA_VH(N), RES_SNCA(N)
       REAL HUSURF(N),HUSURFGV(N), HV_VL(N), HV_VH(N), DEL_VL(N), DEL_VH(N)
       REAL HRSURF(N),HRSURFGV(N), WD1(N)
-      REAL VEGH(N), VEGL(N), TGRVS(N)
+      REAL VEGH(N), VEGL(N), TGRVS(N), SNCMA(N), RHOA(N)
       REAL CLUMPING
 !
 !Author
@@ -116,6 +118,9 @@
 ! VGH_DENS   Density of trees in areas of high vegeation (m)
 ! VEGHEIGHT Height of trees in areas of high vegeation (m)
 ! ZVCAN   Wind speed within or above the canopy depending on CANO_REF_FORCING (m/s)
+! FCANS        Canopy layer snowcover fractions
+! SNCMA   Snow intercepted in high vegetation (kg m-2)
+! RHOA   Air density (kg m-3)
 !
 !           - Output -
 ! HRSURF   relative humidity of the bare ground surface (1st layer)
@@ -135,6 +140,7 @@
 ! ZRSURF     Aerodynamic surface resistance for soil under canopy (cf. Gouttevin et al. 2013)
 ! Z0MVH      local mom roughness length for high veg.
 ! Z0MVL      local mom roughness length for high veg.
+! RES_SNCA  Resistance for sublimation of the intercepted snow in high canopy (
 
 !
       INTEGER I, zopt
@@ -142,12 +148,16 @@
       real, dimension(n) :: temp, coef_vl, coef_vh, qsatgr, qsat_vl, qsat_vh, &
            zqs_vl, zqs_vh, ctugr, ctugrv, ctuvg, wcrit_hrsurf, z0bg_n,ra,&
            z0gv_n, qsatgrv,wcrit_hrsurfgv, z0hg, zz0hgv, ZZ0HVH, ZZ0HVL
-     real, dimension(n) :: ZUGV, ZTGV, ZZ0MGV, ZDH
+     real, dimension(n) :: ZUGV, ZTGV, ZZ0MGV, ZDH, QSATI_VH, VSUBL
 
      real :: ZRSURF, LZZ0, LZZ0T, RESAGRV_NEUTRAL, ZUSTAR, ZFSURF
-
+     REAL :: NU, MU, NR, DVAP
+     REAL :: XI2,EXT2
      REAL, PARAMETER :: ZRALAI = 3.! Parameter for excess resistance introduced by canopy between surface and ref level (cf Table 1, Gouttevin et al. 2015)
      REAL, PARAMETER :: ZRCHD = 0.67    ! Ratio of displacement height to canopy height
+     REAL, PARAMETER :: RADIUS_ICESPH = 5e-4 ! Radius of single 'ideal' ice shpere [m]
+     REAL, PARAMETER ::     GAMA = 1.15 ! Parameter used in the computation of the exponential wind profile in the canopy
+     REAL, PARAMETER ::    ZVENT = 0.75 ! Ratio between ventilation wind speed height and tree height [-]
 !
 !***********************************************************************
 !
@@ -521,6 +531,7 @@
              DEL_VL(I) =   MIN(WR_VL(I),WRMAX_VL(I)) / &
               ((1.-COEF_VL(I))*MIN(WR_VL(I),WRMAX_VL(I)) +COEF_VL(I)*WRMAX_VL(I) )
 !
+             DEL_VL(I) = MIN(DEL_VL(I),1.)
 
          ELSE
              COEF_VL(I) = 1.
@@ -614,6 +625,7 @@
       DO I=1,N
         QSAT_VH(I) = FOQST( TVGHS(I), PS(I) )
       END DO
+      QSATI_VH(:) = QSATI( TVGHS(:), PS(:) )
 !
 !
 !*                         then calculate the fraction of the foliage
@@ -632,9 +644,14 @@
          IF(VEGH(I)>EPSILON_SVS) THEN   ! High vegetation present in the grid cell
              COEF_VH(I) = 1. + 2.*LAI_VH(I)
 !
-             DEL_VH(I) =   MIN(WR_VH(I),WRMAX_VH(I)) / &
+             IF (HU(I) .GT. QSAT_VH(I)) THEN ! Condensation
+                DEL_VH(I) = 1.
+             ELSE
+             	DEL_VH(I) =   MIN(WR_VH(I),WRMAX_VH(I)) / &
                    ( (1.-COEF_VH(I))*MIN(WR_VH(I),WRMAX_VH(I)) + COEF_VH(I)*WRMAX_VH(I) )
 !
+             	DEL_VH(I) = MIN(DEL_VH(I),1.)
+             ENDIF
 
          ELSE
              COEF_VH(I) = 1.
@@ -643,10 +660,6 @@
 !
       END DO
 !
-!
-!
-!
-
 !
 !
 !                         calculate Hv based on previous time
@@ -672,7 +685,10 @@
       !
       !                         calculate specific humidity of high vegetation
       !
-               ZQS_VH(I) = HV_VH(I) * QSAT_VH(I) + ( 1. - HV_VH(I) ) * HU(I)
+
+             ZQS_VH(I) = (1.-FCANS(I)) * (HV_VH(I) * QSAT_VH(I) + ( 1. - HV_VH(I) ) * HU(I)) &
+                         + FCANS(I) * QSATI_VH(I)
+
       !
          ELSE
                ZQS_VH(I) = 0.
@@ -681,6 +697,7 @@
       END DO
    !
    !
+!          Calculate aerodynamic resistane of high vegetation
    !
    !
       if ( svs_dynamic_z0h ) then
@@ -697,6 +714,7 @@
             return
          endif
       else
+
          ! NL: Updated with roughn. lengths for VH instead of averaged roughn. length for veg
          i = sl_sfclayer( THETAA, HU, VMOD, VDIR, ZUSL, ZTSL, &
               TVGHS, ZQS_VH, Z0MVH, ZZ0HVH, LAT, FCOR, &
@@ -722,7 +740,50 @@
       END DO
 
 
-!*       3.     HALSTEAD COEFFICIENT (RELATIVE HUMIDITY OF THE VEGETATION) (HV)
+!*       3.     Resistance of the snow intercepted in the high vegetation (RES_SNCA)
+!               ---------------------------------------------------------------
+!
+
+      DO I=1,N
+
+         IF (FCANS(I) .GT. 0.) THEN
+
+            ! Fraction of the entire forest height [-]
+            XI2 = 1.-ZVCAN(I)
+
+            ! Canopy wind speed extinction coefficient [-]
+            ! Ellis et al (2010) (EL10) refers to Eagleson (2002) to justify the formulation of this coefficient
+            EXT2 = GAMA * LAI_VH(I)
+
+            ! Computation of ventilation wind speed of intercepted snow derived from above-caopny wind speed  [Eq 8 in EL10]
+            ! Estimated within canopy wind speed at fraction XI2 of the entire tree height [Eq 8 in EL10]  [m s-1]
+            VSUBL(I) = ZVCAN(I) * EXP(-1. * EXT2 * XI2)
+
+            ! Sutherland's equation for kinematic viscosity
+            MU = 1.8325e-5*416.16/( THETAA(I)+120.)*(THETAA(I)/296.16)*SQRT(THETAA(I)/296.16)/RHOA(I)
+
+            ! Compute Reynolds Number     [-]
+            NR = 2.0 * RADIUS_ICESPH * ZVCAN(I) / MU
+
+            ! Compute the Nusselt Number  [-]
+            NU = 1.79 + 0.606 * SQRT(NR)
+
+            ! Compute diffusivity of water vapour in air [m2 s-1]
+            DVAP = 2.063e-5 * (TVGHS(I)/273.15)**(1.75)
+
+            ! Resistance for snow within the canopy
+            RES_SNCA(I) = 2.*917.*RADIUS_ICESPH**2 /(3.*0.02*FCANS(I)**(-0.4)*SNCMA(I)*NU*DVAP)
+
+         ELSE
+            RES_SNCA(I) = 0.
+         ENDIF
+
+
+      END DO
+!
+
+
+!*       4.     HALSTEAD COEFFICIENT (RELATIVE HUMIDITY OF THE VEGETATION) (HV)
 !               ---------------------------------------------------------------
 !
 !
@@ -731,14 +792,21 @@
 !
       DO I=1,N
 
+
         HV_VL(I) = 1. - MAX(0.,SIGN(1.,QSAT_VL(I)-HU(I)))&
                  *RS(I)*(1.-DEL_VL(I)) / (RESA_VL(I)+RS(I))
-
 
         HV_VH(I) = 1. - MAX(0.,SIGN(1.,QSAT_VH(I)-HU(I)))&
                  *RS(I)*(1.-DEL_VH(I)) / (RESA_VH(I)+RS(I))
 
+        ! Account for intercepted snow in the high vegetation
+        HV_VH(I) = FCANS(I) * (CHLF + CHLC)  &
+                    + (1.-FCANS(I)) * HV_VH(I) * CHLC
+
+
       END DO
 !
+
+
       RETURN
       END

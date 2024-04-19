@@ -626,13 +626,17 @@ module sfc_options
 
    ! Option for the turbulent fluxes in Crocus
 !    HSNOWRES = 'DEF' = Default: Louis (ISBA: Noilhan and Mahfouf 1996)
-!    HSNOWRES = 'RIL' = Limit Richarson number under very stable conditions (currently testing)
+!    HSNOWRES = 'RIL' = Limit Richarson number under very stable conditions to 0.2 (currently testing)
+!    HSNOWRES = 'RI1' = Limit Richarson number under very stable conditions to 0.1
+!    HSNOWRES = 'RI2' = Limit Richarson number under very stable conditions to 0.026
 !    HSNOWRES = 'M98'  = Martin et Lejeune 1998 : older computation for turbulent fluxes coefficents in Crocus   
    character(len=16) :: hsnowres = 'RIL'
    namelist /surface_cfgs/ hsnowres
-   character(len=*), parameter :: HSNOWRES_OPT(3) = (/ &
+   character(len=*), parameter :: HSNOWRES_OPT(5) = (/ &
         'DEF',  &
         'RIL',  &  
+        'RI1',  &  
+        'RI2',  &  
         'M98'   &  
          /)
 

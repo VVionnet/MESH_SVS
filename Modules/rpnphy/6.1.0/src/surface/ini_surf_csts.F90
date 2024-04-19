@@ -78,6 +78,7 @@ USE MODD_SNOW_METAMO, ONLY : XVVISC3
 #ifdef CROCUS_EXT
 USE MODD_SURF_ATM, ONLY: XRIMAX,LALDTHRES,XCISMIN, XVMODMIN
 USE MODD_REPROD_OPER,  ONLY : CQSAT
+USE sfc_options, ONLY: HSNOWRES
 #endif
 !
 #ifndef CROCUS_EXT
@@ -212,8 +213,15 @@ XZ0SN = 0.001
 !
 XZ0HSN = 0.0001
 !
-! Maximum Richardson number limit for very stable conditions over snow using the 'RIL' option
-X_RI_MAX = 0.2
+! Maximum Richardson number limit for very stable conditions over snow using the 'RIL', 'RI1', or 'RI2' option
+IF (HSNOWRES .EQ.'RIL') THEN
+    X_RI_MAX = 0.2
+ELSE IF (HSNOWRES .EQ.'RI1') THEN
+    X_RI_MAX = 0.1
+ELSE IF (HSNOWRES .EQ.'RI2') THEN
+    X_RI_MAX = 0.026
+END IF
+
 !
 ! Snow Melt timescale with D95 (s): needed to prevent time step 
 ! dependence of melt when snow fraction < unity.
@@ -242,6 +250,7 @@ XKDELTA_WR   = 0.25 ! -
 !
 ! Roughness length ratio between ice and snow
 XZ0ICEZ0SNOW = 10.
+!
 !
 ! 3 bands spectral albedo for glacier ice (CROCUS)
 ! Default values from Lejeune et al 2009 (Zongo, Bolivia)
@@ -311,7 +320,13 @@ XSCAVEN_COEF=(/0.0,0.0,0.,0.,0./)
 
 #ifdef CROCUS_EXT
 ! VV Add init needed for the externalized version of Crocus
-XRIMAX=0.2
+IF (HSNOWRES .EQ.'RIL') THEN
+    XRIMAX = 0.2
+ELSE IF (HSNOWRES .EQ.'RI1') THEN
+    XRIMAX = 0.1
+ELSE IF (HSNOWRES .EQ.'RI2') THEN
+    XRIMAX = 0.026
+END IF
 LALDTHRES = .FALSE. 
 XCISMIN = 0. ! Not used when LALDTHRES = .FALSE.
 XVMODMIN  = 0. ! Not used when LALDTHRES = .FALSE.

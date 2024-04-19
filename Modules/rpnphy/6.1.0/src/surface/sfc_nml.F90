@@ -421,7 +421,7 @@ contains
 
              if (.not.any(hsnowres == HSNOWRES_OPT)) then
                call str_concat(msg_S, HSNOWRES_OPT,', ')
-               call msg(MSG_ERROR,'(sfc_nml_check) hsnowfall = '//trim(hsnowres)//' : Should be one of: '//trim(msg_S))
+               call msg(MSG_ERROR,'(sfc_nml_check) hsnowres = '//trim(hsnowres)//' : Should be one of: '//trim(msg_S))
                return
             endif           
 

@@ -158,6 +158,7 @@ include "isbapar.cdk"
            zcs, zcsv, z0_snow_low
 
       REAL :: CVAMIN = 1.0E-5
+      REAL :: SNM_CRIT = 1. ! Threshold of SWE for snow fraction over bare ground (kg m-2)
 
       IF (URBAN_PARAMS_NEW) THEN
          CVAMIN = 0.3E-5   ! matches value of CVDAT(21) reset in inicover_svs.F90
@@ -255,10 +256,8 @@ include "isbapar.cdk"
              !PSNGRVL(I) = MIN( SNM(I) / (SNM(I) + RHOS(I)* 5000.* z0_snow_low(i) ) , 1.0)
 
              ! Snow cover fraction close equals to one as soon as snow is present on the ground
-             ! NEED to BE REVISITED. Used for test with Crocus
-            !PSNGRVL(I) = MIN( SNM(I) / (1.0) , 1.0)
-
-            PSNGRVL(I) = 1.
+             ! NEED to BE REVISITED. Used for test with Crocus, Boone et al. (2017)
+            PSNGRVL(I) = MIN( SNM(I) / SNM_CRIT , 1.0)
 
          ELSE
 
@@ -544,7 +543,7 @@ include "isbapar.cdk"
 
       else
 
-         DO I = 1, N
+         DO I = 1, N           
 !
 !                      AGGREGATED VEG. EMISSIVITY  (VEGETATION NOT COVERED BY SNOW)
 !
