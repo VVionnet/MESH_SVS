@@ -306,6 +306,10 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
       IF(KOUNT.EQ.1) then
 
+         ! ---------------- Initialize variables for canopy scheme  --------------------
+         bus(x(ESNC,I,1))=0.
+         bus(x(ESNCAF,I,1))=0.
+
          ! ---------------- Initialize variables for ES and Crocus snowpack schemes--------------------
 
          DO I=1,N
@@ -339,7 +343,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
              PHVEGAPOL_V(I) = 0. ! Effect of basal vegetation on snowpack properties are not taken into account in high vegetation. 
              PFCANS(I) = 0.
              PSCAP(I) = 0.
-	     PRES_SNCA(I) = 0.
+	         PRES_SNCA(I) = 0.
 
             ! TO BE CHECKED======================
             PCT(I)= 1.E-4
@@ -584,10 +588,9 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
       IF(LSNOW_INTERCEPTION_SVS2) THEN
 
-         ! TODO NL: change LESC from bus to ESC (rate instead of latent heat)
          CALL SNOW_INTERCEPTION_SVS2(DT,bus(x(TVEGEH,1,1)), tt, hu, ps, PWIND_TOP,zfsolis,RHOA,     &
                            rainrate_mm,snowrate_mm, bus(x(SNCMA     ,1,1)),  &
-                           bus(x(LESC     ,1,1)), bus(x(LESCAF     ,1,1)),  BUS(x(LAIVH  ,1,1)),   &
+                           bus(x(ESNC     ,1,1)), bus(x(ESNCAF     ,1,1)),  BUS(x(LAIVH  ,1,1)),   &
                            BUS(x(VEGH   ,1,1)),PHM_CAN, BUS(x(VGH_DENS   ,1,1)), PSCAP,   &
                            rainrate_mm_veg,snowrate_mm_veg   ,               &
                            PFCANS, N)
@@ -790,7 +793,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                   bus(x(LER_VH        ,1,1)) , bus(x(LETR_VH       ,1,1)) ,   &
                   bus(x(EG            ,1,1)) , bus(x(EGV            ,1,1)) ,   &
                   bus(x(ER_VL         ,1,1)) , bus(x(ETR_VL    ,1,1)),    &
-                  bus(x(ER_VH         ,1,1)) , bus(x(ETR_VH    ,1,1)),  bus(x(LESC     ,1,1)), &
+                  bus(x(ER_VH         ,1,1)) , bus(x(ETR_VH    ,1,1)),  bus(x(ESNC     ,1,1)), &
                   bus(x(FL         ,1,1)),  bus(x(EFLUX      ,1,1)) ,    &
                   bus(x(BM         ,1,1)) , bus(x(FQ   ,1,1)),    &
                   bus(x(bt, 1,indx_soil)) , bus(x(RESAEF,1,1)),   &

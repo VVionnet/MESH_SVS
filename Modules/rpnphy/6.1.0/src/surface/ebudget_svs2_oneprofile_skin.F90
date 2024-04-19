@@ -1058,7 +1058,7 @@
              ESN_VH(I) =  RHOA(I) * FCANS(I) * (ZQSATVGHT(I) - HU(I)) / (RESA_VH(I)+ RES_SNCA(I)) *(CHLC+CHLF)/LCAN(I)
 
              !  ESN_VH is limited to SNCMA/DT to avoid negative SNCMA in snow interception
-             IF( (SNCMA(I).GT.0.) .OR. (TVGHST(i) .LT. 273.15) ) THEN
+             IF( (SNCMA(I).GT.0.) .OR. (TVGHST(I) .LT. 273.15) ) THEN
                 ! snow is present below high veg, rain falls directly to snow
                 ESN_VH(I) = MIN(ESN_VH(I),SNCMA(I)/DT)
              ENDIF

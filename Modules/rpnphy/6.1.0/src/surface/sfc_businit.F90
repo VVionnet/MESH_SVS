@@ -111,7 +111,7 @@ subroutine sfc_businit(moyhr,ni,nk)
         hpsa,hpsv, husurfgv, hv_vl, hv_vh, &
         hveglpol,hveglpolen,hvegapol, &
         gfluxsa, gfluxsv,      &
-        lesc,lescaf, &
+        esnc,esncaf, &
         ler_vl, ler_vh, letr_vl, letr_vh, levl, levh,  & 
         lwca, lwnetsa, lwnetsv,        &
         er_vl, er_vh, esa, esv, etr_vl, etr_vh, qca, &
@@ -341,7 +341,6 @@ subroutine sfc_businit(moyhr,ni,nk)
            PHYVAR2D1(emistgen,     'VN=emistgen     ;ON=ETG1;VD=avg. emissivity land surface with no snow (E)       ;VB=e1;IN=EMIB;MIN=0')
       PHYVAR2D1(emisvh,       'VN=emisvh       ;ON=EMVH;VD=emissivity of high vegetation                                     ;VB=p0')
       PHYVAR2D1(emisvl,       'VN=emisvl       ;ON=EMVL;VD=emissivity of low vegetation                                      ;VB=p0')
-      PHYVAR2D1(skincond_vl,  'VN=skincond_vl       ;ON=CONVL;VD=skin thermal conductivity of low vegetation                ;VB=p0')
       PHYVAR2D1(er,           'VN=er           ;ON=ER  ;VD=evapo rate from leaves(no frac)                                   ;VB=v0')
       PHYVAR2D1(etr,          'VN=etr          ;ON=ETR ;VD=evapotranspiration rate (no frac)                                 ;VB=v0')
       PHYVAR2D1(evergreen,    'VN=evergreen    ;ON=EVER;VD=frac. of high veg. that is evergreen                              ;VB=p0')
@@ -545,8 +544,8 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR2D1(laivl,        'VN=laivl        ;ON=LAIL;VD=leaf area index for low vegetation only                           ;VB=p0')
       PHYVAR2D1(latflaf,      'VN=latflaf      ;ON=ALAT;VD=Accum. of LATF at all levels (kg/m2 = mm)                         ;VB=p0')
       PHYVAR3D1(latflw,       'VN=latflw       ;ON=LATF;VD=Lateral flow                                   ;VS=A*'//ngl//'  ;VB=p0')
-      PHYVAR2D1(lesc,         'VN=lesc         ;ON=LSC ;VD=latent heat flux over snow intercepted in high-veg                ;VB=v0')
-      PHYVAR2D1(lescaf,       'VN=lescaf       ;ON=LSCA;VD=accum. of sublimation from intercepted snow                       ;VB=p0')      
+      PHYVAR2D1(esnc,         'VN=esnc         ;ON=ESC ;VD=sublimation rate of snow intercepted in high-veg                ;VB=v0')
+      PHYVAR2D1(esncaf,       'VN=esncaf       ;ON=ESCA;VD=accum. of sublimation from intercepted snow                       ;VB=p0')      
       PHYVAR2D1(leg,          'VN=leg          ;ON=L2  ;VD=latent heat flux over bare grnd                                   ;VB=v0')
       PHYVAR2D1(legv,         'VN=legv         ;ON=LEGV;VD=latent heat flux over ground below high vegetation                ;VB=v0')
       PHYVAR2D1(ler_vl,       'VN=ler_vl       ;ON=LRVL;VD=latent heat flux from low veg. leaves                             ;VB=v0')
