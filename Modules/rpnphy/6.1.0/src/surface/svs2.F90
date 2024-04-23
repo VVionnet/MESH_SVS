@@ -491,7 +491,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       DO I=1,N
           IF (BUS(x(VEGL,I,1)) + BUS(x(VEGH,I,1))  .GT. 0) THEN
               PTVEGE(I)   =  (BUS(x(VEGL,I,1)) *bus(x(TVEGEL,I,1)) + BUS(x(VEGH,I,1)) *bus(x(TVEGEH,I,1)) )/ &
-                                                 (BUS(x(VEGL,1,1)) + BUS(x(VEGH,I,1)))
+                                                 (BUS(x(VEGL,I,1)) + BUS(x(VEGH,I,1)))
           ELSE ! There is no low or high veg, here we are just putting a value in PTVEGE equal to the skin temp of bg
               PTVEGE(I)   =  bus(x(TGROUND,I,1))
           ENDIF
@@ -608,6 +608,13 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
       ! Store rainfall and snowfall rate below high vegetation (in m) to be consistent with rainrate and snowrate in the bus
       DO I=1,N
+         ! Set snowfall and rainfall rate below vegetation to zero if no high vegetation is present. 
+         ! This is used to make sure that Crocus is not called to simulate snowpack evolution below high vegetation 
+         ! when high vegetation is not present in a grid cell. 
+         IF ( BUS(x(VEGH,I,1)) .LT. EPSILON_SVS) THEN
+             rainrate_mm_veg(i) = 0. 
+             snowrate_mm_veg(i) = 0. 
+         ENDIF
          bus(x(rainrate_vgh,i,1))  = rainrate_mm_veg(i)/1000.
          bus(x(snowrate_vgh,i,1))  = snowrate_mm_veg(i)/1000.
       ENDDO
@@ -808,14 +815,18 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
 
       ! Update vegetation temperature with average of low and high vegetation.
+      ! Update aerodynamical resistance  with average of low and high vegetation.
       ! VV TO BE MODIFIED: Intermediate step during developement.
       !
       DO I=1,N
           IF (BUS(x(VEGL,I,1)) + BUS(x(VEGH,I,1))  .GT. 0) THEN
               PTVEGE(I)   =  (BUS(x(VEGL,I,1)) *bus(x(TVEGEL,I,1)) + BUS(x(VEGH,I,1)) *bus(x(TVEGEH,I,1)) )/ &
-                                                 (BUS(x(VEGL,1,1)) + BUS(x(VEGH,I,1)))
+                                                 (BUS(x(VEGL,I,1)) + BUS(x(VEGH,I,1)))
+              BUS(x(RESAVG,I,1))   =  (BUS(x(VEGL,I,1)) *bus(x(RESA_VL,I,1)) + BUS(x(VEGH,I,1)) *bus(x(RESA_VH,I,1)) )/ &
+                                                 (BUS(x(VEGL,I,1)) + BUS(x(VEGH,I,1)))
           ELSE ! There is no low or high veg, here we are just putting a value in PTVEGE equal to the skin temp of bg
               PTVEGE(I)   =  bus(x(TGROUND,I,1))
+              BUS(x(RESAVG,I,1))  = BUS(x(RESAGR,I,1))
           ENDIF
       ENDDO
 

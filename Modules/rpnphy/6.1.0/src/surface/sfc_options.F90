@@ -379,7 +379,7 @@ module sfc_options
    !# * 'FOR'   :  forcing is below the canopy
    !# * 'O2F'   :  met forcing is below canopy height in the open and is transfered below canopy
    !# * 'ABV'   :  met forcing is above canopy
-   character(len=3) :: cano_ref_forcing    = 'FOR'
+   character(len=3) :: cano_ref_forcing    = 'ABV'
    namelist /surface_cfgs/ cano_ref_forcing 
    character(len=*), parameter :: CANO_REF_FORCING_OPT(3) = (/ &
         'FOR',  &
@@ -388,7 +388,7 @@ module sfc_options
         /)
 
    !# If .true., SVS2 utilizes the canopy module to modify T, U, VMOD, SW, and LW to account for canopy
-   logical           :: lcano_svs2 = .false.
+   logical           :: lcano_svs2 = .true.
    namelist /surface_cfgs/ lcano_svs2
 
    !# Emissivity for water
