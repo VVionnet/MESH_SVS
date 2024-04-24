@@ -258,6 +258,7 @@ include "isbapar.cdk"
              ! Snow cover fraction close equals to one as soon as snow is present on the ground
              ! NEED to BE REVISITED. Used for test with Crocus, Boone et al. (2017)
             PSNGRVL(I) = MIN( SNM(I) / SNM_CRIT , 1.0)
+            !PSNGRVL(I) = 1. ! Improves mass balance 
 
          ELSE
 
