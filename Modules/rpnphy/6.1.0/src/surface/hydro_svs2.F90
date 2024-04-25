@@ -226,30 +226,20 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
   !
   DO I=1,N
      !
-    IF(WTG(I,indx_svs2_vh).GE.EPSILON_SVS) THEN
+    IF(WTA(I,indx_svs2_vh).GE.EPSILON_SVS) THEN
 
-     IF (SVM(I).GE.CRITSNOWMASS)THEN
-        !                                  There is snow on the ground, remove evaporation
-        !                                  then drain all liquid water from the vegetation
-        WR_VHT(I) = WR_VH(I) - DT * ER_VH(I)
-        !                                  Liquid water in vegetation becomes runoff
-        RVEG_VH(I) = MAX(0.0,WR_VHT(I)/DT) ! Runoff mult. by dt later on, so water balance maintained..
-        WR_VHT(I) = 0.0
-
-     ELSE
-        !                                  Remove P-E from liquid water in vegetation
-        !                                  Sanity check: WR_VLT must be positive
-        !                                  since ER is limited to WR/DT+RR in ebudget
-        WR_VHT(I) = MAX(0., WR_VH(I) - DT * (ER_VH(I) -  RR(I)))
-        !                                  Compute canopy drip
-        !                                  if Wr > Wrmax, there is runoff
-        RVEG_VH(I) = MAX(0., (WR_VHT(I) - WRMAX_VH(I)) / DT )
-        !
-        !                                  Wr must be smaller than Wrmax
-        !                                  after runoff is removed
-        !
-        WR_VHT(I) = MIN(WR_VHT(I), WRMAX_VH(I))
-     END IF
+    !                                  Remove P-E from liquid water in vegetation
+    !                                  Sanity check: WR_VHT must be positive
+    !                                  since ER is limited to WR/DT+RR in ebudget
+    WR_VHT(I) = MAX(0., WR_VH(I) - DT * ER_VH(I))
+    !                                  Compute canopy drip
+    !                                  if Wr > Wrmax, there is runoff
+    RVEG_VH(I) = MAX(0., (WR_VHT(I) - WRMAX_VH(I)) / DT )
+    !
+    !                                  Wr must be smaller than Wrmax
+    !                                  after runoff is removed
+    !
+    WR_VHT(I) = MIN(WR_VHT(I), WRMAX_VH(I))
 
     ELSE
         WR_VHT(I) = 0.0
@@ -299,27 +289,24 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
   !
   DO I=1,N
       IF( (WTG(I,indx_svs2_vh)+ WTG(I,indx_svs2_vl)) .ge.EPSILON_SVS) THEN
-         ! have vegetation -- have vegetation runoff
+         ! have vegetation -- first add snowpack runoff
          PG(I) = (1.-WTG(I,indx_svs2_vh)) * RSNOW(I) + WTG(I,indx_svs2_vh) * RSNOWV(I)
 
          IF( SNM(I).GE.CRITSNOWMASS .AND. SVM(I).GE. CRITSNOWMASS ) THEN
-            !both snow packs exists, rain falls directly to snow, consider runoff from vegetation also.
-            PG(I) = PG(I) +  &
-                 + WTG(I,indx_svs2_vl)*RVEG_VL(I) + WTG(I,indx_svs2_vh) * RVEG_VH(I)
-
+            !both snow packs exists, rain falls directly to snow, do not consider runoff from vegetation also.
+            PG(I) = PG(I) 
 
          ELSE IF ( SNM(I).GE.CRITSNOWMASS .AND. SVM(I).LT.CRITSNOWMASS ) THEN
             ! only low vegetation snow pack present, rain for low vegetation portion
             ! falls through to snow. No rain reaches bare ground because snowpack on low veg. and bare ground exists
-            PG(I) = PG(I) +  &
-                 + WTG(I,indx_svs2_vl) *RVEG_VL(I) + WTG(I,indx_svs2_vh) * RVEG_VH(I)
+            PG(I) = PG(I) +  WTG(I,indx_svs2_vh) * RVEG_VH(I)
 
 
          ELSE IF ( SNM(I).LT.CRITSNOWMASS .AND. SVM(I).GE.CRITSNOWMASS ) THEN
             !only high vegetation snow pack present, rain for high vegetation portion
             ! falls through to snow. No snow on low veg. and bare ground, so rain can reach bare ground directly
             PG(I) = PG(I) +  &
-               + WTG(I,indx_svs2_vl) *RVEG_VL(I) + WTG(I,indx_svs2_vh)* RVEG_VH(I) &
+               + WTG(I,indx_svs2_vl) *RVEG_VL(I)  &
                + WTG(I,indx_svs2_bg) * RR(I)
          ELSE
             ! no snow present, rain can reach bare ground directly

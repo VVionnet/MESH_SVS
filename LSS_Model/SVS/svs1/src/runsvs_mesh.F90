@@ -1364,7 +1364,7 @@ ierr = 200
                             trim(VN_SVS_TPSOILV) // '_' // trim(adjustl(level))
          end do
        endif
-       write(iout_soil, FMT_CSV, advance = 'no') 'TVEGL','TVEGH_1','TVEGH_2','TGROUND','TGROUNDV'
+       write(iout_soil, FMT_CSV, advance = 'no') 'TVEGL','TVEGH','TGROUND','TGROUNDV', 'WVEGL','WVEGH'
        write(iout_soil, *)
 
 
@@ -1721,8 +1721,8 @@ ierr = 200
                 end do
               endif
               write(iout_soil, FMT_CSV, advance = 'no') busptr(vd%tvegel%i)%ptr(1:ni, trnch),busptr(vd%tvegeh%i)%ptr(1:ni,trnch), &
-                      busptr(vd%tvegeh%i)%ptr(ni+1:2*ni, trnch),busptr(vd%tground%i)%ptr(1:ni, trnch) , &
-                      busptr(vd%tgroundv%i)%ptr(1:ni, trnch)
+                      busptr(vd%tground%i)%ptr(1:ni, trnch) , busptr(vd%tgroundv%i)%ptr(1:ni, trnch), &
+                      busptr(vd%wveg_vl%i)%ptr(1, trnch) , busptr(vd%wveg_vh%i)%ptr(1, trnch)
               write(iout_soil, *)
 
               ! Write file containing bulk snow outputs

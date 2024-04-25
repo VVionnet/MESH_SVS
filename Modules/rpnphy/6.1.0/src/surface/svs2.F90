@@ -589,10 +589,10 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       IF(LSNOW_INTERCEPTION_SVS2) THEN
 
          CALL SNOW_INTERCEPTION_SVS2(DT,bus(x(TVEGEH,1,1)), tt, hu, ps, PWIND_TOP,zfsolis,RHOA,     &
-                           rainrate_mm,snowrate_mm, bus(x(SNCMA     ,1,1)),  &
+                           rainrate_mm,snowrate_mm, bus(x(SNCMA     ,1,1)), wrmax_vh, &
                            bus(x(ESNC     ,1,1)), bus(x(ESNCAF     ,1,1)),  BUS(x(LAIVH  ,1,1)),   &
                            BUS(x(VEGH   ,1,1)),PHM_CAN, BUS(x(VGH_DENS   ,1,1)), PSCAP,   &
-                           rainrate_mm_veg,snowrate_mm_veg   ,               &
+                           bus(x(wveg_vh  ,1,1)), rainrate_mm_veg,snowrate_mm_veg  ,               &
                            PFCANS, N)
 
       ELSE

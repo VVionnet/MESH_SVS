@@ -96,7 +96,7 @@ contains
       ! Case of high vegetation 
       IF(HTYPE =='ATM') THEN ! Fraction seen from the atmosphere 
           !    HIGH VEGETATION (NOT COVERED BY SNOW)
-          WT(i,indx_svs2_vh)  =      FVH(I) * (1 - FSURFVH(I)) 
+          WT(i,indx_svs2_vh)  =      FVH(I) * (1. - FSURFVH(I)) 
           !   SNOW BELOW HIGH VEGETATION 
           WT(i,indx_svs2_sv)  =      FVH(I) * FSURFVH(I)   * FSNVH(i) 
           !    GROUND BELOW HIGH VEGETATION 

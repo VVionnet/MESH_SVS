@@ -349,9 +349,9 @@
              IF (HCANO_HM == 'G15') THEN
                  ZHM_LEAVES = LAI_VH(I) * E_LEAF * RHO_BIO * CP_BIO
                  ZHM_TRUNK = 0.5 * ZB* VGH_HEIGHT(I) * RHO_BIO * CP_BIO
-                 PHM_CAN(I) = ZHM_LEAVES + ZHM_TRUNK + CPW *WR_VH(I)
+                 PHM_CAN(I) = ZHM_LEAVES + ZHM_TRUNK 
              ELSE IF (HCANO_HM == 'E03') THEN
-                 PHM_CAN(I) = ZCVAI * LAI_VH(I) + CPW *WR_VH(I)
+                 PHM_CAN(I) = ZCVAI * LAI_VH(I)
              ENDIF
 !
 !

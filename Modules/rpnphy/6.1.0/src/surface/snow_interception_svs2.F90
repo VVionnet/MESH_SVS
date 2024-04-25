@@ -15,8 +15,8 @@
 !-------------------------------------- LICENCE END ---------------------------
 
       SUBROUTINE SNOW_INTERCEPTION_SVS2 (DT, TVEG, T, HU, PS, WIND_TOP, ISWR,  RHOA,    &
-                     RR, SR, SNCMA, ESUBSNWC,SUBSNWC_CUM, LAIVH, VEGH, HM_CAN,   &
-                     VGH_DENS, SCAP, RR_VEG, SR_VEG,  FCANS, N)
+                     RR, SR, SNCMA, WRMAX_VH, ESUBSNWC,SUBSNWC_CUM, LAIVH, VEGH, HM_CAN,   &
+                     VGH_DENS, SCAP, WR_VH, RR_VEG, SR_VEG,  FCANS, N)
 
 
       use tdpack
@@ -34,7 +34,7 @@
       REAL PS(N), RHOA(N), HU(N)
       REAL LAIVH(N), TVEG(N), VEGH(N),WIND_TOP(N),VGH_DENS(N), T(N)
       REAL ESUBSNWC(N), SUBSNWC_CUM(N), SCAP(N), FCANS(N), HM_CAN(N)
-      REAL DT, SNCMA_INI(N)
+      REAL DT, SNCMA_INI(N), WRMAX_VH(N), WR_VH(N) 
 
 !
 !
@@ -73,7 +73,10 @@
 ! VGH_DENS    tree cover density in  HIGH vegetation [0-1]
 ! SCAP       Vegetation layer snow capacities (kg m-2)
 ! HM_CAN    Heat mass for the high vegetation layer (J K-1 m-2)
+! WRMAX_VH          max water content retained on hihj vegetation [kg/m2]
 !
+!             - Input-Output
+! WR_VH          water content retained by high vegetation canopy [kg/m2]
 !             - Output
 !
 ! SUBSNWC_CUM   Cumulated mass loss due to sublimation of incercepted snow [kg m-2]
@@ -95,7 +98,7 @@
       REAL  SNW_UNLOAD !  Unloaded mass in solid form (kg/m^2)
       REAL, DIMENSION(N) :: UNLOAD !  Unloaded mass (kg/m^2)
       REAL, DIMENSION(N) :: HM_CAN_INI !  Unloaded mass (kg/m^2)
-      REAL MELT
+      REAL MELT, REFREEZE
       REAL   SUB_CPY ! Intercepted snow mass lost by sublimation (kg/m^2)
 
       ! HP98
@@ -278,7 +281,7 @@
                !!!!!!!!
 
                ! Unloading time constant
-               IF(TVEG(I) >= 273.15) THEN ! Melting conditions
+               IF(TVEG(I) >= 273.15) THEN 
                   TUNL = TCNM
                ELSE
                   TUNL = TCNC
@@ -295,9 +298,9 @@
                !!!!!!!!
                IF (CANO_REF_FORCING .EQ.'ABV') THEN ! From Boone et al. (2017)
 
-                  HM_CAN(I) = HM_CAN_INI(I) + CPI * SNCMA(I)
+                  HM_CAN(I) = HM_CAN_INI(I) + CPI * SNCMA(I) + CPW *WR_VH(I)
 
-                  IF(TVEG(I)>273.15 .AND. SNCMA(I) > 0) THEN
+                  IF(TVEG(I)>273.15) THEN ! Melting of intercepted snow
 
                      MELT = 5.56E-6 * DT * (SNCMA(I)/SCAP(I)) * (TVEG(I) - 273.15)
 
@@ -305,14 +308,32 @@
                         MELT = SNCMA(I)
                      ENDIF
 
-                     DRIP_CPY(I) = MELT
+                     WR_VH(I) = WR_VH(I) + MELT
+
+                     DRIP_CPY(I) = MAX(0., WR_VH(I) - WRMAX_VH(I) )
+
+                     WR_VH(I) = MIN(WR_VH(I), WRMAX_VH(I))
 
                      TVEG(I) = TVEG(I) -   CHLF * MELT / HM_CAN(I)
 
                      SNCMA(I) = SNCMA(I) - MELT
 
-                  ELSE
+                  ELSE !Refreezing of intercepted liquid water
+                     ! Boone et al. (2017) Eq. 83 still uses SNCMA for refreezing of liquid water, so not working if there is no intercepted snow
+
+                     REFREEZE = 5.56E-6 * DT * (SNCMA(I)/SCAP(I)) * (TVEG(I) - 273.15)  ! < 0
+                     
+                     IF (ABS(REFREEZE) > WR_VH(I)) THEN
+                        REFREEZE = -WR_VH(I)
+                     ENDIF
+                     WR_VH(I) = WR_VH(I) + REFREEZE 
+                     WR_VH(I) = MAX(WR_VH(I), 0.)
+
+                     SNCMA(I) = SNCMA(I) - REFREEZE
+
+                     TVEG(I) = TVEG(I) - CHLF * REFREEZE / HM_CAN(I)
                      DRIP_CPY(I) = 0.    ! Unload considered as solid
+
                   ENDIF
 
                   NET_SNOW(I) = DIRECT_SNOW(I)  + UNLOAD(I)
@@ -321,12 +342,16 @@
                   !!!!!!!
                   !Update snowfall and rainfall rate sent to snow below high-veh
                   !!!!!!!
-                  IF(T(I)>273.15) THEN
-                     DRIP_CPY(I) =  UNLOAD(I) ! Unload considered as liquid
+                  IF(T(I)>273.15) THEN ! All unload is liquid, first intercepted as liquid intercepted water
+                     WR_VH(I) = WR_VH(I) + UNLOAD(I)
+                     DRIP_CPY(I) = MAX(0., WR_VH(I) - WRMAX_VH(I) )
+                     WR_VH(I) = MIN(WR_VH(I), WRMAX_VH(I))
                      SNW_UNLOAD = 0.
-                  ELSE
+                  ELSE ! All unload is solid + refreezing of liquid intercepted waterto intercepted snow
                      DRIP_CPY(I) = 0.    ! Unload considered as solid
                      SNW_UNLOAD = UNLOAD(I)
+                     SNCMA(I) = SNCMA(I) + WR_VH(I)
+                     WR_VH(I) = 0.
                   ENDIF
 
                   !!!! Update the total snow mass sent to the snowpack below
@@ -340,7 +365,7 @@
                   ! FCANS(I) = 0.89*(SNCMA(I)/SCAP(I))**0.3/(1.+EXP(-4.7*(SNCMA(I)/SCAP(I)-0.45)))
                   FCANS(I) = (SNCMA(I)/SCAP(I))**0.67
                   ! Update canopy heat mass with new intercepted snow
-                  HM_CAN(I) = HM_CAN_INI(I) + CPI * SNCMA(I)
+                  HM_CAN(I) = HM_CAN_INI(I) + CPI * SNCMA(I) + CPW *WR_VH(I)
                ELSE
                   FCANS(I) = 0.
                ENDIF
@@ -353,15 +378,19 @@
          ENDIF
       END DO
 
-
-
       DO I=1,N
 
          IF (VEGH(I).GE.EPSILON_SVS) THEN
 
             ! Rain is not intercepted by vegetation when snow is present under high veg.
             ! Therefore rain under high veg accounts for total rain above high veh plus dripping
-            RR_VEG(I) = RR(I)+DRIP_CPY(I)/DT
+            IF(RR(I)>0.) THEN 
+                WR_VH(I) = WR_VH(I) + DT * VGH_DENS(I)*RR(I)
+                RR_VEG(I) = MAX(0., (WR_VH(I) - WRMAX_VH(I))/DT) + DRIP_CPY(I)/DT + (1.-VGH_DENS(I)) * RR(I)
+                WR_VH(I) = MIN(WR_VH(I), WRMAX_VH(I))
+            ELSE
+                RR_VEG(I) = 0.
+            ENDIF
 
             ! Snowfall rate below high vegetation
             SR_VEG(I) = NET_SNOW(I)/DT
