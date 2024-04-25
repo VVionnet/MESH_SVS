@@ -40,6 +40,7 @@ soiltext                 NIL !NIL: required to use soil_levels.txt as-is
 !> nlayers   ----- 1 ----- 2 ----- 3 ----- 4 ----- 5 ----- 6 ----- 7
 sand            60.0    60.0    60.0 !%
 clay            30.0    30.0    30.0 !%
+soc             0.0     0.0      0.0 !%, soil organic content
 wsoil          0.083   0.086   0.098 !vol. content
 isoil            0.0     0.0     0.0 !vol. content
 tpsoil         280.0   280.0   280.0 ! soil temperature below bg/lv  (K)

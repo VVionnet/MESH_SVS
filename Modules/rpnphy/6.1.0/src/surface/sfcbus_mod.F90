@@ -84,6 +84,7 @@ module sfcbus_mod
       SFCVAR(cgsat, 'cgsat')
       SFCVAR(clay, 'clay')
       SFCVAR(clayen, 'clayen')
+      SFCVAR(soc, 'soc')
       SFCVAR(co2i1, 'co2i1')
       SFCVAR(conddry, 'conddry')
       SFCVAR(condsld, 'condsld')

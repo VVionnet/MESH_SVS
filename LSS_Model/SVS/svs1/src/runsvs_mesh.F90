@@ -66,6 +66,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_KHYD = 'KHYD'
     character(len = *), parameter, public :: VN_SVS_SAND = 'SAND'
     character(len = *), parameter, public :: VN_SVS_CLAY = 'CLAY'
+    character(len = *), parameter, public :: VN_SVS_SOC = 'SOC'
     character(len = *), parameter, public :: VN_SVS_WSOIL = 'WSOIL'
     character(len = *), parameter, public :: VN_SVS_ISOIL = 'ISOIL'
     character(len = *), parameter, public :: VN_SVS_KTHERMAL = 'KTHERMAL'
@@ -144,6 +145,7 @@ module runsvs_mesh
     !> SVS variables names for I/O (modifiers/special conditions).
     character(len = *), parameter, public :: VN_SVS_SAND_N = 'SAND_N'
     character(len = *), parameter, public :: VN_SVS_CLAY_N = 'CLAY_N'
+    character(len = *), parameter, public :: VN_SVS_SOC_N = 'SOC_N'
     character(len = *), parameter, public :: VN_SVS_WSOIL_N = 'WSOIL_N'
     character(len = *), parameter, public :: VN_SVS_ISOIL_N = 'ISOIL_N'
     character(len = *), parameter, public :: VN_SVS_TGROUND_N = 'TGROUND_N'
@@ -175,6 +177,7 @@ module runsvs_mesh
         integer :: khyd = 6
         real, dimension(:, :), allocatable :: sand
         real, dimension(:, :), allocatable :: clay
+        real, dimension(:, :), allocatable :: soc
         real, dimension(:, :), allocatable :: wsoil
         real, dimension(:, :), allocatable :: isoil
         real, dimension(:, :), allocatable :: tpsoil ! For svs2 and svs1 (with soil freezing)
@@ -513,6 +516,7 @@ module runsvs_mesh
             do i = 1, nl_svs
                 if (allocated(svs_mesh%vs%sand)) svs_bus(a2(sand, i - 1):z2(sand, i - 1)) = svs_mesh%vs%sand(:, i)
                 if (allocated(svs_mesh%vs%clay)) svs_bus(a2(clay, i - 1):z2(clay, i - 1)) = svs_mesh%vs%clay(:, i)
+                if (allocated(svs_mesh%vs%soc)) svs_bus(a2(soc, i - 1):z2(soc, i - 1)) = svs_mesh%vs%soc(:, i)
             end do
             if (svs_mesh%vs%schmsol=='SVS') then
                 call inisoili_svs(ni, trnch)
@@ -1076,6 +1080,8 @@ module runsvs_mesh
             vl(vd%sand%i)%mul = nl_stp
             vd%clay%mul = nl_stp
             vl(vd%clay%i)%mul = nl_stp
+            vd%soc%mul = nl_stp
+            vl(vd%soc%i)%mul = nl_stp
         else
 
             !> Overwrite the default input level set by the unknown 'soiltext' type.
@@ -1221,9 +1227,9 @@ print*,vl(i)%n,vl(i)%niveaux,vl(i)%mul,vl(i)%mosaik
             end do
             write(line, "('PERMEABLE LAYERS: ', i3)") khyd
             call print_message('SOIL TEXTURE:')
-            call print_message('             % SAND    % CLAY')
+            call print_message('             % SAND    % CLAY    % SOC')
             do i = 1, nl_svs ! model layers
-                write(line, "(' LAYER ', i3, ': ', 999(f8.3, 2x))") i, svs_bus(a2(sand, i - 1)), svs_bus(a2(clay, i - 1))
+                write(line, "(' LAYER ', i3, ': ', 999(f8.3, 3x))") i, svs_bus(a2(sand, i - 1)), svs_bus(a2(clay, i - 1)), svs_bus(a2(soc, i - 1))
                 call print_message(line)
             end do
             call print_message('SOIL MOISTURE:')

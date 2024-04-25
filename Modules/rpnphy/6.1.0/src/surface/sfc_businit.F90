@@ -67,7 +67,7 @@ subroutine sfc_businit(moyhr,ni,nk)
         z0_road, z0_roaden, z0_roof, z0_roofen, z0_town, &
         z0_townen, zenith, emtw, alscatw, tsradtw
    integer :: acoef, alveg, bcoef, c1sat, c2ref, c3ref, clay, cveg, &
-        eflux, emsvc, gamveg, husurf, hv, iceline, lai, melts,  &
+        eflux, emsvc, soc, gamveg, husurf, hv, iceline, lai, melts,  &
         meltsr, pcoef, psn, psng, psnv, resa, rgl, rnet_s, rst, sand, &
         snoagen, snoalen, snoma, snoro, stomr, tsoil, vegdati, vegf, &
         vegfrac, vegf_evol, wfc, wsat, wsnow, wveg, wwilt
@@ -151,10 +151,10 @@ subroutine sfc_businit(moyhr,ni,nk)
       Write(ngl,'(i2)') nl_svs
       ! number of soil/"ground" layers PLUS 1
       Write(nglp1,'(i2)') nl_svs+1
-      ! number of layer for ENTRY bus SVS clay and sand var.
+      ! number of layer for ENTRY bus SVS clay, sand, and soc var.
       Write(nstel,'(i2)') nl_ste
 
-      ! number of layer for PHYSICS bus SVS clay and sand var.
+      ! number of layer for PHYSICS bus SVS clay, sand, and soc var.
       Write(nstpl,'(i2)') nl_stp
    endif
 
@@ -510,6 +510,7 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR2D1(esv,          'VN=esv          ;ON=ESV ;VD=total evaporative rate (subl+evap) from snow under hv   (no frac) ;VB=v0')      
       PHYVAR2D1(evergreen,    'VN=evergreen    ;ON=EVER;VD=frac. of high veg. that is evergreen                              ;VB=p0')
       PHYVAR3D1(fbcof,        'VN=fbcof        ;ON=3G  ;VD=parameter derived from bcoef                   ;VS=A*'//ngl//'  ;VB=p0')
+      PHYVAR3D1(soc,         'VN=soc         ;ON=ORGM  ;VD=percentage of soil organic content              ;VS=A*'//nstpl//';VB=p0        ;MIN=0')
       PHYVAR3D1(frootd,       'VN=frootd       ;ON=FRTD;VD=deep soil layer root density                   ;VS=A*'//ngl//'  ;VB=p0')
       PHYVAR2D1(fvapliq,      'VN=fvapliq      ;ON=HFLQ;VD=surf. evaporation (kg/m2 or mm)                                   ;VB=p0')
       PHYVAR2D1(fvapliqaf,    'VN=fvapliqaf    ;ON=AHFL;VD=accum. surf. evaporation (HFLQ) (kg/m2 or mm)                     ;VB=p0')

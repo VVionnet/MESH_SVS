@@ -47,7 +47,7 @@ subroutine coherence3(ni, trnch)
    real, pointer, dimension(:) :: zalveg,  zcveg,  zgamveg,  zglacier,  zglsea,  zicedp,  zlai,  zmg,  zrgl,  zrootdp,  zsnoal, zsnoden, zsnoma,  zsnoro,  zstomr,  zvegfrac,  zwsnow,  zwveg
 !!$      real, pointer, dimension(:) :: zsdepth
 
-   real, pointer, dimension(:,:) :: zclay, zisoil, zsand, zsnodp, ztglacier, ztsoil, zwsoil,ztpsoil
+   real, pointer, dimension(:,:) :: zclay, zisoil, zsand, zsoc, zsnodp, ztglacier, ztsoil, zwsoil,ztpsoil
    ! SVS
    real, pointer, dimension(:) :: zsnodpl, zsnval, zsnvden, zsnvdp, zsnvma, zsnvro, zvegh, zvegl, zwsnv
 
@@ -87,6 +87,7 @@ subroutine coherence3(ni, trnch)
    MKPTR2D(zclay,    clay)
    MKPTR2D(zisoil,   isoil)
    MKPTR2D(zsand,    sand)
+   MKPTR2D(zsoc,    soc)
    MKPTR2D(zsnodp,   snodp)
    MKPTR2D(ztglacier,tglacier)
    MKPTR2D(ztsoil,   tsoil)   
@@ -130,6 +131,7 @@ subroutine coherence3(ni, trnch)
                zvegfrac (i)      = 0.0
                zsand    (i,1)    = 0.0
                zclay    (i,1)    = 0.0
+               zsoc    (i,1)    = 0.0
 
             end if
          end do
@@ -151,6 +153,7 @@ subroutine coherence3(ni, trnch)
                if (zsand(i,1)+zclay(i,1).lt.critexture) then
                   zsand(i,1) = 35.
                   zclay(i,1) = 35.
+                  zsoc(i,1) = 0.
                end if
 
                zwsoil(i,1) = max(zwsoil(i,1),1.e-7)
@@ -158,6 +161,8 @@ subroutine coherence3(ni, trnch)
 
                zsand(i,1) = max(1.,zsand(i,1))
                zclay(i,1) = max(1.,zclay(i,1))
+               zsoc(i,1) = max(1.,zsoc(i,1))
+
 
                zalveg   (i) = max( zalveg   (i) , 0.12 )
                zrootdp  (i) = max( zrootdp  (i) , 0.5  )
@@ -290,6 +295,7 @@ subroutine coherence3(ni, trnch)
                zvegfrac (i)      = 0.0
                zsand    (i,1)    = 0.0
                zclay    (i,1)    = 0.0
+               zsoc    (i,1)    = 0.0
 
             end if
          end do

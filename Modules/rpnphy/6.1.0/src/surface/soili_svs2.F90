@@ -21,7 +21,7 @@
            EMISVH, EMISVL, ETG, RGLVH , RGLVL, STOMRVH, STOMRVL,  &
            GAMVH,GAMVL, &
            LAIVH, LAIVL, &
-           Z0MVH, Z0MVL, Z0, CLAY, SAND, DECI, EVER,LAID, VGH_DENS,  &
+           Z0MVH, Z0MVL, Z0, CLAY, SAND,SOC, DECI, EVER,LAID, VGH_DENS,  &
            WTA, WTG, CG,PSOILHCAPZ, PSOILCONDZ, PSNGRVL,  &
            Z0H, ALGR, EMGR, ALGRV, EMGRV, PSNVH, PSNVHA, PSURFVHA,   &
            ALVA, LAIVA, CVPA, EVA, Z0HA, Z0MVG, RGLA, STOMRA ,&
@@ -46,7 +46,7 @@
       REAL CG(N), WTA(N,svs2_tilesp1), WTG(N,svs2_tilesp1)
       REAL PSNGRVL(N)
       REAL PSOILHCAPZ(N,NL_SVS),PSOILCONDZ(N,NL_SVS)
-      REAL Z0H(N), ALGR(N), ALGRV(N), CLAY(N), SAND(N)
+      REAL Z0H(N), ALGR(N), ALGRV(N), CLAY(N), SAND(N), SOC(N)
       REAL DECI(N), EVER(N), LAID(N)
       REAL EMGR(N),EMGRV(N), PSNVH(N), PSNVHA(N), PSURFVHA(N), LAIVH(N)
       REAL ALVA(N), LAIVA(N), CVPA(N), EVA(N)
@@ -108,6 +108,7 @@
 ! Z0       momentum roughness length (no snow)
 ! CLAY     percentage of clay in soil (mean of 3 layers)
 ! SAND     percentage of sand in soil (mean of 3 layers)
+! SOC     percentage of organic content in soil 
 ! DECI     fraction of high vegetation that is deciduous
 ! EVER     fraction of high vegetation that is evergreen
 ! LAID     LAI of deciduous trees

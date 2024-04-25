@@ -469,7 +469,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            BUS(x(LAIVH  ,1,1)), BUS(x(LAIVL  ,1,1)),  &
            BUS(x(Z0MVH  ,1,1)),   &
            BUS(x(Z0MVL  ,1,1)), z0m, &
-           BUS(x(CLAY   ,1,1)), BUS(x(SAND   ,1,1)), &
+           BUS(x(CLAY   ,1,1)), BUS(x(SAND   ,1,1)), BUS(x(SOC  ,1,1)),&
            BUS(x(DECIDUOUS,1,1)),BUS(x(EVERGREEN,1,1)), &
            BUS(x(LAIDECI,1,1)), bus(x(VGH_DENS,1,1)),   &
            BUS(x(SVS_WTA,1,1)),BUS(x(SVS_WTG,1,1)), CG, &
