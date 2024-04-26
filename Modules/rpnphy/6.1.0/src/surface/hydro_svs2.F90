@@ -293,20 +293,22 @@ SUBROUTINE HYDRO_SVS2 ( DT, &
          PG(I) = (1.-WTG(I,indx_svs2_vh)) * RSNOW(I) + WTG(I,indx_svs2_vh) * RSNOWV(I)
 
          IF( SNM(I).GE.CRITSNOWMASS .AND. SVM(I).GE. CRITSNOWMASS ) THEN
-            !both snow packs exists, rain falls directly to snow, do not consider runoff from vegetation also.
-            PG(I) = PG(I) 
+            !both snow packs exists, rain falls directly to snow, consider runoff from vegetation also.
+            PG(I) = PG(I) +  &
+                 + WTG(I,indx_svs2_vl)*RVEG_VL(I) + WTG(I,indx_svs2_vh) * RVEG_VH(I)
 
          ELSE IF ( SNM(I).GE.CRITSNOWMASS .AND. SVM(I).LT.CRITSNOWMASS ) THEN
             ! only low vegetation snow pack present, rain for low vegetation portion
             ! falls through to snow. No rain reaches bare ground because snowpack on low veg. and bare ground exists
-            PG(I) = PG(I) +  WTG(I,indx_svs2_vh) * RVEG_VH(I)
+            PG(I) = PG(I) +  &
+                 + WTG(I,indx_svs2_vl) *RVEG_VL(I) + WTG(I,indx_svs2_vh) * RVEG_VH(I)
 
 
          ELSE IF ( SNM(I).LT.CRITSNOWMASS .AND. SVM(I).GE.CRITSNOWMASS ) THEN
             !only high vegetation snow pack present, rain for high vegetation portion
             ! falls through to snow. No snow on low veg. and bare ground, so rain can reach bare ground directly
             PG(I) = PG(I) +  &
-               + WTG(I,indx_svs2_vl) *RVEG_VL(I)  &
+               + WTG(I,indx_svs2_vl) *RVEG_VL(I) + WTG(I,indx_svs2_vh)* RVEG_VH(I) &
                + WTG(I,indx_svs2_bg) * RR(I)
          ELSE
             ! no snow present, rain can reach bare ground directly
