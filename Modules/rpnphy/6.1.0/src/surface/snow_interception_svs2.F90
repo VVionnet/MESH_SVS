@@ -321,7 +321,7 @@
                   ELSE !Refreezing of intercepted liquid water
                      ! Boone et al. (2017) Eq. 83 still uses SNCMA for refreezing of liquid water, so not working if there is no intercepted snow
 
-                     REFREEZE = 5.56E-6 * DT * (SNCMA(I)/SCAP(I)) * (TVEG(I) - 273.15)  ! < 0
+                     REFREEZE = 5.56E-6 * DT * (WR_VH(I)/WRMAX_VH(I)) * (TVEG(I) - 273.15)  ! < 0
                      
                      IF (ABS(REFREEZE) > WR_VH(I)) THEN
                         REFREEZE = -WR_VH(I)
@@ -382,8 +382,8 @@
 
          IF (VEGH(I).GE.EPSILON_SVS) THEN
 
-            ! Rain is not intercepted by vegetation when snow is present under high veg.
-            ! Therefore rain under high veg accounts for total rain above high veh plus dripping
+            ! Rain is first intercepted by high veg (rain * VEG_DENS)
+            ! Excess of WRMAX_VH drips + drip from melting intercepted snow + rain*(1-VEG_DENS) reach ground
             IF(RR(I)>0.) THEN 
                 WR_VH(I) = WR_VH(I) + DT * VGH_DENS(I)*RR(I)
                 RR_VEG(I) = MAX(0., (WR_VH(I) - WRMAX_VH(I))/DT) + DRIP_CPY(I)/DT + (1.-VGH_DENS(I)) * RR(I)
