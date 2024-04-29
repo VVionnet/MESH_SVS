@@ -47,8 +47,12 @@ tpsoil         280.0   280.0   280.0 ! soil temperature below bg/lv  (K)
 
 tperm      280.0 ! (Deep soil temperature)
 
+!> Activate single soil column in SVS2
+lunique_profile_svs2 .true. 
+
 !> lower boundary condition for heat diffusion in SVS2: TPERM or 0FLUX
-lbcheat_svs2 TPERM
+lbcheat_svs2 TPERM !% 0FLUX ; TPERM
+
 
 !> Special values not tied to soil layer scheme.
 !> nlayers   ----- 1 ----- 2
@@ -113,6 +117,10 @@ VGH_DENS    0.
 ! Specify the height of polar low vegetation
 ! Only useful for Arctic options in Crocus
 !HVEGLPOL    0.2
+
+lwrite_restart .true.      ! Option to write a restart file for SVS2 at the end of the simulation
+lread_restart  .false.      ! Option to read restart information for SVS2/Crocus in MESH_paramater.txt.        
+
 
 !> Physical constant for snowpack scheme (uncomment to use)
 !>xvaging_noglacier  60 ! Aging coefficient (in days) used for albedo calculation in visible range (see modd_snow_par)
