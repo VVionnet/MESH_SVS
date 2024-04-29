@@ -15,7 +15,7 @@
 !-------------------------------------- LICENCE END ---------------------------
 
       SUBROUTINE SNOW_INTERCEPTION_SVS2 (DT, TVEG, T, HU, PS, WIND_TOP, ISWR,  RHOA,    &
-                     RR, SR, SNCMA, WRMAX_VH, ESUBSNWC,SUBSNWC_CUM, LAIVH, VEGH, HM_CAN,   &
+                     RR, SR, SNCMA, WRMAX_VH, ESUBSNC,SUBSNC_CUM, LAIVH, VEGH, HM_CAN,   &
                      VGH_DENS, SCAP, WR_VH, RR_VEG, SR_VEG,  FCANS, N)
 
 
@@ -33,8 +33,8 @@
       REAL SNCMA(N), RR(N), SR(N),  RR_VEG(N), SR_VEG(N), ISWR(N)
       REAL PS(N), RHOA(N), HU(N)
       REAL LAIVH(N), TVEG(N), VEGH(N),WIND_TOP(N),VGH_DENS(N), T(N)
-      REAL ESUBSNWC(N), SUBSNWC_CUM(N), SCAP(N), FCANS(N), HM_CAN(N)
-      REAL DT, SNCMA_INI(N), WRMAX_VH(N), WR_VH(N) 
+      REAL ESUBSNC(N), SUBSNC_CUM(N), SCAP(N), FCANS(N), HM_CAN(N)
+      REAL DT, SNCMA_INI(N), WRMAX_VH(N), WR_VH(N)
 
 !
 !
@@ -64,7 +64,7 @@
 ! WIND_TOP    Wind speed at canopy top [m/s]
 ! PS          Surface pressure [Pa]
 ! ISWR        Solar radiation incident at the top of the high-vegetation [W m-2]
-! ESUBSNWC      sublimation rate from incercepted snow [kg m-2 s-1]
+! ESUBSNC      sublimation rate from incercepted snow [kg m-2 s-1]
 !
 !             - Input (other parameters)
 ! DT          time step [s]
@@ -77,9 +77,9 @@
 !
 !             - Input-Output
 ! WR_VH          water content retained by high vegetation canopy [kg/m2]
+! SUBSNC_CUM   Cumulated mass loss due to sublimation of incercepted snow [kg m-2]
 !             - Output
 !
-! SUBSNWC_CUM   Cumulated mass loss due to sublimation of incercepted snow [kg m-2]
 ! RR_VEG       liquid precipitation rate below high-vegetation [kg/m2/s]
 ! SR_VEG       solid  precipitation rate below high-vegetation [kg/m2/s]
 ! FCANS        Canopy layer snowcover fractions from FSM2
@@ -170,11 +170,9 @@
 
                IF (CANO_REF_FORCING .EQ.'ABV') THEN
 
-                  IF(ESUBSNWC(I)>0) THEN
-                     IF (SNCMA(I)>0) THEN
-                        SNCMA(I) = SNCMA(I) - MAX(ESUBSNWC(I)*DT, 0.)
-                     ENDIF
-                  ENDIF
+                  ! Sublimation rate of intercepted snow on canopy
+                  ! is calculated in ebudget
+                  ! Sublimation of intercepted snow is computed in watsurf_budget when ABV is selected
 
                ELSE ! Open 2 Forest
 
@@ -267,13 +265,13 @@
 
                   ENDIF
 
-                  ESUBSNWC(I) = SUB_CPY/DT
+                  ESUBSNC(I) = SUB_CPY/DT
+                  SUBSNC_CUM(I) = SUBSNC_CUM(I) + ESUBSNC(I) * DT
 
                ENDIF
 
                SNCMA(I) = MAX(0.,SNCMA(I))
 
-               SUBSNWC_CUM(I) = SUBSNWC_CUM(I) + ESUBSNWC(I) * DT
 
 
                !!!!!!!!
@@ -281,7 +279,7 @@
                !!!!!!!!
 
                ! Unloading time constant
-               IF(TVEG(I) >= 273.15) THEN 
+               IF(TVEG(I) >= 273.15) THEN
                   TUNL = TCNM
                ELSE
                   TUNL = TCNC
@@ -322,11 +320,11 @@
                      ! Boone et al. (2017) Eq. 83 still uses SNCMA for refreezing of liquid water, so not working if there is no intercepted snow
 
                      REFREEZE = 5.56E-6 * DT * (WR_VH(I)/WRMAX_VH(I)) * (TVEG(I) - 273.15)  ! < 0
-                     
+
                      IF (ABS(REFREEZE) > WR_VH(I)) THEN
                         REFREEZE = -WR_VH(I)
                      ENDIF
-                     WR_VH(I) = WR_VH(I) + REFREEZE 
+                     WR_VH(I) = WR_VH(I) + REFREEZE
                      WR_VH(I) = MAX(WR_VH(I), 0.)
 
                      SNCMA(I) = SNCMA(I) - REFREEZE
@@ -384,13 +382,11 @@
 
             ! Rain is first intercepted by high veg (rain * VEG_DENS)
             ! Excess of WRMAX_VH drips + drip from melting intercepted snow + rain*(1-VEG_DENS) reach ground
-            IF(RR(I)>0.) THEN 
-                WR_VH(I) = WR_VH(I) + DT * VGH_DENS(I)*RR(I)
-                RR_VEG(I) = MAX(0., (WR_VH(I) - WRMAX_VH(I))/DT) + DRIP_CPY(I)/DT + (1.-VGH_DENS(I)) * RR(I)
-                WR_VH(I) = MIN(WR_VH(I), WRMAX_VH(I))
-            ELSE
-                RR_VEG(I) = 0.
-            ENDIF
+
+            WR_VH(I) = WR_VH(I) + DT * VGH_DENS(I)*RR(I)
+            RR_VEG(I) = MAX(0., (WR_VH(I) - WRMAX_VH(I))/DT) + DRIP_CPY(I)/DT + (1.-VGH_DENS(I)) * RR(I)
+            WR_VH(I) = MIN(WR_VH(I), WRMAX_VH(I))
+
 
             ! Snowfall rate below high vegetation
             SR_VEG(I) = NET_SNOW(I)/DT

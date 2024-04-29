@@ -151,6 +151,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 !  for SVS2 only (to reorganise and clean some var)
    real,dimension(n) :: pct, pz0hnat, pz0, pzenith
    real,dimension(n) :: pgfluxsnow
+   real,dimension(n) :: pg ! Water flux to the soil column [kg/m2/dt]
    real,dimension(n) :: pforest
    real,dimension(n) :: pgfluxsnow_v,pforest_v,phvegapol_v
    real,dimension(n) ::  prsurf ! Aerodynamic surface resistance for snow under canopy (cf. Gouttevin et al. 2013)
@@ -170,6 +171,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    real,dimension(n) :: pscap ! Vegetation layer snow capacities (kg m-2)
    real,dimension(n) :: pfcans ! Canopy layer snowcover fractions from FSM2
    real,dimension(n) :: pres_snca ! Resistance for intercepted snow in high canopy
+   real, dimension(n) ::  eg_grid! evaporation rate over bare ground and bare ground below high veg (grid box average) [kg/m2/s]
+
      ! NL_SVS VARIABLES
    real, dimension(n,nl_svs) ::  pd_g, pdzg
    real, dimension(n,nl_svs) ::  psoilhcapz_v
@@ -177,6 +180,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 !
 
    real, dimension(n,nl_svs) :: wsoiltt
+   real, dimension(n,nl_svs) ::  etr_grid ! Evapotranspiration from each layer (grid box average) [m/s]
    real, dimension(n,nl_svs) :: wft, wftv, wftg, wdttv, wdttg
    real, dimension(n,nl_svs) :: delwatgr, delwatvg, delicegr, delicevg
 
@@ -340,7 +344,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
              PFOREST(I)=0.
              PFOREST_V(I)=1.
              PRSURF(I)=0.
-             PHVEGAPOL_V(I) = 0. ! Effect of basal vegetation on snowpack properties are not taken into account in high vegetation. 
+             PHVEGAPOL_V(I) = 0. ! Effect of basal vegetation on snowpack properties are not taken into account in high vegetation.
              PFCANS(I) = 0.
              PSCAP(I) = 0.
 	         PRES_SNCA(I) = 0.
@@ -435,9 +439,9 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 ! EG CODE RELATED TO PONDING OPTION
       IF (lwater_ponding_svs) then
           DO I=1,N
-             
+
              wsaturc1(I)= max((wsatur1(I)-isoil1(I)-0.00001), CRITWATER)
-             if (wsoil1(I).lt.wsaturc1(I).and.zwatpond(I).gt.0.0) then 
+             if (wsoil1(I).lt.wsaturc1(I).and.zwatpond(I).gt.0.0) then
                transfer = min(zwatpond(I),(wsaturc1(I)-wsoil1(I))*dl_svs(1))
                wsoil1(I) = wsoil1(I) + transfer / dl_svs(1)
                zwatpond(I) = zwatpond(I) - transfer
@@ -608,12 +612,12 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
       ! Store rainfall and snowfall rate below high vegetation (in m) to be consistent with rainrate and snowrate in the bus
       DO I=1,N
-         ! Set snowfall and rainfall rate below vegetation to zero if no high vegetation is present. 
-         ! This is used to make sure that Crocus is not called to simulate snowpack evolution below high vegetation 
-         ! when high vegetation is not present in a grid cell. 
+         ! Set snowfall and rainfall rate below vegetation to zero if no high vegetation is present.
+         ! This is used to make sure that Crocus is not called to simulate snowpack evolution below high vegetation
+         ! when high vegetation is not present in a grid cell.
          IF ( BUS(x(VEGH,I,1)) .LT. EPSILON_SVS) THEN
-             rainrate_mm_veg(i) = 0. 
-             snowrate_mm_veg(i) = 0. 
+             rainrate_mm_veg(i) = 0.
+             snowrate_mm_veg(i) = 0.
          ENDIF
          bus(x(rainrate_vgh,i,1))  = rainrate_mm_veg(i)/1000.
          bus(x(snowrate_vgh,i,1))  = snowrate_mm_veg(i)/1000.
@@ -834,22 +838,31 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       if (phy_error_L) return
 !
 !
-      CALL HYDRO_SVS2 ( DT,      &
+
+      CALL WATSURF_BUDGET_SVS2 ( DT,      &
+           bus(x(ESNC     ,1,1)), bus(x(ESNCAF     ,1,1)), &
            bus(x(eg      ,1,1)), bus(x(egv      ,1,1)),   &
            bus(x(er_vl      ,1,1)),                       &
            bus(x(er_vh   ,1,1)),bus(x(etr_vl      ,1,1)), &
-           bus(x(etr_vh  ,1,1)), rainrate_mm         ,&
+           bus(x(etr_vh  ,1,1)), rainrate_mm, rainrate_mm_veg ,&
            bus(x(rsnowsa ,1,1)), bus(x(rsnowsv ,1,1)),&
-           bus(x(impervu ,1,1)), bus(x(vegl    ,1,1)),&
+           bus(x(vegl    ,1,1)),&
            bus(x(vegh    ,1,1)), bus(x(svs_wta ,1,1)),&
            bus(x(svs_wtg ,1,1)), bus(x(acroot  ,1,1)),&
-           wrmax_vl,wrmax_vh,  bus(x(wsat    ,1,1)),&
+           wrmax_vl,wrmax_vh,  &
+           bus(x(snoma   ,1,1)), bus(x(snvma   ,1,1)),&
+           bus(x(SNCMA     ,1,1)), &
+           bus(x(wveg_vl ,1,1)),bus(x(wveg_vh  ,1,1)),&
+           wveglt, wveght                            ,&
+           PG, ETR_GRID, eg_grid, &
+           N)
+
+      CALL HYDRO_SVS2 ( DT,      &
+           bus(x(impervu ,1,1)), PG,  &
+           ETR_GRID,  eg_grid,  bus(x(wsat    ,1,1)),&
            bus(x(ksat    ,1,1)), bus(x(psisat  ,1,1)),&
            bus(x(bcoef   ,1,1)), bus(x(fbcof   ,1,1)),&
            bus(x(wfcint  ,1,1)), bus(x(grkef   ,1,1)),&
-           bus(x(snoma   ,1,1)), bus(x(snvma   ,1,1)),&
-           bus(x(wveg_vl ,1,1)),bus(x(wveg_vh  ,1,1)),&
-           wveglt, wveght                            ,&
            bus(x(wsoil   ,1,1)), wsoilt              ,&
            bus(x(isoil   ,1,1)), isoilt              ,&
            bus(x(ksatc   ,1,1)), bus(x(khc     ,1,1)),&

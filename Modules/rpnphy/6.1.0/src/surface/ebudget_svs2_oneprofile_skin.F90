@@ -332,7 +332,7 @@
 !                                Albedo of Bark (S. Wang, Ecological Modelling, 2005)
       ABARK  = 0.15
       ALSNV = 0.3 ! Snow-covered canopy albedo (Goottevin et al. 2015)
-      
+
       ! Initialize the latent heat used for the high vegetation by the latent heat of condensation
       ! It is only modified if there is intercepted snow on the canopy (latent heat of fusion is added)
       DO I=1,N
@@ -610,7 +610,7 @@
                               + SIGMA_F * EMVH_SN(I) * RAT(I) &
                               + SIGMA_F * EMVH_SN(I)*LW_UVH  &
                               + RORAVGH(I) * CPD * THETAA(I)  &
-                              + RORAVGH(I) * HV_VH(I) * (HU(I) - ZQSATVGH(I)) 
+                              + RORAVGH(I) * HV_VH(I) * (HU(I) - ZQSATVGH(I))
 
 
                      TVGHST(I) = (BVH(I) *TVGHS(I) + CVH(I))/ AVH(I)
@@ -1085,7 +1085,7 @@
         LEVH(I) = LEVH(I) + LESNVH(I)
         EVHF(I) = EVHF(I) +  WTA(I,indx_svs2_vh) * ESN_VH(I) / RHOA(I)
 !
-!       Direct evapo. rate from low veg. (no. fraction) (for hydro_svs.ftn)
+!       Direct evapo. rate from high veg. (no. fraction) (for hydro_svs.ftn)
         ER_VH(I) = EV_VH(I) - ETR_VH(I)
 !
 !       Latent heat of direct evaporation  (including fraction)
