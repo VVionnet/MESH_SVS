@@ -15,22 +15,24 @@
 !-------------------------------------- LICENCE END ---------------------------
 
       SUBROUTINE DRAG_SVS2 ( TGRS, TGRVS, TVGLS, TVGHS, WD1, &
-                              WR_VL, WR_VH,  THETAA, VMOD, VDIR, HU,  &  
+                              WR_VL, WR_VH,  THETAA, VMOD, VDIR, HU, RHOA, &
                               PS, RS, Z0, Z0LOC, Z0VG, WFC, WSAT, CLAY1,  &
                               SAND1, LAI_VL, LAI_VH, WRMAX_VL,WRMAX_VH,&
-                              ZUSL, ZTSL, LAT, & 
+                              ZUSL, ZTSL, LAT, &
                               FCOR, Z0HA, VEGL, VEGH, CLUMPING,&
                               VGH_DENS, Z0MVH,Z0MVL, VEGHEIGHT,  &
-                              LAIVH, ZVCAN, & 
-                              RESAGR,RESAGRV, RESA_VL, RESA_VH, &  
-                              HUSURF,HUSURFGV, & 
-                              HRSURF,HRSURFGV, &       
-                              HV_VL, HV_VH, DEL_VL, DEL_VH,  &
+                              LAIVH, ZVCAN, FCANS,SNCMA, &
+                              RESAGR,RESAGRV, RESA_VL, RESA_VH, RES_SNCA, &
+                              HUSURF,HUSURFGV, &
+                              HRSURF,HRSURFGV, &
+                              HV_VL, HV_VH, HVSN_VH, DEL_VL, DEL_VH,  &
                               Z0HBG, Z0HVL, Z0HVH,Z0HGV,  N)
       use tdpack
       use sfc_options
       use sfclayer_mod, only: sl_sfclayer,SL_OK
       use svs_configs
+      use MODE_THERMOS
+      use MODD_CSTS
 !
       implicit none
 !!!#include <arch_specific.hf>
@@ -39,16 +41,16 @@
       REAL TGRS(N), TVGLS(N), TVGHS(N), WR_VL(N), WR_VH(N), THETAA(N), VMOD(N), VDIR(N), HU(N), CLAY1(N)
       REAL SAND1(N), PS(N), RS(N), Z0(N),Z0LOC(N), Z0VG(N), WFC(N,NL_SVS), WSAT(N,NL_SVS)
       REAL LAI_VL(N), LAI_VH(N),WRMAX_VH(N),WRMAX_VL(N), ZUSL(N), ZTSL(N), LAT(N)
-      REAL FCOR(N), Z0HA(N), Z0HBG(N), Z0HVL(N), Z0HVH(N), Z0HGV(N)
+      REAL FCOR(N), Z0HA(N), Z0HBG(N), Z0HVL(N), Z0HVH(N), Z0HGV(N), FCANS(N)
       REAL VGH_DENS(N), Z0MVH(N), Z0MVL(N), VEGHEIGHT(N), LAIVH(N), ZVCAN(N)
-      REAL RESAGR(N),RESAGRV(N), RESA_VL(N), RESA_VH(N)
-      REAL HUSURF(N),HUSURFGV(N), HV_VL(N), HV_VH(N), DEL_VL(N), DEL_VH(N)
+      REAL RESAGR(N),RESAGRV(N), RESA_VL(N), RESA_VH(N), RES_SNCA(N)
+      REAL HUSURF(N),HUSURFGV(N), HV_VL(N), HV_VH(N), HVSN_VH(N), DEL_VL(N), DEL_VH(N)
       REAL HRSURF(N),HRSURFGV(N), WD1(N)
-      REAL VEGH(N), VEGL(N), TGRVS(N)
+      REAL VEGH(N), VEGL(N), TGRVS(N), SNCMA(N), RHOA(N)
       REAL CLUMPING
 !
 !Author
-!          S. Belair, M.Abrahamowicz, S.Z.Husain, N.Alavi, S.Zhang (June 2015) 
+!          S. Belair, M.Abrahamowicz, S.Z.Husain, N.Alavi, S.Zhang (June 2015)
 !Revisions
 ! 001      Name (date) - Comment
 !
@@ -81,7 +83,7 @@
 !
 !          - Input -
 ! TGRS      skin (surface) temperature of bare ground
-! TGRVS      skin (surface) temperature of ground below high veg. 
+! TGRVS      skin (surface) temperature of ground below high veg.
 ! TVGLS      skin (surface) temperature of low vegetation
 ! TVGHS      skin (surface) temperature of high vegetation
 ! WD1       Soil volumetric water content (first level)
@@ -95,7 +97,7 @@
 ! RS        surface or stomatal resistance
 ! Z0        momentum roughness length (no snow)
 ! Z0LOC     local (no orography) land momentum roughness
-! Z0VG      averaged vegetation-only momentum roughness      
+! Z0VG      averaged vegetation-only momentum roughness
 ! WFC       volumetric water content at the field capacity
 ! WSAT      volumetric water content at saturation
 ! CLAY1     percentage of clay in first soil layer
@@ -112,29 +114,32 @@
 !           vegetation only (also no orography), for heat transfer
 ! VEGH     fraction of HIGH vegetation
 ! VEGL     fraction of LOW vegetation
-! CLUMPING   coefficient to convert LAI to effective LAI  
+! CLUMPING   coefficient to convert LAI to effective LAI
 ! VGH_DENS   Density of trees in areas of high vegeation (m)
-! VEGHEIGHT Height of trees in areas of high vegeation (m)     
-! ZVCAN   Wind speed within or above the canopy depending on CANO_REF_FORCING (m/s)  
+! VEGHEIGHT Height of trees in areas of high vegeation (m)
+! ZVCAN   Wind speed within or above the canopy depending on CANO_REF_FORCING (m/s)
+! FCANS        Canopy layer snowcover fractions
+! SNCMA   Snow intercepted in high vegetation (kg m-2)
+! RHOA   Air density (kg m-3)
 !
 !           - Output -
 ! HRSURF   relative humidity of the bare ground surface (1st layer)
 ! HUSURF    specific humidity of the bare ground surface
 ! HRSURFGV   relative humidity of the the snow-free ground below high veg (1st layer)
 ! HUSURFGV   specific humidity of the snow-free ground below high veg
-! HV_VL        Halstead coefficient (i.e., relative humidity of the
-!           low vegetation canopy)
-! HV_VH        Halstead coefficient (i.e., relative humidity of the
-!           high vegetation canopy)
+! HV_VL        Halstead coefficient of low vegetation canopy
+! HV_VH        Halstead coefficient of the high vegetation canopy
+! HVSN_VH        Halstead coefficient of the high vegetation canopy accounting for intercepted snow
 ! DEL_VL    fraction of low veg. canopy covered by intercepted water
 ! DEL_VH    fraction of high veg canopy covered by intercepted water
 ! Z0HBG     Bare ground thermal roughness
 ! Z0HGV     Ground below high veg thermal roughness
-! Z0HVL     LOW Vegetation thermal roughness   
-! Z0HVH     HIGH Vegetation thermal roughness   
-! ZRSURF     Aerodynamic surface resistance for soil under canopy (cf. Gouttevin et al. 2013)   
+! Z0HVL     LOW Vegetation thermal roughness
+! Z0HVH     HIGH Vegetation thermal roughness
+! ZRSURF     Aerodynamic surface resistance for soil under canopy (cf. Gouttevin et al. 2013)
 ! Z0MVH      local mom roughness length for high veg.
 ! Z0MVL      local mom roughness length for high veg.
+! RES_SNCA  Resistance for sublimation of the intercepted snow in high canopy (
 
 !
       INTEGER I, zopt
@@ -142,12 +147,16 @@
       real, dimension(n) :: temp, coef_vl, coef_vh, qsatgr, qsat_vl, qsat_vh, &
            zqs_vl, zqs_vh, ctugr, ctugrv, ctuvg, wcrit_hrsurf, z0bg_n,ra,&
            z0gv_n, qsatgrv,wcrit_hrsurfgv, z0hg, zz0hgv, ZZ0HVH, ZZ0HVL
-     real, dimension(n) :: ZUGV, ZTGV, ZZ0MGV, ZDH
+     real, dimension(n) :: ZUGV, ZTGV, ZZ0MGV, ZDH, QSATI_VH, VSUBL
 
      real :: ZRSURF, LZZ0, LZZ0T, RESAGRV_NEUTRAL, ZUSTAR, ZFSURF
-
+     REAL :: NU, MU, NR, DVAP
+     REAL :: XI2,EXT2
      REAL, PARAMETER :: ZRALAI = 3.! Parameter for excess resistance introduced by canopy between surface and ref level (cf Table 1, Gouttevin et al. 2015)
      REAL, PARAMETER :: ZRCHD = 0.67    ! Ratio of displacement height to canopy height
+     REAL, PARAMETER :: RADIUS_ICESPH = 5e-4 ! Radius of single 'ideal' ice shpere [m]
+     REAL, PARAMETER ::     GAMA = 1.15 ! Parameter used in the computation of the exponential wind profile in the canopy
+     REAL, PARAMETER ::    ZVENT = 0.75 ! Ratio between ventilation wind speed height and tree height [-]
 !
 !***********************************************************************
 !
@@ -161,15 +170,15 @@
 !
 !         BARE GROUND LOCAL HEAT ROUGHNESS.  It is approximated by the
 !         local momentum roughness of bare ground, times a scaling factor.
-   
+
       DO I=1,N
          Z0BG_N(I) = Z0(I)
          Z0HG(I) = Z0M_TO_Z0H * Z0(I)
-      END DO 
+      END DO
 !
 !         GROUND BELOW HIGH VEG LOCAL HEAT ROUGHNESS.  It is approximated by the
 !         local momentum roughness of bare ground, times a scaling factor.
-   
+
       DO I=1,N
          Z0GV_N(I) = 1.0 ! Value to be modified
          ZZ0HGV(I) = Z0M_TO_Z0H * Z0GV_N(I)
@@ -177,22 +186,22 @@
 !
 !         HIGH AND LOW VEG LOCAL HEAT ROUGHNESS.  It is approximated by the
 !         local momentum roughness of bare ground, times a scaling factor.
-   
+
       DO I=1,N
-         ZZ0HVH(I) = Z0M_TO_Z0H * Z0MVH(I) 
-         ZZ0HVL(I) = Z0M_TO_Z0H * Z0MVL(I) 
+         ZZ0HVH(I) = Z0M_TO_Z0H * Z0MVH(I)
+         ZZ0HVL(I) = Z0M_TO_Z0H * Z0MVL(I)
       END DO
 
 !          Make sure that wind speed for the canopy is not equal to 0
 
       DO I=1,N
-         ZVCAN(I) = MAX(ZVCAN(I), 0.1) 
-      END DO   
+         ZVCAN(I) = MAX(ZVCAN(I), 0.1)
+      END DO
 !
 !
 !
 !*       1.A     RELATIVE HYMIDITY OF THE EXPOSED BARE GROUND AND OF THE
-!                GROUND BELOW HIGH VEG 
+!                GROUND BELOW HIGH VEG
 !               -------------------------------------------------
 !
 !                        This relative humidity is related to
@@ -201,7 +210,7 @@
 !                        ** If the 1st soil layer is very shallow (under 5cm)
 !                        might need to change the calc. to use a deeper layer
 !
-!                        Same value since only one soil profile is used       
+!                        Same value since only one soil profile is used
 !
       if( svs_hrsurf_sltext ) then
          !use hrsurf formulation based on soil texture
@@ -211,25 +220,25 @@
             if ( clay1(i) .lt. 1.0 ) then
                wcrit_hrsurf(i) = wfc(i,1)
             else if ( clay1(i)  .lt. 40.0 ) then
-               wcrit_hrsurf(i) =  (sand1(i)/((sand1(i)+clay1(i)))) * wfc(i,1) & 
-                    +             (clay1(i)/((sand1(i)+clay1(i)))) * wsat(i,1) 
+               wcrit_hrsurf(i) =  (sand1(i)/((sand1(i)+clay1(i)))) * wfc(i,1) &
+                    +             (clay1(i)/((sand1(i)+clay1(i)))) * wsat(i,1)
             else
                wcrit_hrsurf(i)= wsat(i,1)
             endif
 
             TEMP(I)   = PI*WD1(I)/WCRIT_HRSURF(I)
-            HRSURF(I) = 0.5 * ( 1.-COS(TEMP(I)) )  
-            HRSURFGV(I) = HRSURF(I)  
+            HRSURF(I) = 0.5 * ( 1.-COS(TEMP(I)) )
+            HRSURFGV(I) = HRSURF(I)
             WCRIT_HRSURFGV(I) = WCRIT_HRSURF(I)
-            
+
          END DO
       else
          ! formulation based on field capacity
          DO I=1,N
             TEMP(I)   = PI*WD1(I)/WFC(I,1)
-            HRSURF(I) = 0.5 * ( 1.-COS(TEMP(I)) )  
+            HRSURF(I) = 0.5 * ( 1.-COS(TEMP(I)) )
             wcrit_hrsurf(i) = wfc(i,1)
-            HRSURFGV(I) = HRSURF(I)  
+            HRSURFGV(I) = HRSURF(I)
             WCRIT_HRSURFGV(I) = WCRIT_HRSURF(I)
          END DO
       endif
@@ -259,7 +268,7 @@
 !
 !
 
-        IF ( HRSURF(I)*QSATGR(I).LT.HU(I).AND.QSATGR(I).GT.HU(I) )& 
+        IF ( HRSURF(I)*QSATGR(I).LT.HU(I).AND.QSATGR(I).GT.HU(I) )&
                 HRSURF(I) = HU(I) / QSATGR(I)
 
 !
@@ -267,7 +276,7 @@
 !                          b) low-level air is humid, i.e.,
 !                          qa >= qsat
 !
-        IF ( HRSURF(I)*QSATGR(I).LT.HU(I).AND.QSATGR(I).LE.HU(I) )& 
+        IF ( HRSURF(I)*QSATGR(I).LT.HU(I).AND.QSATGR(I).LE.HU(I) )&
                   HRSURF(I) = 1.0
 
 !
@@ -279,7 +288,7 @@
 !
       END DO
 !
-!                           Calculate specific humidity over ground 
+!                           Calculate specific humidity over ground
       DO I=1,N
         HUSURF(I) = HRSURF(I) * QSATGR(I)
       END DO
@@ -306,13 +315,13 @@
 !                         low-level air is dry, i.e.,
 !                         qa < qsat
 !
-                  IF ( HRSURFGV(I)*QSATGRV(I).LT.HU(I).AND.QSATGRV(I).GT.HU(I) )& 
+                  IF ( HRSURFGV(I)*QSATGRV(I).LT.HU(I).AND.QSATGRV(I).GT.HU(I) )&
                        HRSURFGV(I) = HU(I) / QSATGRV(I)
 !
 !                          b) low-level air is humid, i.e.,
 !                          qa >= qsat
 !
-                  IF ( HRSURFGV(I)*QSATGRV(I).LT.HU(I).AND.QSATGRV(I).LE.HU(I) )& 
+                  IF ( HRSURFGV(I)*QSATGRV(I).LT.HU(I).AND.QSATGRV(I).LE.HU(I) )&
                       HRSURFGV(I) = 1.0
 
 !
@@ -323,22 +332,22 @@
 
 !
 !
-!                           Calculate specific humidity over ground 
+!                           Calculate specific humidity over ground
                   HUSURFGV(I) = HRSURFGV(I) * QSATGRV(I)
-!          
-            ELSE      ! No high vegetation 
-!                    
+!
+            ELSE      ! No high vegetation
+!
 !               ! Use value from bare ground to avoid empty arrays
-!                    
-             HUSURFGV(I) = HUSURF(I) 
-!             
+!
+             HUSURFGV(I) = HUSURF(I)
+!
             ENDIF
 !
           END DO
-!          
-      
 !
-!**     2.A     SURFACE TRANSFER COEFFICIENTS FOR HEAT (CH) FOR BARE GROUND 
+
+!
+!**     2.A     SURFACE TRANSFER COEFFICIENTS FOR HEAT (CH) FOR BARE GROUND
 !*             ---------------------------------------------------------------
 !
 !                      *************************************
@@ -368,7 +377,7 @@
             call physeterror('drag_svs', 'error returned by sl_sfclayer()')
             return
          endif
-         
+
          do i=1,N
             z0hbg(i)=z0hg(i)
          enddo
@@ -379,14 +388,14 @@
       DO I=1,N
          RESAGR(I) = 1. / CTUGR(I)
       END DO
-!     
+!
 !
 !
 !
 !
 !**     2.B     SURFACE TRANSFER COEFFICIENTS FOR HEAT (CH) FOR GROUND
 !                 BELOW HIGH VEG.
-!      
+!
 !*             ---------------------------------------------------------------
 !
 !                      *************************************
@@ -411,7 +420,7 @@
       else
 
          IF (CANO_REF_FORCING == 'ABV') THEN ! Reference height above the canopy. In this case, z0 should be the canopy roughness lengths and the heights above canopy
-            DO I=1,N     
+            DO I=1,N
                  ! WARNING NL: Might need to be updated following conversation with Stephane B. and Maria A.
                  ZUGV(I) = ZUSL(I) + VEGHEIGHT(I)
                  ZTGV(I)  = ZTSL(I) + VEGHEIGHT(I)
@@ -430,20 +439,20 @@
                 return
              endif
 
-             DO I=1,N  
+             DO I=1,N
 
                  ! Compute aerodymanical resistance with stability atm correction
                  RESAGRV(I) = 1. / CTUGRV(I)
 
                  ! ustar above the canopy used in the aero resistances for turbulent fluxes
-                 ZUSTAR = ZVCAN(I) * KARMAN / LOG((ZUGV(I)-ZDH(I))/Z0MVH(I)) 
-                 ZFSURF = 1. + ZRALAI * (1. - EXP(-CLUMPING * LAIVH(I) * VGH_DENS(I))) 
-                 ZRSURF = LOG(Z0MVH(I) / ZZ0HGV(I)) / (ZUSTAR * KARMAN) * ZFSURF ! The heat roughness length should be the one at the surface below canopy 
+                 ZUSTAR = ZVCAN(I) * KARMAN / LOG((ZUGV(I)-ZDH(I))/Z0MVH(I))
+                 ZFSURF = 1. + ZRALAI * (1. - EXP(-CLUMPING * LAIVH(I) * VGH_DENS(I)))
+                 ZRSURF = LOG(Z0MVH(I) / ZZ0HGV(I)) / (ZUSTAR * KARMAN) * ZFSURF ! The heat roughness length should be the one at the surface below canopy
 
-                 ! Compute aerodymanical resistance for neutral stability 
+                 ! Compute aerodymanical resistance for neutral stability
                  ! cf sfclayer_mod (L.588-605 for computation of lzz0 and lzz0t (z0ref== T)
                  LZZ0 = LOG((ZUGV(I) + Z0MVH(I)) / Z0MVH(I))
-                 LZZ0T = LOG((ZTGV(I) + ZZ0HVH(I)) / ZZ0HVH(I)) 
+                 LZZ0T = LOG((ZTGV(I) + ZZ0HVH(I)) / ZZ0HVH(I))
                  RESAGRV_NEUTRAL = 1. / (VMOD(I) * KARMAN * KARMAN / (LZZ0 * LZZ0T))
 
                 ! Apply stability correction  to ZRSURF
@@ -480,17 +489,17 @@
         IF(VEGH(I)>EPSILON_SVS) THEN
             RESAGRV(I) = 1. / CTUGRV(I)
          ELSE
-            RESAGRV(I) = 1. 
+            RESAGRV(I) = 1.
          ENDIF
       END DO
 
-!     
+!
 !
 !
 !
 !
 
-!**     2.C     SURFACE TRANSFER COEFFICIENTS FOR HEAT (CH) FOR LOW VEGETATION 
+!**     2.C     SURFACE TRANSFER COEFFICIENTS FOR HEAT (CH) FOR LOW VEGETATION
 !*             ------------------------------------------------------------
 !
 !                         first calculate the saturation vapor
@@ -503,7 +512,7 @@
 !
 !
 !*                         then calculate the fraction of the foliage
-!                          covered by intercepted water (DEL)    
+!                          covered by intercepted water (DEL)
 !
 !
       DO I=1,N
@@ -517,12 +526,12 @@
          IF(VEGL(I)>EPSILON_SVS) THEN   ! Low vegetation present in the grid cell
              COEF_VL(I) = 1. + 2.*LAI_VL(I)
 !
- 
+
              DEL_VL(I) =   MIN(WR_VL(I),WRMAX_VL(I)) / &
               ((1.-COEF_VL(I))*MIN(WR_VL(I),WRMAX_VL(I)) +COEF_VL(I)*WRMAX_VL(I) )
 !
-             DEL_VL(I) = MIN(DEL_VL(I),0.1) 
-          
+             DEL_VL(I) = MIN(DEL_VL(I),1.)
+
          ELSE
              COEF_VL(I) = 1.
              DEL_VL(I) = 0.
@@ -537,21 +546,21 @@
       DO I=1,N
 !
 !                         calculate Hv based on previous time
-!                         step resavg to calculate specific 
+!                         step resavg to calculate specific
 !                         humidity of low vegetation
 !
          IF(VEGL(I)>EPSILON_SVS) THEN   ! Low vegetation present in the grid cell
-             HV_VL(I) = 1. - MAX(0.,SIGN(1.,QSAT_VL(I)-HU(I)))&  
+             HV_VL(I) = 1. - MAX(0.,SIGN(1.,QSAT_VL(I)-HU(I)))&
                    *RS(I)*(1.-DEL_VL(I)) / (RESA_VL(I)+RS(I))
 
 !      Atmospheric resistence for exchange between the the foliage
 !      and the air within the canopy space (Dearrorff, 1978)
-!        RA(I)  = 100.0 / (0.3*VMOD(I) + 0.3)  ! 
+!        RA(I)  = 100.0 / (0.3*VMOD(I) + 0.3)  !
 !       Equivalent of Hv defined with respect to the mean flow inside the canopy space
-!        RPP(I) = 1. - MAX(0.,SIGN(1.,QSATVG(I)-QAF(I)))&  
+!        RPP(I) = 1. - MAX(0.,SIGN(1.,QSATVG(I)-QAF(I)))&
 !                 *RS(I)*(1.-DEL(I)) / (RA(I)+RS(I))
 
-!                        
+!
 !                         calculate specific humidity of vegetation
 !
              ZQS_VL(I) = HV_VL(I) * QSAT_VL(I) + ( 1. - HV_VL(I) ) * HU(I)
@@ -560,7 +569,7 @@
              ZQS_VL(I) = 0.
              HV_VL(I) = 0.
          ENDIF
-      END DO   
+      END DO
 !
 !
 !
@@ -590,12 +599,12 @@
             call physeterror('drag_svs', 'error 2 returned by sl_sfclayer()')
             return
          endif
-         
+
          do i=1,n ! TO_DO NL: delete or update that with roughn. length for heat for VL?
             z0hvl(i)=zz0hvl(i)
          enddo
       endif
-   
+
       DO I=1,N
          IF(VEGL(I)>EPSILON_SVS) THEN   ! Low vegetation present in the grid cell
              RESA_VL(I) = 1. / CTUVG(I)
@@ -605,7 +614,7 @@
       END DO
 !
 !
-!**     2.D     SURFACE TRANSFER COEFFICIENTS FOR HEAT (CH) FOR HIGH VEGETATION 
+!**     2.D     SURFACE TRANSFER COEFFICIENTS FOR HEAT (CH) FOR HIGH VEGETATION
 !*             ------------------------------------------------------------
 !
 !                         first calculate the saturation vapor
@@ -615,10 +624,11 @@
       DO I=1,N
         QSAT_VH(I) = FOQST( TVGHS(I), PS(I) )
       END DO
+      QSATI_VH(:) = QSATI( TVGHS(:), PS(:) )
 !
 !
 !*                         then calculate the fraction of the foliage
-!                          covered by intercepted water (DEL)    
+!                          covered by intercepted water (DEL)
 !
 !
       DO I=1,N
@@ -633,11 +643,15 @@
          IF(VEGH(I)>EPSILON_SVS) THEN   ! High vegetation present in the grid cell
              COEF_VH(I) = 1. + 2.*LAI_VH(I)
 !
-             DEL_VH(I) =   MIN(WR_VH(I),WRMAX_VH(I)) / &
+             IF (HU(I) .GT. QSAT_VH(I)) THEN ! Condensation
+                DEL_VH(I) = 1.
+             ELSE
+             	DEL_VH(I) =   MIN(WR_VH(I),WRMAX_VH(I)) / &
                    ( (1.-COEF_VH(I))*MIN(WR_VH(I),WRMAX_VH(I)) + COEF_VH(I)*WRMAX_VH(I) )
 !
-             DEL_VH(I) = MIN(DEL_VH(I),0.1) 
-          
+             	DEL_VH(I) = MIN(DEL_VH(I),1.)
+             ENDIF
+
          ELSE
              COEF_VH(I) = 1.
              DEL_VH(I) = 0.
@@ -647,11 +661,48 @@
 !
 !
 !
+!                         calculate Hv based on previous time
+!                         step resavg to use in flxsurf4
 !
+      DO I=1,N
+      !
+      !                         calculate Hv based on previous time
+      !                         step resavg to calculate specific
+      !                         humidity of vegetation
+      !
+         IF(VEGH(I)>EPSILON_SVS) THEN   ! High vegetation present in the grid cell
+               HV_VH(I) = 1. - MAX(0.,SIGN(1.,QSAT_VH(I)-HU(I)))&
+                  *RS(I)*(1.-DEL_VH(I)) / (RESA_VH(I)+RS(I))
+
+      !      Atmospheric resistance for exchange between the the foliage
+      !      and the air within the canopy space (Dearrorff, 1978)
+      !        RA(I)  = 100.0 / (0.3*VMOD(I) + 0.3)  !
+      !       Equivalent of Hv defined with respect to the mean flow inside the canopy space
+      !        RPP(I) = 1. - MAX(0.,SIGN(1.,QSATVG(I)-QAF(I)))&
+      !                 *RS(I)*(1.-DEL(I)) / (RA(I)+RS(I))
+
+      !
+      !                         calculate specific humidity of high vegetation
+      !
+
+             ZQS_VH(I) = (1.-FCANS(I)) * (HV_VH(I) * QSAT_VH(I) + ( 1. - HV_VH(I) ) * HU(I)) &
+                         + FCANS(I) * QSATI_VH(I)
+
+      !
+         ELSE
+               ZQS_VH(I) = 0.
+               HV_VH(I) = 0.
+         ENDIF
+      END DO
+   !
+   !
+!          Calculate aerodynamic resistane of high vegetation
+   !
+   !
       if ( svs_dynamic_z0h ) then
          zopt=9
          ! TO_DO NL: Which values of Z0LOC and Z0HA to use here
-         ! Which height to use? Should be above the canopy 
+         ! Which height to use? Should be above the canopy
          i = sl_sfclayer( THETAA, HU, VMOD, VDIR, ZUSL, ZTSL, &
               TVGHS, ZQS_VH, Z0LOC, Z0HA, LAT, FCOR, z0mloc=z0loc, &
               optz0=zopt, L_min=sl_Lmin_soil, &
@@ -662,6 +713,7 @@
             return
          endif
       else
+
          ! NL: Updated with roughn. lengths for VH instead of averaged roughn. length for veg
          i = sl_sfclayer( THETAA, HU, VMOD, VDIR, ZUSL, ZTSL, &
               TVGHS, ZQS_VH, Z0MVH, ZZ0HVH, LAT, FCOR, &
@@ -672,12 +724,12 @@
             call physeterror('drag_svs', 'error 2 returned by sl_sfclayer()')
             return
          endif
-         
+
          do i=1,n ! TO_DO NL: delete or update that with roughn. length for heat for VL?
             z0hvh(i)=zz0hvh(i)
          enddo
       endif
-   
+
       DO I=1,N
          IF(VEGH(I)>EPSILON_SVS) THEN   ! High vegetation present in the grid cell
              RESA_VH(I) = 1. / CTUVG(I)
@@ -685,41 +737,52 @@
              RESA_VH(I) = 1.
          ENDIF
       END DO
+
+
+!*       3.     Resistance of the snow intercepted in the high vegetation (RES_SNCA)
+!               ---------------------------------------------------------------
 !
-!
-!                         calculate Hv based on previous time
-!                         step resavg to use in flxsurf4
-!
+
       DO I=1,N
-!
-!                         calculate Hv based on previous time
-!                         step resavg to calculate specific 
-!                         humidity of vegetation
-!
-         IF(VEGH(I)>EPSILON_SVS) THEN   ! High vegetation present in the grid cell
-             HV_VH(I) = 1. - MAX(0.,SIGN(1.,QSAT_VH(I)-HU(I)))&  
-                 *RS(I)*(1.-DEL_VH(I)) / (RESA_VH(I)+RS(I))
 
-!      Atmospheric resistance for exchange between the the foliage
-!      and the air within the canopy space (Dearrorff, 1978)
-!        RA(I)  = 100.0 / (0.3*VMOD(I) + 0.3)  ! 
-!       Equivalent of Hv defined with respect to the mean flow inside the canopy space
-!        RPP(I) = 1. - MAX(0.,SIGN(1.,QSATVG(I)-QAF(I)))&  
-!                 *RS(I)*(1.-DEL(I)) / (RA(I)+RS(I))
+         IF (FCANS(I) .GT. 0.) THEN
 
-!                        
-!                         calculate specific humidity of high vegetation
-!
-             ZQS_VH(I) = HV_VH(I) * QSAT_VH(I) + ( 1. - HV_VH(I) ) * HU(I)
-!
+            ! Fraction of the entire forest height [-]
+            XI2 = 1.-ZVCAN(I)
+
+            ! Canopy wind speed extinction coefficient [-]
+            ! Ellis et al (2010) (EL10) refers to Eagleson (2002) to justify the formulation of this coefficient
+            EXT2 = GAMA * LAI_VH(I)
+
+            ! Computation of ventilation wind speed of intercepted snow derived from above-caopny wind speed  [Eq 8 in EL10]
+            ! Estimated within canopy wind speed at fraction XI2 of the entire tree height [Eq 8 in EL10]  [m s-1]
+            VSUBL(I) = ZVCAN(I) * EXP(-1. * EXT2 * XI2)
+
+            ! Sutherland's equation for kinematic viscosity
+            MU = 1.8325e-5*416.16/( THETAA(I)+120.)*(THETAA(I)/296.16)*SQRT(THETAA(I)/296.16)/RHOA(I)
+
+            ! Compute Reynolds Number     [-]
+            NR = 2.0 * RADIUS_ICESPH * ZVCAN(I) / MU
+
+            ! Compute the Nusselt Number  [-]
+            NU = 1.79 + 0.606 * SQRT(NR)
+
+            ! Compute diffusivity of water vapour in air [m2 s-1]
+            DVAP = 2.063e-5 * (TVGHS(I)/273.15)**(1.75)
+
+            ! Resistance for snow within the canopy
+            RES_SNCA(I) = 2.*917.*RADIUS_ICESPH**2 /(3.*0.02*FCANS(I)**(-0.4)*SNCMA(I)*NU*DVAP)
+
          ELSE
-             ZQS_VH(I) = 0.
-             HV_VH(I) = 0.
+            RES_SNCA(I) = 0.
          ENDIF
-      END DO   
 
 
-!*       3.     HALSTEAD COEFFICIENT (RELATIVE HUMIDITY OF THE VEGETATION) (HV)
+      END DO
+!
+
+
+!*       4.     HALSTEAD COEFFICIENT (RELATIVE HUMIDITY OF THE VEGETATION) (HV)
 !               ---------------------------------------------------------------
 !
 !
@@ -728,13 +791,21 @@
 !
       DO I=1,N
 
-        HV_VL(I) = 1. - MAX(0.,SIGN(1.,QSAT_VL(I)-HU(I)))& 
+
+        HV_VL(I) = 1. - MAX(0.,SIGN(1.,QSAT_VL(I)-HU(I)))&
                  *RS(I)*(1.-DEL_VL(I)) / (RESA_VL(I)+RS(I))
 
-        HV_VH(I) = 1. - MAX(0.,SIGN(1.,QSAT_VH(I)-HU(I)))& 
+        HV_VH(I) = 1. - MAX(0.,SIGN(1.,QSAT_VH(I)-HU(I)))&
                  *RS(I)*(1.-DEL_VH(I)) / (RESA_VH(I)+RS(I))
+
+        ! Account for intercepted snow in the high vegetation
+        HVSN_VH(I) = FCANS(I) * (CHLF + CHLC)  &
+                    + (1.-FCANS(I)) * HV_VH(I) * CHLC
+
 
       END DO
 !
+
+
       RETURN
       END

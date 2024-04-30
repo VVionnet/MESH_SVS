@@ -134,7 +134,7 @@ DO JJ=1,SIZE(PRI)
   ZCDN_M98(JJ)= XKARMAN*XKARMAN/(LOG(PUREF(JJ)/ZZ0(JJ))*LOG(PZREF(JJ)/ZZ0(JJ)))
    
    
-  IF(HSNOWRES=='RIL' .OR. HSNOWRES=='DEF') THEN
+  IF(HSNOWRES=='RIL' .OR. HSNOWRES=='RI1' .OR. HSNOWRES=='RI2' .OR. HSNOWRES=='DEF') THEN
 !
       IF ( PRI(JJ) < 0.0 ) THEN
         ZDI(JJ) = 1. / ( ZVMOD(JJ)                                  &

@@ -47,10 +47,11 @@ subroutine coherence3(ni, trnch)
    real, pointer, dimension(:) :: zalveg,  zcveg,  zgamveg,  zglacier,  zglsea,  zicedp,  zlai,  zmg,  zrgl,  zrootdp,  zsnoal, zsnoden, zsnoma,  zsnoro,  zstomr,  zvegfrac,  zwsnow,  zwveg
 !!$      real, pointer, dimension(:) :: zsdepth
 
-   real, pointer, dimension(:,:) :: zclay, zisoil, zsand, zsnodp, ztglacier, ztsoil, zwsoil,ztpsoil
+   real, pointer, dimension(:,:) :: zclay, zisoil, zsand, zsoc, zsnodp, ztglacier, ztsoil, zwsoil,ztpsoil
    ! SVS
    real, pointer, dimension(:) :: zsnodpl, zsnval, zsnvden, zsnvdp, zsnvma, zsnvro, zvegh, zvegl, zwsnv
-
+   ! SVS 2
+   real, pointer, dimension(:) :: zwveg_vl,zwveg_vh
 
 #define MKPTR1D(NAME1,NAME2) nullify(NAME1); if (vd%NAME2%i > 0 .and. associated(busptr(vd%NAME2%i)%ptr)) NAME1(1:ni) => busptr(vd%NAME2%i)%ptr(:,trnch)
 #define MKPTR2D(NAME1,NAME2) nullify(NAME1); if (vd%NAME2%i > 0 .and. associated(busptr(vd%NAME2%i)%ptr)) NAME1(1:ni,1:vd%NAME2%mul*vd%NAME2%niveaux) => busptr(vd%NAME2%i)%ptr(:,trnch)
@@ -82,16 +83,24 @@ subroutine coherence3(ni, trnch)
    MKPTR1D(zvegl,    vegl)
    MKPTR1D(zwsnow,   wsnow)
    MKPTR1D(zwsnv,    wsnv)
-   MKPTR1D(zwveg,    wveg)
+   !MKPTR1D(zwveg,    wveg)
 
    MKPTR2D(zclay,    clay)
    MKPTR2D(zisoil,   isoil)
    MKPTR2D(zsand,    sand)
+   MKPTR2D(zsoc,    soc)
    MKPTR2D(zsnodp,   snodp)
    MKPTR2D(ztglacier,tglacier)
    MKPTR2D(ztsoil,   tsoil)   
    MKPTR2D(ztpsoil,   tpsoil)
    MKPTR2D(zwsoil,   wsoil)
+
+   if (schmsol == 'SVS2') then  
+      MKPTR1D(zwveg_vl,    wveg_vl)
+      MKPTR1D(zwveg_vh,    wveg_vh)
+   else
+      MKPTR1D(zwveg,    wveg)      
+   endif 
  
    !***************************************************************
    ! Coherence tests on the mask "mg"
@@ -130,6 +139,7 @@ subroutine coherence3(ni, trnch)
                zvegfrac (i)      = 0.0
                zsand    (i,1)    = 0.0
                zclay    (i,1)    = 0.0
+               zsoc    (i,1)    = 0.0
 
             end if
          end do
@@ -151,6 +161,7 @@ subroutine coherence3(ni, trnch)
                if (zsand(i,1)+zclay(i,1).lt.critexture) then
                   zsand(i,1) = 35.
                   zclay(i,1) = 35.
+                  zsoc(i,1) = 0.
                end if
 
                zwsoil(i,1) = max(zwsoil(i,1),1.e-7)
@@ -158,6 +169,8 @@ subroutine coherence3(ni, trnch)
 
                zsand(i,1) = max(1.,zsand(i,1))
                zclay(i,1) = max(1.,zclay(i,1))
+               zsoc(i,1) = max(1.,zsoc(i,1))
+
 
                zalveg   (i) = max( zalveg   (i) , 0.12 )
                zrootdp  (i) = max( zrootdp  (i) , 0.5  )
@@ -175,7 +188,7 @@ subroutine coherence3(ni, trnch)
 
       end if IF_ISBA
 
-      IF_SVS:  if (schmsol.eq.'SVS'.OR. schmsol.EQ.'SVS2') then
+      IF_SVS:  if (schmsol.eq.'SVS') then
          do i=1,ni
             if (zmg(i).lt.critmask) then
                ! OVER WATER, FOR ESTHETIC PURPOSE ONLY
@@ -198,6 +211,32 @@ subroutine coherence3(ni, trnch)
             endif
          enddo      
       endif IF_SVS
+
+      IF_SVS_V2:  if (schmsol.EQ.'SVS2') then
+         do i=1,ni
+            if (zmg(i).lt.critmask) then
+               ! OVER WATER, FOR ESTHETIC PURPOSE ONLY
+               do k=1,nl_svs
+                  zwsoil(i,k)   = 1.0
+                  zisoil(i,k)   = 0.0
+                  ztpsoil(i,k)   = -1.0
+               enddo
+               zwveg_vl    (i)      = 0.0
+               zwveg_vh    (i)      = 0.0
+               zrootdp  (i)      = 0.0
+               zvegfrac (i)      = 0.0
+               zvegh    (i)      = 0.0
+               zvegl    (i)      = 0.0
+               zsnodpl(i) = 0.0
+               zsnoma(i)  = 0.0
+               zwsnow(i)  = 0.0
+               zsnvdp(i)  = 0.0
+               zsnvma(i)  = 0.0
+               zwsnv(i)   = 0.0
+            endif
+         enddo      
+      endif IF_SVS_V2
+      
 
    endif NEW_MG_MASK
 
@@ -290,13 +329,14 @@ subroutine coherence3(ni, trnch)
                zvegfrac (i)      = 0.0
                zsand    (i,1)    = 0.0
                zclay    (i,1)    = 0.0
+               zsoc    (i,1)    = 0.0
 
             end if
          end do
 
       end if IF_ISBA2
 
-      IF_SVS2: if (schmsol == 'SVS' .OR. schmsol.EQ.'SVS2') then
+      IF_SVS2: if (schmsol == 'SVS') then
 
 !VDIR NODEP
          do i=1,ni
@@ -323,6 +363,36 @@ subroutine coherence3(ni, trnch)
          end do
 
       end if IF_SVS2
+
+      IF_SVS_V2_2: if (schmsol == 'SVS2') then
+
+!VDIR NODEP
+         do i=1,ni
+            if (zglacier(i) > 1.-critmask) then
+
+               do k=1,nl_svs
+                  zwsoil(i,k)   = 1.0
+                  zisoil(i,k)   = 0.0
+                  ztpsoil(i,k)   = -1.0
+               enddo
+
+               zwveg_vl    (i)      = 0.0
+               zwveg_vh    (i)      = 0.0
+               zrootdp  (i)      = 0.0
+               zvegfrac (i)      = 0.0
+               zvegh    (i)      = 0.0
+               zvegl    (i)      = 0.0
+               zsnodpl(i) = 0.0
+               zsnoma(i)  = 0.0
+               zwsnow(i)  = 0.0
+               zsnvdp(i)  = 0.0
+               zsnvma(i)  = 0.0
+               zwsnv(i)   = 0.0
+            end if
+         end do
+
+      end if IF_SVS_V2_2
+
    endif NEW_GL_MASK
 
 

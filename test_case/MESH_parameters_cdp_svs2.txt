@@ -26,6 +26,10 @@ draindens       50.0 !m m**-2
 ! > Select land surface scheme
 schmsol  SVS2
 
+! Water ponding scheme
+lwater_ponding_svs  .false.    ! Activate water ponding in SVS2 
+watpond 0  ! Heigh in m of ponded water
+
 !> Soils.
 soiltext                 NIL !NIL: required to use soil_levels.txt as-is
 !> By default, values for 3 layers are required and only read. The values of the third layer are applied to all deeper layers.
@@ -36,14 +40,19 @@ soiltext                 NIL !NIL: required to use soil_levels.txt as-is
 !> nlayers   ----- 1 ----- 2 ----- 3 ----- 4 ----- 5 ----- 6 ----- 7
 sand            60.0    60.0    60.0 !%
 clay            30.0    30.0    30.0 !%
+soc             0.0     0.0      0.0 !%, soil organic content
 wsoil          0.083   0.086   0.098 !vol. content
 isoil            0.0     0.0     0.0 !vol. content
 tpsoil         280.0   280.0   280.0 ! soil temperature below bg/lv  (K)
 
 tperm      280.0 ! (Deep soil temperature)
 
+!> Activate single soil column in SVS2
+lunique_profile_svs2 .true. 
+
 !> lower boundary condition for heat diffusion in SVS2: TPERM or 0FLUX
-lbcheat_svs2 TPERM
+lbcheat_svs2 TPERM !% 0FLUX ; TPERM
+
 
 !> Special values not tied to soil layer scheme.
 !> nlayers   ----- 1 ----- 2
@@ -57,22 +66,22 @@ tground       284.8  284.8 !Kelvin, only 2 values for svs1
 vf               0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     1.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0 !fraction
 z0v              0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.02    0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0 !roughness length
 
-!> High veg (FR scheme) 
+!> High veg (FR scheme)
 !> nlayers   ----- 1 ----- 2
 tvegeh          285.7   285.7 !Kelvin
 !> npoints   ----- 1
 wveg_vh             0.0 !kg m**-2
 
 
-!> Low veg (Skin only) 
-!> nlayers   ----- 1 
-tvegel          285.7  
+!> Low veg (Skin only)
+!> nlayers   ----- 1
+tvegel          285.7
 !> npoints   ----- 1
 wveg_vl             0.0 !kg m**-2
 
-!> Ground below high veg (Skin only) 
-!> nlayers   ----- 1 
-tgroundv       284.8  
+!> Ground below high veg (Skin only)
+!> nlayers   ----- 1
+tgroundv       284.8
 
 ! Multilayer Snowpack scheme
 nsl     20   ! Number of snow layers
@@ -92,21 +101,26 @@ lout_snow_profile  .true.  ! Create output file containing detailed information 
 lout_snow_vegh .true.
 nprofile_day     4          ! Number of snow profiles per day (can be  1, 2, 4, 6, 12, 24)
 lout_snow_enbal  .false.    ! Create output file containing information about the snowpack energy and mass budget
+lout_svs2_watbal  .true.  ! Create output file containing water budget variables
 
 !> Canopy module SVS
 lsnow_interception_svs2  .false. ! Use interception
 lcano_svs2 .false.     ! Use canopy module of SVS1 (false) or SVS2 (true)
 
-!> Provenance of met forcing for canopy module in SVS2: FOR (forest below canopy) 
+!> Provenance of met forcing for canopy module in SVS2: FOR (forest below canopy)
 ! or O2F (from open below canopy height transfered to forest below canopy) or ABV (above canopy)
 cano_ref_forcing O2F
 
 ! Specify a canopy cover density (high vegetation)
 VGH_DENS    0.
 
-! Specify the height of polar low vegetation 
+! Specify the height of polar low vegetation
 ! Only useful for Arctic options in Crocus
 !HVEGLPOL    0.2
+
+lwrite_restart .true.      ! Option to write a restart file for SVS2 at the end of the simulation
+lread_restart  .false.      ! Option to read restart information for SVS2/Crocus in MESH_paramater.txt.        
+
 
 !> Physical constant for snowpack scheme (uncomment to use)
 !>xvaging_noglacier  60 ! Aging coefficient (in days) used for albedo calculation in visible range (see modd_snow_par)

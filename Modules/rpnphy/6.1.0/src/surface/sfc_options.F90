@@ -300,9 +300,9 @@ module sfc_options
    logical           :: lsoil_freezing_svs1 = .false.
    namelist /surface_cfgs/ lsoil_freezing_svs1 
 
-   !# If .true., SVS1 simulates water ponding at the surface
-   logical           :: lwater_ponding_svs1 = .false.
-   namelist /surface_cfgs/ lwater_ponding_svs1 
+   !# If .true., SVS1 and SVS2 simulate water ponding at the surface
+   logical           :: lwater_ponding_svs = .false.
+   namelist /surface_cfgs/ lwater_ponding_svs 
 
    !# If .true., SVS2 uses only a unique column for the soil
    logical           :: lunique_profile_svs2 = .true.
@@ -379,7 +379,7 @@ module sfc_options
    !# * 'FOR'   :  forcing is below the canopy
    !# * 'O2F'   :  met forcing is below canopy height in the open and is transfered below canopy
    !# * 'ABV'   :  met forcing is above canopy
-   character(len=3) :: cano_ref_forcing    = 'FOR'
+   character(len=3) :: cano_ref_forcing    = 'ABV'
    namelist /surface_cfgs/ cano_ref_forcing 
    character(len=*), parameter :: CANO_REF_FORCING_OPT(3) = (/ &
         'FOR',  &
@@ -388,7 +388,7 @@ module sfc_options
         /)
 
    !# If .true., SVS2 utilizes the canopy module to modify T, U, VMOD, SW, and LW to account for canopy
-   logical           :: lcano_svs2 = .false.
+   logical           :: lcano_svs2 = .true.
    namelist /surface_cfgs/ lcano_svs2
 
    !# Emissivity for water
@@ -626,13 +626,17 @@ module sfc_options
 
    ! Option for the turbulent fluxes in Crocus
 !    HSNOWRES = 'DEF' = Default: Louis (ISBA: Noilhan and Mahfouf 1996)
-!    HSNOWRES = 'RIL' = Limit Richarson number under very stable conditions (currently testing)
+!    HSNOWRES = 'RIL' = Limit Richarson number under very stable conditions to 0.2 (currently testing)
+!    HSNOWRES = 'RI1' = Limit Richarson number under very stable conditions to 0.1
+!    HSNOWRES = 'RI2' = Limit Richarson number under very stable conditions to 0.026
 !    HSNOWRES = 'M98'  = Martin et Lejeune 1998 : older computation for turbulent fluxes coefficents in Crocus   
    character(len=16) :: hsnowres = 'RIL'
    namelist /surface_cfgs/ hsnowres
-   character(len=*), parameter :: HSNOWRES_OPT(3) = (/ &
+   character(len=*), parameter :: HSNOWRES_OPT(5) = (/ &
         'DEF',  &
         'RIL',  &  
+        'RI1',  &  
+        'RI2',  &  
         'M98'   &  
          /)
 

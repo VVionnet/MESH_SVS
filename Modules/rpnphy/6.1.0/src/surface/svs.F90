@@ -24,7 +24,7 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    use sfcbus_mod
    use sfc_options, only: atm_external, atm_tplus, radslope, jdateo, &
         use_photo, nclass, zu, zt, sl_Lmin_soil, VAMIN, svs_local_z0m, &
-        vf_type,lsoil_freezing_svs1,lwater_ponding_svs1,critwater
+        vf_type,lsoil_freezing_svs1,lwater_ponding_svs,critwater
    use svs_configs
    implicit none
 !!!#include <arch_specific.hf>
@@ -249,7 +249,7 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       ENDDO
 
 
-      IF(lwater_ponding_svs1 .and. kount==1) THEN
+      IF(lwater_ponding_svs .and. kount==1) THEN
           DO I=1,N
 !           EG: Adjust max. ponding depth according to bare ground fraction: consider 10mm over bare ground
 	    zmaxpond(I) = zmaxpond(I) * (zvegh(I)+zvegl(I)) + 0.01 * (1.-zvegh(I)-zvegl(I))
@@ -288,7 +288,7 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
 !
 ! EG CODE RELATED TO PONDING OPTION
-      IF (lwater_ponding_svs1) then
+      IF (lwater_ponding_svs) then
           DO I=1,N
              
              wsaturc1(I)= max((wsatur1(I)-isoil1(I)-0.00001), CRITWATER)

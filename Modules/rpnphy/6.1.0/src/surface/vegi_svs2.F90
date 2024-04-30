@@ -14,20 +14,20 @@
 !CANADA, H9P 1J3; or send e-mail to service.rpn@ec.gc.ca
 !-------------------------------------- LICENCE END --------------------------------------
       SUBROUTINE VEGI_SVS2 ( RG, T, TVEG, HU, PS, &
-           WD , RGL, LAI, LAI_VH, LAI_VL, HVEGLPOL, RSMIN, GAMMA, WWILT, WFC, &   
+           WD , RGL, LAI, LAI_VH, LAI_VL, HVEGLPOL, RSMIN, GAMMA, WWILT, WFC, &
            SUNCOS, DRZ, D50, D95, PSNGRVL, VEGH, VEGL, Z0MVH,  &
-           VGH_HEIGHT,VGH_DENS, CLUMPING,  &
+           VGH_HEIGHT,VGH_DENS, CLUMPING, SNCMA, WR_VH,  &
            RS, SKYVIEW,  &
-           SKYVIEWA, VTR, VTRA, &    
-           FCD, ACROOT, WRMAX_VL, WRMAX_VH, PHM_CAN, HVEGAPOL, N  )
+           SKYVIEWA, VTR, VTRA, &
+           FCD, ACROOT, WRMAX_VL, WRMAX_VH, PHM_CAN, HVEGAPOL, SCAP, N  )
 !
         use tdpack
         use svs_configs
-        use sfc_options 
+        use sfc_options
       implicit none
 !!!#include <arch_specific.hf>
 !
-      INTEGER N 
+      INTEGER N
       REAL WD(N,NL_SVS), FCD(N, NL_SVS)
       REAL RG(N), T(N), HU(N), PS(N), TVEG(N)
       REAL SUNCOS(N), LAI_VH(N),LAI_VL(N), PSNGRVL(N), VEGH(N), VEGL(N)
@@ -35,9 +35,9 @@
       REAL WFC(N,NL_SVS), RS(N), SKYVIEW(N), VTR(N), DRZ(N)
       REAL SKYVIEWA(N),VTRA(N)
       REAL D50(N), D95(N), ACROOT(N,NL_SVS) , WRMAX_VL(N),  WRMAX_VH(N)
-      REAL HVEGLPOL(N), HVEGAPOL(N)  
+      REAL HVEGLPOL(N), HVEGAPOL(N), SNCMA(N)
       REAL Z0MVH(N),  VGH_HEIGHT(N), VGH_DENS(N), PHM_CAN(N)
-      REAL CLUMPING 
+      REAL CLUMPING, SCAP(N), WR_VH(N)
 !
 !Author
 !          S. Belair, M.Abrahamowicz,S.Z.Husain (June 2015)
@@ -76,26 +76,29 @@
 ! VEGH     fraction of HIGH vegetation
 ! VEGL     fraction of LOW vegetation
 ! Z0MVH    Local roughness associated with HIGH vegetation only (no
-!            orography)      
-! HVEGLPOL Polar low vegetation height   
-! CLUMPING   coefficient to convert LAI to effective LAI  
-!     
+!            orography)
+! HVEGLPOL Polar low vegetation height
+! CLUMPING   coefficient to convert LAI to effective LAI
+! SNCMA       mass of intercepted snow in the canopy [kg/m2]
+! WR_VH    Water retained by high vegetation
+!
 !          - Input/Output -
-! VGH_DENS  Density of trees in areas of high vegeation (m)  
-!      
+! VGH_DENS  Density of trees in areas of high vegeation (m)
+!
 !          - Output -
 ! RS       Surface or stomatal resistance
 ! SKYVIEW  Sky view factor for tall/high vegetation
-! VTR      (HIGH) Vegetation transmissivity 
+! VTR      (HIGH) Vegetation transmissivity
 ! SKYVIEWA  Averaged sky view factor for vegetation
-! VTRA      Average Vegetation transmissivity 
+! VTRA      Average Vegetation transmissivity
 ! FCD(NL_SVS)  Root fraction within soil layer (NL_SVS soil layers)
 ! ACROOT(NL_SVS) Active fraction of roots (0-1) in the soil layer
 ! WRMAX_VL    Max volumetric water content retained on low vegetation
 ! WRMAX_VH    Max volumetric water content retained on high vegetation
-! VGH_HEIGHT Height of trees in areas of high vegeation (m)     
-! HVEGAPOL Polar mean vegetation height (including bare soil)
-! PHM_CAN ! Heat mass for the high vegetation layer (J K-1 m-2)
+! VGH_HEIGHT Height of trees in areas of high vegeation (m)
+! HVEGAPOL   Polar mean vegetation height (including bare soil)
+! PHM_CAN    Heat mass for the high vegetation layer (J K-1 m-2)
+! SCAP       Vegetation layer snow capacities (kg m-2)
 !
       INTEGER I, K
       REAL CSHAPE, f2_k(nl_svs)
@@ -103,9 +106,14 @@
       real :: e_leaf, &   ! Leaf thickness (m)
               rho_bio, &  ! Biomass density (kg m-3)
               cp_bio , &  ! Biomass specific heat mass (J kg-1 K-1)
-              ZB          ! Basal tree area (m2 m-2)
+              ZB, &       ! Basal tree area (m2 m-2)
+              ZCVAI       ! Vegetation heat capacity per unit VAI (J/K/m^2)
       real, dimension(n) :: extinct, f, f1, f2, f3, f4, qsat
-
+      CHARACTER(LEN=4) hcano_hm ! Option used for the canopy heat mass
+      REAL, PARAMETER ::  CVAI = 4.4 ! Intercepted snow capacity per unit lai (kg/m^2) from Essery et a. (2003)
+                  ! Note that HP98 are using a temperature-dependant param for falling snow density that could be considered later
+                  ! The maximum canopy snow interception load in HP98 also depends on the type of trees.
+      REAL, PARAMETER ::  m_scap = 5. ! Intercepted snow coefficient per unit lai (kg/m^2) from Andreadis et a. (2009)
 !
 !***********************************************************************
 !
@@ -119,15 +127,20 @@
 !                      From Gouttevin et al. (2015)
 
 !
-       
-       E_LEAF = 0.001
-       RHO_BIO = 900.
-       CP_BIO = 2800.
-       ZB = 40. / 10000.  ! m2 ha-1 to m2 m-2  TO_DO NL: parameterizing this parameter?
+
+      E_LEAF = 0.001
+      RHO_BIO = 900.
+      CP_BIO = 2800.
+      ZB = 40. / 10000.  ! m2 ha-1 to m2 m-2  TO_DO NL: parameterizing this parameter?
+      ZCVAI = 3.6e4
+      HCANO_HM = 'G15'  ! Select the approach used to compute the mass loss due sublimation of intercepted snow
+                      ! 'E03': using Essery et al. (2003) approach. Also in FSM2
+                      ! 'G15': formulation proposed by Gouttevin et al. (2015)
+
 !
 !
 !
-       DO I=1,N      
+       DO I=1,N
           IF ( (VEGH(I)+VEGL(I)*(1-PSNGRVL(I))).GE.EPSILON_SVS ) THEN
              ! VEGETATION PRESENT
 
@@ -138,7 +151,7 @@
 !                      This factor measures the influence
 !                      of the photosynthetically active radiation
 !
-             
+
              F(I)  = 0.55*2.*RG(I) / (RGL(I)+1.E-6) /  &
                   ( LAI(I)+1.E-6 )
              F1(I) = ( F(I) + RSMIN(I)/5000. ) / ( 1. + F(I) )
@@ -159,13 +172,13 @@
 !                      soils are frozen).
 !
 !           Calculation of root-zone soil moisture
-!            
+!
 !
             ! Shape parameter CSHAPE
-             CSHAPE=LOG10(0.05/0.95)/LOG10(D95(I)/D50(I))       
-!        
+             CSHAPE=LOG10(0.05/0.95)/LOG10(D95(I)/D50(I))
+!
 !                 Root fractions at different depths
-!                 The equation has depths in cm, but ratio, so leave in meters                 
+!                 The equation has depths in cm, but ratio, so leave in meters
              DO K=1,NL_SVS-1
                 if(DL_SVS(K).lt.DRZ(I)) then
                    FCD(I,K) = 1./ (1.+ (DL_SVS(K)/D50(I))**CSHAPE)
@@ -174,11 +187,11 @@
                 endif
              ENDDO
              FCD(I,NL_SVS)=1.
-      
+
              !                 Calculate f2 -- weighted mean using root fraction above
              !                 1.E-5 (dry soil--> large resistance) < f2 < 1.0 (humid soil --> no impact on resistance)
-             
-             ! f2 for each layer           
+
+             ! f2 for each layer
              DO K=1,NL_SVS
                 ! calculate moisture stress on roots
                 f2_k(k) =  min( 1.0,  max( 1.E-5  ,  &
@@ -189,7 +202,7 @@
              ! k=1
              f2(i) = f2_k(1) * FCD(I,1)
              DO K=2,NL_SVS
-                f2(i) = f2(i) +   f2_k(k) *  ( FCD(I,K) - FCD(I,K-1) ) 
+                f2(i) = f2(i) +   f2_k(k) *  ( FCD(I,K) - FCD(I,K-1) )
              ENDDO
 
              ! active fraction of roots
@@ -198,7 +211,7 @@
              DO K=2,NL_SVS
                 acroot(i,k)= f2_k(k) *  ( FCD(I,K) - FCD(I,K-1) ) /f2(i)
              ENDDO
-    
+
 !
 !
 !
@@ -223,13 +236,13 @@
 !                  This factor introduces an air temperature
 !                  dependance on the surface stomatal resistance
 !
-             F4(I) = MAX( 1.0 - 0.0016*(298.15-T(I))**2, 1.E-3 )             
+             F4(I) = MAX( 1.0 - 0.0016*(298.15-T(I))**2, 1.E-3 )
 !
 !
 !*       5.     THE SURFACE STOMATAL RESISTANCE
 !               -------------------------------
 !
-             RS(I) = RSMIN(I) / ( LAI(I)+1.E-6 ) & 
+             RS(I) = RSMIN(I) / ( LAI(I)+1.E-6 ) &
                   / F1(I) / F2(I) / F3(I) / F4(I)
 !
              RS(I) = MIN( RS(I),5000.  )
@@ -239,15 +252,15 @@
 !*       6.     TRANSMISSIVITY OF CANOPY (HIGH VEG ONLY)
 !               ----------------------------------------
 !
-!                 Adjust density of tree in high vegetation 
+!                 Adjust density of tree in high vegetation
 
              IF(VEGH(I)>0) THEN
                 VGH_DENS(I) = MIN(1., MAX(0.1, VGH_DENS(I))) ! Impose of minimum tree cover density of 0.2
-             ELSE   
+             ELSE
                 VGH_DENS(I) = 0.
-             ENDIF             
+             ENDIF
 !
-!                 Calculate the extinction coefficient... 
+!                 Calculate the extinction coefficient...
 !                 the constant 0.5 is a first approximation
 !                 based on Sicart et al. (2004), the calculation
 !                 of the coefficient of extinction could/should
@@ -270,7 +283,7 @@
 !
 !                 According to Verseghy et al. (1993), the skyview
 !                 factor for NEEDLELEAF is exp(-0.5*LAI) and
-!                 exp(-1.5*LAI) for BROADLEAF (and exp(-0.8*LAI) for 
+!                 exp(-1.5*LAI) for BROADLEAF (and exp(-0.8*LAI) for
 !                 crops). Here as a first approximation, we take the
 !                 skyview factor for tall/high vegetation to be exp(-1*LAI).
 !
@@ -279,33 +292,50 @@
              SKYVIEWA(I) = EXP( - CLUMPING * LAI(I) * VGH_DENS(I))
 !
 !
-!*       8.     MAXIMUM VOLUMETRIC WATER CONTENT RETAINED ON VEGETATION (m3/m3)
+!*       8.1     MAXIMUM VOLUMETRIC LIQUID WATER CONTENT RETAINED ON VEGETATION (m3/m3)
 !               ------------------------------
 !
             ! For low vegetation
              WRMAX_VL(I) = 0.2 * LAI_VL(I)
 
             ! For high vegetation
-            ! TODO: Need to account for sparseness once available 
              WRMAX_VH(I) = 0.2 * LAI_VH(I)
+!
+!
+!*       8.2     MAXIMUM SOLID WATER CONTENT RETAINED ON VEGETATION (kg m-2)
+!               ------------------------------
+!
+            ! Compute canopy snow interception capacity (kg m-2) (Eq 12 in HP98)
+            ! CVAI may depends on type of trees and density of falling snow (see comment above)
+            !SCAP(I) =  CVAI *LAI_VH(I)
+            
+           ! Compute Canopy interception, check Andreadis et al. (2009)
+           IF ((T(I)-273.15) .GT. -1) THEN
+              SCAP(I) = 4* m_scap * LAI_VH(I)
+           ELSE IF (((T(I)-273.15) .GT. -3) .AND.  ((T(I)-273.15) .LE. -1)) THEN
+              SCAP(I) = (1.5*(T(I)-273.15) + 5.5) * m_scap *LAI_VH(I)
+           ELSE
+              SCAP(I) = m_scap * LAI_VH(I)
+           ENDIF
+!
 !
 !*       9.     HEIGHT OF TREES in HIGH VEGETATION
 !               ------------------------------
 !
-             IF( VEGH(I)>0)  THEN 
+             IF( VEGH(I)>0)  THEN
                  VGH_HEIGHT(I) =  10. *  Z0MVH(I) ! Derived from the roughness
                                             ! lenght for high veg. Z0MVH is computed in GenPhySx using a
-                                            ! database that contains information about the vegetation height 
-                 VGH_HEIGHT(I) = MAX(4., VGH_HEIGHT(I)) ! Impose a minimal height of 4 meters for trees.                            
+                                            ! database that contains information about the vegetation height
+                 VGH_HEIGHT(I) = MAX(4., VGH_HEIGHT(I)) ! Impose a minimal height of 4 meters for trees.
              ELSE
                  VGH_HEIGHT(I) = 0.
-             ENDIF         
+             ENDIF
 
 !
 !*       10.     DENSITY OF TREES in HIGH VEGETATION
 !               ------------------------------
 !
-!             IF(LAIH(I) > 0.) THEN                               
+!             IF(LAIH(I) > 0.) THEN
 !                VGH_DENS(I) =   0.29 * LOG(LAIH(I))+ 0.55   ! Based on LAI of high vegetation following Pomeroy et al (HP, 2002)
 !                VGH_DENS(I) = MIN(1., MAX(0., VGH_DENS(I)))
 !             ELSE
@@ -316,9 +346,13 @@
 !*       11.     HEAT MASS FOR HIGH VEGETATION
 !               ------------------------------
 !
-             ZHM_LEAVES = LAI_VH(I) * E_LEAF * RHO_BIO * CP_BIO
-             ZHM_TRUNK = 0.5 * ZB* VGH_HEIGHT(I) * RHO_BIO * CP_BIO 
-             PHM_CAN(I) = ZHM_LEAVES + ZHM_TRUNK
+             IF (HCANO_HM == 'G15') THEN
+                 ZHM_LEAVES = LAI_VH(I) * E_LEAF * RHO_BIO * CP_BIO
+                 ZHM_TRUNK = 0.5 * ZB* VGH_HEIGHT(I) * RHO_BIO * CP_BIO
+                 PHM_CAN(I) = ZHM_LEAVES + ZHM_TRUNK 
+             ELSE IF (HCANO_HM == 'E03') THEN
+                 PHM_CAN(I) = ZCVAI * LAI_VH(I)
+             ENDIF
 !
 !
           ELSE
@@ -328,9 +362,9 @@
              f3(i)=0.0
              f4(i)=0.0
              qsat(i) = 0.0
-             do K=1,NL_SVS      
-                ! set root and active root fraction to zero 
-                FCD(I,K) = 0.0 
+             do K=1,NL_SVS
+                ! set root and active root fraction to zero
+                FCD(I,K) = 0.0
                 acroot(i,k) = 0.0
              enddo
              RS(I) = 5000.
@@ -341,20 +375,22 @@
              WRMAX_VH(I)=EPSILON_SVS  ! To avoid division by zero
              VGH_HEIGHT(I) = 0.
              VGH_DENS(I)   = 0.
+             PHM_CAN(I)  = 0.
+             SCAP(I) = 0.
           ENDIF
        ENDDO
 !
 !
 !
-!       11.      Polar mean vegetation height
+!       12.      Polar mean vegetation height
 !               ------------------------------------------
 !
-       IF( .NOT. READ_HVEGLPOL) THEN 
+       IF( .NOT. READ_HVEGLPOL) THEN
          DO I=1,N
             IF((1 - VEGH(I))>EPSILON_SVS) THEN ! Low vegetation/bare ground is present
-                HVEGAPOL(I) = VEGL(I)*HVEGLPOL(I)/(1 - VEGH(I)) 
+                HVEGAPOL(I) = VEGL(I)*HVEGLPOL(I)/(1 - VEGH(I))
                 IF(HVEGAPOL(I)<0.05) THEN
-                        HVEGAPOL(I) = 0.  ! Remove polar vegetation where contribution is non significant  
+                        HVEGAPOL(I) = 0.  ! Remove polar vegetation where contribution is non significant
                 ENDIF
             ELSE
                 HVEGAPOL(I) = 0.
@@ -363,7 +399,7 @@
 
        ELSE
          DO I=1,N
-              HVEGAPOL(I) = HVEGLPOL(I) ! Value is directly taken from external databases. 
+              HVEGAPOL(I) = HVEGLPOL(I) ! Value is directly taken from external databases.
          END DO
        ENDIF
 

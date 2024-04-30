@@ -660,7 +660,7 @@ IF (LHOOK) CALL DR_HOOK('MODE_SNOW3L:SNOWCROHOLD_0D',1,ZHOOK_HANDLE)
 !
 END FUNCTION SNOWCROHOLD_0D
 !####################################################################
-FUNCTION SNOWO04HOLD_0D(PSNOWRHO,PSNOWLIQ,PSNOWDZ) RESULT(PWHOLDMAX)
+FUNCTION SNOWO04HOLD_0D(PDRYDENSITY,PSNOWDZ) RESULT(PWHOLDMAX)
 !     Cluzet et al 2016
 !!    PURPOSE
 !!    -------
@@ -678,18 +678,18 @@ IMPLICIT NONE
 !
 !*      0.1    declarations of arguments
 !
-REAL, INTENT(IN)        :: PSNOWDZ, PSNOWRHO, PSNOWLIQ
+REAL, INTENT(IN)        :: PDRYDENSITY, PSNOWDZ
 !
 REAL                    :: PWHOLDMAX
 REAL(KIND=JPRB) :: ZHOOK_HANDLE
 
 IF (LHOOK) CALL DR_HOOK('MODE_SNOW3L:SNOWCROHOLD_0D',0,ZHOOK_HANDLE)
-PWHOLDMAX = XPERCENTAGEPORE_O04/XRHOLI * (PSNOWDZ * (XRHOLI-PSNOWRHO) + PSNOWLIQ*XRHOLW)
+PWHOLDMAX = XPERCENTAGEPORE_O04/XRHOLI * (PSNOWDZ * (XRHOLI-PDRYDENSITY))
 IF (LHOOK) CALL DR_HOOK('MODE_SNOW3L:SNOWCROHOLD_0D',1,ZHOOK_HANDLE)
 !
 END FUNCTION SNOWO04HOLD_0D
 !####################################################################
-        FUNCTION SNOWSPKHOLD_0D(PSNOWRHO,PSNOWLIQ,PSNOWDZ) RESULT(PWHOLDMAX)
+        FUNCTION SNOWSPKHOLD_0D(PDRYDENSITY,PSNOWDZ) RESULT(PWHOLDMAX)
 !     Lafaysse et al 2017
 !!    PURPOSE
 !!    -------
@@ -706,7 +706,7 @@ USE PARKIND1  ,ONLY : JPRB
 
 IMPLICIT NONE
 
-REAL, INTENT(IN)        :: PSNOWDZ, PSNOWRHO, PSNOWLIQ
+REAL, INTENT(IN)        :: PSNOWDZ, PDRYDENSITY
 REAL                    :: PWHOLDMAX
 REAL(KIND=JPRB) :: ZHOOK_HANDLE
 
@@ -715,11 +715,9 @@ REAL                    :: ZTHETAI
 IF (LHOOK) CALL DR_HOOK('MODE_SNOW3L:SNOWSPKHOLD_0D',0,ZHOOK_HANDLE)
 ! PSNOWLIQ in m
 ! PSNOWLIQ*XRHOLW/PSNOWDZ liquid water content in kg/m3
-IF (PSNOWDZ>XUEPSI) THEN
-  ZTHETAI=(PSNOWRHO-PSNOWLIQ*XRHOLW/PSNOWDZ)/XRHOLI
-ELSE
-  ZTHETAI=PSNOWRHO/XRHOLI
-END IF
+!
+ZTHETAI=PDRYDENSITY/XRHOLI
+!
 ! In equation 12 Lafaysse et al 2017, capacity in kg m-3
 ! Here capacity in m, so eq 12 is multiplied by PSNOWDZ/XRHOLW
 ! 
@@ -1571,9 +1569,10 @@ END SUBROUTINE SNOW3LGRID_1D
 !###############################################################################
 !
 !       
-!ajout EB : ajout des arguments "N" pour faire idem variables d'origine
+
 SUBROUTINE SNOW3LAVGRAIN(PSNOWDIAMOPT,PSNOWSPHERI,PSNOWHIST,                &
-                         PSNOWDIAMOPTN,PSNOWSPHERIN,PSNOWHISTN,PNDENT,PNVIEU) 
+                         PSNOWDIAMOPTN,PSNOWSPHERIN,PSNOWHISTN,KNDENT,KNVIEU,&
+                         KNLVLS_USE) 
 !
 USE MODD_SNOW_METAMO, ONLY : XVDIAM6, XUEPSI
 !
@@ -1582,13 +1581,18 @@ USE PARKIND1  ,ONLY : JPRB
 !
 IMPLICIT NONE
 !
+! 05/11 : E. Brun Initial implementation
+! 04/23 : M. Lafaysse This routine was wrong and the outputs not used before this date.
+!         Averages must apply only on defined layers !
+!         Integers must be defined as integers, especially in case of operations before comparisons.
+!
 !       0.1 declarations of arguments        
 !        
-REAL, DIMENSION(:,:), INTENT(INOUT)  :: PSNOWDIAMOPT,PSNOWSPHERI,PSNOWHIST 
+REAL, DIMENSION(:,:), INTENT(IN)  :: PSNOWDIAMOPT,PSNOWSPHERI,PSNOWHIST 
 ! ajout EB
 REAL, DIMENSION(:,:), INTENT(INOUT)  :: PSNOWDIAMOPTN,PSNOWSPHERIN,PSNOWHISTN 
 !
-REAL, DIMENSION(:), INTENT(IN)    :: PNDENT, PNVIEU          
+INTEGER, DIMENSION(:), INTENT(IN)    :: KNDENT, KNVIEU, KNLVLS_USE        
 !
 !       0.2 declaration of local variables
 !
@@ -1597,7 +1601,7 @@ REAL, DIMENSION(SIZE(PSNOWDIAMOPT,1)) :: ZDIAMOPT, ZSPHERI, ZHIST
 LOGICAL, DIMENSION(SIZE(PSNOWDIAMOPT,1),SIZE(PSNOWDIAMOPT,2)) :: GDENDRITIC
 !
 INTEGER :: JI, JL
-INTEGER :: INLVLS, INI
+INTEGER :: INI
 !
 REAL(KIND=JPRB) :: ZHOOK_HANDLE
 !         
@@ -1605,7 +1609,6 @@ REAL(KIND=JPRB) :: ZHOOK_HANDLE
 !
 IF (LHOOK) CALL DR_HOOK('MODE_SNOW3L:SNOW3LAVGRAIN',0,ZHOOK_HANDLE)
 !
-INLVLS    = SIZE(PSNOWDIAMOPT,2) 
 INI       = SIZE(PSNOWDIAMOPT,1)
 !
 ZDIAMOPT(:) = 0.0
@@ -1614,7 +1617,7 @@ ZHIST (:) = 0.0
 !     
 DO JI = 1,INI
   !
-  IF ( PNDENT(JI)==0.0 .AND. PNVIEU(JI)==0.0 ) THEN
+  IF ( KNDENT(JI)==0 .AND. KNVIEU(JI)==0 ) THEN
     !
     ZDIAMOPT(JI) = 1.0
     ZSPHERI(JI) = 1.0 
@@ -1622,26 +1625,26 @@ DO JI = 1,INI
     !
   ELSE
     !
-    DO JL = 1,INLVLS      
+    DO JL = 1,KNLVLS_USE(JI)      
         GDENDRITIC(JI,JL) = ( PSNOWDIAMOPT(JI,JL) < XVDIAM6*(4.-PSNOWSPHERI(JI,JL)) - XUEPSI )
     ENDDO
     !
-    IF ( PNDENT(JI)>=PNVIEU(JI) ) THEN      ! more dendritic than non dendritic snow layer
+    IF ( KNDENT(JI)>=KNVIEU(JI) ) THEN      ! more dendritic than non dendritic snow layer
       !
-      DO JL = 1,INLVLS
+      DO JL = 1,KNLVLS_USE(JI)
         IF ( GDENDRITIC(JI,JL) ) THEN
           ZDIAMOPT(JI) = ZDIAMOPT(JI) + PSNOWDIAMOPT(JI,JL)
           ZSPHERI(JI) = ZSPHERI(JI) + PSNOWSPHERI(JI,JL)
         ENDIF
       ENDDO
       !
-      PSNOWDIAMOPTN(JI,:) = ZDIAMOPT(JI) / PNDENT(JI)   
-      PSNOWSPHERIN(JI,:) = ZSPHERI(JI) / PNDENT(JI)
+      PSNOWDIAMOPTN(JI,:) = ZDIAMOPT(JI) / KNDENT(JI)
+      PSNOWSPHERIN(JI,:) = ZSPHERI(JI) / KNDENT(JI)
       PSNOWHISTN (JI,:) = 0.0
       !
     ELSE                              ! more non dendritic than dendritic snow layers  
       !
-      DO JL = 1,INLVLS
+      DO JL = 1,KNLVLS_USE(JI)
         IF ( .NOT.GDENDRITIC(JI,JL) ) THEN
           ZDIAMOPT(JI) = ZDIAMOPT(JI) + PSNOWDIAMOPT(JI,JL)
           ZSPHERI(JI) = ZSPHERI(JI) + PSNOWSPHERI(JI,JL)
@@ -1649,9 +1652,9 @@ DO JI = 1,INI
         ENDIF
       ENDDO
       !
-      PSNOWDIAMOPTN(JI,:) = ZDIAMOPT(JI) / PNVIEU(JI)
-      PSNOWSPHERIN(JI,:) = ZSPHERI(JI) / PNVIEU(JI)
-      PSNOWHISTN (JI,:) = ZHIST (JI) / PNVIEU(JI)
+      PSNOWDIAMOPTN(JI,:) = ZDIAMOPT(JI) / KNVIEU(JI)
+      PSNOWSPHERIN(JI,:) = ZSPHERI(JI) / KNVIEU(JI)
+      PSNOWHISTN (JI,:) = ZHIST (JI) / KNVIEU(JI)
       !    
     ENDIF
     !
@@ -1669,7 +1672,7 @@ END SUBROUTINE SNOW3LAVGRAIN
 !####################################################################
 !####################################################################
 !####################################################################
-FUNCTION SNOW3LDIFTYP(PGRAIN1,PGRAIN2,PGRAIN3,PGRAIN4,        &
+FUNCTION SNOW3LDIFTYP(PDIAMOPT1,PDIAMOPT2,PSPHER1,PSPHER2,PHIST1,PHIST2, &
                       PSNOWRHO1,PSNOWRHO2,PSNOWAGE1,PSNOWAGE2) RESULT(ZDIFTYPE)
 !
 ! à remplacer sans doute par une routine equivalente du nouveau crocus
@@ -1684,12 +1687,23 @@ USE PARKIND1  ,ONLY : JPRB
 !
 IMPLICIT NONE
 !*      0.1    declarations of arguments
-REAL, INTENT(IN) :: PGRAIN1, PGRAIN2, PGRAIN3, PGRAIN4, PSNOWRHO1, PSNOWRHO2, PSNOWAGE1, PSNOWAGE2
-REAL :: ZDIFTYPE, ZCOEF3, ZCOEF4
+REAL, INTENT(IN) :: PDIAMOPT1,PDIAMOPT2,PSPHER1,PSPHER2, PHIST1, PHIST2,&
+                    PSNOWRHO1, PSNOWRHO2, PSNOWAGE1, PSNOWAGE2
+INTEGER :: IHIST1, IHIST2
+REAL :: ZDIFTYPE, ZDIFF_HIST, ZCOEF3, ZCOEF4
 REAL(KIND=JPRB) :: ZHOOK_HANDLE
 
 !*      0.2    calcul de la difference entre type de grains
 IF (LHOOK) CALL DR_HOOK('MODE_SNOW3L:SNOW3LDIFTYP',0,ZHOOK_HANDLE)
+!
+! case of dry snow vs wet or refrozen snow:
+IHIST1 = NINT(PHIST1)
+IHIST2 = NINT(PHIST2)
+IF (((IHIST1>1) .AND. (IHIST2<=1)) .OR. ((IHIST1<=1) .AND. (IHIST2>1))) THEN
+    ZDIFF_HIST = 1.
+ELSE
+    ZDIFF_HIST = 0.
+ENDIF
 !
 IF (ABS(PSNOWAGE1 - PSNOWAGE2) > 600.) THEN
   ZDIFTYPE = 200.
@@ -1698,7 +1712,7 @@ ELSEIF (((PSNOWRHO1 < XRHOTHRESHOLD_ICE).AND.(PSNOWRHO2 >= XRHOTHRESHOLD_ICE)) &
   ZDIFTYPE = 200.
 ELSE
   ! Formulation diam_opt et sphericite
-  ZDIFTYPE = 50.* ( ABS( PGRAIN3 - PGRAIN4 ) + 2000. * ABS( PGRAIN1 - PGRAIN2 ) )
+  ZDIFTYPE = 50.* ( ABS( PSPHER1 - PSPHER2 ) + 2000. * ABS( PDIAMOPT1 - PDIAMOPT2 ) + ZDIFF_HIST)
   
   !ZCOEF3 = XVDIAM6 * (4.-PGRAIN3) - XUEPSI
   !ZCOEF4 = XVDIAM6 * (4.-PGRAIN4) - XUEPSI 
@@ -1748,9 +1762,11 @@ REAL, DIMENSION(:), INTENT(OUT) :: PSNOWRHON, PSNOWDIAMOPTN, PSNOWSPHERIN, &
                                    PSNOWHISTN, PSNOWAGEN, PSNOWHEATN
 REAL, DIMENSION(:,:), INTENT(OUT) :: PSNOWIMPURN
 !
-REAL :: ZPROPOR, ZMASDZ_OLD, ZDIAM, ZMASTOT_T07
-REAL :: ZSNOWHEAN, ZMASTOTN, ZDENTMOYN, ZSPHERMOYN, ZALBMOYN, ZHISTMOYN
+REAL :: ZPROPOR, ZMASDZ_OLD, ZDIAM
+REAL :: ZSNOWHEAN, ZMASTOTN, ZSPHERMOYN, ZALBMOYN, ZHISTMOYN
 REAL :: ZAGEMOYN
+REAL :: ZPREVIOUS_MASS
+LOGICAL:: GDENDRITIC
 !
 REAL, DIMENSION(NIMPUR) :: ZIMPURMOYN
 !
@@ -1774,8 +1790,6 @@ DO JST_NEW = 1,KNLVLS_NEW
   !
   ZSNOWHEAN   = 0.
   ZMASTOTN    = 0.
-  ZMASTOT_T07 = 0.
-  ZDENTMOYN   = 0.
   ZSPHERMOYN  = 0.
   ZALBMOYN    = 0.
   ZDIAM       = 0.
@@ -1785,6 +1799,7 @@ DO JST_NEW = 1,KNLVLS_NEW
     ZIMPURMOYN(JIMP) =0.
   ENDDO
   !
+  ZPREVIOUS_MASS = 0.
   ! lopp over the ols snow layers 
   DO JST_OLD = 1,KNLVLS_OLD
     !
@@ -1813,7 +1828,6 @@ DO JST_NEW = 1,KNLVLS_NEW
       !
       ! The mass of new snow is incremented with the different old layers contributing
       ZMASTOTN    = ZMASTOTN + ZMASDZ_OLD
-      ZMASTOT_T07 = ZMASTOT_T07 + 1.
       !
       ZSNOWHEAN = ZSNOWHEAN + ZPROPOR * PSNOWHEATO(JST_OLD)
       !
@@ -1821,7 +1835,17 @@ DO JST_NEW = 1,KNLVLS_NEW
       ZSPHERMOYN = ZSPHERMOYN + ZMASDZ_OLD * PSNOWSPHERIO(JST_OLD)
       !
       ZALBMOYN  = ZALBMOYN  + MAX( 0., ZMASDZ_OLD * (XVALB5-XVALB6*SQRT(ZDIAM)) )
-      ZHISTMOYN = ZHISTMOYN + ZMASDZ_OLD * PSNOWHISTO(JST_OLD)
+      !
+      ! Special case for historical variable which is a variable that should not be averaged:
+      !
+      IF (ZMASDZ_OLD > ZPREVIOUS_MASS) THEN
+        ZHISTMOYN = PSNOWHISTO(JST_OLD)
+        ZPREVIOUS_MASS = ZMASDZ_OLD
+      ENDIF
+      !
+      ! Previous version
+      ! ZHISTMOYN = ZHISTMOYN + ZMASDZ_OLD * PSNOWHISTO(JST_OLD)
+      !
       ZAGEMOYN  = ZAGEMOYN  + ZMASDZ_OLD * PSNOWAGEO (JST_OLD)
       ! In fact Zimpurmoyen is adding the contibution in impurity content of all old layers that are used to build a new one.
       !Zpropor is the 
@@ -1842,13 +1866,12 @@ DO JST_NEW = 1,KNLVLS_NEW
   ! grain type and size decuced from the average albedo
   ZALBMOYN   = ZALBMOYN / ZMASTOTN
   ZSPHERMOYN = MAX( 0., ZSPHERMOYN/ZMASTOTN )
-  ZDENTMOYN  = MAX( 0., ZDENTMOYN /ZMASTOTN )
   ZDIAM = ( (XVALB5-ZALBMOYN)/XVALB6 )**2
   !
   PSNOWDIAMOPTN(JST_NEW) = ZDIAM
   PSNOWSPHERIN(JST_NEW) = MIN( 1., ZSPHERMOYN )   
   !
-  PSNOWHISTN(JST_NEW) = NINT( ZHISTMOYN/ZMASTOTN )
+  PSNOWHISTN(JST_NEW) = NINT(ZHISTMOYN)
   PSNOWAGEN (JST_NEW) = ZAGEMOYN / ZMASTOTN
   DO JIMP=1,NIMPUR
     PSNOWIMPURN(JST_NEW,JIMP)= ZIMPURMOYN(JIMP)
@@ -3664,4 +3687,3 @@ SUBROUTINE GETGRAINSIZE_B21(PDIAMOPT,PSPHERI,PGRAINSIZE)
  
 
 END MODULE MODE_SNOW3L
-

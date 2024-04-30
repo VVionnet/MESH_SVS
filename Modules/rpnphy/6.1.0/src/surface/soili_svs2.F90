@@ -14,17 +14,17 @@
 !CANADA, H9P 1J3; or send e-mail to service.rpn@ec.gc.ca
 !-------------------------------------- LICENCE END --------------------------------------
       SUBROUTINE SOILI_SVS2 (WD, &
-           WF, SNM, SVM, RHOS, RHOSV, & 
-           VEGH, VEGL, &  
-           CGSAT, WSAT, WWILT, BCOEF, & 
-           CVH, CVL, ALVH, ALVL,  & 
-           EMISVH, EMISVL, ETG, RGLVH , RGLVL, STOMRVH, STOMRVL,  & 
-           GAMVH,GAMVL, &  
-           LAIVH, LAIVL, &   
-           Z0MVH, Z0MVL, Z0, CLAY, SAND, DECI, EVER,LAID, VGH_DENS,  &  
-           WTA, WTG, CG,PSOILHCAPZ, PSOILCONDZ, PSNGRVL,  & 
+           WF, SNM, SVM, RHOS, RHOSV, &
+           VEGH, VEGL, &
+           CGSAT, WSAT, WWILT, BCOEF, &
+           CVH, CVL, ALVH, ALVL,  &
+           EMISVH, EMISVL, ETG, RGLVH , RGLVL, STOMRVH, STOMRVL,  &
+           GAMVH,GAMVL, &
+           LAIVH, LAIVL, &
+           Z0MVH, Z0MVL, Z0, CLAY, SAND,SOC, DECI, EVER,LAID, VGH_DENS,  &
+           WTA, WTG, CG,PSOILHCAPZ, PSOILCONDZ, PSNGRVL,  &
            Z0H, ALGR, EMGR, ALGRV, EMGRV, PSNVH, PSNVHA, PSURFVHA,   &
-           ALVA, LAIVA, CVPA, EVA, Z0HA, Z0MVG, RGLA, STOMRA ,&  
+           ALVA, LAIVA, CVPA, EVA, Z0HA, Z0MVG, RGLA, STOMRA ,&
            GAMVA,CONDSLD, CONDDRY, CLUMPING, N )
          !
         use tdpack_const, only: PI
@@ -36,7 +36,7 @@
 !!!#include <arch_specific.hf>
 
 !
-      INTEGER N 
+      INTEGER N
       REAL WD(N,NL_SVS),WF(N,NL_SVS)
 
       REAL SNM(N), RHOS(N)
@@ -46,7 +46,7 @@
       REAL CG(N), WTA(N,svs2_tilesp1), WTG(N,svs2_tilesp1)
       REAL PSNGRVL(N)
       REAL PSOILHCAPZ(N,NL_SVS),PSOILCONDZ(N,NL_SVS)
-      REAL Z0H(N), ALGR(N), ALGRV(N), CLAY(N), SAND(N)
+      REAL Z0H(N), ALGR(N), ALGRV(N), CLAY(N), SAND(N), SOC(N)
       REAL DECI(N), EVER(N), LAID(N)
       REAL EMGR(N),EMGRV(N), PSNVH(N), PSNVHA(N), PSURFVHA(N), LAIVH(N)
       REAL ALVA(N), LAIVA(N), CVPA(N), EVA(N)
@@ -56,17 +56,17 @@
       REAL GAMVL(N), GAMVH(N), GAMVA(N)
       REAL CONDSLD(N,NL_SVS),CONDDRY(N,NL_SVS), VGH_DENS(N)
       REAL CLUMPING
-      
-      
+
+
 !Author
 !          S. Belair et al. (January 2009)
 !Revisions
 ! 001      Bug fixes: M. Abrahamowicz, S.Z. Husain. N. Gauthier,
-!          M. Bani Shahabadi           
+!          M. Bani Shahabadi
 !
 !Object
 !     Calculates the coefficients related to the soil (i.e., CG, CT,
-!     ) and to the snow canopy 
+!     ) and to the snow canopy
 !     (i.e., ZCS, psn,psnvh)
 !
 !Arguments
@@ -96,8 +96,8 @@
 ! CVL      heat capacity of LOW  vegetation
 ! EMISVH   emissivity of HIGH vegetation
 ! EMISVL   emissivity of LOW  vegetation
-! ETG      emissivity of land surface (no snow) READ AT ENTRY, 
-!          USED TO STAMP ALL NO SNOW EMISSIVITIES. IF NOT READ, 
+! ETG      emissivity of land surface (no snow) READ AT ENTRY,
+!          USED TO STAMP ALL NO SNOW EMISSIVITIES. IF NOT READ,
 !          VARIABLE SET TO ZERO !!!!
 ! RGLVH    param. stomatal resistance for HIGH vegetation
 ! RGLVL    param. stomatal resistance for LOW  vegetation
@@ -107,7 +107,8 @@
 ! GAMVL    stomatal resistance param. for LOW  vegetation
 ! Z0       momentum roughness length (no snow)
 ! CLAY     percentage of clay in soil (mean of 3 layers)
-! SAND     percentage of sand in soil (mean of 3 layers)  
+! SAND     percentage of sand in soil (mean of 3 layers)
+! SOC     percentage of organic content in soil 
 ! DECI     fraction of high vegetation that is deciduous
 ! EVER     fraction of high vegetation that is evergreen
 ! LAID     LAI of deciduous trees
@@ -124,7 +125,7 @@
 ! EMGRV    emissivity of snow-free ground below high veg
 ! PSNVH    fraction of HIGH vegetation covered by snow
 ! PSNVHA   fraction of HIGH vegetation covered by snow as seen from
-!          the ATMOSPHERE 
+!          the ATMOSPHERE
 ! PSURFVHA fraction of the surface seen through the sparse high vegetation
 
 ! ALVA     average vegetation albedo
@@ -134,10 +135,10 @@
 ! EVA      average vegetation emissivity
 ! Z0HA     AVERAGED Local roughness associated with exposed (no snow)
       !           vegetation only (also no orography), for heat transfer
-! Z0MVG    AVERAGED momentum roughness for exposed vegetation (no snow)    
+! Z0MVG    AVERAGED momentum roughness for exposed vegetation (no snow)
 ! RGLA     average vegetation parameter stomatal resistance
 ! STOMRA   average minimum stomatal resistance
-! GAMVA    average stomatal resistance param. 
+! GAMVA    average stomatal resistance param.
 ! PSOILCONDZ soil thermal conductivity
 ! PSOILHCAPZ soil heat capacity
 !
@@ -147,7 +148,7 @@ include "isbapar.cdk"
       INTEGER I,K
 !
       REAL LAMI, CI, DAY
-! 
+!
       REAL ADRYSAND, AWETSAND, ADRYCLAY, AWETCLAY
       REAL EDRYSAND, EWETSAND, EDRYCLAY, EWETCLAY
 
@@ -158,6 +159,7 @@ include "isbapar.cdk"
            zcs, zcsv, z0_snow_low
 
       REAL :: CVAMIN = 1.0E-5
+      REAL :: SNM_CRIT = 1. ! Threshold of SWE for snow fraction over bare ground (kg m-2)
 
       IF (URBAN_PARAMS_NEW) THEN
          CVAMIN = 0.3E-5   ! matches value of CVDAT(21) reset in inicover_svs.F90
@@ -210,7 +212,7 @@ include "isbapar.cdk"
       DO I=1,N
         CG(I) = CGSAT(I) * ( WSAT(I,1)/ MAX(WD(I,1)+WF(I,1),0.001))** &
                       ( 0.5*BCOEF(I,1)/LOG(10.) )
-        CG(I) = MIN( CG(I), 2.0E-5 )      
+        CG(I) = MIN( CG(I), 2.0E-5 )
 !
       END DO
 !
@@ -233,7 +235,7 @@ include "isbapar.cdk"
         LAMSV(I) = LAMI * RHOSV(I)**1.88
         ZCSV(I) = 2.0 * SQRT( PI/(LAMSV(I)* 1000*RHOSV(I) *CI*DAY) )
 !
-      END DO    
+      END DO
 !
 !
 !
@@ -250,22 +252,23 @@ include "isbapar.cdk"
             ! use z0=0.03m for bare ground, 0.1m for low veg
              z0_snow_low(i) = exp (  (  (1-VEGH(I) -VEGL(I)) * log( 0.03) &
                                   +  VEGL(I) * log(0.1) ) / ( 1 - VEGH(I) ) )
-             
+
 
              !PSNGRVL(I) = MIN( SNM(I) / (SNM(I) + RHOS(I)* 5000.* z0_snow_low(i) ) , 1.0)
 
              ! Snow cover fraction close equals to one as soon as snow is present on the ground
-             ! NEED to BE REVISITED. Used for test with Crocus
-             PSNGRVL(I) = MIN( SNM(I) / (1.0) , 1.0)
+             ! NEED to BE REVISITED. Used for test with Crocus, Boone et al. (2017)
+            PSNGRVL(I) = MIN( SNM(I) / SNM_CRIT , 1.0)
+            !PSNGRVL(I) = 1. ! Improves mass balance 
 
          ELSE
 
             PSNGRVL(I) = 0.0
-           
+
          ENDIF
-            
-       
-         
+
+
+
 
 
          IF(SVM(I).GE.CRITSNOWMASS ) THEN
@@ -299,17 +302,17 @@ include "isbapar.cdk"
          ELSE
             PSURFVHA(I)  = 0.
          ENDIF
-!        
+!
       END DO
 !
 
 !
 !*      4.      FRACTIONS OF SVS TYPES AS SEEN FROM ATM AND GROUND
 !               --------------------------
-      ! Seen from atm. 
+      ! Seen from atm.
       call weights_svs2(VEGH,VEGL,PSNGRVL,PSNVH, PSURFVHA,'ATM', N,WTA)
 !
-      ! Seen from ground. 
+      ! Seen from ground.
       call weights_svs2(VEGH,VEGL,PSNGRVL,PSNVH, PSURFVHA,'GROUND', N,WTG)
 
 !
@@ -324,45 +327,45 @@ include "isbapar.cdk"
 !
 !                        LEAF AREA INDEX
 !
-            LAIVA(I) = MAX(   ( VEGH(I) * LAIVH(I) + VEGL(I) * (1.-PSNGRVL(I)) * LAIVL(I))  & 
+            LAIVA(I) = MAX(   ( VEGH(I) * LAIVH(I) + VEGL(I) * (1.-PSNGRVL(I)) * LAIVL(I))  &
                               / (VEGH(I)+VEGL(I)*(1.-PSNGRVL(I))) , EPSILON_SVS)
 
 !
 !                        LEAF AREA INDEX CONSIDERING WOODY PART
 !
-            LAIVP(I) =MAX(  ( VEGH(I)*MAX(LAIVH(I),0.1)+ VEGL(I)*(1.-PSNGRVL(I))*LAIVL(I)) &     
+            LAIVP(I) =MAX(  ( VEGH(I)*MAX(LAIVH(I),0.1)+ VEGL(I)*(1.-PSNGRVL(I))*LAIVL(I)) &
                               / (VEGH(I)+VEGL(I)*(1.-PSNGRVL(I))) , EPSILON_SVS )
 !
-!                        THERMAL COEFFICIENT 
+!                        THERMAL COEFFICIENT
 !                        -- Impose min. of 1.0E-5 consistent with look-up table in inicove_svs
 !
-            CVA(I) = MAX(  ( VEGH(I) * CVH(I) + VEGL(I) * (1.-PSNGRVL(I)) * CVL(I)) &     
+            CVA(I) = MAX(  ( VEGH(I) * CVH(I) + VEGL(I) * (1.-PSNGRVL(I)) * CVL(I)) &
                               / (VEGH(I)+VEGL(I)*(1.-PSNGRVL(I))) , CVAMIN )
 !
 !                        ALBEDO
 !                        -- Impose min. of 0.12 consistent with look-up table in inicove_svs
 !
-            ALVA(I) = MAX( ( VEGH(I) * ALVH(I) + VEGL(I) * (1.-PSNGRVL(I)) * ALVL(I)) &     
-                              / (VEGH(I)+VEGL(I)*(1.-PSNGRVL(I))) , 0.12 ) 
+            ALVA(I) = MAX( ( VEGH(I) * ALVH(I) + VEGL(I) * (1.-PSNGRVL(I)) * ALVL(I)) &
+                              / (VEGH(I)+VEGL(I)*(1.-PSNGRVL(I))) , 0.12 )
 !
-! 
+!
 !                        PARAMETER STOMATAL RESISTANCE
 !                        -- Impose min. of 30. consistent with look-up table in inicove_svs
 !
-            RGLA(I) = MAX( ( VEGH(I) * RGLVH(I) + VEGL(I) * (1.-PSNGRVL(I)) * RGLVL(I)) &     
-                              / (VEGH(I)+VEGL(I)*(1.-PSNGRVL(I))) , 30. ) 
+            RGLA(I) = MAX( ( VEGH(I) * RGLVH(I) + VEGL(I) * (1.-PSNGRVL(I)) * RGLVL(I)) &
+                              / (VEGH(I)+VEGL(I)*(1.-PSNGRVL(I))) , 30. )
 !
 !                        LOCAL VEG. MOMENTUM ROUGNESS
             Z0MVG(I)= ( VEGH(I)                   * LOG(Z0MVH(I)) &
-                      + VEGL(I) * (1.-PSNGRVL(I)) * LOG(Z0MVL(I))) &     
+                      + VEGL(I) * (1.-PSNGRVL(I)) * LOG(Z0MVL(I))) &
                               / (VEGH(I)+VEGL(I)*(1.-PSNGRVL(I)))
 
             Z0MVG(I)= EXP(Z0MVG(I))
 
-!                        LOCAL VEG. THERMAL ROUGNESS            
+!                        LOCAL VEG. THERMAL ROUGNESS
 !
             Z0HA(I) = ( VEGH(I)                  * LOG(Z0MVH(I) * Z0M_TO_Z0H) &
-                     + VEGL(I) * (1.-PSNGRVL(I)) * LOG(Z0MVL(I) * Z0M_TO_Z0H)) &     
+                     + VEGL(I) * (1.-PSNGRVL(I)) * LOG(Z0MVL(I) * Z0M_TO_Z0H)) &
                               / (VEGH(I)+VEGL(I)*(1.-PSNGRVL(I)))
 
             Z0HA(I) = EXP(Z0HA(I))
@@ -370,12 +373,12 @@ include "isbapar.cdk"
 !                        MINIMUM STOMATAL RESISTANCE
 !                        -- Impose min. of 100. consistent with look-up table in inicove_svs
 !
-            STOMRA(I) = MAX( ( VEGH(I) * STOMRVH(I) + VEGL(I) * (1.-PSNGRVL(I)) * STOMRVL(I))  &    
+            STOMRA(I) = MAX( ( VEGH(I) * STOMRVH(I) + VEGL(I) * (1.-PSNGRVL(I)) * STOMRVL(I))  &
                               / (VEGH(I)+VEGL(I)*(1.-PSNGRVL(I))) , 100.0 )
 !
 !                        STOMATAL RESISTANCE PARAMETER
 !
-            GAMVA(I) = ( VEGH(I) * GAMVH(I) + VEGL(I) * (1.-PSNGRVL(I)) * GAMVL(I)) &     
+            GAMVA(I) = ( VEGH(I) * GAMVH(I) + VEGL(I) * (1.-PSNGRVL(I)) * GAMVL(I)) &
                               / (VEGH(I)+VEGL(I)*(1.-PSNGRVL(I)))
 !
          ELSE
@@ -383,17 +386,17 @@ include "isbapar.cdk"
 !                       Set the coefficients parameters to lowest physical values found in look-up table
 !                       to have physical values and not bogus values. Use "EPSILON" instead of 0.0 below.
 !
-!               
+!
             LAIVA(I) = EPSILON_SVS
             LAIVP(I) = EPSILON_SVS
             CVA(I)   = CVAMIN
             ALVA(I)  = 0.12
             RGLA(I)  = 30.
-            Z0HA(I) = Z0M_TO_Z0H * Z0(I)  
+            Z0HA(I) = Z0M_TO_Z0H * Z0(I)
             STOMRA(I)= 100.
             GAMVA(I) = EPSILON_SVS
          ENDIF
-!                        
+!
       END DO
 !
 !
@@ -404,10 +407,10 @@ include "isbapar.cdk"
         IF((VEGH(I)+VEGL(I)*(1.-PSNGRVL(I))).GE.EPSILON_SVS) THEN
 !
 !
-!                       CNOLEAF = thermal coefficient for the leafless   
+!                       CNOLEAF = thermal coefficient for the leafless
 !                       portion of vegetation areas
               CNOLEAF(I) = (VEGL(I)*(1.-PSNGRVL(I)) +  &
-                          VEGH(I)*(1.-PSNVH(I))) / CG(I) + PSNGRVL(I)/ZCS(I) & 
+                          VEGH(I)*(1.-PSNVH(I))) / CG(I) + PSNGRVL(I)/ZCS(I) &
                          + PSNVH(I)/ZCSV(I)
 !
 !                       CVPA = thermal coefficient of vegetation that
@@ -420,20 +423,20 @@ include "isbapar.cdk"
                 CNOLEAF(I) = 0.0
              ENDIF
 
-             CVPA(I) = MIN( LAIVP(I),LAI0 ) *  CVA(I)/LAI0  & 
-                     + MAX( LAI0 - LAIVP(I), 0.0 ) * CNOLEAF(I)/LAI0 
-             
+             CVPA(I) = MIN( LAIVP(I),LAI0 ) *  CVA(I)/LAI0  &
+                     + MAX( LAI0 - LAIVP(I), 0.0 ) * CNOLEAF(I)/LAI0
+
           ELSE
 
-!         
-!                       Set the coefficients to lowest physical values found in look-up table 
+!
+!                       Set the coefficients to lowest physical values found in look-up table
 !                       to avoid division by zero
 !
              CVPA(I) = CVAMIN
              CNOLEAF(I) = CVAMIN
-!     
+!
           ENDIF
-!      
+!
       ENDDO
 !
 !
@@ -445,20 +448,20 @@ include "isbapar.cdk"
 !               ----------------------------------------
 !
 !                      The roughness length for heat transfers
-!                      is calculated here, in ISB.  For Z0H, 
-!                      the roughness length used for heat transfers, 
+!                      is calculated here, in ISB.  For Z0H,
+!                      the roughness length used for heat transfers,
 !                      only the local roughness is used (associated
 !                      with vegetation), i.e., no orography effect
 !
-!                      Note that the effect of snow is only on the 
+!                      Note that the effect of snow is only on the
 !                      thermal roughness length
 !
-      DO I=1,N         
+      DO I=1,N
          Z0H(I)=(1-PSNVHA(I)) *      VEGH(I)              * LOG(Z0MVH(I)*Z0M_TO_Z0H)+   &
                 (1-PSNGRVL(I))*      VEGL(I)              * LOG(Z0MVL(I)*Z0M_TO_Z0H)+   &
                 (1-PSNGRVL(I))*(1-VEGH(I)-VEGL(I))        * LOG(Z0MBG   *Z0M_TO_Z0H)+   &
                 (VEGH(I)*PSNVHA(I)+(1-VEGH(I))*PSNGRVL(I))* LOG(Z0HSNOW)
- 
+
 
         Z0H(I)=EXP(Z0H(I))
 
@@ -472,35 +475,35 @@ include "isbapar.cdk"
 !                      of the bare ground only is calculated here.
 !                      It is a rough approximation based on a bi-linear
 !                      interpolation of four "extreme" soil values
-!                      mainly "dry-sand", "wet-sand", "dry-clay" 
+!                      mainly "dry-sand", "wet-sand", "dry-clay"
 !                      and "wet-clay". The albedo   emissivity of these four
-!                      categories is estimated from existing 
-!                      literature. Use superficial volumetric 
-!                      water content to assess soil wetness as 
+!                      categories is estimated from existing
+!                      literature. Use superficial volumetric
+!                      water content to assess soil wetness as
 !                      want *surface* albedo & emissivity.
 !
 !                      compute relative texture and soil wetness coefficients A & B
 !
-!                       N.B. Even when mapping soil parameters from texture 
-!                       database unto model layer, use 1st layer texture from 
-!                       database as is here... 
+!                       N.B. Even when mapping soil parameters from texture
+!                       database unto model layer, use 1st layer texture from
+!                       database as is here...
 !
       DO I=1,N
-!                      A few constraints 
-         IF((CLAY(I)+SAND(I)).gt.0.0) THEN         
-            A(I)= SAND(I) / ( CLAY(I) + SAND(I) ) 
-         ELSE         
-            A(I) = 0.0           
+!                      A few constraints
+         IF((CLAY(I)+SAND(I)).gt.0.0) THEN
+            A(I)= SAND(I) / ( CLAY(I) + SAND(I) )
+         ELSE
+            A(I) = 0.0
          ENDIF
 !                      If  superficial soil layer dryer than wilting point
 !                      set it to wilting points ...and so get 0.0 for B(I)
 !
-         IF((WSAT(I,1)-WWILT(I,1)).gt.0.0.and.WD(I,1).ge.WWILT(I,1)) THEN         
+         IF((WSAT(I,1)-WWILT(I,1)).gt.0.0.and.WD(I,1).ge.WWILT(I,1)) THEN
             B(I) = ( WD(I,1) - WWILT(I,1) ) / ( WSAT(I,1) - WWILT(I,1))
          ELSE
-            B(I) = 0.0 
+            B(I) = 0.0
          ENDIF
-! 
+!
 !                      Added security for coefficients
          IF(A(I).gt.1.0) A(I)=1.0
          IF(B(I).gt.1.0) B(I)=1.0
@@ -510,23 +513,23 @@ include "isbapar.cdk"
 !                      Compute soil albedo
       DO I=1,N
 !
-         ALGR(I)      = ADRYCLAY * ( 1. - A(I) ) * ( 1. - B(I) ) & 
-                      + ADRYSAND *        A(I)   * ( 1. - B(I) ) &   
-                      + AWETCLAY * ( 1. - A(I) ) *        B(I)  &   
-                      + AWETSAND *        A(I)   *        B(I)   
-! 
+         ALGR(I)      = ADRYCLAY * ( 1. - A(I) ) * ( 1. - B(I) ) &
+                      + ADRYSAND *        A(I)   * ( 1. - B(I) ) &
+                      + AWETCLAY * ( 1. - A(I) ) *        B(I)  &
+                      + AWETSAND *        A(I)   *        B(I)
+!
 !        Albedo of soil below high veg. So far, taken as the same as albedo of exposed bare ground
 !
-         ALGRV(I)     = ALGR(I) 
+         ALGRV(I)     = ALGR(I)
 
       ENDDO
 
 !
-!      
-!         9.     NO-SNOW EMISSIVITIES
-!               ---------------------------------------                     Compute soil albedo & emissivity 
 !
-!               If use "read-in"  emissivity, then stamp all emissivities with "read at entry value", 
+!         9.     NO-SNOW EMISSIVITIES
+!               ---------------------------------------                     Compute soil albedo & emissivity
+!
+!               If use "read-in"  emissivity, then stamp all emissivities with "read at entry value",
 !               otherwise calculate individual emissivities
 
 
@@ -539,15 +542,15 @@ include "isbapar.cdk"
             EMGRV (I)        = ETG(I)
             EVA   (I)        = ETG(I)
          ENDDO
-  
+
       else
 
-         DO I = 1, N
+         DO I = 1, N           
 !
 !                      AGGREGATED VEG. EMISSIVITY  (VEGETATION NOT COVERED BY SNOW)
 !
             IF((VEGH(I)+VEGL(I)*(1-PSNGRVL(I))).GE.EPSILON_SVS)  THEN
-               EVA(I) = ( VEGH(I) * EMISVH(I) + VEGL(I) * (1.-PSNGRVL(I)) * EMISVL(I)) &     
+               EVA(I) = ( VEGH(I) * EMISVH(I) + VEGL(I) * (1.-PSNGRVL(I)) * EMISVL(I)) &
                     / (VEGH(I)+VEGL(I)*(1.-PSNGRVL(I)))
 !
             ELSE
@@ -556,13 +559,13 @@ include "isbapar.cdk"
 !
 !                      BARE GROUND EMISSIVITY
 !
-            EMGR(I)       = EDRYCLAY * ( 1. - A(I) ) * ( 1. - B(I) )  &  
-                          + EDRYSAND *        A(I)   * ( 1. - B(I) ) &   
-                          + EWETCLAY * ( 1. - A(I) ) *        B(I) &    
-                          + EWETSAND *        A(I)   *       B(I) 
+            EMGR(I)       = EDRYCLAY * ( 1. - A(I) ) * ( 1. - B(I) )  &
+                          + EDRYSAND *        A(I)   * ( 1. - B(I) ) &
+                          + EWETCLAY * ( 1. - A(I) ) *        B(I) &
+                          + EWETSAND *        A(I)   *       B(I)
             !
 !
-!                     EMISSIVITY OF GROUND BELOW HIGH VEG. 
+!                     EMISSIVITY OF GROUND BELOW HIGH VEG.
 !                     SO FAR TAKEN EQUALS TO THE BARE GROUND EMISSIVITY
 !
             EMGRV(I)       = EMGR(I)
@@ -587,20 +590,20 @@ include "isbapar.cdk"
 !                        Kersten parameter for thermal conductivity
              XF = WF(I,K) / (WF(I,K) + MAX(WD(I,K),0.001))
              XU = (1.0-XF) * WSAT(I,K)
-             
+
              WORK1   = LOG(CONDSLD(I,K))*(1.0-WSAT(I,K))
              WORK2   = LOG_CONDI*(WSAT(I,K)-XU)
-             WORK3   = LOG_CONDW*XU   
+             WORK3   = LOG_CONDW*XU
              CONDSAT = EXP(WORK1+WORK2+WORK3)
-             
+
              SATDEG   = MAX(0.1, (WF(I,K) + WD(I,K))/WSAT(I,K))       ! degree of saturation
              SATDEG   = MIN(1.0, SATDEG)
              KERSTEN  = LOG10(SATDEG) + 1.0               ! Kersten number
-             
+
 !                       Put in a smooth transition from thawed to frozen soils:
-!                       simply linearly weight Kersten number by frozen fraction 
+!                       simply linearly weight Kersten number by frozen fraction
 !                       in soil:
-             KERSTEN  = (1.0-XF)*KERSTEN + XF *SATDEG 
+             KERSTEN  = (1.0-XF)*KERSTEN + XF *SATDEG
 
 !                       Thermal conductivity
              PSOILCONDZ(I,K) = KERSTEN*(CONDSAT-CONDDRY(I,K)) + CONDDRY(I,K)
@@ -611,7 +614,7 @@ include "isbapar.cdk"
 
           END DO
 
-       END DO    
+       END DO
 
 
       RETURN

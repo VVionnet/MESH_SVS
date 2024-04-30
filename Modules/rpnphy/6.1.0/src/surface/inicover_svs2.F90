@@ -76,6 +76,7 @@ subroutine inicover_svs2(kount, ni, trnch)
       REAL LAIDAT(NCLASS), VEGDAT(NCLASS),EMISDAT(NCLASS) 
       REAL CVDAT(NCLASS), RGLDAT(NCLASS), GAMMADAT(NCLASS)
       REAL Z0MDAT(NCLASS), MAXPDAT(NCLASS), HVEGPOLDAT(NCLASS)
+      REAL SKINCONDAT(NCLASS)
 !
       DATA ALDAT/ &
                      0.13   , 0.70   , 0.13   , 0.14   , 0.12   , &
@@ -187,6 +188,13 @@ subroutine inicover_svs2(kount, ni, trnch)
                      0.00   , 0.15    , 0.00   , 0.00   , 0.00   , & 
                      0.00   / 
 
+      DATA SKINCONDAT/ &
+                     0.00   , 58.   , 0.00   , 10.   , 10.  , & 
+                     10.   , 10.   , 10.   , 10.   , 10.   , & 
+                     10.   , 10.   , 10.   , 10.   , 10.   , & 
+                     10.   , 10.   , 10.   , 10.   , 10.   , & 
+                     10.   , 10.    , 10.   , 15.   , 10.   , & 
+                     10.   / 
 !
 !
 
@@ -452,6 +460,8 @@ subroutine inicover_svs2(kount, ni, trnch)
       call aggveglow(PTR1D(vegf), rsmindat, rsmindat, PTR1D(stomrvl), &
            PTR1D(dlat), ni, nclass)
       call aggveglow(PTR1D(vegf), cvdat, cvdat, PTR1D(cvl), &
+           PTR1D(dlat), ni, nclass)
+      call aggveglow(PTR1D(vegf), skincondat, skincondat, PTR1D(skincond_vl), &
            PTR1D(dlat), ni, nclass)
 
       if ( .not. read_hveglpol ) then

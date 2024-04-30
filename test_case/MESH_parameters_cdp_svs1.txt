@@ -31,7 +31,7 @@ lsoil_freezing_svs1  .false.    ! Activate soil freezing and thawing in SVS1
 tperm      280.0 ! (Deep soil temperature K)
 
 ! Water ponding scheme
-lwater_ponding_svs1  .false.    ! Activate water ponding in SVS1 
+lwater_ponding_svs  .false.    ! Activate water ponding in SVS1 
 watpond 0  ! Heigh in m of ponded water
 
 !> Soils.
