@@ -144,7 +144,7 @@
 !
       INTEGER I, zopt
 
-      real, dimension(n) :: temp, coef_vl, coef_vh, qsatgr, qsat_vl, qsat_vh, &
+      real, dimension(n) :: temp, coef_vh, qsatgr, qsat_vl, qsat_vh, &
            zqs_vl, zqs_vh, ctugr, ctugrv, ctuvg, wcrit_hrsurf, z0bg_n,ra,&
            z0gv_n, qsatgrv,wcrit_hrsurfgv, z0hg, zz0hgv, ZZ0HVH, ZZ0HVL
      real, dimension(n) :: ZUGV, ZTGV, ZZ0MGV, ZDH, QSATI_VH, VSUBL
@@ -524,16 +524,12 @@
 !                          calculate DEL
 !
          IF(VEGL(I)>EPSILON_SVS) THEN   ! Low vegetation present in the grid cell
-             COEF_VL(I) = 1. + 2.*LAI_VL(I)
 !
-
-             DEL_VL(I) =   MIN(WR_VL(I),WRMAX_VL(I)) / &
-              ((1.-COEF_VL(I))*MIN(WR_VL(I),WRMAX_VL(I)) +COEF_VL(I)*WRMAX_VL(I) )
+             DEL_VL(I) =   (WR_VL(I)/WRMAX_VL(I))**(2./3.)
 !
              DEL_VL(I) = MIN(DEL_VL(I),1.)
 
          ELSE
-             COEF_VL(I) = 1.
              DEL_VL(I) = 0.
          ENDIF
 !
