@@ -25,7 +25,7 @@
                               RESAGR,RESAGRV, RESA_VL, RESA_VH, RES_SNCA, &
                               HUSURF,HUSURFGV, &
                               HRSURF,HRSURFGV, &
-                              HV_VL, HV_VH, DEL_VL, DEL_VH,  &
+                              HV_VL, HV_VH, HVSN_VH, DEL_VL, DEL_VH,  &
                               Z0HBG, Z0HVL, Z0HVH,Z0HGV,  N)
       use tdpack
       use sfc_options
@@ -44,7 +44,7 @@
       REAL FCOR(N), Z0HA(N), Z0HBG(N), Z0HVL(N), Z0HVH(N), Z0HGV(N), FCANS(N)
       REAL VGH_DENS(N), Z0MVH(N), Z0MVL(N), VEGHEIGHT(N), LAIVH(N), ZVCAN(N)
       REAL RESAGR(N),RESAGRV(N), RESA_VL(N), RESA_VH(N), RES_SNCA(N)
-      REAL HUSURF(N),HUSURFGV(N), HV_VL(N), HV_VH(N), DEL_VL(N), DEL_VH(N)
+      REAL HUSURF(N),HUSURFGV(N), HV_VL(N), HV_VH(N), HVSN_VH(N), DEL_VL(N), DEL_VH(N)
       REAL HRSURF(N),HRSURFGV(N), WD1(N)
       REAL VEGH(N), VEGL(N), TGRVS(N), SNCMA(N), RHOA(N)
       REAL CLUMPING
@@ -127,10 +127,9 @@
 ! HUSURF    specific humidity of the bare ground surface
 ! HRSURFGV   relative humidity of the the snow-free ground below high veg (1st layer)
 ! HUSURFGV   specific humidity of the snow-free ground below high veg
-! HV_VL        Halstead coefficient (i.e., relative humidity of the
-!           low vegetation canopy)
-! HV_VH        Halstead coefficient (i.e., relative humidity of the
-!           high vegetation canopy)
+! HV_VL        Halstead coefficient of low vegetation canopy
+! HV_VH        Halstead coefficient of the high vegetation canopy
+! HVSN_VH        Halstead coefficient of the high vegetation canopy accounting for intercepted snow
 ! DEL_VL    fraction of low veg. canopy covered by intercepted water
 ! DEL_VH    fraction of high veg canopy covered by intercepted water
 ! Z0HBG     Bare ground thermal roughness
@@ -800,7 +799,7 @@
                  *RS(I)*(1.-DEL_VH(I)) / (RESA_VH(I)+RS(I))
 
         ! Account for intercepted snow in the high vegetation
-        HV_VH(I) = FCANS(I) * (CHLF + CHLC)  &
+        HVSN_VH(I) = FCANS(I) * (CHLF + CHLC)  &
                     + (1.-FCANS(I)) * HV_VH(I) * CHLC
 
 

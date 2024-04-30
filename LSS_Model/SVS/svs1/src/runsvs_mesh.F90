@@ -1731,8 +1731,8 @@ ierr = 200
            veg_tot =  busptr(vd%wveg_vl%i)%ptr(1, trnch)*busptr(vd%vegl%i)%ptr(1, trnch) +  &
                       busptr(vd%wveg_vh%i)%ptr(1, trnch)*busptr(vd%vegh%i)%ptr(1, trnch)
 
-           if (ic%now%hour /= ic%next%hour) then !last time-step of hour
-           !if (ic%now%mins ==0) then! Full hour
+           !if (ic%now%hour /= ic%next%hour) then !last time-step of hour
+           if (ic%now%mins ==0) then! Full hour
 
               k=1 !>  Identity of the tile (offset relative to node-indexing).
 

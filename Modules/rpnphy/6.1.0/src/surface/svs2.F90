@@ -172,6 +172,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    real,dimension(n) :: pfcans ! Canopy layer snowcover fractions from FSM2
    real,dimension(n) :: pres_snca ! Resistance for intercepted snow in high canopy
    real, dimension(n) ::  eg_grid! evaporation rate over bare ground and bare ground below high veg (grid box average) [kg/m2/s]
+   real, dimension(n) ::  HVSN_VH !Halstead coefficient of the high vegetation canopy accounting for intercepted snow
 
      ! NL_SVS VARIABLES
    real, dimension(n,nl_svs) ::  pd_g, pdzg
@@ -641,7 +642,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            bus(x(RESA_VL,1,1)),bus(x(RESA_VH,1,1)), pres_snca, &
            bus(x(HUSURF,1,1)),bus(x(HUSURFGV,1,1)),   &
            HRSURF, HRSURFGV,      &
-           bus(x(HV_VL,1,1)),bus(x(HV_VH,1,1)), DEL_VL, DEL_VH,     &
+           bus(x(HV_VL,1,1)),bus(x(HV_VH,1,1)), HVSN_VH, DEL_VL, DEL_VH,     &
            bus(x(Z0HBG,1,1)), bus(x(Z0HVL,1,1)), bus(x(Z0HVH,1,1)), bus(x(Z0HGV,1,1)), &
             N )
       if (phy_error_L) return
@@ -777,7 +778,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                   ps, RHOA, BUS(x(SVS_WTA,1,1)), BUS(x(SVS_WTG,1,1)),  &
                   z0m, z0mland , bus(x(Z0T,1,indx_soil)),&
                   HRSURF,HRSURFGV,       &
-                  bus(x(HV_VL,1,1)) , bus(x(HV_VH,1,1)), DEL_VL, DEL_VH, STOM_RS ,&
+                  bus(x(HV_VL,1,1)) , bus(x(HV_VH,1,1)), HVSN_VH, DEL_VL, DEL_VH, STOM_RS ,&
                   CG,CVPA,BUS(x(EMISVL ,1,1)), BUS(x(EMISVH ,1,1)) ,  BUS(x(SKINCOND_VL ,1,1)),  &
                   bus(x(RESAGR,1,1)), bus(x(RESA_VL,1,1)),bus(x(RESA_VH,1,1)),   &
                   bus(x(RESASA,1,1)), bus(x(RESASV,1,1)) ,bus(x(RESAGRV,1,1)),pres_snca, &

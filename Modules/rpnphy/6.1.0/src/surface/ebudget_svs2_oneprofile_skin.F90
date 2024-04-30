@@ -21,7 +21,7 @@
                    ALGR, EMGR, ALGRV, EMGRV, &
                    RAT, RATCAN, THETAA, FCOR, ZUSL, ZTSL, HU, PS, &
                    RHOA, WTA, WTG, Z0, Z0LOC, Z0H, &
-                   HRSURF,HRSURFGV, HV_VL, HV_VH, DEL_VL, DEL_VH, RS, &
+                   HRSURF,HRSURFGV, HV_VL, HV_VH, HVSN_VH, DEL_VL, DEL_VH, RS, &
                    CG,CVP, EMISVL, EMISVH, SKINCOND_VL, &
                    RESAGR, RESA_VL, RESA_VH, RESASA, RESASV, RESAGRV, RES_SNCA, &
                    RNETSN, HFLUXSN,LESLNOFRAC, LESNOFRAC, ESNOFRAC, SUBLDRIFT, &
@@ -70,7 +70,7 @@
       REAL ZUSL(N), ZTSL(N),THETAA(N), FCOR(N)
       REAL HU(N), PS(N), RHOA(N), WTA(N,svs2_tilesp1),WTG(N,svs2_tilesp1), Z0(N)
       REAL Z0LOC(N), Z0H(N)
-      REAL HV_VL(N), HV_VH(N), DEL_VL(N), DEL_VH(N),  RS(N)
+      REAL HV_VL(N), HV_VH(N), HVSN_VH(N), DEL_VL(N), DEL_VH(N),  RS(N)
       REAL CG(N), CVP(N),   EMISVL(N), EMISVH(N), SKINCOND_VL(N)
       REAL LAI(N), GAMVEG(N), ALGR(N), EMGR(N), ALGRV(N), EMGRV(N)
       REAL RNET(N), HFLUX(N), LE(N), ALPHAS(N)
@@ -176,8 +176,9 @@
 ! Z0LOC     local land momentum roughness length (no orography)
 ! HRSURF    relative humidity of the bare ground surface (1st soil layer)
 ! HRSURFGV  relative humidity of the ground surface below high vegetation
-! HV_VL     Halstead coefficient (relative humidity of low veg. canopy)
-! HV_VH     Halstead coefficient (relative humidity of high veg. canopy)
+! HV_VL     Halstead coefficient of low veg. canopy
+! HV_VH     Halstead coefficient of high veg. canopy
+! HVSN_VH     Halstead coefficient of high veg. canopy accounting for intercepted snow
 ! DEL_VL    portion of the low veg. leaves covered by water
 ! DEL_VH    portion of the high veg. leaves covered by water
 ! RS        stomatal resistance
@@ -598,19 +599,19 @@
                      AVH(I) = PHM_CAN(I)  / DT &
                               + 8.*EMVH_SN(I)*STEFAN*SIGMA_F*(TVGHS(I)**3) &
                               + RORAVGH(I) * CPD &
-                              + RORAVGH(I) * HV_VH(I) * ZDQSATVGH(I)
+                              + RORAVGH(I) * HVSN_VH(I) * ZDQSATVGH(I)
 
 
                      BVH(I) = PHM_CAN(I) / DT + &
                            +  6.*EMVH_SN(I)*SIGMA_F*STEFAN*(TVGHS(I)**3) &
-                           + RORAVGH(I)* HV_VH(I)*ZDQSATVGH(I)
+                           + RORAVGH(I)* HVSN_VH(I)*ZDQSATVGH(I)
 
                      CVH(I) = RG(I) * (1.-ALVH_SN(I))*SIGMA_F &
                                  * (1.+(ALB_UVH*SKYVIEW(I)/(1.-SIGMA_F*ALB_UVH*ALVH_SN(I))))  &
                               + SIGMA_F * EMVH_SN(I) * RAT(I) &
                               + SIGMA_F * EMVH_SN(I)*LW_UVH  &
                               + RORAVGH(I) * CPD * THETAA(I)  &
-                              + RORAVGH(I) * HV_VH(I) * (HU(I) - ZQSATVGH(I))
+                              + RORAVGH(I) * HVSN_VH(I) * (HU(I) - ZQSATVGH(I))
 
 
                      TVGHST(I) = (BVH(I) *TVGHS(I) + CVH(I))/ AVH(I)
@@ -948,7 +949,7 @@
 !                                            Water vapor flux from ground
         EGF(I) = WTA(I,indx_svs2_bg) * (HRSURF(I)* ZQSATGRT(I) - HU(I)) / RESAGR(I)
 
-!                                            Evaporation rate from ground (for hydro_svs.ftn)
+!                                            Evaporation rate from ground (for watsurf_budget.ftn)
 !
         EG(I) = RHOA(I)*(HRSURF(I)* ZQSATGRT(I) - HU(I)) / RESAGR(I)
 !
@@ -967,7 +968,7 @@
 !
            EGVF(I) = WTA(I,indx_svs2_gv) * (HRSURFGV(I)* ZQSATGRVT(I) - HU(I)) / RESAGRV(I)
 !
-!                                            Evaporation rate from ground below high veg. (for hydro_svs.ftn)
+!                                            Evaporation rate from ground below high veg. (for watsurf_budget.ftn)
 !
            EGV(I) = RHOA(I)*(HRSURFGV(I)* ZQSATGRVT(I) - HU(I)) / RESAGRV(I)
 
@@ -987,16 +988,16 @@
 !            Check if if qsat> HU
              ZHVGL(I) = MAX(0.0 , SIGN(1.,ZQSATVGLT(I) - HU(I)))
 !
-!            Transpiration rate (for hydro_svs.ftn)
+!            Transpiration rate (for watsurf_budget.ftn)
              ETR_VL(I) = RHOA(I)*ZHVGL(I)*(1. - DEL_VL(I))*(ZQSATVGLT(I) -HU(I))/(RESA_VL(I) + RS(I))
 !
 !            Latent heat of transpiration (with fraction)
              LETR_VL(I) = WTA(I,indx_svs2_vl)* CHLC * ETR_VL(I)
 !
-!            Evapotranspiration rate from low veg. (for hydro_svs.ftn) (no fraction)
+!            Evapotranspiration rate from low veg. (for watsurf_budget.ftn) (no fraction)
              EV_VL(I) =  RHOA(I)*HV_VL(I) * (ZQSATVGLT(I) - HU(I)) / RESA_VL(I)
 !
-             !  EV is limited to WR/DT+RR+ETR to avoid negative WR in hydro_svs when direct evaporation exceeds rainrate
+             !  EV is limited to WR/DT+RR+ETR to avoid negative WR in watsurf_budget when direct evaporation exceeds rainrate
              !  When snow is present, rain falls through vegetation to snow bank... so is not considered in evaporation... This is to conserve water budget.
              IF( SNM(I).GE.CRITSNOWMASS) THEN
                 ! snow over low veg is present, rain falls directly to snow
@@ -1020,7 +1021,7 @@
 !       Latent heat of evaporation from low vegetation (including fraction)
         LEVL(I) = RHOA(I) * CHLC * EVLF(I)
 !
-!       Direct evapo. rate from low veg. (no. fraction) (for hydro_svs.ftn)
+!       Direct evapo. rate from low veg. (no. fraction) (for watsurf_budget.ftn)
         ER_VL(I) = EV_VL(I) - ETR_VL(I)
 !
 !       Latent heat of direct evaporation  (including fraction)
@@ -1034,24 +1035,17 @@
 !            Check if if qsat> HU
              ZHVGH(I) = MAX(0.0 , SIGN(1.,ZQSATVGHT(I) - HU(I)))
 !
-!            Transpiration rate (for hydro_svs.ftn) (no fraction)
+!            Transpiration rate (for watsurf_budget.ftn) (no fraction)
              ETR_VH(I) = RHOA(I)*ZHVGH(I)*(1. - DEL_VH(I))* (1.-FCANS(I))*(ZQSATVGHT(I)-HU(I))/(RESA_VH(I) + RS(I)) * (CHLC)/LCAN(I)
 !
 !            Latent heat of transpiration (with fraction )
              LETR_VH(I) = WTA(I,indx_svs2_vh)* CHLC * ETR_VH(I)
 !
-!            Evapotranspiration rate from high veg. (for hydro_svs.ftn)
-             EV_VH(I) =  RHOA(I) * DEL_VH(I) * (1.-FCANS(I)) * (ZQSATVGHT(I) - HU(I)) / RESA_VH(I) *(CHLC)/LCAN(I)
+!            Evapotranspiration rate from high veg. (for watsurf_budget.ftn)
+             EV_VH(I) =  RHOA(I) * HV_VH(I) * (1.-FCANS(I)) * (ZQSATVGHT(I) - HU(I)) / RESA_VH(I) *(CHLC)/LCAN(I)
 
-             !  EV is limited to WR/DT+RR+ETR to avoid negative WR in hydro_svs when direct evaporation exceeds rainrate
-             !  When snow is present, rain falls through vegetation to snow bank... so is not considered in evaporation... This is to conserve water budget.
-             IF( SVM(I).GE.CRITSNOWMASS) THEN
-                ! snow is present below high veg, rain falls directly to snow
-                EV_VH(I) = MIN (EV_VH(I),(WR_VH(I)/DT+ETR_VH(I)))
-             ELSE
-                ! no snow present, all rain is considered evaporation
-                EV_VH(I) = MIN (EV_VH(I),(WR_VH(I)/DT+ETR_VH(I)+RR(I)))
-             ENDIF
+             !  EV is limited to WR/DT+RR+ETR to avoid negative WR in watsurf_budget when direct evaporation exceeds rainrate
+             EV_VH(I) = MIN (EV_VH(I),(WR_VH(I)/DT+ETR_VH(I)))
 
 !
 !            Sublimation rate of intercepted snow in high veg. (for snow_interception_svs2)
@@ -1085,7 +1079,7 @@
         LEVH(I) = LEVH(I) + LESNVH(I)
         EVHF(I) = EVHF(I) +  WTA(I,indx_svs2_vh) * ESN_VH(I) / RHOA(I)
 !
-!       Direct evapo. rate from high veg. (no. fraction) (for hydro_svs.ftn)
+!       Direct evapo. rate from high veg. (no. fraction) (for watsurf_budget.ftn)
         ER_VH(I) = EV_VH(I) - ETR_VH(I)
 !
 !       Latent heat of direct evaporation  (including fraction)
