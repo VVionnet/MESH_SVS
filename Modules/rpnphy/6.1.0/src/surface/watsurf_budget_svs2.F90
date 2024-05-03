@@ -126,7 +126,7 @@ SUBROUTINE WATSURF_BUDGET_SVS2 ( DT, ESUBSNC, SUBSNC_CUM, &
   !
   !                                  Remove sublimation from snow canopy reservoir
   !                                  Only applicable when the option ABV is applied
-  IF (CANO_REF_FORCING .EQ.'ABV' .AND. LSNOW_INTERCEPTION_SVS2 == .true.) THEN
+  IF (CANO_REF_FORCING .EQ.'ABV' .AND. LSNOW_INTERCEPTION_SVS2 ) THEN
       DO I=1,N
          IF(ESUBSNC(I)>0 .AND. SNCMA(I)>0) THEN
             SNCMA(I) = SNCMA(I) - MAX(ESUBSNC(I)*DT, 0.)

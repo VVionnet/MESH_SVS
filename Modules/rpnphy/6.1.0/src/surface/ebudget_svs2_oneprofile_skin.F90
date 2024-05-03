@@ -778,7 +778,7 @@
 !                     - snow free ground below high vegetation WTG_7
 !
        DO I=1,N
-          B2(I,1) = DELZ(1)*SOILHCAP(I,1)/DT +                 &
+          B2(I,1) = DELZ(1)*SOILHCAP(I,1)/DT                  &
                     + WTG(I,indx_svs2_bg) * SKINCOND_BG(I)     &
                     + WTG(I,indx_svs2_vl) * SKINCOND_VL(I)     &
                     + WTG(I,indx_svs2_gv) * SKINCOND_GV(I)     &

@@ -21,7 +21,7 @@
            EMISVH, EMISVL, ETG, RGLVH , RGLVL, STOMRVH, STOMRVL,  &
            GAMVH,GAMVL, &
            LAIVH, LAIVL, &
-           Z0MVH, Z0MVL, Z0, CLAY, SAND,SOC, DECI, EVER,LAID, VGH_DENS,  &
+           Z0MVH, Z0MVL, Z0, CLAY, SAND,SOC, DECI, EVER,LAID, PSOILHCAPZ_DRY, VGH_DENS,  &
            WTA, WTG, CG,PSOILHCAPZ, PSOILCONDZ, PSNGRVL,  &
            Z0H, ALGR, EMGR, ALGRV, EMGRV, PSNVH, PSNVHA, PSURFVHA,   &
            ALVA, LAIVA, CVPA, EVA, Z0HA, Z0MVG, RGLA, STOMRA ,&
@@ -45,7 +45,7 @@
       REAL Z0(N)
       REAL CG(N), WTA(N,svs2_tilesp1), WTG(N,svs2_tilesp1)
       REAL PSNGRVL(N)
-      REAL PSOILHCAPZ(N,NL_SVS),PSOILCONDZ(N,NL_SVS)
+      REAL PSOILHCAPZ_DRY(N,NL_SVS), PSOILHCAPZ(N,NL_SVS),PSOILCONDZ(N,NL_SVS)
       REAL Z0H(N), ALGR(N), ALGRV(N), CLAY(N), SAND(N), SOC(N)
       REAL DECI(N), EVER(N), LAID(N)
       REAL EMGR(N),EMGRV(N), PSNVH(N), PSNVHA(N), PSURFVHA(N), LAIVH(N)
@@ -112,6 +112,7 @@
 ! DECI     fraction of high vegetation that is deciduous
 ! EVER     fraction of high vegetation that is evergreen
 ! LAID     LAI of deciduous trees
+! PSOILHCAPZ_DRY soil heat capacity of dry soil
 !
 !           - Output -
 ! WTA      Weights for SVS2 surface types as seen from ATM.
@@ -609,7 +610,7 @@ include "isbapar.cdk"
              PSOILCONDZ(I,K) = KERSTEN*(CONDSAT-CONDDRY(I,K)) + CONDDRY(I,K)
 
 !                       Heat capacity (J m-3 K-1)
-             PSOILHCAPZ(I,K) = (1. - WSAT(I,K)) * 2700. * 733. + WD(I,K) * XCL * XRHOLW &
+             PSOILHCAPZ(I,K) = (1. - WSAT(I,K)) * PSOILHCAPZ_DRY(I,K) + WD(I,K) * XCL * XRHOLW &
                              + WF(I,K) * XCI * XRHOLI
 
           END DO

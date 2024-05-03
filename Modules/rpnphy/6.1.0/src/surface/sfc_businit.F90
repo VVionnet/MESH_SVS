@@ -98,7 +98,7 @@ subroutine sfc_businit(moyhr,ni,nk)
         tsvavg,tvege,  vegh, vegl, vegtrans, vgctem, &
         watflow, wsoilm, wfcdp, wfcint, wsnv, &
         z0ha, z0hbg, z0hvg, z0mland, z0mlanden, z0mvg, z0mvh, z0mvhen, z0mvl, &
-        conddry, condsld, quartz, rhosoil, soilhcapz, soilcondz, &
+        conddry, condsld, quartz, rhosoil, soilhcapz, soilcondz, soilhcapz_dry, &
         tperm, tpsoil, watpond,maxpond
 
    !--------   Speficic parameter FOR SVS -----------------
@@ -417,7 +417,7 @@ subroutine sfc_businit(moyhr,ni,nk)
       PHYVAR2D1(snvdp,        'VN=snvdp        ;ON=SVDP;VD=snow-under-high-veg depth                                         ;VB=p1')
       PHYVAR2D1(snvma,        'VN=snvma        ;ON=SVM ;VD=snow-under-high-veg mass                                          ;VB=p0')
       PHYVAR2D1(snvro,        'VN=snvro        ;ON=SVDR;VD=snow-under-high-veg relative density                              ;VB=p0')
-      PHYVAR3D1(soilhcapz,    'VN=soilhcapz    ;ON=SLCA;VD=soil heat capacity                             ;VS=A*'//ngl//'  ;VB=p0')         
+      PHYVAR3D1(soilhcapz,    'VN=soilhcapz    ;ON=SLCA;VD=soil heat capacity                             ;VS=A*'//ngl//'  ;VB=p0')    
       PHYVAR3D1(soilcondz,    'VN=soilcondz    ;ON=SLCO;VD=soil heat conductivity                         ;VS=A*'//ngl//'  ;VB=p0')  
       PHYVAR2D1(stomrvh,      'VN=stomrvh      ;ON=RSVH;VD=min. stomatal resistance for high vegetation                      ;VB=p0')
       PHYVAR2D1(stomrvl,      'VN=stomrvl      ;ON=RSVL;VD=min. stomatal resistance for low vegetation                       ;VB=p0')
@@ -631,6 +631,7 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR2D1(snvma,        'VN=snvma        ;ON=SVM ;VD=snow-under-high-veg mass                                          ;VB=p0')
       PHYVAR2D1(snvro,        'VN=snvro        ;ON=SVDR;VD=snow-under-high-veg relative density                              ;VB=p0')
       PHYVAR3D1(soilhcapz,    'VN=soilhcapz    ;ON=SLCA;VD=soil heat capacity                             ;VS=A*'//ngl//'  ;VB=p0')         
+      PHYVAR3D1(soilhcapz_dry,'VN=soilhcapz_dry;ON=SLCD;VD=soil heat capacity of dry soil           ;VS=A*'//ngl//'  ;VB=p0')         
       PHYVAR3D1(soilcondz,    'VN=soilcondz    ;ON=SLCO;VD=soil heat conductivity                         ;VS=A*'//ngl//'  ;VB=p0')    
       PHYVAR2D1(stomrvh,      'VN=stomrvh      ;ON=RSVH;VD=min. stomatal resistance for high vegetation                      ;VB=p0')
       PHYVAR2D1(stomrvl,      'VN=stomrvl      ;ON=RSVL;VD=min. stomatal resistance for low vegetation                       ;VB=p0')

@@ -32,16 +32,22 @@ subroutine inisoili_svs2(ni, trnch)
    ! NI          longueur d'une tranche horizontale
 
    integer :: i, k, kk
-   REAL b, usb, fb, crit1_wfcint, crit2_wfcint
+   REAL b, usb, fb, crit1_wfcint, crit2_wfcint, soillayer_depth, beta_soc
+   REAL :: depth_sapric = 1., & ! Depth (m) where the soil properties reach sapric values (Decharm et al. 2016)
+           depth_fibric = 0.01  ! Depth (m) where the soil properties start to depart from fibric values (Decharm et al. 2016)
    
    ! "geo" variables are on the levels of the geophysical soil texture datbase
    REAL, dimension(ni,nl_stp) :: wsat_geo, wwilt_geo, wfc_geo, b_geo, psisat_geo, &
-           ksat_geo, wfcint_geo, fb_geo ,quartz_geo,rhosoil_geo,conddry_geo,condsld_geo
+           ksat_geo, wfcint_geo, fb_geo ,quartz_geo,rhosoil_geo,conddry_geo,condsld_geo, soilhcapz_dry
+   ! 100% soil organic content variables 
+   REAL, dimension(ni,nl_stp) :: wsat_soc, wwilt_soc, wfc_soc, b_soc, psisat_soc, &
+           ksat_soc, wfcint_soc, fb_soc ,conddry_soc,condsld_soc, hcap_soc
    real, pointer, dimension(:) :: zcgsat, zgrkef, zdraindens, zslop
 
    ! variables on the levels of SVS
    real, pointer, dimension(:,:) :: zbcoef, zclay, zfbcof, zksat, zpsisat, zsand, zwfc, zwfcint, zwsat, zwwilt 
-   real, pointer, dimension(:,:) :: zconddry, zcondsld, zquartz, zrhosoil 
+   real, pointer, dimension(:,:) :: zconddry, zcondsld, zquartz, zrhosoil, zsoilhcapz_dry, zsoc
+
 
   
 #define MKPTR1D(NAME1,NAME2) nullify(NAME1); if (vd%NAME2%i > 0 .and. associated(busptr(vd%NAME2%i)%ptr)) NAME1(1:ni) => busptr(vd%NAME2%i)%ptr(:,trnch)
@@ -51,6 +57,7 @@ subroutine inisoili_svs2(ni, trnch)
    MKPTR1D(zdraindens, draindens)
    MKPTR1D(zgrkef, grkef)
    MKPTR1D(zslop, slop)
+
 
    MKPTR2D(zbcoef, bcoef)
    MKPTR2D(zclay, clay)
@@ -66,7 +73,8 @@ subroutine inisoili_svs2(ni, trnch)
    MKPTR2D(zwfcint, wfcint)
    MKPTR2D(zwsat, wsat)
    MKPTR2D(zwwilt , wwilt)
-   
+   MKPTR2D(zsoilhcapz_dry , soilhcapz_dry)
+   MKPTR2D(zsoc , soc)
    !call subroutine to compute layer thicknesses
    call layer_thickness()
 
@@ -138,6 +146,10 @@ subroutine inisoili_svs2(ni, trnch)
         conddry_geo(i,k) = (0.135*rhosoil_geo(i,k) + 64.7) / &
                         (2700. - 0.947*rhosoil_geo(i,k))   
 
+!       Soil heat capacity
+       soilhcapz_dry(i,k) = (2.128*zsand(i,k) + 2.385*zclay(i,k))/(zsand(i,k)+zclay(i,k))*1.E6
+
+
       enddo
    enddo
    ! "Map" GEO soil properties unto model soil layers
@@ -158,7 +170,8 @@ subroutine inisoili_svs2(ni, trnch)
             zcondsld  (i,k)  = zcondsld  (i,k) + condsld_geo  (i,kk)  * weights( k , kk)
             zquartz   (i,k)  = zquartz   (i,k) + quartz_geo   (i,kk)  * weights( k , kk)
             zrhosoil  (i,k)  = zrhosoil  (i,k) + rhosoil_geo  (i,kk)  * weights( k , kk)
-            
+            zsoilhcapz_dry  (i,k)  = zsoilhcapz_dry  (i,k) + soilhcapz_dry  (i,kk)  * weights( k , kk)
+
          enddo
       enddo
       ! compute thermal coeff. 
@@ -168,6 +181,94 @@ subroutine inisoili_svs2(ni, trnch)
       
       ! Compute effective parameter for watdrain
       zgrkef(i)   = 2.* zdraindens(i) * zslop(i)
+
+   enddo
+   !     Computer 100% soil organic content properties for typical peat soil profile (Decharme et al. 2016)
+   do i=1,ni
+      do k=1,nl_stp
+
+         if (k .EQ. 1) then
+            soillayer_depth = delz(k) * 0.5
+         else
+            soillayer_depth = soillayer_depth + delz(k)
+         endif
+
+         beta_soc = log(0.845/0.93)/log(depth_sapric/depth_fibric) ! See Table 1 in Decharme et al. 2016
+         wsat_soc  (i,k)  =  0.93 * (soillayer_depth/depth_fibric)**(beta_soc)
+         wsat_soc     (i,k)  =  min(max( wsat_soc(i,k), 0.845), 0.93) ! Bound the value to min and max
+
+         beta_soc = log(0.222/0.073)/log(depth_sapric/depth_fibric)
+         wwilt_soc (i,k)  =  0.073 * (soillayer_depth/depth_fibric)**(beta_soc)
+         wwilt_soc     (i,k)  =  min(max( wwilt_soc(i,k), 0.073), 0.222)
+
+         beta_soc = log(0.719/0.369)/log(depth_sapric/depth_fibric)
+         wfc_soc   (i,k)  =  0.369 * (soillayer_depth/depth_fibric)**(beta_soc)
+         wfc_soc     (i,k)  =  min(max( wfc_soc(i,k), 0.369), 0.719)
+
+         beta_soc = log(0.0101/0.0103)/log(depth_sapric/depth_fibric)
+         psisat_soc(i,k)  =  0.0103 * (soillayer_depth/depth_fibric)**(beta_soc)
+         psisat_soc     (i,k)  =  min(max( psisat_soc(i,k), 0.0101), 0.0103)
+
+         beta_soc = log((1.E-7)/(2.8E-4))/log(depth_sapric/depth_fibric)
+         ksat_soc  (i,k)  = 2.8E-4 * (soillayer_depth/depth_fibric)**(beta_soc)
+         ksat_soc     (i,k)  =  min(max( ksat_soc(i,k), 1.E-7), 2.8E-4)
+
+         beta_soc = log(12./2.7)/log(depth_sapric/depth_fibric)
+         b_soc     (i,k)  =  2.7 * (soillayer_depth/depth_fibric)**(beta_soc)
+         b_soc     (i,k)  =  min(max( b_soc(i,k), 2.7), 12.)
+
+         hcap_soc(i,k) = 2.5E6
+
+         condsld_soc(i,k) =  0.25 
+
+         conddry_soc(i,k) = 0.05   
+
+      enddo
+   enddo
+
+   ! model soil layers incluting soil organic content
+   Do i = 1 , ni
+      Do k = 1, nl_svs
+
+
+         ! Arithmetic mean
+
+         zwsat  (i,k)  = (1.-zsoc(i,k)/100.) * zwsat  (i,k) + zsoc(i,k)/100. * wsat_soc  (i,k)
+         zwwilt (i,k)  = (1.-zsoc(i,k)/100.) * zwwilt  (i,k) + zsoc(i,k)/100. * wwilt_soc  (i,k)
+         zwfc   (i,k)  = (1.-zsoc(i,k)/100.) * zwfc  (i,k) + zsoc(i,k)/100. * wfc_soc  (i,k)
+         zpsisat(i,k)  = (1.-zsoc(i,k)/100.) * zpsisat  (i,k) + zsoc(i,k)/100. * psisat_soc  (i,k)
+         zsoilhcapz_dry (i,k) = (1.-zsoc(i,k)/100.) * zsoilhcapz_dry  (i,k) + zsoc(i,k)/100. * hcap_soc  (i,k)
+
+         ! Geometric mean
+         zksat  (i,k)  = zksat(i,k)**(1.-zsoc(i,k)/100.) * ksat_soc(i,k)**(zsoc(i,k)/100.)
+         zconddry  (i,k)  = zconddry(i,k)**(1.-zsoc(i,k)/100.) * conddry_soc  (i,k)**(zsoc(i,k)/100.)
+         zcondsld  (i,k)  = zcondsld(i,k)**(1.-zsoc(i,k)/100.) * condsld_soc(i,k)**(zsoc(i,k)/100.)
+
+         ! bcoeff and fbcoeff, Arithmetic mean
+         b                 =  (1.-zsoc(i,k)/100.) * zbcoef  (i,k) + zsoc(i,k)/100. * b_soc  (i,k)
+         zbcoef     (i,k)  =  b
+         usb               =  1./b
+         fb                =  b**usb/(b-1.) * ((3.*b+2.)**(1.-usb)-(2.*b+2.)**(1.-usb))
+         zfbcof(i,k)      =  fb
+
+         ! Compute water content at field capacity along sloping aquifer based on Soulis et al. 2012
+         ! Ensure that wc at fc stays between wilting point and saturation
+
+         crit1_wfcint   = 2.*zdraindens(i)*zpsisat(i,k)*(zwsat(i,k)/zwwilt(i,k)*fb)**b
+         crit2_wfcint   = 2.*zdraindens(i)*zpsisat(i,k)*fb**b
+
+         if (abs(zslop(i)).gt.crit1_wfcint) then
+            zwfcint(i,k) = zwwilt(i,k)        
+         elseif (abs(zslop(i)).lt.crit2_wfcint) then
+            zwfcint(i,k) = zwsat(i,k) 
+         elseif (zslop(i).ne.0.0) then
+            zwfcint(i,k) = zwsat(i,k) * fb * &
+                 ( zpsisat(i,k)/ABS(zslop(i)) *2. * zdraindens(i) )**usb
+         else
+            zwfcint(i,k) = zwfc(i,k)
+         endif
+
+      enddo
 
    enddo
 

@@ -368,6 +368,7 @@ module sfcbus_mod
       SFCVAR(snvma, 'snvma')
       SFCVAR(snvro, 'snvro')  
       SFCVAR(soilhcapz,'soilhcapz')
+      SFCVAR(soilhcapz_dry,'soilhcapz_dry')
       SFCVAR(soilcondz,'soilcondz')
       SFCVAR(sroad_alb, 'sroad_alb')
       SFCVAR(sroad_alben, 'sroad_alben')

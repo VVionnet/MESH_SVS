@@ -176,7 +176,6 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
      ! NL_SVS VARIABLES
    real, dimension(n,nl_svs) ::  pd_g, pdzg
-   real, dimension(n,nl_svs) ::  psoilhcapz_v
    real,dimension(n,nl_svs) :: psoil_temp_vgh  ! Soil temperature at the bottom of the snowpack under high vegetation
 !
 
@@ -476,7 +475,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            BUS(x(Z0MVL  ,1,1)), z0m, &
            BUS(x(CLAY   ,1,1)), BUS(x(SAND   ,1,1)), BUS(x(SOC  ,1,1)),&
            BUS(x(DECIDUOUS,1,1)),BUS(x(EVERGREEN,1,1)), &
-           BUS(x(LAIDECI,1,1)), bus(x(VGH_DENS,1,1)),   &
+           BUS(x(LAIDECI,1,1)), BUS(x(SOILHCAPZ_DRY,1,1)), bus(x(VGH_DENS,1,1)),   &
            BUS(x(SVS_WTA,1,1)),BUS(x(SVS_WTG,1,1)), CG, &
            BUS(x(SOILHCAPZ,1,1)),BUS(x(SOILCONDZ,1,1)),  &
            BUS(x(PSNGRVL,1,1)),  &
