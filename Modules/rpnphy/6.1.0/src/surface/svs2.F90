@@ -311,8 +311,10 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       IF(KOUNT.EQ.1) then
 
          ! ---------------- Initialize variables for canopy scheme  --------------------
-         bus(x(ESNC,I,1))=0.
-         bus(x(ESNCAF,I,1))=0.
+         DO I=1,N
+           bus(x(ESNC,I,1))=0.
+           bus(x(ESNCAF,I,1))=0.
+         END DO
 
          ! ---------------- Initialize variables for ES and Crocus snowpack schemes--------------------
 

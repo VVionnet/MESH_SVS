@@ -656,7 +656,7 @@ IF_SVS2: if (schmsol == 'SVS2') then
       PHYVAR2D1(tsvavg,       'VN=tsvavg       ;ON=ATSV;VD=snow-under-high-veg avg temp. for melt/freez                      ;VB=p0')
       PHYVAR2D1(tvegel,       'VN=tvegel       ;ON=TVGL;VD=skin low vegetation temp.                                         ;VB=p1')
       PHYVAR3D1(tvegeh,       'VN=tvegeh       ;ON=TVGH;VD=skin and mean high vegetation temp.            ;VS=A*2            ;VB=p1')
-      PHYVAR3D1(tvege,        'VN=tvege        ;ON=TVG ;VD=skin and mean vegetation temp.                 ;VS=A*2            ;VB=p1')
+      !PHYVAR3D1(tvege,        'VN=tvege        ;ON=TVG ;VD=skin and mean vegetation temp.                 ;VS=A*2            ;VB=p1')
       PHYVAR2D1(vca,          'VN=vca          ;ON=VCA ;VD=wind inside canopy (FSM2 approach)                                ;VB=p0')
       PHYVAR2D1(vca_drift,    'VN=vca_drift    ;ON=VCAD;VD=wind inside canopy used for snowdrift                             ;VB=p0')
       PHYVAR3D1(vegdati,      'VN=vegdati      ;ON=SPAR;VD=sparsness of each vegtation class                 ;VS=A*26        ;VB=p0')
