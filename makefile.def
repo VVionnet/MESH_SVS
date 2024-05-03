@@ -186,7 +186,7 @@ OBJECTS+= modi_abor1_sfx.o modi_bld_e_budget.o modi_surface_ri.o  modi_snowcro_d
 OBJECTS+= mode_thermos.o
 OBJECTS+= wind_threshold.o tridiag_ground_snowcro.o surface_aero_cond.o  surface_cd.o  surface_ri.o inicover_svs2.o
 OBJECTS+= mode_crodebug.o mode_snow3l.o  mode_tartes.o
-OBJECTS+= inisoili_svs2.o ini_csts.o ini_surf_csts.o svs2_tile_configs.o
+OBJECTS+= inisoili_svs2.o ini_csts.o ini_surf_csts.o svs2_tile_configs.o canopy_csts.o 
 OBJECTS+= agg_phases.o phase_changes.o tridiag_ground.o snowcro_diag.o snowcro.o snow3l.o 
 OBJECTS+= snow_interception_svs2.o canopy_met_svs2.o watsurf_budget_svs2.o hydro_svs2.o update_svs2.o soili_svs2.o vegi_svs2.o drag_svs2.o ebudget_svs2.o ebudget_svs2_oneprofile.o ebudget_svs2_oneprofile_skin.o snow_svs2.o svs2.o
 

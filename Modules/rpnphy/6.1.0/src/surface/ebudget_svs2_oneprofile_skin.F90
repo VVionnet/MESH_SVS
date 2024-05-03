@@ -52,6 +52,7 @@
       use sfclayer_mod, only: sl_sfclayer,SL_OK
       use sfc_options
       use svs_configs
+      use canopy_csts, only: EMSNV, ABARK, ALSNV
       use svs2_tile_configs
 
       implicit none
@@ -99,6 +100,7 @@
       REAL RNGV(N)
       REAL RPP(N)
       REAL Z0HA(N)
+
 
 
 
@@ -267,16 +269,12 @@
 
 !
 !
-      INTEGER I,zopt, K, I_FLUX
+      INTEGER I,zopt, K
 !
 !
-      REAL EMISSN, EMSOIL, KCOEF, RHOW
-      REAL BFREEZ, RAIN1, RAIN2
-      REAL ABARK
 
       REAL SOILCOND1, SOILCOND2
 
-      REAL SURF_ENBAL_VEG
 
       REAL BETAA
       DATA BETAA/1.0/                           ! fully-implicit time scheme
@@ -313,27 +311,16 @@
                        ALVH_SN, & ! Albedo of the canopy including intercepted snow
                        EMVH_SN ! Emissivity of the canopy including intercepted snow
 
-       real LW_UVH, SIGMA_F, ALB_UVH, EMISS_UVH,EMSNV, ALSNV
+       real LW_UVH, SIGMA_F, ALB_UVH
 
 
 
 !************************************************************************
 !
 !
-!
-!                                THE FOLLOWING SHOULD BE PUT IN
-!                                A COMMON COMDECK
-!
-      EMISSN = 0.97
-      EMSOIL = 0.94
-      RHOW   = 1000.
-      KCOEF  = 1.E-6
-      BFREEZ = 4.
-      EMSNV = 1. ! Emissivity of snow below high vegetation
-!                                Albedo of Bark (S. Wang, Ecological Modelling, 2005)
-      ABARK  = 0.15
-      ALSNV = 0.3 ! Snow-covered canopy albedo (Goottevin et al. 2015)
-
+!!       0.     CALCULATE CANOPY PROPERTIES INCLUDING INTERCEPTED SNOW
+!       ------------------------------------------------------
+!                          (considering snow surfaces)
       ! Initialize the latent heat used for the high vegetation by the latent heat of condensation
       ! It is only modified if there is intercepted snow on the canopy (latent heat of fusion is added)
       DO I=1,N

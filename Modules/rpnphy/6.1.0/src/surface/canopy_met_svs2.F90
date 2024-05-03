@@ -24,6 +24,7 @@
       use tdpack
       use sfclayer_mod,   only : sl_prelim,sl_sfclayer,SL_OK
       use sfc_options, only: cano_ref_forcing
+      use CANOPY_CSTS, only: KEXT, RCHD, HSUBCANO, ZRALAI, ZBETA, lwind_forest
       USE MODE_THERMOS
       use svs_configs
       implicit none
@@ -82,22 +83,6 @@
       REAL USTAR,  &
            Z0H, & ! Canopy roughness length for heat
            FSURF ! Function used in the calculation of RSURF
-
-      ! Choice of the method to calculate the wind in the forest
-      ! 'VDENS_WCAN' uses the high canopy density (VDENS) in the calculation of WCAN
-      ! 'WEIGHT_AVG' does a weighted average of open and closed forest wind speeds based on VDENS (Mazzotti et al. 2021)
-      character(10) :: lwind_forest = 'VDENS_WCAN' ! 'VDENS_WCAN' or 'WEIGHT_AVG' 
-
-
-
-     ! Parameters used in the radiative code
-      REAL, PARAMETER :: KEXT = 0.5    ! Vegetation light extinction coefficient
-
-      ! Parameters used in the wind code
-      REAL, PARAMETER :: RCHD = 0.67    ! Ratio of displacement height to canopy height
-      REAL, PARAMETER :: HSUBCANO = 1.5 ! Sub canopy reference height for wind, tair and hu
-      REAL, PARAMETER :: ZRALAI = 3.! Parameter for excess resistance introduced by canopy between surface and ref level (cf Table 1, Gouttevin et al. 2015)
-      REAL, PARAMETER :: ZBETA = 0.9 ! Constant used in the canopy wind decay coefficient WCAN ( Marke et al., 2016; Liston and Elder, 2006)
 
      !
      ! 0. Initialize parameters

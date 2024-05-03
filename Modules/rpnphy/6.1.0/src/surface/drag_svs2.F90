@@ -33,6 +33,7 @@
       use svs_configs
       use MODE_THERMOS
       use MODD_CSTS
+      use canopy_csts, only: ZRALAI, RCHD, RADIUS_ICESPH, GAMA, ZVENT, lres_snca
 !
       implicit none
 !!!#include <arch_specific.hf>
@@ -148,15 +149,9 @@
            zqs_vl, zqs_vh, ctugr, ctugrv, ctuvg, wcrit_hrsurf, z0bg_n,ra,&
            z0gv_n, qsatgrv,wcrit_hrsurfgv, z0hg, zz0hgv, ZZ0HVH, ZZ0HVL
      real, dimension(n) :: ZUGV, ZTGV, ZZ0MGV, ZDH, QSATI_VH, VSUBL
-
      real :: ZRSURF, LZZ0, LZZ0T, RESAGRV_NEUTRAL, ZUSTAR, ZFSURF
      REAL :: NU, MU, NR, DVAP
      REAL :: XI2,EXT2
-     REAL, PARAMETER :: ZRALAI = 3.! Parameter for excess resistance introduced by canopy between surface and ref level (cf Table 1, Gouttevin et al. 2015)
-     REAL, PARAMETER :: ZRCHD = 0.67    ! Ratio of displacement height to canopy height
-     REAL, PARAMETER :: RADIUS_ICESPH = 5e-4 ! Radius of single 'ideal' ice shpere [m]
-     REAL, PARAMETER ::     GAMA = 1.15 ! Parameter used in the computation of the exponential wind profile in the canopy
-     REAL, PARAMETER ::    ZVENT = 0.75 ! Ratio between ventilation wind speed height and tree height [-]
 !
 !***********************************************************************
 !
@@ -424,7 +419,7 @@
                  ! WARNING NL: Might need to be updated following conversation with Stephane B. and Maria A.
                  ZUGV(I) = ZUSL(I) + VEGHEIGHT(I)
                  ZTGV(I)  = ZTSL(I) + VEGHEIGHT(I)
-                 ZDH(I) = VEGHEIGHT(I)*ZRCHD
+                 ZDH(I) = VEGHEIGHT(I)*RCHD
             ENDDO
 
 
@@ -741,10 +736,10 @@
 
       DO I=1,N
 
-         IF (FCANS(I) .GT. 0.) THEN
+         IF (FCANS(I) .GT. 0. .AND. lres_snca) THEN
 
             ! Fraction of the entire forest height [-]
-            XI2 = 1.-ZVCAN(I)
+            XI2 = 1.-ZVENT
 
             ! Canopy wind speed extinction coefficient [-]
             ! Ellis et al (2010) (EL10) refers to Eagleson (2002) to justify the formulation of this coefficient
@@ -767,7 +762,7 @@
             DVAP = 2.063e-5 * (TVGHS(I)/273.15)**(1.75)
 
             ! Resistance for snow within the canopy
-            RES_SNCA(I) = 2.*917.*RADIUS_ICESPH**2 /(3.*0.02*FCANS(I)**(-0.4)*SNCMA(I)*NU*DVAP)
+            RES_SNCA(I) = 2.*917.*RADIUS_ICESPH**2 /(3.*0.02*FCANS(I)**(-0.4/0.67)*SNCMA(I)*NU*DVAP)
 
          ELSE
             RES_SNCA(I) = 0.
@@ -795,8 +790,9 @@
                  *RS(I)*(1.-DEL_VH(I)) / (RESA_VH(I)+RS(I))
 
         ! Account for intercepted snow in the high vegetation
-        HVSN_VH(I) = FCANS(I) * (CHLF + CHLC)  &
+        HVSN_VH(I) = FCANS(I) * (CHLF + CHLC) *  RESA_VH(I) / (RESA_VH(I) + RES_SNCA(I)) &
                     + (1.-FCANS(I)) * HV_VH(I) * CHLC
+
 
 
       END DO

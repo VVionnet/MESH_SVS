@@ -24,6 +24,7 @@
         use tdpack
         use svs_configs
         use sfc_options
+        use CANOPY_CSTS, only: E_LEAF, RHO_BIO, CP_BIO, ZB, ZCVAI, CVAI, M_SCAP, HCANO_HM
       implicit none
 !!!#include <arch_specific.hf>
 !
@@ -103,17 +104,8 @@
       INTEGER I, K
       REAL CSHAPE, f2_k(nl_svs)
       real zhm_leaves, zhm_trunk
-      real :: e_leaf, &   ! Leaf thickness (m)
-              rho_bio, &  ! Biomass density (kg m-3)
-              cp_bio , &  ! Biomass specific heat mass (J kg-1 K-1)
-              ZB, &       ! Basal tree area (m2 m-2)
-              ZCVAI       ! Vegetation heat capacity per unit VAI (J/K/m^2)
       real, dimension(n) :: extinct, f, f1, f2, f3, f4, qsat
-      CHARACTER(LEN=4) hcano_hm ! Option used for the canopy heat mass
-      REAL, PARAMETER ::  CVAI = 4.4 ! Intercepted snow capacity per unit lai (kg/m^2) from Essery et a. (2003)
-                  ! Note that HP98 are using a temperature-dependant param for falling snow density that could be considered later
-                  ! The maximum canopy snow interception load in HP98 also depends on the type of trees.
-      REAL, PARAMETER ::  m_scap = 5. ! Intercepted snow coefficient per unit lai (kg/m^2) from Andreadis et a. (2009)
+
 !
 !***********************************************************************
 !
@@ -124,22 +116,7 @@
 !
 !*       0.     PARAMETERS FOR HEAT MASS OF HIGH VEGETATION
 !               ---------------
-!                      From Gouttevin et al. (2015)
 
-!
-
-      E_LEAF = 0.001
-      RHO_BIO = 900.
-      CP_BIO = 2800.
-      ZB = 40. / 10000.  ! m2 ha-1 to m2 m-2  TO_DO NL: parameterizing this parameter?
-      ZCVAI = 3.6e4
-      HCANO_HM = 'G15'  ! Select the approach used to compute the mass loss due sublimation of intercepted snow
-                      ! 'E03': using Essery et al. (2003) approach. Also in FSM2
-                      ! 'G15': formulation proposed by Gouttevin et al. (2015)
-
-!
-!
-!
        DO I=1,N
           IF ( (VEGH(I)+VEGL(I)*(1-PSNGRVL(I))).GE.EPSILON_SVS ) THEN
              ! VEGETATION PRESENT

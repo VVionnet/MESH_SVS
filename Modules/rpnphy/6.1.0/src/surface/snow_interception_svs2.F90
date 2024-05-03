@@ -25,6 +25,8 @@
       use svs_configs
       USE MODE_THERMOS
       USE MODD_CSTS
+      USE CANOPY_CSTS, only : ALPHA, GAMA, ZVENT, RADIUS_ICESPH, &
+            ALBEDO_ICESPH, KS, FRACT, MWAT, RGAZ, CICE, TCNC, TCNM
       implicit none
 
       INTEGER N
@@ -101,26 +103,10 @@
       REAL MELT, REFREEZE
       REAL   SUB_CPY ! Intercepted snow mass lost by sublimation (kg/m^2)
 
-      ! HP98
-      REAL, PARAMETER ::     ALPHA = 5   ! Shape parameter used when computing the averahe sublimation rate
-      REAL, PARAMETER ::     GAMA = 1.15 ! Parameter used in the computation of the exponential wind profile in the canopy
-      REAL, PARAMETER ::    ZVENT = 0.75 ! Ratio between ventilation wind speed height and tree height [-]
-      REAL, PARAMETER :: RADIUS_ICESPH = 5e-4 ! Radius of single 'ideal' ice shpere [m]
-      REAL, PARAMETER :: ALBEDO_ICESPH = 0.8  ! Albedo of single 'ideal' ice shpere [-]
-      REAL, PARAMETER :: KS = 0.0114          ! Snow shape coefficient for jack pine. Taken from Pomeroy et al. (1998)
-      REAL, PARAMETER :: FRACT = 0.37 ! Fractal dimension of intercepted snow [-]
       REAL XI2,EXT2, WINDEXT2, EVAP, LAMBDA, SSTAR, A1, B1,  LS, J
       REAL C1, SIGMA, SVDENS, SUB_RATE,SUB_POT, MPM, CE
       REAL NU, NR, MU,DVAP
       REAL, DIMENSION(N) :: VSUBL ! Ventilation wind speed used in the calcultation of sublimation
-      REAL, SAVE :: MWAT = 0.0180153 ! Molecular weight of water [kg mol-1]
-      REAL, SAVE :: RGAZ = 8.314  !  Universal gas constant [J mol-1 K-1]
-      REAL, SAVE :: CICE = 2.102e3 !  Heat capacity of ice [J kg-1 K-1]
-
-      ! Parameters used in the snow unloading code
-      !
-      REAL, PARAMETER  ::  TCNC = 240*3600. ! Canopy unloading time scale for cold snow (s)
-      REAL, PARAMETER ::  TCNM = 48*3600. ! Canopy unloading time scale for melting snow (s)
 
       !
       ! 0. Initialise variables
@@ -360,7 +346,6 @@
 
                ! Canopy layer snowcover fractions Boone
                IF (CANO_REF_FORCING .EQ.'ABV') THEN
-                  ! FCANS(I) = 0.89*(SNCMA(I)/SCAP(I))**0.3/(1.+EXP(-4.7*(SNCMA(I)/SCAP(I)-0.45)))
                   FCANS(I) = (SNCMA(I)/SCAP(I))**0.67
                   ! Update canopy heat mass with new intercepted snow
                   HM_CAN(I) = HM_CAN_INI(I) + CPI * SNCMA(I) + CPW *WR_VH(I)

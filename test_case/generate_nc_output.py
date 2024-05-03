@@ -64,7 +64,7 @@ for ific,fic in enumerate(list_fic):
 				lis_layer = np.arange(0,nlayer)
 				yy=np.zeros((len(da_sel.time),nlayer))
 
-				if(var in ['TGROUND','TVEG']):
+                                if(var in ['TGROUND']):
 					name_layer = 'fr_layer'
 				else:
 					name_layer = fic_type+'_layer'
