@@ -147,7 +147,13 @@ subroutine inisoili_svs2(ni, trnch)
                         (2700. - 0.947*rhosoil_geo(i,k))   
 
 !       Soil heat capacity
-       soilhcapz_dry(i,k) = (2.128*zsand(i,k) + 2.385*zclay(i,k))/(zsand(i,k)+zclay(i,k))*1.E6
+        if ((zsand(i,k)+zclay(i,k)) .gt. epsilon_svs) then
+            ! From Lawrence and Slater 2008
+            soilhcapz_dry(i,k) = (2.128*zsand(i,k) + 2.385*zclay(i,k))/(zsand(i,k)+zclay(i,k))*1.E6
+        else    
+            ! Use previous formulation in SVS - constant value
+            soilhcapz_dry(i,k) = 2700. * 733.
+        endif
 
 
       enddo
