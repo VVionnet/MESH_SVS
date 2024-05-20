@@ -86,7 +86,7 @@
       ! Choice of the method to calculate the wind in the forest
       ! 'VDENS_WCAN' uses the high canopy density (VDENS) in the calculation of WCAN
       ! 'WEIGHT_AVG' does a weighted average of open and closed forest wind speeds based on VDENS (Mazzotti et al. 2021)
-      character(10) :: lwind_forest = 'VDENS_WCAN' ! 'VDENS_WCAN' or 'WEIGHT_AVG' 
+      character(10) :: lwind_forest = 'WEIGHT_AVG' ! 'VDENS_WCAN' or 'WEIGHT_AVG' 
 
      ! Parameters used in the radiative code
       REAL, PARAMETER :: KEXT = 0.5    ! Vegetation light extinction coefficient
