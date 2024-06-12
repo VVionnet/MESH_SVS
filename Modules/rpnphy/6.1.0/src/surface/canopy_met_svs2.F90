@@ -130,18 +130,31 @@
                ! Calculation of the wind speed for snow drift under the canopy
                ! Wind speed for snow drift calculation under the canopy at PUREF_VEG
 
-               ! Wind speed at canopy top, assuming logarithmic profile above canopy, dense canopy
+               ! Wind speed at canopy top, assuming logarithmic profile above canopy, dense canopy 
                VMOD_TOP(I) = VMOD(I) * LOG((VGH_HEIGHT(I)-DH)/Z0MVH(I))/LOG((ZUREF-DH)/Z0MVH(I))
 
-               ! Wind speed at canopy base height, dense canopy, assuming exp profile between canopy top and canopy base height
-               WCAN = ZBETA * CLUMPING *LAIVH(I) * VGH_DENS(I)  ! From Marke et al., (2016); Liston and Elder (2006)
-               VMOD_SUB = VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1.))
+               IF (LWIND_FOREST .EQ. 'VDENS_WCAN') THEN
+ 
+                   ! Wind speed at canopy base height, dense canopy, assuming exp profile between canopy top and canopy base height
+                   WCAN = ZBETA * CLUMPING *LAIVH(I) * VGH_DENS(I)  ! From Marke et al., (2016); Liston and Elder (2006)
+                   VMOD_SUB = VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1.))
 
-               PWIND_DRIFT(I) = VMOD_SUB
+                   PWIND_DRIFT(I) = VMOD_SUB
 
-               ! PWIND_DRIFT re-calculated at PUREF (above canopy here) from HSUBCANO (reverse of equations in SNOWFALL_UPGRID() and SNOWDRIFT()
-               PWIND_DRIFT(I) = PWIND_DRIFT(I) * LOG(PUREF_VEG(I)/Z0SNOW(I))/LOG(HSUBCANO/Z0SNOW(I))
+                   ! PWIND_DRIFT re-calculated at PUREF (above canopy here) from HSUBCANO (reverse of equations in SNOWFALL_UPGRID() and SNOWDRIFT()
+                   PWIND_DRIFT(I) = PWIND_DRIFT(I) * LOG(PUREF_VEG(I)/Z0SNOW(I))/LOG(HSUBCANO/Z0SNOW(I))
 
+               ELSE IF  (LWIND_FOREST  .EQ. 'WEIGHT_AVG') THEN
+
+                   ! Wind speed at canopy base height, dense canopy, assuming exp profile between canopy top and canopy base height
+                   WCAN = ZBETA * CLUMPING *LAIVH(I)   ! From Marke et al., (2016); Liston and Elder (2006)
+                   VMOD_SUB = VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1.))
+
+                   ! PWIND_DRIFT re-calculated at PUREF as weighthed average of wind below the canopy (re-calculated at PUREF) 
+                   !and wind in the open as in Mazzotti et al. (2024)
+                   PWIND_DRIFT(I) = VGH_DENS(I)**(0.5) * VMOD_SUB *LOG(PUREF_VEG(I)/Z0SNOW(I))/LOG(HSUBCANO/Z0SNOW(I)) + & 
+                                    (1.-VGH_DENS(I)**(0.5)) *VMOD(I)
+               ENDIF 
 
            ELSE IF (CANO_REF_FORCING == 'O2F') THEN! Reference height below the canopy
 
@@ -159,12 +172,12 @@
 
 
                ! Wind speed at canopy base height, dense canopy, assuming exp profile between canopy top and canopy base height
-               IF (lwind_forest .EQ. 'VDENS_WCAN') THEN
+               IF (LWIND_FOREST .EQ. 'VDENS_WCAN') THEN
 
                     WCAN = ZBETA * CLUMPING * LAIVH(I) * VGH_DENS(I)
                     VMOD_CAN(I) = VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1.))
 
-               ELSE IF  (lwind_forest .EQ. 'WEIGHT_AVG') THEN
+               ELSE IF  (LWIND_FOREST .EQ. 'WEIGHT_AVG') THEN
 
                     WCAN = ZBETA * CLUMPING * LAIVH(I) 
                     VMOD_SUB = VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1.))
