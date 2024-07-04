@@ -743,6 +743,9 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 !        total snow depth
          bus(x(SNODPL,I,1))  = 0.
          bus(x(SNVDP ,I,1))   = 0.
+!        total snow liquid water content
+         bus(x(WSNOW,I,1))  = 0.
+         bus(x(WSNV ,I,1))   = 0.
 
          DO J=1,NSL
             bus(x(SNOMA,I,1))   =  bus(x(SNOMA,I,1)) + bus(x(SNOMA_SVS ,I,J))
