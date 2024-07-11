@@ -1029,7 +1029,7 @@
              LETR_VH(I) = WTA(I,indx_svs2_vh)* CHLC * ETR_VH(I)
 !
 !            Evapotranspiration rate from high veg. (for watsurf_budget.ftn)
-             EV_VH(I) =  RHOA(I) * HV_VH(I) * (1.-FCANS(I)) * (ZQSATVGHT(I) - HU(I)) / RESA_VH(I) *(CHLC)/LCAN(I)
+             EV_VH(I) =  RHOA(I) * DEL_VH(I) * (1.-FCANS(I)) * (ZQSATVGHT(I) - HU(I)) / RESA_VH(I) *(CHLC)/LCAN(I)
 
              !  EV is limited to WR/DT+RR+ETR to avoid negative WR in watsurf_budget when direct evaporation exceeds rainrate
              EV_VH(I) = MIN (EV_VH(I),(WR_VH(I)/DT+ETR_VH(I)))

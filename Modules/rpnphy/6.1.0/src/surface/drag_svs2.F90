@@ -637,9 +637,12 @@
              IF (HU(I) .GT. QSAT_VH(I)) THEN ! Condensation
                 DEL_VH(I) = 1.
              ELSE
-             	DEL_VH(I) =   MIN(WR_VH(I),WRMAX_VH(I)) / &
-                   ( (1.-COEF_VH(I))*MIN(WR_VH(I),WRMAX_VH(I)) + COEF_VH(I)*WRMAX_VH(I) )
-!
+             	!DEL_VH(I) =   MIN(WR_VH(I),WRMAX_VH(I)) / &
+                !   ( (1.-COEF_VH(I))*MIN(WR_VH(I),WRMAX_VH(I)) + COEF_VH(I)*WRMAX_VH(I) )
+
+!               From Deardoff (1978), also used in Gouttevin et al. 2015 and same equation as for FCANS
+!               Avoids using COEFF_VH as we do not know where it comes from
+                DEL_VH(I) = (WR_VH(I) / WRMAX_VH(I))**(2./3.)
              	DEL_VH(I) = MIN(DEL_VH(I),1.)
              ENDIF
 
