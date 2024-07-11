@@ -15,7 +15,7 @@
 !-------------------------------------- LICENCE END --------------------------------------
 SUBROUTINE WATSURF_BUDGET_SVS2 ( DT, ESUBSNC, SUBSNC_CUM, &
      EG, EGV, ER_VL,ER_VH, ETR_VL,ETR_VH, RR, RR_VEG, RSNOW, RSNOWV, &
-     VEGL, VEGH, WTA, WTG, ACROOT, WRMAX_VL, WRMAX_VH,  &
+     WTA, WTG, ACROOT, WRMAX_VL, WRMAX_VH,  &
      SNM, SVM, SNCMA, WR_VL, WR_VH, WR_VLT, WR_VHT,  &
      PG, ETR_GRID, EG_GRID, N)
   !
@@ -33,7 +33,7 @@ SUBROUTINE WATSURF_BUDGET_SVS2 ( DT, ESUBSNC, SUBSNC_CUM, &
 
   ! input
   real, dimension(n)        :: eg, egv, er_vl, etr_vl, er_vh, etr_vh, rr, rr_veg
-  real, dimension(n)        :: vegh, vegl, esubsnc, subsnc_cum, sncma
+  real, dimension(n)        :: esubsnc, subsnc_cum, sncma
   real, dimension(n,svs2_tilesp1) :: wta, wtg
   real, dimension(n,nl_svs) :: acroot
   real, dimension(n)        :: rsnow, rsnowv, wrmax_vl, wrmax_vh, snm, svm
@@ -77,8 +77,6 @@ SUBROUTINE WATSURF_BUDGET_SVS2 ( DT, ESUBSNC, SUBSNC_CUM, &
   !
   !          --- (Surface) Cover Fraction  ---
   !
-  ! VEGL           fraction of LOW vegetation [0-1]
-  ! VEGH           fraction of HIGH vegetation [0-1]
   ! WTA            weights for SVS2 surface tiles as seen from SPACE [0-1]
   ! WTG            weights for SVS2 surface tiles as seen from GROUND [0-1]
   !
@@ -148,7 +146,7 @@ SUBROUTINE WATSURF_BUDGET_SVS2 ( DT, ESUBSNC, SUBSNC_CUM, &
   !
   DO I=1,N
      !
-    IF(VEGH(I) .GE. EPSILON_SVS) THEN
+    IF( WTG(I,indx_svs2_vh) .GE. EPSILON_SVS) THEN
 
     !                                  Remove P-E from liquid water in vegetation
     !                                  Rain trapped on high vegetation is computed in snow_interception
@@ -211,26 +209,26 @@ SUBROUTINE WATSURF_BUDGET_SVS2 ( DT, ESUBSNC, SUBSNC_CUM, &
   !                                  otherwise goes to snowpack, and reaches ground as snow runoff
   !
   DO I=1,N
-      IF( (VEGH(I)+ WTG(I,indx_svs2_vl)) .ge.EPSILON_SVS) THEN
+      IF( (WTG(I,indx_svs2_vh)+ WTG(I,indx_svs2_vl)) .ge.EPSILON_SVS) THEN
          ! There is vegetation -- first add snowpack runoff and runoff from vegetation
-         PG(I) = (1.-VEGH(I)) * RSNOW(I) + VEGH(I) * RSNOWV(I) + &
-            WTG(I,indx_svs2_vl)*RVEG_VL(I) + VEGH(I) * RVEG_VH(I)
+         PG(I) = (1.-WTG(I,indx_svs2_vh)) * RSNOW(I) + WTG(I,indx_svs2_vh) * RSNOWV(I) + &
+            WTG(I,indx_svs2_vl)*RVEG_VL(I) + WTG(I,indx_svs2_vh) * RVEG_VH(I)
 
          IF( SNM(I).LT.CRITSNOWMASS ) THEN
             ! No snow on bare ground and low veg, rain falls to bare ground
             PG(I) = PG(I) + WTG(I,indx_svs2_bg) * RR(I)
          ENDIF
 
-         IF ( SVM(I).LT.CRITSNOWMASS ) THEN
-            ! No snow below high veg, rain below canopy falls to ground below canopy
-            PG(I) = PG(I) +  VEGH(I) * RR_VEG(I)
+         IF ( SVM(I).LT.CRITSNOWMASS .AND. RSNOWV(I) .LT. EPSILON_SVS ) THEN
+            ! No snow at the end AND during the time step  below high veg, rain below canopy falls to ground below canopy
+            PG(I) = PG(I) +  WTG(I,indx_svs2_vh) * RR_VEG(I)
          ENDIF
 
        ELSE
          ! bare ground only
          PG(I) = RSNOW(I)
-         IF ( SNM(I).LT.CRITSNOWMASS ) THEN
-            ! have 100% bare ground and no snow, all rain reaches surface
+         IF ( SNM(I).LT.CRITSNOWMASS .AND. RSNOW(I) .LT. EPSILON_SVS) THEN
+            ! have 100% bare ground and no snow at the end AND during the time step, all rain reaches surface
             PG(I) = PG(I) + RR(I)
          ENDIF
       ENDIF
@@ -248,9 +246,10 @@ SUBROUTINE WATSURF_BUDGET_SVS2 ( DT, ESUBSNC, SUBSNC_CUM, &
         ! Initial line in hydro_svs
         !ETR_GRID(I,K)=((VEGL(I)*(1.-PSN(I))+VEGH(I)*(1.-PSNVH(I)))*ACROOT(I,K)*ETR(I))/(1000.*DELZ(K))
         ! ETR_GRID(I,K)=((VEGL(I)*(1.-PSN(I))*ETR_VL(I)+VEGH(I)*(1.-PSNVH(I))*ETR_VH(I))*ACROOT(I,K))/(1000.*DELZ(K))
-        ETR_GRID(I,K) = ((WTA(I,indx_svs2_vl)*ETR_VL(I) +  VEGH(I)*ETR_VH(I))*ACROOT(I,K))/(1000.*DELZ(K))
+        ! weights need to be consistent with those in ebudget, otherwise, mass balance is not closed
+        ETR_GRID(I,K) = ((WTG(I,indx_svs2_vh)*ETR_VL(I) +  WTG(I,indx_svs2_vh)*ETR_VH(I))*ACROOT(I,K))/(1000.*DELZ(K))
      END DO
-     EG_GRID(I) = WTG(I,indx_svs2_bg) * EG(I)  - WTG(I,indx_svs2_gv) * EGV(I)
+     EG_GRID(I) = WTG(I,indx_svs2_bg) * EG(I)  + WTG(I,indx_svs2_gv) * EGV(I)
   END DO
 
 

@@ -793,7 +793,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                   LESVLNOFRAC, LESVNOFRAC              , bus(x(ESV,1,1)),  bus(x(SUBLDRIFTV,1,1)),  &
                   bus(x(SNVAL      ,1,1)) ,    &
                   bus(x(TSNOWV_SVS ,1,1)) , PHM_CAN,  bus(x(SNCMA     ,1,1)), &
-                  bus(x(VEGH       ,1,1)) , bus(x(VEGL   ,1,1)), bus(x(VGH_HEIGHT   ,1,1)),  &
+                  bus(x(VGH_HEIGHT   ,1,1)),  &
                   bus(x(SKYVIEW   ,1,1)), bus(x(SKYVIEWA   ,1,1)),  PFCANS, &
                   bus(x(SOILHCAPZ ,1,1)) ,bus(x(SOILCONDZ,1,1)),   &
                   rainrate_mm,bus(x(WVEG_VL,1,1)),bus(x(WVEG_VH,1,1)), &
@@ -850,8 +850,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            bus(x(er_vh   ,1,1)),bus(x(etr_vl      ,1,1)), &
            bus(x(etr_vh  ,1,1)), rainrate_mm, rainrate_mm_veg ,&
            bus(x(rsnowsa ,1,1)), bus(x(rsnowsv ,1,1)),&
-           bus(x(vegl    ,1,1)),&
-           bus(x(vegh    ,1,1)), bus(x(svs_wta ,1,1)),&
+           bus(x(svs_wta ,1,1)),&
            bus(x(svs_wtg ,1,1)), bus(x(acroot  ,1,1)),&
            wrmax_vl,wrmax_vh,  &
            bus(x(snoma   ,1,1)), bus(x(snvma   ,1,1)),&

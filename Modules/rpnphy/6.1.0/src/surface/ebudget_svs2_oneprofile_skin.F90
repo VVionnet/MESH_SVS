@@ -30,7 +30,7 @@
                    RNETSV, HFLUXSV,LESLVNOFRAC, LESVNOFRAC, ESVNOFRAC, SUBLDRIFTV, &
                    ALPHASV, &
                    TSVS, PHM_CAN, SNCMA, &
-                   VEGH, VEGL, VGHEIGHT,  &
+                   VGHEIGHT,  &
                    SKYVIEW,SKYVIEWA, FCANS, &
                    SOILHCAP, SOILCOND, &
                    RR,WR_VL,WR_VH,SNM,SVM, &
@@ -88,7 +88,7 @@
       REAL RNETSV(N), HFLUXSV(N),LESLVNOFRAC(N),LESVNOFRAC(N), ESVNOFRAC(N), SUBLDRIFTV(N)
       REAL ALPHASV(N), RES_SNCA(N)
       REAL ALFAT(N), ALFAQ(N), LESV(N)
-      REAL VEGH(N), VEGL(N), PHM_CAN(N), FCANS(N)
+      REAL PHM_CAN(N), FCANS(N)
       REAL SKYVIEW(N),SKYVIEWA(N), ILMO(N), HST(N), TRAD(N), VTRA(N)
       REAL WR_VL(N), WR_VH(N), RR(N),SNM(N),SVM(N)
       REAL VGHEIGHT(N), ESN_VH(N), SNCMA(N), ESN_VHF(N)
@@ -208,8 +208,6 @@
 ! LESSVNOFRAC latent heat flux of sublimation from the snow-under-vegetation (W/m2)
 ! ALPHASV   albedo of snow-under-veg
 ! TSVS      snow-under-veg temperature at time t+dt (update in snow_svs.F90)
-! VEGH     fraction of HIGH vegetation
-! VEGL     fraction of LOW vegetation
 ! RR       Liquid precipitation rate at the surface in [mm/s]
 ! WR_VL    Water retained by low vegetation
 ! WR_VH    Water retained by high vegetation
@@ -493,7 +491,7 @@
 !               formulation SVS1, force restore
 
            DO I=1,N
-              IF ( VEGH(I).GE.EPSILON_SVS ) THEN
+              IF ( WTG(I,indx_svs2_vh) .GE.EPSILON_SVS ) THEN
                  ! HIGH VEGETATION PRESENT
 !
 !                    Thermodynamic functions
@@ -550,7 +548,7 @@
 !                       we set the vegetation temperature to
 !                       that of the ground, when no vegetation is present
 !
-             IF(VEGH(I).ge.EPSILON_SVS)THEN
+             IF(WTG(I,indx_svs2_vh).ge.EPSILON_SVS)THEN
                 TVGHDT(I) = (TVGHD(I) + DT*TVGHST(I)/86400.) / (1.+DT/86400.)
              ELSE
                 TVGHDT(I) = TGRDT(I)
@@ -562,7 +560,7 @@
 !              Formulation SVS2, (1LHM, Gouttevin et al., 2015)
 
            DO I=1,N
-              IF ( VEGH(I).GE.EPSILON_SVS ) THEN
+              IF ( WTG(I,indx_svs2_vh).GE.EPSILON_SVS ) THEN
                   ! HIGH VEGETATION PRESENT
 
                   IF (CANO_REF_FORCING .EQ.'ABV') THEN
@@ -571,9 +569,11 @@
                      SIGMA_F = 1. - SKYVIEW(I)
 
                      ! Calculate albedo and LW from the surface below high vegetation
-                     LW_UVH = WTG(I,indx_svs2_sv) *(EMSNV * STEFAN * TSVS(I,1)**4) + &
-                              WTG(I,indx_svs2_gv) *(EMGRV(I) * STEFAN * TGRVS(I)**4)
-                     ALB_UVH = WTG(I,indx_svs2_sv) * ALPHASV(I) + WTG(I,indx_svs2_gv) * ALGRV(I)
+                     LW_UVH = (WTG(I,indx_svs2_sv) *(EMSNV * STEFAN * TSVS(I,1)**4) + &
+                              WTG(I,indx_svs2_gv) *(EMGRV(I) * STEFAN * TGRVS(I)**4)) / &
+                             (WTG(I,indx_svs2_sv) + WTG(I,indx_svs2_gv))
+                     ALB_UVH = WTG(I,indx_svs2_sv) * ALPHASV(I) + WTG(I,indx_svs2_gv) * ALGRV(I)/ &
+                             (WTG(I,indx_svs2_sv) + WTG(I,indx_svs2_gv))
 
       !
       !                    Thermodynamic functions
@@ -626,7 +626,7 @@
 !                       we set the vegetation temperature to
 !                       that of the ground, when no vegetation is present
 !
-             IF(VEGH(I).ge.EPSILON_SVS)THEN
+             IF(WTG(I,indx_svs2_gv) .GE. EPSILON_SVS)THEN
                 TVGHDT(I) = TVGHST(I) ! No deep temperature here
              ELSE
                 TVGHDT(I) = TGRDT(I)
@@ -646,7 +646,7 @@
 !
        DO I=1,N
 !
-          IF ( VEGH(I).GE.EPSILON_SVS ) THEN
+          IF ( WTG(I,indx_svs2_vh) .GE.EPSILON_SVS ) THEN
              ! HIGH VEGETATION PRESENT
 !
 !             Thermodynamic functions used in the linearisation of the
@@ -931,33 +931,34 @@
 !
         LEGNOFRAC(I) = RHOA(I) * LEFF(I) * (HRSURF(I)* ZQSATGRT(I) - HU(I)) / RESAGR(I)
         LEG(I) = WTA(I,indx_svs2_bg) * LEGNOFRAC(I)
-!
-!
-!                                            Water vapor flux from ground
-        EGF(I) = WTA(I,indx_svs2_bg) * (HRSURF(I)* ZQSATGRT(I) - HU(I)) / RESAGR(I)
-
 !                                            Evaporation rate from ground (for watsurf_budget.ftn)
 !
         EG(I) = RHOA(I)*(HRSURF(I)* ZQSATGRT(I) - HU(I)) / RESAGR(I)
 !
+!
+!
+!                                            Water vapor flux from ground
+        EGF(I) = WTG(I,indx_svs2_bg) * EG(I) / RHOA(I)
+
 !        ------------------
 !         GROUND BELOW HIGH VEGETATION --- SET FLUXES TO ZERO if NO HIGH VEGETATION
 
-        IF(VEGH(I).ge.EPSILON_SVS) THEN
+        IF(WTG(I,indx_svs2_vh).ge.EPSILON_SVS) THEN
 !                                            Latent heat of evaporation from
 !                                            the ground below high vegetation.
 !
            LEGVNOFRAC(I) = RHOA(I) * LEFF(I) * (HRSURFGV(I)* ZQSATGRVT(I) -HU(I)) / RESAGRV(I)
            LEGV(I) = WTA(I,indx_svs2_gv) * LEGVNOFRAC(I)
 !
+!                                            Evaporation rate from ground below high veg. (for watsurf_budget.ftn)
+!
+           EGV(I) = RHOA(I)* (HRSURFGV(I)* ZQSATGRVT(I) - HU(I)) / RESAGRV(I)
 !
 !                                            Water vapor flux from ground below high vegetation
 !
-           EGVF(I) = WTA(I,indx_svs2_gv) * (HRSURFGV(I)* ZQSATGRVT(I) - HU(I)) / RESAGRV(I)
+           EGVF(I) = WTG(I,indx_svs2_gv) * EGV(I)  / RHOA(I)
 !
-!                                            Evaporation rate from ground below high veg. (for watsurf_budget.ftn)
-!
-           EGV(I) = RHOA(I)*(HRSURFGV(I)* ZQSATGRVT(I) - HU(I)) / RESAGRV(I)
+
 
         ELSE
            ! NO HIGH VEGETATION --- SET FLUXES TO ZERO
@@ -1017,7 +1018,7 @@
 !        ------------------
 !        HIGH VEGETATION --- SET FLUXES TO ZERO if NO HIGH VEGETATION
 !
-          IF(VEGH(I) .ge.EPSILON_SVS) THEN
+        IF(WTG(I,indx_svs2_vh) .GE.EPSILON_SVS) THEN
 !
 !          Check if if qsat> HU, we do not consider condensation in the transpiration term.
              ZHVGH(I) = MAX(0.0 , SIGN(1.,ZQSATVGHT(I) - HU(I)))
@@ -1025,14 +1026,13 @@
 !            Transpiration rate (for watsurf_budget.ftn) (no fraction)
            ETR_VH(I) = VGH_DENS(I) * RHOA(I)*ZHVGH(I)*(1. - DEL_VH(I))* (1.-FCANS(I))*(ZQSATVGHT(I)-HU(I))/(RESA_VH(I) + RS(I)) * (CHLC)/LCAN(I)
 !
-!            Latent heat of transpiration (with fraction )
-             LETR_VH(I) = WTA(I,indx_svs2_vh)* CHLC * ETR_VH(I)
 !
 !            Evapotranspiration rate from high veg. (for watsurf_budget.ftn)
            EV_VH(I) = VGH_DENS(I) * RHOA(I) * DEL_VH(I) * (1.-FCANS(I)) * (ZQSATVGHT(I) - HU(I)) / RESA_VH(I) *(CHLC)/LCAN(I)
 
-             !  EV is limited to WR/DT+RR+ETR to avoid negative WR in watsurf_budget when direct evaporation exceeds rainrate
-             EV_VH(I) = MIN (EV_VH(I),(WR_VH(I)/DT+ETR_VH(I)))
+!          EV is limited to WR/DT+RR to avoid negative WR in watsurf_budget when direct evaporation exceeds rainrate
+!          TODO: make sure it's alright to remove ETR_VH from WR mass balance
+           EV_VH(I) = MIN (EV_VH(I),(WR_VH(I)/DT))!+ETR_VH(I)))
 
 !          Sublimation rate of intercepted snow in high veg. (for snow_interception_svs2) and applied to intercepted snow in watsurf_budget_svs2
            IF (CANO_REF_FORCING .EQ.'ABV') THEN
@@ -1060,23 +1060,27 @@
         ENDIF
 
 !       Water vapor flux from high vegetation (including fraction)
-        EVHF(I) =  WTA(I,indx_svs2_vh)  * EV_VH(I)/ RHOA(I)
+        EVHF(I) =  WTG(I,indx_svs2_vh) * (EV_VH(I)+ETR_VH(I))/ RHOA(I)
+
+!       Latent heat of transpiration (with fraction )
+        LETR_VH(I) =  WTG(I,indx_svs2_vh) * CHLC * ETR_VH(I)
 
 !       Latent heat of evaporation from high vegetation (including fraction)
         LEVH(I) = RHOA(I) * CHLC * EVHF(I)
 
 !       Latent heat of sublimation of intercepted snow in high vegetation (including fraction)
-        LESNVH(I) = WTA(I,indx_svs2_vh) * (CHLC+CHLF) * ESN_VH(I)
+        LESNVH(I) = WTG(I,indx_svs2_vh) * (CHLC+CHLF) * ESN_VH(I)
 
 !       Update  evaporation from high vegetation that includes sublimation of intercepted snow (including fraction)
         LEVH(I) = LEVH(I) + LESNVH(I)
-        EVHF(I) = EVHF(I) +  WTA(I,indx_svs2_vh) * ESN_VH(I) / RHOA(I)
+        EVHF(I) = EVHF(I) + ESN_VHF(I)
+
 !
 !       Direct evapo. rate from high veg. (no. fraction) (for watsurf_budget.ftn)
-        ER_VH(I) = EV_VH(I) - ETR_VH(I)
+        ER_VH(I) = EV_VH(I) !- ETR_VH(I)
 !
 !       Latent heat of direct evaporation  (including fraction)
-        LER_VH(I)  = LEVH(I) - LETR_VH(I)
+        LER_VH(I)  = LEVH(I) !- LETR_VH(I)
 !
 !        ------------------
 !        SNOW ABOVE BARE GROUND AND LOW VEGETATION
@@ -1084,15 +1088,15 @@
 !                           Calculate latent heat snow weighted
 !                           by grid-cell snow-coverage fraction
 !
-        LES(I)  =  WTA(I,indx_svs2_sn) * (LESLNOFRAC(I) + LESNOFRAC(I))
-        ESF(I)  =  WTA(I,indx_svs2_sn) * (ESNOFRAC(I) + ABS(SUBLDRIFT(I))) / RHOA(I)
+        LES(I)  =  WTG(I,indx_svs2_sn) * (LESLNOFRAC(I) + LESNOFRAC(I))
+        ESF(I)  =  WTG(I,indx_svs2_sn) * (ESNOFRAC(I) + ABS(SUBLDRIFT(I))) / RHOA(I)
 !
 !        ------------------
 !        SNOW BELOW HIGH VEGETATION
 !                           Same for snow-under-vegetation
 !
-        LESV(I) =  WTA(I,indx_svs2_sv)   *  (LESLVNOFRAC(I) + LESVNOFRAC(I))
-        ESVF(I) =  WTA(I,indx_svs2_sv)   *  (ESVNOFRAC(I)+ABS(SUBLDRIFTV(I))) / RHOA(I)
+        LESV(I) =  WTG(I,indx_svs2_sv)   *  (LESLVNOFRAC(I) + LESVNOFRAC(I))
+        ESVF(I) =  WTG(I,indx_svs2_sv)   *  (ESVNOFRAC(I)+ABS(SUBLDRIFTV(I))) / RHOA(I)
 !
 !
 !        ------------------
