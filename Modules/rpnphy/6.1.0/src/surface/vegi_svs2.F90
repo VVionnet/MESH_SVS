@@ -277,7 +277,7 @@
              WRMAX_VL(I) = 0.2 * LAI_VL(I)
 
             ! For high vegetation
-             WRMAX_VH(I) = 0.2 * LAI_VH(I)
+             WRMAX_VH(I) = 0.2 * LAI_VH(I) * VGH_DENS(I)
 !
 !
 !*       8.2     MAXIMUM SOLID WATER CONTENT RETAINED ON VEGETATION (kg m-2)
@@ -289,11 +289,11 @@
             
            ! Compute Canopy interception, check Andreadis et al. (2009)
            IF ((T(I)-273.15) .GT. -1) THEN
-              SCAP(I) = 4* m_scap * LAI_VH(I)
+              SCAP(I) = 4* m_scap * LAI_VH(I) * VGH_DENS(I)
            ELSE IF (((T(I)-273.15) .GT. -3) .AND.  ((T(I)-273.15) .LE. -1)) THEN
-              SCAP(I) = (1.5*(T(I)-273.15) + 5.5) * m_scap *LAI_VH(I)
+              SCAP(I) = (1.5*(T(I)-273.15) + 5.5) * m_scap *LAI_VH(I) * VGH_DENS(I)
            ELSE
-              SCAP(I) = m_scap * LAI_VH(I)
+              SCAP(I) = m_scap * LAI_VH(I) * VGH_DENS(I)
            ENDIF
 !
 !

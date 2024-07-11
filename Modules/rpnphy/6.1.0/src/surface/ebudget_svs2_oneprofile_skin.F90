@@ -20,7 +20,7 @@
                    RG, RGCAN, ALVG, LAI, GAMVEG, ALVL, ALVH,  &
                    ALGR, EMGR, ALGRV, EMGRV, &
                    RAT, RATCAN, THETAA, FCOR, ZUSL, ZTSL, HU, PS, &
-                   RHOA, WTA, WTG, Z0, Z0LOC, Z0H, &
+                   RHOA, WTA, WTG, VGH_DENS, Z0, Z0LOC, Z0H, &
                    HRSURF,HRSURFGV, HV_VL, HV_VH, HVSN_VH, DEL_VL, DEL_VH, RS, &
                    CG,CVP, EMISVL, EMISVH, SKINCOND_VL, &
                    RESAGR, RESA_VL, RESA_VH, RESASA, RESASV, RESAGRV, RES_SNCA, &
@@ -70,7 +70,7 @@
       REAL RG(N), RGCAN(N), ALVG(N), ALVL(N), ALVH(N), RAT(N), RATCAN(N)
       REAL ZUSL(N), ZTSL(N),THETAA(N), FCOR(N)
       REAL HU(N), PS(N), RHOA(N), WTA(N,svs2_tilesp1),WTG(N,svs2_tilesp1), Z0(N)
-      REAL Z0LOC(N), Z0H(N)
+      REAL Z0LOC(N), Z0H(N), VGH_DENS(N)
       REAL HV_VL(N), HV_VH(N), HVSN_VH(N), DEL_VL(N), DEL_VH(N),  RS(N)
       REAL CG(N), CVP(N),   EMISVL(N), EMISVH(N), SKINCOND_VL(N)
       REAL LAI(N), GAMVEG(N), ALGR(N), EMGR(N), ALGRV(N), EMGRV(N)
@@ -91,7 +91,7 @@
       REAL VEGH(N), VEGL(N), PHM_CAN(N), FCANS(N)
       REAL SKYVIEW(N),SKYVIEWA(N), ILMO(N), HST(N), TRAD(N), VTRA(N)
       REAL WR_VL(N), WR_VH(N), RR(N),SNM(N),SVM(N)
-      REAL VGHEIGHT(N), ESN_VH(N), SNCMA(N)
+      REAL VGHEIGHT(N), ESN_VH(N), SNCMA(N), ESN_VHF(N)
       REAL SOILHCAP(N,NL_SVS),SOILCOND(N,NL_SVS)
 
 !  ajout temporaire pour tests
@@ -174,6 +174,7 @@
 ! RHOA      air density near the surface
 ! WTA       Weights for SVS2 surface types as seen from SPACE
 ! WTG       Weights for SVS2 surface types as seen from GROUND
+! VGH_DENS  Ratio of closed canopy over ground of high vegetation (canopy closure/density)
 ! Z0        momentum roughness length (no snow)
 ! Z0LOC     local land momentum roughness length (no orography)
 ! HRSURF    relative humidity of the bare ground surface (1st soil layer)
@@ -609,8 +610,6 @@
                      TVGHST(I) = THETAA(I)
                   ENDIF
 
-
-
               ELSE
                  ! NO VEGETATION -- USE BARE GROUND VALUES or ZERO to fill arrays to avoid numerical errors
                  ZQSATVGH(I)  =  ZQSATGR(I)
@@ -904,7 +903,7 @@
 !
 !                                            Sensible heat flux from the high vegetation
 !
-        HFLUXVGH(I) = RHOA(I) * CPD * (TVGHST(I) - THETAA(I)) / RESA_VH(I)
+        HFLUXVGH(I) = VGH_DENS(I) * RHOA(I) * CPD * (TVGHST(I) - THETAA(I)) / RESA_VH(I)
 !
 !                                            Sensible heat flux from the
 !                                            ground below high vege.
@@ -913,6 +912,7 @@
 
 !
 !                                             AGGREGATED sensible heat flux (including snow)
+!       TODO: Should it be WTA or WTG? WTG is used for the latent fluxes
         HFLUX(I) = AG_SVS2( WTA(I,indx_svs2_bg), WTA(I,indx_svs2_vl), &
                       WTA(I,indx_svs2_vh),WTA(I,indx_svs2_sn), &
                       WTA(I,indx_svs2_sv), WTA(I,indx_svs2_gv), &
@@ -1019,30 +1019,36 @@
 !
           IF(VEGH(I) .ge.EPSILON_SVS) THEN
 !
-!            Check if if qsat> HU
+!          Check if if qsat> HU, we do not consider condensation in the transpiration term.
              ZHVGH(I) = MAX(0.0 , SIGN(1.,ZQSATVGHT(I) - HU(I)))
 !
 !            Transpiration rate (for watsurf_budget.ftn) (no fraction)
-             ETR_VH(I) = RHOA(I)*ZHVGH(I)*(1. - DEL_VH(I))* (1.-FCANS(I))*(ZQSATVGHT(I)-HU(I))/(RESA_VH(I) + RS(I)) * (CHLC)/LCAN(I)
+           ETR_VH(I) = VGH_DENS(I) * RHOA(I)*ZHVGH(I)*(1. - DEL_VH(I))* (1.-FCANS(I))*(ZQSATVGHT(I)-HU(I))/(RESA_VH(I) + RS(I)) * (CHLC)/LCAN(I)
 !
 !            Latent heat of transpiration (with fraction )
              LETR_VH(I) = WTA(I,indx_svs2_vh)* CHLC * ETR_VH(I)
 !
 !            Evapotranspiration rate from high veg. (for watsurf_budget.ftn)
-             EV_VH(I) =  RHOA(I) * DEL_VH(I) * (1.-FCANS(I)) * (ZQSATVGHT(I) - HU(I)) / RESA_VH(I) *(CHLC)/LCAN(I)
+           EV_VH(I) = VGH_DENS(I) * RHOA(I) * DEL_VH(I) * (1.-FCANS(I)) * (ZQSATVGHT(I) - HU(I)) / RESA_VH(I) *(CHLC)/LCAN(I)
 
              !  EV is limited to WR/DT+RR+ETR to avoid negative WR in watsurf_budget when direct evaporation exceeds rainrate
              EV_VH(I) = MIN (EV_VH(I),(WR_VH(I)/DT+ETR_VH(I)))
 
-!
-!            Sublimation rate of intercepted snow in high veg. (for snow_interception_svs2)
-             ESN_VH(I) =  RHOA(I) * FCANS(I) * (ZQSATVGHT(I) - HU(I)) / (RESA_VH(I)+ RES_SNCA(I)) *(CHLC+CHLF)/LCAN(I)
+!          Sublimation rate of intercepted snow in high veg. (for snow_interception_svs2) and applied to intercepted snow in watsurf_budget_svs2
+           IF (CANO_REF_FORCING .EQ.'ABV') THEN
 
-             !  ESN_VH is limited to SNCMA/DT to avoid negative SNCMA in snow interception
-             IF( (SNCMA(I).GT.0.) .OR. (TVGHST(I) .LT. 273.15) ) THEN
-                ! snow is present below high veg, rain falls directly to snow
-                ESN_VH(I) = MIN(ESN_VH(I),SNCMA(I)/DT)
-             ENDIF
+              ESN_VH(I) =  VGH_DENS(I) * RHOA(I) * FCANS(I) * (ZQSATVGHT(I) - HU(I)) / (RESA_VH(I)+ RES_SNCA(I)) *(CHLC+CHLF)/LCAN(I)
+
+              !  ESN_VH is limited to SNCMA/DT to avoid negative SNCMA in watsurf_budget_svs2
+              ESN_VH(I) = MIN(ESN_VH(I),SNCMA(I)/DT)
+
+              ! With fraction
+              ESN_VHF(I) = WTG(I,indx_svs2_vh) * ESN_VH(I) / RHOA(I)
+
+           ELSE ! O2F
+              ! Sublimation rate is calculated in snow_interception_svs2.F90
+              ESN_VHF(I) = WTG(I,indx_svs2_vh) * ESN_VH(I) / RHOA(I)
+           ENDIF
 
         ELSE
            ! NO HIGH VEGETATION --- SET FLUXES TO ZERO
@@ -1100,7 +1106,7 @@
 !                           Total water vapor flux
 !                           (Including snow contribution)
 
-        EFLUX(I) = EGF(I) + EVLF(I) +  EVHF(I) + ESF(I) + ESVF(I) + EGV(I)
+        EFLUX(I) = EVLF(I) +  EVHF(I) + ESF(I) + ESVF(I) + EGF(I) + EGVF(I) 
 !
 !                                            Heat flux into the ground
 !

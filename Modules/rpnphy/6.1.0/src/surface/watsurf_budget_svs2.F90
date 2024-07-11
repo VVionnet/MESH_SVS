@@ -127,10 +127,10 @@ SUBROUTINE WATSURF_BUDGET_SVS2 ( DT, ESUBSNC, SUBSNC_CUM, &
   !                                  Only applicable when the option ABV is applied
   IF (CANO_REF_FORCING .EQ.'ABV' .AND. LSNOW_INTERCEPTION_SVS2 ) THEN
       DO I=1,N
-         IF(ESUBSNC(I)>0 .AND. SNCMA(I)>0) THEN
-            SNCMA(I) = SNCMA(I) - MAX(ESUBSNC(I)*DT, 0.)
+
+         SNCMA(I) = SNCMA(I) -  ESUBSNC(I)*DT
             SUBSNC_CUM(I) = SUBSNC_CUM(I) + ESUBSNC(I) * DT
-         ENDIF
+
       END DO
    ENDIF
 

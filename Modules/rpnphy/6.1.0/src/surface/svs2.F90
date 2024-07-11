@@ -594,7 +594,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       IF(LSNOW_INTERCEPTION_SVS2) THEN
 
          CALL SNOW_INTERCEPTION_SVS2(DT,bus(x(TVEGEH,1,1)), tt, hu, ps, PWIND_TOP,zfsolis,RHOA,     &
-                           rainrate_mm,snowrate_mm, bus(x(SNCMA     ,1,1)), wrmax_vh, &
+                           rainrate_mm,snowrate_mm, bus(x(SNCMA     ,1,1)), wrmax_vh, bus(x(SKYVIEW,1,1)),&
                            bus(x(ESNC     ,1,1)), bus(x(ESNCAF     ,1,1)),  BUS(x(LAIVH  ,1,1)),   &
                            BUS(x(VEGH   ,1,1)),PHM_CAN, BUS(x(VGH_DENS   ,1,1)), PSCAP,   &
                            bus(x(wveg_vh  ,1,1)), rainrate_mm_veg,snowrate_mm_veg  ,               &
@@ -778,7 +778,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                   bus(x(FDSI       ,1,1)), bus(x(LWCA,1,1)), zthetaa ,    &
                   bus(x(FCOR       ,1,1)), bus(x(zusl,1,1)),    &
                   bus(x(ztsl       ,1,1)), hu, &
-                  ps, RHOA, BUS(x(SVS_WTA,1,1)), BUS(x(SVS_WTG,1,1)),  &
+                  ps, RHOA, BUS(x(SVS_WTA,1,1)), BUS(x(SVS_WTG,1,1)),  bus(x(VGH_DENS,1,1)), &
                   z0m, z0mland , bus(x(Z0T,1,indx_soil)),&
                   HRSURF,HRSURFGV,       &
                   bus(x(HV_VL,1,1)) , bus(x(HV_VH,1,1)), HVSN_VH, DEL_VL, DEL_VH, STOM_RS ,&

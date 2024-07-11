@@ -15,7 +15,7 @@
 !-------------------------------------- LICENCE END ---------------------------
 
       SUBROUTINE SNOW_INTERCEPTION_SVS2 (DT, TVEG, T, HU, PS, WIND_TOP, ISWR,  RHOA,    &
-                     RR, SR, SNCMA, WRMAX_VH, ESUBSNC,SUBSNC_CUM, LAIVH, VEGH, HM_CAN,   &
+                     RR, SR,SNCMA, WRMAX_VH, SKYVIEW, ESUBSNC,SUBSNC_CUM, LAIVH, VEGH, HM_CAN,   &
                      VGH_DENS, SCAP, WR_VH, RR_VEG, SR_VEG,  FCANS, N)
 
 
@@ -33,7 +33,7 @@
 
 
       REAL SNCMA(N), RR(N), SR(N),  RR_VEG(N), SR_VEG(N), ISWR(N)
-      REAL PS(N), RHOA(N), HU(N)
+      REAL PS(N), RHOA(N), HU(N), SKYVIEW(N)
       REAL LAIVH(N), TVEG(N), VEGH(N),WIND_TOP(N),VGH_DENS(N), T(N)
       REAL ESUBSNC(N), SUBSNC_CUM(N), SCAP(N), FCANS(N), HM_CAN(N)
       REAL DT, SNCMA_INI(N), WRMAX_VH(N), WR_VH(N)
@@ -132,6 +132,17 @@
       PPSAT(:) = PSAT(T(:))
 
       DO I=1,N
+         IF (CANO_REF_FORCING .EQ.'O2F') THEN
+	    ! Initialize sublimation of intercepted snow
+            ESUBSNC(I) = 0.
+
+            ! For O2F, do the phase change here before intercepted snow sublimation is calculated
+            IF(TVEG(I) .LE. 273.15) THEN ! refreezing of liquid intercepted waterto intercepted snow 
+               SNCMA(I) = SNCMA(I) + WR_VH(I)
+               WR_VH(I) = 0.
+            ENDIF
+         ENDIF
+
          IF (VEGH(I).GE.EPSILON_SVS) THEN
             IF(SNCMA(I) .GT. EPSILON_SVS .OR. SR(I) .GT. 0.) THEN  ! Snow is present on the canopy or occurrence of snowfall
 
@@ -141,7 +152,7 @@
                !!!!!!!!
 
                ! Compute Canopy interception, check Pomeroy VGH_DENS position
-               INTCPT= (SCAP(I) - SNCMA(I))*(1. - exp(-VGH_DENS(I)*SR(I)*DT/SCAP(I)))
+               INTCPT = (SCAP(I) - SNCMA(I))*(1. - exp(-(1.-SKYVIEW(I))* SR(I)*DT/SCAP(I))) 
 
                ! Update intercepted snow mass
                SNCMA(I) = SNCMA(I) + INTCPT
@@ -238,7 +249,7 @@
                   ENDIF
 
                   ! Calculate 'potential' canopy sublimation [s-1]
-                  SUB_POT = SUB_RATE * CE
+                  SUB_POT = VGH_DENS(I) * SUB_RATE * CE
 
                   ! Limit sublimation to canopy snow available and take sublimated snow away from canopy snow at timestep start
                   SUB_CPY = MAX(0.,-SNCMA(I)*SUB_POT*DT)  ! Ensures that only sublimation is computed (neglect solid condensation)
@@ -364,11 +375,11 @@
 
          IF (VEGH(I).GE.EPSILON_SVS) THEN
 
-            ! Rain is first intercepted by high veg (rain * VEG_DENS)
-            ! Excess of WRMAX_VH drips + drip from melting intercepted snow + rain*(1-VEG_DENS) reach ground
+            ! Rain is first intercepted by high veg (rain * (1.-SKYVIEW))
+            ! Excess of WRMAX_VH drips + drip from melting intercepted snow + rain*SKYVIEW reach ground
 
-            WR_VH(I) = WR_VH(I) + DT * VGH_DENS(I)*RR(I)
-            RR_VEG(I) = MAX(0., (WR_VH(I) - WRMAX_VH(I))/DT) + DRIP_CPY(I)/DT + (1.-VGH_DENS(I)) * RR(I)
+            WR_VH(I) = WR_VH(I) + DT * (1.-SKYVIEW(I)) * RR(I)
+            RR_VEG(I) = MAX(0., (WR_VH(I) - WRMAX_VH(I))/DT) + DRIP_CPY(I)/DT + SKYVIEW(I) * RR(I)
             WR_VH(I) = MIN(WR_VH(I), WRMAX_VH(I))
 
 

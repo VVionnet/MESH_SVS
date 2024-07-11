@@ -727,6 +727,10 @@
       DO I=1,N
          IF(VEGH(I)>EPSILON_SVS) THEN   ! High vegetation present in the grid cell
              RESA_VH(I) = 1. / CTUVG(I)
+             IF (VGH_DENS(I) .GT. 0.) THEN
+                ! From Mazzotti et al. (2020). Decreases the resistance (higher flux) as VGH_DENS decreases (more open)
+                RESA_VH(I) = RESA_VH(I) / VGH_DENS(I)**0.5
+             ENDIF
          ELSE
              RESA_VH(I) = 1.
          ENDIF
