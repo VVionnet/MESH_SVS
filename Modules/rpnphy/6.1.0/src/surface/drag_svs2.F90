@@ -19,7 +19,7 @@
                               PS, RS, Z0, Z0LOC, Z0VG, WFC, WSAT, CLAY1,  &
                               SAND1, LAI_VL, LAI_VH, WRMAX_VL,WRMAX_VH,&
                               ZUSL, ZTSL, LAT, &
-                              FCOR, Z0HA, VEGL, VEGH, CLUMPING,&
+                              FCOR, Z0HA, VEGL, VEGH, &
                               VGH_DENS, Z0MVH,Z0MVL, VEGHEIGHT,  &
                               LAIVH, ZVCAN, FCANS,SNCMA, &
                               RESAGR,RESAGRV, RESA_VL, RESA_VH, RES_SNCA, &
@@ -33,7 +33,8 @@
       use svs_configs
       use MODE_THERMOS
       use MODD_CSTS
-      use canopy_csts, only: ZRALAI, RCHD, RADIUS_ICESPH, GAMA, ZVENT, lres_snca
+      use canopy_csts, only: ZRALAI, RCHD, RADIUS_ICESPH, ZVENT, lres_snca, CLUMPING,&
+                             ZBETA
 !
       implicit none
 !!!#include <arch_specific.hf>
@@ -48,7 +49,6 @@
       REAL HUSURF(N),HUSURFGV(N), HV_VL(N), HV_VH(N), HVSN_VH(N), DEL_VL(N), DEL_VH(N)
       REAL HRSURF(N),HRSURFGV(N), WD1(N)
       REAL VEGH(N), VEGL(N), TGRVS(N), SNCMA(N), RHOA(N)
-      REAL CLUMPING
 !
 !Author
 !          S. Belair, M.Abrahamowicz, S.Z.Husain, N.Alavi, S.Zhang (June 2015)
@@ -743,7 +743,7 @@
 
             ! Canopy wind speed extinction coefficient [-]
             ! Ellis et al (2010) (EL10) refers to Eagleson (2002) to justify the formulation of this coefficient
-            EXT2 = GAMA * LAI_VH(I)
+            EXT2 = ZBETA * CLUMPING * LAI_VH(I)
 
             ! Computation of ventilation wind speed of intercepted snow derived from above-caopny wind speed  [Eq 8 in EL10]
             ! Estimated within canopy wind speed at fraction XI2 of the entire tree height [Eq 8 in EL10]  [m s-1]

@@ -16,7 +16,7 @@
       SUBROUTINE VEGI_SVS2 ( RG, T, TVEG, HU, PS, &
            WD , RGL, LAI, LAI_VH, LAI_VL, HVEGLPOL, RSMIN, GAMMA, WWILT, WFC, &
            SUNCOS, DRZ, D50, D95, PSNGRVL, VEGH, VEGL, Z0MVH,  &
-           VGH_HEIGHT,VGH_DENS, CLUMPING, SNCMA, WR_VH,  &
+           VGH_HEIGHT,VGH_DENS, SNCMA, WR_VH,  &
            RS, SKYVIEW,  &
            SKYVIEWA, VTR, VTRA, &
            FCD, ACROOT, WRMAX_VL, WRMAX_VH, PHM_CAN, HVEGAPOL, SCAP, N  )
@@ -24,7 +24,8 @@
         use tdpack
         use svs_configs
         use sfc_options
-        use CANOPY_CSTS, only: E_LEAF, RHO_BIO, CP_BIO, ZB, ZCVAI, CVAI, M_SCAP, HCANO_HM
+        use CANOPY_CSTS, only: E_LEAF, RHO_BIO, CP_BIO, ZB, ZCVAI, CVAI, M_SCAP, HCANO_HM, &
+           CLUMPING
       implicit none
 !!!#include <arch_specific.hf>
 !
@@ -38,7 +39,7 @@
       REAL D50(N), D95(N), ACROOT(N,NL_SVS) , WRMAX_VL(N),  WRMAX_VH(N)
       REAL HVEGLPOL(N), HVEGAPOL(N), SNCMA(N)
       REAL Z0MVH(N),  VGH_HEIGHT(N), VGH_DENS(N), PHM_CAN(N)
-      REAL CLUMPING, SCAP(N), WR_VH(N)
+      REAL SCAP(N), WR_VH(N)
 !
 !Author
 !          S. Belair, M.Abrahamowicz,S.Z.Husain (June 2015)

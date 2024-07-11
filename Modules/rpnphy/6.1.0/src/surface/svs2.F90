@@ -146,7 +146,6 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    real,dimension(n) :: wsaturc1
 !
    real, dimension(n,nl_svs) :: isoilt, wsoilt
-   real clumping ! Clumping coefficient to switch from LAI to effective LAI
 !
 !  for SVS2 only (to reorganise and clean some var)
    real,dimension(n) :: pct, pz0hnat, pz0, pzenith
@@ -489,7 +488,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            ALVA, BUS(x(LAIVA  ,1,1)), CVPA, EVA, BUS(x(Z0HA ,1,1)),&
            BUS(x(Z0MVG,1,1)), RGLA, STOMRA,   &
            GAMVA,bus(x(CONDSLD    ,1,1)) , bus(x(CONDDRY   ,1,1)), &
-           CLUMPING, N)
+           N)
 !
       ! Update vegetation temperature with average of low and high vegetation.
       ! VV TO BE MODIFIED: Intermediate step during developement.
@@ -516,7 +515,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            bus(x(D95   ,1,1)),  BUS(x(PSNGRVL,1,1)), &
            BUS(x(VEGH   ,1,1)), BUS(x(VEGL   ,1,1)), &
            BUS(x(Z0MVH  ,1,1)), bus(x(VGH_HEIGHT   ,1,1)),bus(x(VGH_DENS,1,1)), &
-           CLUMPING, bus(x(SNCMA     ,1,1)), bus(x(WVEG_VH,1,1)),bus(x(RST     ,1,1)),     &
+           bus(x(SNCMA     ,1,1)), bus(x(WVEG_VH,1,1)),bus(x(RST     ,1,1)),     &
            bus(x(SKYVIEW ,1,1)), bus(x(SKYVIEWA ,1,1)), &
            bus(x(VEGTRANS,1,1)), bus(x(VEGTRANSA,1,1)),   &
            bus(x(frootd   ,1,1)), bus(x(acroot ,1,1)), WRMAX_VL, &
@@ -564,7 +563,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
          IF(LCANO_SVS2) THEN
             CALL  CANOPY_MET_SVS2(tt, hu, vmod, zfsolis, bus(x(FDSI,1,1)), &
                          bus(x(TVEGEH,1,1)),bus(x(zusl,1,1)),  bus(x(ztsl,1,1)),  &
-                         SUNCOSA, bus(x(VGH_HEIGHT,1,1)),bus(x(VGH_DENS,1,1)),CLUMPING, &
+                         SUNCOSA, bus(x(VGH_HEIGHT,1,1)),bus(x(VGH_DENS,1,1)), &
                          BUS(x(Z0MVH  ,1,1)),PZ0, BUS(x(VEGH   ,1,1)), &
                      	 BUS(x(LAIVH  ,1,1)),bus(x(SKYVIEW,1,1)),BUS(x(EMISVH ,1,1)) , bus(x(SWCA,1,1)), bus(x(LWCA,1,1)), &
                          bus(x(VCA,1,1)), bus(x(TCA,1,1)), bus(x(QCA,1,1)) , PWIND_TOP,  &
@@ -637,7 +636,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            bus(x(zusl,1,1)), bus(x(ztsl,1,1)),    &
            bus(x (DLAT,1,1)), &
            bus(x(FCOR,1,1)),bus(x(Z0HA ,1,1)), bus(x(VEGL,1,1)), bus(x(VEGH,1,1)), &
-           CLUMPING, bus(x(VGH_DENS,1,1)), BUS(x(Z0MVH  ,1,1)),  BUS(x(Z0MVL  ,1,1)), &
+           bus(x(VGH_DENS,1,1)), BUS(x(Z0MVH  ,1,1)),  BUS(x(Z0MVL  ,1,1)), &
            bus(x(VGH_HEIGHT   ,1,1)),BUS(x(LAIVH  ,1,1)), bus(x(VCA,1,1)),PFCANS,bus(x(SNCMA,1,1)),  &
            bus(x(RESAGR,1,1)),bus(x(RESAGRV,1,1)), &
            bus(x(RESA_VL,1,1)),bus(x(RESA_VH,1,1)), pres_snca, &

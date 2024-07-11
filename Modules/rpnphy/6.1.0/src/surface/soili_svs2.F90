@@ -25,13 +25,14 @@
            WTA, WTG, CG,PSOILHCAPZ, PSOILCONDZ, PSNGRVL,  &
            Z0H, ALGR, EMGR, ALGRV, EMGRV, PSNVH, PSNVHA, PSURFVHA,   &
            ALVA, LAIVA, CVPA, EVA, Z0HA, Z0MVG, RGLA, STOMRA ,&
-           GAMVA,CONDSLD, CONDDRY, CLUMPING, N )
+           GAMVA,CONDSLD, CONDDRY, N )
          !
         use tdpack_const, only: PI
         use svs_configs
         use svs2_tile_configs
         use sfc_options, only: read_emis, urban_params_new
         USE MODD_CSTS,    ONLY : XCL, XCI, XRHOLW, XRHOLI, XCONDI, XCONDWTR
+        USE CANOPY_CSTS, only : CLUMPING
      implicit none
 !!!#include <arch_specific.hf>
 
@@ -55,7 +56,6 @@
       REAL Z0HA(N), Z0MVG(N), RGLA(N), STOMRA(N), STOMRVH(N), STOMRVL(N)
       REAL GAMVL(N), GAMVH(N), GAMVA(N)
       REAL CONDSLD(N,NL_SVS),CONDDRY(N,NL_SVS), VGH_DENS(N)
-      REAL CLUMPING
 
 
 !Author
@@ -296,7 +296,6 @@ include "isbapar.cdk"
 
          ! Fraction of surface seen through sparse high vegetation
          ! Same equation as for the SKYVIEW for high vegetation
-         CLUMPING = 0.5
          IF(VEGH(I) .GE.EPSILON_SVS) THEN
             PSURFVHA(I)  = EXP( - CLUMPING * LAIVH(I) * VGH_DENS(I))
             !PSURFVHA(I)  = (EVER(I) * 0.2 + DECI(I) * MAX(LAI0 - LAID(I), 0.2))

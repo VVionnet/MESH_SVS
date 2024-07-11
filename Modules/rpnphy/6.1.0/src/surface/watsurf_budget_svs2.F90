@@ -45,16 +45,15 @@ SUBROUTINE WATSURF_BUDGET_SVS2 ( DT, ESUBSNC, SUBSNC_CUM, &
 
   !
   !Author
-  !          N.Alavi, S.Zhang, E. Gaborit, V. Fortin, S. Belair, V. Vionnet et al.  (June 2015)
+  !          N.Leroux, V.Vionnet (May 2024)
   !Revisions
   !
   ! 001
   !Object
-  !     Calculates the evolution of the soil water contents
-  !     liquid water retained in the vegetation canopy (Wr).
-  !     Also determine the runoff, lateral flow and drainage
-  !     using interflow parametrization for sloping train
-  !     (based on Soulis et al. 2000 and 2011)
+  !     Calculates the evolution of the intercepted liquid water 
+  !     in the vegetation canopy (Wr).
+  !     Also determines the water available to infiltrate soil and evapotranspiration 
+  !     fluxes from the soil
   !
   !Arguments
   !

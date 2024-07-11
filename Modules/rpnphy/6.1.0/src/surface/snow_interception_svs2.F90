@@ -25,8 +25,8 @@
       use svs_configs
       USE MODE_THERMOS
       USE MODD_CSTS
-      USE CANOPY_CSTS, only : ALPHA, GAMA, ZVENT, RADIUS_ICESPH, &
-            ALBEDO_ICESPH, KS, FRACT, MWAT, RGAZ, CICE, TCNC, TCNM
+      USE CANOPY_CSTS, only : ALPHA, ZVENT, RADIUS_ICESPH, CLUMPING, &
+            ALBEDO_ICESPH, KS, FRACT, MWAT, RGAZ, CICE, TCNC, TCNM, ZBETA
       implicit none
 
       INTEGER N
@@ -90,23 +90,25 @@
 
       REAL TUNL  ! Unloading time constant
 
-      REAL, DIMENSION(N) :: DIRECT_SNOW ! Snow mass directly transferred through the canopy (kg/m^2)
+
       REAL, DIMENSION(N) :: DRIP_CPY ! Mass of liquid water dripping below the canopy (kg/m^2)
-      REAL, DIMENSION(N) :: INTCPT !  Canopy interception (kg/m^2)
       REAL, DIMENSION(N) :: NET_SNOW ! Snow mass sent to the snowpack below the canopy  (kg/m^2)
       REAL, DIMENSION(N) :: PQSAT ! Specific humidity at saturation [kg kg-1]
       REAL, DIMENSION(N) :: PPSAT ! Vapor presure at saturation [Pa]
+      REAL, DIMENSION(N) :: HM_CAN_INI !  Heat mass of the canopy at the beginning of the subroutine
 
       REAL  SNW_UNLOAD !  Unloaded mass in solid form (kg/m^2)
-      REAL, DIMENSION(N) :: UNLOAD !  Unloaded mass (kg/m^2)
-      REAL, DIMENSION(N) :: HM_CAN_INI !  Unloaded mass (kg/m^2)
+      REAL UNLOAD !  Unloaded mass (kg/m^2)
+      REAL DIRECT_SNOW ! Snow mass directly transferred through the canopy (kg/m^2)
       REAL MELT, REFREEZE
+      REAL INTCPT !  Canopy interception (kg/m^2)
       REAL   SUB_CPY ! Intercepted snow mass lost by sublimation (kg/m^2)
+      REAL VSUBL ! Ventilation wind speed used in the calcultation of sublimation
 
       REAL XI2,EXT2, WINDEXT2, EVAP, LAMBDA, SSTAR, A1, B1,  LS, J
       REAL C1, SIGMA, SVDENS, SUB_RATE,SUB_POT, MPM, CE
       REAL NU, NR, MU,DVAP
-      REAL, DIMENSION(N) :: VSUBL ! Ventilation wind speed used in the calcultation of sublimation
+
 
       !
       ! 0. Initialise variables
@@ -119,7 +121,6 @@
       !
 
       ! Initialize snowfall mass directly transfered through the canopy
-      DIRECT_SNOW(:) = 0.
       NET_SNOW(:) = 0.
 
       DRIP_CPY(:) = 0.
@@ -132,7 +133,7 @@
 
       DO I=1,N
          IF (VEGH(I).GE.EPSILON_SVS) THEN
-            IF(SNCMA(I)> 0. .OR. SR(I)>0.) THEN  ! Snow is present on the canopy or occurrence of snowfall
+            IF(SNCMA(I) .GT. EPSILON_SVS .OR. SR(I) .GT. 0.) THEN  ! Snow is present on the canopy or occurrence of snowfall
 
 
                !!!!!!!!
@@ -140,15 +141,14 @@
                !!!!!!!!
 
                ! Compute Canopy interception, check Pomeroy VGH_DENS position
-               INTCPT(I) = (SCAP(I) - SNCMA(I))*(1. - exp(-VGH_DENS(I)*SR(I)*DT/SCAP(I)))
+               INTCPT= (SCAP(I) - SNCMA(I))*(1. - exp(-VGH_DENS(I)*SR(I)*DT/SCAP(I)))
 
                ! Update intercepted snow mass
-               SNCMA(I) = SNCMA(I) + INTCPT(I)
+               SNCMA(I) = SNCMA(I) + INTCPT
 
 
                ! Update the amount of snow that falls below high vegetation
-               DIRECT_SNOW(I)  = SR(I)*DT - INTCPT(I)
-
+               DIRECT_SNOW  = SR(I)*DT - INTCPT
 
                ! Remove mass of intercepted lost by sublimation
                ! Sublimation calculated in the previous time step so should be
@@ -166,12 +166,13 @@
                   XI2 = 1.-ZVENT
 
                   ! Canopy wind speed extinction coefficient [-]
-                  ! Ellis et al (2010) (EL10) refers to Eagleson (2002) to justify the formulation of this coefficient
-                  EXT2 = GAMA * LAIVH(I)
+                  ! From Marke et al., (2016); Liston and Elder (2006), consistent with canopy_met_svs2 and drag_svs2
+                  ! VEG_DENS is included here as the wind speed would be higher in more sparse forest
+                  EXT2 = ZBETA * CLUMPING * LAIVH(I) * VGH_DENS(I)
 
                   ! Computation of ventilation wind speed of intercepted snow derived from above-caopny wind speed  [Eq 8 in EL10]
                   ! Estimated within canopy wind speed at fraction XI2 of the entire tree height [Eq 8 in EL10]  [m s-1]
-                  VSUBL(I) = WIND_TOP(I) * EXP(-1. * EXT2 * XI2)
+                  VSUBL = WIND_TOP(I) * EXP(-1. * EXT2 * XI2)
 
                   ! Vaport density at saturation
                   SVDENS = PPSAT(I) * MWAT / (RGAZ * T(I))
@@ -189,7 +190,7 @@
                   ! We use here the formulation of Roges and Yau (1989) as in Harder and Pomeroy (2013)
                   ! Note that the canopy module in CRHM used a constant value
                   ! TODO: Crocus approach should be used for consistency
-                  IF(TVEG(I)<273.15) THEN
+                  IF(TVEG(I) .LT. 273.15) THEN
                      LS =  1000.0 * (2834.1 - 0.29 *(T(I)-273.15) - 0.004*(T(I)-273.15)**2.)
                   ELSE
                      LS = 1000.0 * (2501.0 - (2.361 * (T(I)-273.15)))
@@ -199,7 +200,7 @@
                   DVAP = 2.063e-5 * (T(I)/273.15)**1.75
 
                   ! Compute Reynolds Number     [-]
-                  NR  = 2.0 * RADIUS_ICESPH * VSUBL(I) / MU
+                  NR  = 2.0 * RADIUS_ICESPH * VSUBL / MU
 
                   ! Compute the Nusselt Number  [-]
                   NU = 1.79 + 0.606 * SQRT(NR)
@@ -230,7 +231,7 @@
 
                   ! Compute the intercepted snow exposure coefficient
                   !
-                  IF ((SNCMA(I)/SCAP(I)) <=  0.0) THEN
+                  IF ((SNCMA(I)/SCAP(I)) .LE.  0.0) THEN
                      CE = 0.07
                   ELSE
                     CE = KS * (SNCMA(I)/SCAP(I))**(-1.0*FRACT)
@@ -240,15 +241,14 @@
                   SUB_POT = SUB_RATE * CE
 
                   ! Limit sublimation to canopy snow available and take sublimated snow away from canopy snow at timestep start
-                  SUB_CPY = MAX(0.,-SNCMA(I)*SUB_POT*DT)  ! Ensure that only sublimation is computed (neglect solid condensation)
+                  SUB_CPY = MAX(0.,-SNCMA(I)*SUB_POT*DT)  ! Ensures that only sublimation is computed (neglect solid condensation)
 
                   !!!! Remove mass of intercepted snow lost by sublimation
-                  IF(SUB_CPY>SNCMA(I)) THEN
+                  IF(SUB_CPY .GT. SNCMA(I)) THEN
                      SUB_CPY = SNCMA(I)
                      SNCMA(I) = 0.
                   ELSE
                      SNCMA(I) = SNCMA(I) - SUB_CPY
-
                   ENDIF
 
                   ESUBSNC(I) = SUB_CPY/DT
@@ -258,24 +258,22 @@
 
                SNCMA(I) = MAX(0.,SNCMA(I))
 
-
-
                !!!!!!!!
                !! Unloading Code
                !!!!!!!!
 
                ! Unloading time constant
-               IF(TVEG(I) >= 273.15) THEN
+               IF(TVEG(I) .GE. 273.15) THEN
                   TUNL = TCNM
                ELSE
                   TUNL = TCNC
                ENDIF
 
                ! Compute unloaded snow mass
-               UNLOAD(I) = SNCMA(I)* DT / TUNL
+               UNLOAD = SNCMA(I) * DT / TUNL
 
                ! Update intercepted snow mass
-               SNCMA(I)  = SNCMA(I) - UNLOAD(I)
+               SNCMA(I)  = SNCMA(I) - UNLOAD
 
                !!!!!!!!
                ! Unload and Melting of snow canopy
@@ -284,11 +282,11 @@
 
                   HM_CAN(I) = HM_CAN_INI(I) + CPI * SNCMA(I) + CPW *WR_VH(I)
 
-                  IF(TVEG(I)>273.15) THEN ! Melting of intercepted snow
+                  IF(TVEG(I) .GT. 273.15) THEN ! Melting of intercepted snow
 
                      MELT = 5.56E-6 * DT * (SNCMA(I)/SCAP(I)) * (TVEG(I) - 273.15)
 
-                     IF (MELT > SNCMA(I)) THEN
+                     IF (MELT .GT. SNCMA(I)) THEN
                         MELT = SNCMA(I)
                      ENDIF
 
@@ -307,7 +305,7 @@
 
                      REFREEZE = 5.56E-6 * DT * (WR_VH(I)/WRMAX_VH(I)) * (TVEG(I) - 273.15)  ! < 0
 
-                     IF (ABS(REFREEZE) > WR_VH(I)) THEN
+                     IF (ABS(REFREEZE) .GT. WR_VH(I)) THEN
                         REFREEZE = -WR_VH(I)
                      ENDIF
                      WR_VH(I) = WR_VH(I) + REFREEZE
@@ -320,27 +318,28 @@
 
                   ENDIF
 
-                  NET_SNOW(I) = DIRECT_SNOW(I)  + UNLOAD(I)
+                  NET_SNOW(I) = DIRECT_SNOW  + UNLOAD
 
                ELSE ! Open 2 Forest
                   !!!!!!!
                   !Update snowfall and rainfall rate sent to snow below high-veh
                   !!!!!!!
-                  IF(T(I)>273.15) THEN ! All unload is liquid, first intercepted as liquid intercepted water
-                     WR_VH(I) = WR_VH(I) + UNLOAD(I)
+                  IF(T(I) .GT. 273.15) THEN ! All unload is liquid, first intercepted as liquid intercepted water
+                     WR_VH(I) = WR_VH(I) + UNLOAD
                      DRIP_CPY(I) = MAX(0., WR_VH(I) - WRMAX_VH(I) )
                      WR_VH(I) = MIN(WR_VH(I), WRMAX_VH(I))
                      SNW_UNLOAD = 0.
                   ELSE ! All unload is solid + refreezing of liquid intercepted waterto intercepted snow
                      DRIP_CPY(I) = 0.    ! Unload considered as solid
-                     SNW_UNLOAD = UNLOAD(I)
+                     SNW_UNLOAD = UNLOAD
                      SNCMA(I) = SNCMA(I) + WR_VH(I)
                      WR_VH(I) = 0.
                   ENDIF
 
                   !!!! Update the total snow mass sent to the snowpack below
                   !!!! high veg
-                  NET_SNOW(I) = DIRECT_SNOW(I) + SNW_UNLOAD
+                  NET_SNOW(I) = DIRECT_SNOW + SNW_UNLOAD
+
                ENDIF
 
 
@@ -350,7 +349,7 @@
                   ! Update canopy heat mass with new intercepted snow
                   HM_CAN(I) = HM_CAN_INI(I) + CPI * SNCMA(I) + CPW *WR_VH(I)
                ELSE
-                  FCANS(I) = 0.
+                  FCANS(I) = 0. ! To avoid computation of sublimation from canopy energy balance in ebudget_svs2_oneprofile_skin
                ENDIF
 
 

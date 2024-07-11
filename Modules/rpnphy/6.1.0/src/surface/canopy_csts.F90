@@ -62,7 +62,8 @@ CHARACTER(LEN=4) :: HCANO_HM = 'G15'  ! Select the approach used to compute the 
 !       ------------------------------------------------------
 
 REAL, PARAMETER ::     ALPHA = 5   ! Shape parameter used when computing the averahe sublimation rate
-REAL, PARAMETER ::     GAMA = 1.15 ! Parameter used in the computation of the exponential wind profile in the canopy
+REAL, PARAMETER ::     CLUMPING = 0.5 ! Clumping parameter (switch from LAI to effective LAI) 
+                                      ! to account for spatial distribution of patter of leaves. (Chen et al. 1997, Essery et al. 2008)
 REAL, PARAMETER ::    ZVENT = 0.75 ! Ratio between ventilation wind speed height and tree height [-]
 REAL, PARAMETER :: RADIUS_ICESPH = 5e-4 ! Radius of single 'ideal' ice shpere [m]
 REAL, PARAMETER :: ALBEDO_ICESPH = 0.8  ! Albedo of single 'ideal' ice shpere [-]
@@ -77,7 +78,7 @@ REAL, PARAMETER ::  TCNM = 48*3600. ! Canopy unloading time scale for melting sn
 !       ------------------------------------------------------
 !                             Used in drag_svs2
 !       ------------------------------------------------------
-LOGICAL :: lres_snca = .false. ! Use or not the resistance from the intercepted snow
+LOGICAL :: lres_snca = .false. ! Use or not the resistance from the intercepted snow (from Essery et al. 2003)
 
 !       ------------------------------------------------------
 !                               Used in ebudget

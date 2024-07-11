@@ -15,7 +15,7 @@
 !-------------------------------------- LICENCE END ---------------------------
 
       SUBROUTINE CANOPY_MET_SVS2 (T, HU,VMOD, ISW, ILW, TVEG, ZU,ZT,          &
-                                 SUNCOS,VGH_HEIGHT,VGH_DENS, CLUMPING,    &
+                                 SUNCOS,VGH_HEIGHT,VGH_DENS,    &
                                  Z0MVH,Z0SNOW, VEGH,LAIVH,SKYVIEW,EMISVH, &
                                  ISW_CAN,ILW_CAN,VMOD_CAN,T_CAN,HU_CAN,   &
                                  VMOD_TOP, PUREF_VEG, PTREF_VEG,  &
@@ -24,7 +24,7 @@
       use tdpack
       use sfclayer_mod,   only : sl_prelim,sl_sfclayer,SL_OK
       use sfc_options, only: cano_ref_forcing
-      use CANOPY_CSTS, only: KEXT, RCHD, HSUBCANO, ZRALAI, ZBETA, lwind_forest
+      use CANOPY_CSTS, only: KEXT, RCHD, HSUBCANO, ZRALAI, ZBETA, lwind_forest, CLUMPING
       USE MODE_THERMOS
       use svs_configs
       implicit none
@@ -78,7 +78,7 @@
       REAL ZUREF     ! Height of the wind speed forcing above the ground
       !LOGICAL LFORCING_ABOVE ! True if wind forcing height is given above the canopy  (forcing from NWP system or reanalysis)
                                  ! False is wind forcing height is the absolute height above the ground (mdoel driven by observed forcing)
-      REAL CLUMPING
+
       REAL WCAN          ! Canopy wind decay coefficient
       REAL USTAR,  &
            Z0H, & ! Canopy roughness length for heat
