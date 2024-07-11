@@ -1729,7 +1729,9 @@ ierr = 200
                       busptr(vd%snvma%i)%ptr(1, trnch)*busptr(vd%vegh%i)%ptr(1, trnch)
 
            veg_tot =  busptr(vd%wveg_vl%i)%ptr(1, trnch)*busptr(vd%vegl%i)%ptr(1, trnch) +  &
-                      busptr(vd%wveg_vh%i)%ptr(1, trnch)*busptr(vd%vegh%i)%ptr(1, trnch)
+                      busptr(vd%wveg_vh%i)%ptr(1, trnch) *busptr(vd%vegh%i)%ptr(1, trnch) +  &
+                      busptr(vd%sncma%i)%ptr(1, trnch) *busptr(vd%vegh%i)%ptr(1, trnch) 
+
 
            !if (ic%now%hour /= ic%next%hour) then !last time-step of hour
            if (ic%now%mins ==0) then! Full hour
