@@ -247,7 +247,7 @@ SUBROUTINE WATSURF_BUDGET_SVS2 ( DT, ESUBSNC, SUBSNC_CUM, &
         !ETR_GRID(I,K)=((VEGL(I)*(1.-PSN(I))+VEGH(I)*(1.-PSNVH(I)))*ACROOT(I,K)*ETR(I))/(1000.*DELZ(K))
         ! ETR_GRID(I,K)=((VEGL(I)*(1.-PSN(I))*ETR_VL(I)+VEGH(I)*(1.-PSNVH(I))*ETR_VH(I))*ACROOT(I,K))/(1000.*DELZ(K))
         ! weights need to be consistent with those in ebudget, otherwise, mass balance is not closed
-        ETR_GRID(I,K) = ((WTG(I,indx_svs2_vh)*ETR_VL(I) +  WTG(I,indx_svs2_vh)*ETR_VH(I))*ACROOT(I,K))/(1000.*DELZ(K))
+        ETR_GRID(I,K) = ((WTG(I,indx_svs2_vl)*ETR_VL(I) +  WTG(I,indx_svs2_vh)*ETR_VH(I))*ACROOT(I,K))/(1000.*DELZ(K))
      END DO
      EG_GRID(I) = WTG(I,indx_svs2_bg) * EG(I)  + WTG(I,indx_svs2_gv) * EGV(I)
   END DO
