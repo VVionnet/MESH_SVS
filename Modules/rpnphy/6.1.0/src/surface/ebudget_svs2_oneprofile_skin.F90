@@ -296,7 +296,7 @@
             roragr, roravgl,roravgh,    &
             zqsatsno, tgrst, tgrdt, tgrvst, tvgst, tvgdt, esf, esvf, evlf, evhf, &
             tvglst,tvgldt,tvghst,tvghdt,   &
-            egf,egvf, ev_vl,ev_vh, zqsatsnv, legnofrac,legvnofrac,  &
+            egf,egvf, ev_vl,ev_vh, zqsatsnv,  &
             cmu, cm, ctu, vmod_lmin
 
        real, dimension(n) ::  ZQSATGRV, ZDQSATGRV, LOWVEG, HIGHVEG,  &
@@ -912,10 +912,10 @@
 
 !
 !                                             AGGREGATED sensible heat flux (including snow)
-!       TODO: Should it be WTA or WTG? WTG is used for the latent fluxes
-        HFLUX(I) = AG_SVS2( WTA(I,indx_svs2_bg), WTA(I,indx_svs2_vl), &
-                      WTA(I,indx_svs2_vh),WTA(I,indx_svs2_sn), &
-                      WTA(I,indx_svs2_sv), WTA(I,indx_svs2_gv), &
+!       WTG is used to be consistent with the latent fluxes
+        HFLUX(I) = AG_SVS2( WTG(I,indx_svs2_bg), WTG(I,indx_svs2_vl), &
+                      WTG(I,indx_svs2_vh),WTG(I,indx_svs2_sn), &
+                      WTG(I,indx_svs2_sv), WTG(I,indx_svs2_gv), &
                       HFLUXGR(I),HFLUXVGL(I),HFLUXVGH(I), &
                       HFLUXSN(I),HFLUXSV(I),HFLUXGRV(I))
 
@@ -926,43 +926,47 @@
 !                                            ---------------
 !        ------------------
 !        EXPOSED BARE GROUND
+        IF(WTG(I,indx_svs2_vh).ge.EPSILON_SVS) THEN
+!                                            Evaporation rate from ground (for watsurf_budget.ftn)
+!
+            EG(I) = RHOA(I)*(HRSURF(I)* ZQSATGRT(I) - HU(I)) / RESAGR(I)
 !                                            Latent heat of evaporation from
 !                                            the exposed bare ground
 !
-        LEGNOFRAC(I) = RHOA(I) * LEFF(I) * (HRSURF(I)* ZQSATGRT(I) - HU(I)) / RESAGR(I)
-        LEG(I) = WTA(I,indx_svs2_bg) * LEGNOFRAC(I)
-!                                            Evaporation rate from ground (for watsurf_budget.ftn)
-!
-        EG(I) = RHOA(I)*(HRSURF(I)* ZQSATGRT(I) - HU(I)) / RESAGR(I)
+            LEG(I) = WTG(I,indx_svs2_bg) *  LEFF(I) *EG(I)
+
 !
 !
 !
 !                                            Water vapor flux from ground
-        EGF(I) = WTG(I,indx_svs2_bg) * EG(I) / RHOA(I)
+            EGF(I) = WTG(I,indx_svs2_bg) * EG(I) / RHOA(I)
+        ELSE
+           ! NO HIGH VEGETATION --- SET FLUXES TO ZERO
+           EG(I)  = 0.0
+           LEG(I)  = 0.0
+           EGF(I)  = 0.0
+        ENDIF
 
 !        ------------------
 !         GROUND BELOW HIGH VEGETATION --- SET FLUXES TO ZERO if NO HIGH VEGETATION
 
         IF(WTG(I,indx_svs2_vh).ge.EPSILON_SVS) THEN
-!                                            Latent heat of evaporation from
-!                                            the ground below high vegetation.
-!
-           LEGVNOFRAC(I) = RHOA(I) * LEFF(I) * (HRSURFGV(I)* ZQSATGRVT(I) -HU(I)) / RESAGRV(I)
-           LEGV(I) = WTA(I,indx_svs2_gv) * LEGVNOFRAC(I)
-!
 !                                            Evaporation rate from ground below high veg. (for watsurf_budget.ftn)
 !
            EGV(I) = RHOA(I)* (HRSURFGV(I)* ZQSATGRVT(I) - HU(I)) / RESAGRV(I)
+!                                            Latent heat of evaporation from
+!                                            the ground below high vegetation.
+!
+           LEGV(I) = WTG(I,indx_svs2_gv) * LEFF(I) *EGV(I)
+!
+
 !
 !                                            Water vapor flux from ground below high vegetation
 !
            EGVF(I) = WTG(I,indx_svs2_gv) * EGV(I)  / RHOA(I)
 !
-
-
         ELSE
            ! NO HIGH VEGETATION --- SET FLUXES TO ZERO
-           LEGVNOFRAC(I)  = 0.0
            LEGV(I)  = 0.0
            EGVF(I)  = 0.0
            EGV(I)  = 0.0
@@ -973,14 +977,11 @@
 !
           IF( WTG(I,indx_svs2_vl) .ge.EPSILON_SVS) THEN
 !
-!            Check if if qsat> HU
+!            Check if if qsat> HU, i.e. no condensation
              ZHVGL(I) = MAX(0.0 , SIGN(1.,ZQSATVGLT(I) - HU(I)))
 !
 !            Transpiration rate (for watsurf_budget.ftn)
              ETR_VL(I) = RHOA(I)*ZHVGL(I)*(1. - DEL_VL(I))*(ZQSATVGLT(I) -HU(I))/(RESA_VL(I) + RS(I))
-!
-!            Latent heat of transpiration (with fraction)
-             LETR_VL(I) = WTA(I,indx_svs2_vl)* CHLC * ETR_VL(I)
 !
 !            Evapotranspiration rate from low veg. (for watsurf_budget.ftn) (no fraction)
              EV_VL(I) =  RHOA(I)*HV_VL(I) * (ZQSATVGLT(I) - HU(I)) / RESA_VL(I)
@@ -989,28 +990,30 @@
              !  When snow is present, rain falls through vegetation to snow bank... so is not considered in evaporation... This is to conserve water budget.
              IF( SNM(I).GE.CRITSNOWMASS) THEN
                 ! snow over low veg is present, rain falls directly to snow
-                EV_VL(I) = MIN (EV_VL(I),(WR_VL(I)/DT+ETR_VL(I)))
+                EV_VL(I) = MIN (EV_VL(I),(WR_VL(I)/DT))!+ETR_VL(I)))
              ELSE
                 ! no snow present, all rain is considered evaporation
-                EV_VL(I) = MIN (EV_VL(I),(WR_VL(I)/DT+ETR_VL(I)+RR(I)))
+                EV_VL(I) = MIN (EV_VL(I),(WR_VL(I)/DT+RR(I)))
              ENDIF
 
         ELSE
            ! NO SNOW FREE LOW VEGETATION --- SET FLUXES TO ZERO
            ZHVGL(I) = 0.0
-           LETR_VL(I) = 0.0
            ETR_VL(I) = 0.0
            EV_VL(I) = 0.0
         ENDIF
 
+!       Latent heat of transpiration (with fraction)
+        LETR_VL(I) = WTG(I,indx_svs2_vl)* CHLC * ETR_VL(I)
+!
 !       Water vapor flux from low vegetation (including fraction)
-        EVLF(I) =  WTA(I,indx_svs2_vl)  * EV_VL(I)/ RHOA(I)
+        EVLF(I) =  WTG(I,indx_svs2_vl)  *(EV_VL(I) + ETR_VL(I))/ RHOA(I)
 
 !       Latent heat of evaporation from low vegetation (including fraction)
         LEVL(I) = RHOA(I) * CHLC * EVLF(I)
 !
 !       Direct evapo. rate from low veg. (no. fraction) (for watsurf_budget.ftn)
-        ER_VL(I) = EV_VL(I) - ETR_VL(I)
+        ER_VL(I) = EV_VL(I) !- ETR_VL(I)
 !
 !       Latent heat of direct evaporation  (including fraction)
         LER_VL(I)  = LEVL(I) - LETR_VL(I)
@@ -1020,12 +1023,11 @@
 !
         IF(WTG(I,indx_svs2_vh) .GE.EPSILON_SVS) THEN
 !
-!          Check if if qsat> HU, we do not consider condensation in the transpiration term.
-             ZHVGH(I) = MAX(0.0 , SIGN(1.,ZQSATVGHT(I) - HU(I)))
+!            Check if if qsat> HU, we do not consider condensation in the transpiration term.
+           ZHVGH(I) = MAX(0.0 , SIGN(1.,ZQSATVGHT(I) - HU(I)))
 !
 !            Transpiration rate (for watsurf_budget.ftn) (no fraction)
            ETR_VH(I) = VGH_DENS(I) * RHOA(I)*ZHVGH(I)*(1. - DEL_VH(I))* (1.-FCANS(I))*(ZQSATVGHT(I)-HU(I))/(RESA_VH(I) + RS(I)) * (CHLC)/LCAN(I)
-!
 !
 !            Evapotranspiration rate from high veg. (for watsurf_budget.ftn)
            EV_VH(I) = VGH_DENS(I) * RHOA(I) * DEL_VH(I) * (1.-FCANS(I)) * (ZQSATVGHT(I) - HU(I)) / RESA_VH(I) *(CHLC)/LCAN(I)
