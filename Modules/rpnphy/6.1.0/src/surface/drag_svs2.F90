@@ -522,7 +522,7 @@
 !
              DEL_VL(I) =   (WR_VL(I)/WRMAX_VL(I))**(2./3.)
 !
-             DEL_VL(I) = MIN(DEL_VL(I),1.)
+             DEL_VL(I) = MIN(DEL_VL(I),0.25) ! from Boone et al. (2017), same as DEL_VH
 
          ELSE
              DEL_VL(I) = 0.
@@ -643,7 +643,8 @@
 !               From Deardoff (1978), also used in Gouttevin et al. 2015 and same equation as for FCANS
 !               Avoids using COEFF_VH as we do not know where it comes from
                 DEL_VH(I) = (WR_VH(I) / WRMAX_VH(I))**(2./3.)
-             	DEL_VH(I) = MIN(DEL_VH(I),1.)
+
+             	DEL_VH(I) = MIN(DEL_VH(I),0.25) ! from Boone et al. (2017)
              ENDIF
 
          ELSE
