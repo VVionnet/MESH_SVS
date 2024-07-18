@@ -196,7 +196,7 @@ subroutine inisoili_svs2(ni, trnch)
          if (k .EQ. 1) then
             soillayer_depth = delz(k) * 0.5
          else
-            soillayer_depth = soillayer_depth + delz(k)
+            soillayer_depth = soillayer_depth + (delz(k) + delz(k-1))*0.5
          endif
 
          beta_soc = log(0.845/0.93)/log(depth_sapric/depth_fibric) ! See Table 1 in Decharme et al. 2016
