@@ -1413,13 +1413,14 @@ ENDIF
 DO JST = 1, IMAX_USE
   DO JJ = 1,SIZE(ZSNOW)
     IF (JST <= INLVLS_USE(JJ)) THEN
-      ! Update total density
-      PSNOWRHO  (JJ,JST) = ZDRYDENSITY(JJ,JST) + PSNOWLIQ(JJ,JST) * XRHOLW / PSNOWDZ(JJ,JST) 
+      ! Update liquid water content based on updated depth in EVAPN.
       ZLIQHEATXS(JJ)     = MAX( 0.0, (PSNOWLIQ(JJ,JST) - ZWHOLDMAX(JJ,JST)) * XRHOLW ) * XLMTT/PTSTEP 
       PSNOWLIQ  (JJ,JST) = PSNOWLIQ(JJ,JST) - ZLIQHEATXS(JJ)*PTSTEP/(XRHOLW*XLMTT)
       PSNOWLIQ  (JJ,JST) = MAX( 0.0, PSNOWLIQ(JJ,JST) )
       PGRNDFLUX (JJ)     = PGRNDFLUX(JJ) + ZLIQHEATXS(JJ)
       PSNOWTEMP (JJ,JST) = ZSNOWTEMP(JJ,JST)
+      ! Update total density
+      PSNOWRHO  (JJ,JST) = ZDRYDENSITY(JJ,JST) + PSNOWLIQ(JJ,JST) * XRHOLW / PSNOWDZ(JJ,JST) 
   !   Heat content using total density
       ZSCAP     (JJ,JST) = PSNOWRHO(JJ,JST) * XCI
       PSNOWHEAT (JJ,JST) = PSNOWDZ(JJ,JST) * &
