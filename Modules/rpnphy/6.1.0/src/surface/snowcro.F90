@@ -1413,13 +1413,14 @@ ENDIF
 DO JST = 1, IMAX_USE
   DO JJ = 1,SIZE(ZSNOW)
     IF (JST <= INLVLS_USE(JJ)) THEN
-      ! Update total density
-      PSNOWRHO  (JJ,JST) = ZDRYDENSITY(JJ,JST) + PSNOWLIQ(JJ,JST) * XRHOLW / PSNOWDZ(JJ,JST) 
+      ! Update liquid water content based on updated depth in EVAPN.
       ZLIQHEATXS(JJ)     = MAX( 0.0, (PSNOWLIQ(JJ,JST) - ZWHOLDMAX(JJ,JST)) * XRHOLW ) * XLMTT/PTSTEP 
       PSNOWLIQ  (JJ,JST) = PSNOWLIQ(JJ,JST) - ZLIQHEATXS(JJ)*PTSTEP/(XRHOLW*XLMTT)
       PSNOWLIQ  (JJ,JST) = MAX( 0.0, PSNOWLIQ(JJ,JST) )
       PGRNDFLUX (JJ)     = PGRNDFLUX(JJ) + ZLIQHEATXS(JJ)
       PSNOWTEMP (JJ,JST) = ZSNOWTEMP(JJ,JST)
+      ! Update total density
+      PSNOWRHO  (JJ,JST) = ZDRYDENSITY(JJ,JST) + PSNOWLIQ(JJ,JST) * XRHOLW / PSNOWDZ(JJ,JST) 
   !   Heat content using total density
       ZSCAP     (JJ,JST) = PSNOWRHO(JJ,JST) * XCI
       PSNOWHEAT (JJ,JST) = PSNOWDZ(JJ,JST) * &
@@ -1812,8 +1813,8 @@ ELSE
     ENDDO
   ENDDO
 ENDIF 
-!
-!
+
+
 DO JST = 1,IMAX_USE
   DO JJ = 1,SIZE(PSNOW)
   !
@@ -1931,127 +1932,9 @@ SUBROUTINE SNOWCROMETAMO(PSNOWDZ,PSNOWDIAMOPT, PSNOWSPHERI,         &
                          PSNOWSWE,INLVLS_USE, PSNOWAGE, HSNOWMETAMO)  
 !                               
 
-!**** *METAMO* - METAMORPHOSE DES GRAINS
-!              - SNOW METAMORPHISM
-!     OBJET.
-!     ------
-!     METAMORPHOSE DU MANTEAU NEIGEUX.
-!     EVOLUTION DU TYPE DE GRAINS 
-!     MISE A JOUR DES VARIABLES HISTORIQUES.
-!     METAMORPHISM OF THE SNOW GRAINS,
+!     SNOW METAMORPHISM
 !     HISTORICAL VARIABLES
-
-!**   INTERFACE.
-!     ----------
-!     FORMALISME ADOPTE POUR LA REPRESENTATION DES GRAINS :
-!     FORMALISM FOR THE REPRESENTATION OF GRAINS
-!     -----------------------------------------------------
-
-
-!                    1       - -1                 NEIGE FRAICHE
-!                   / \      |                    -------------
-!                  /   \     |  DENDRICITE        DECRITE EN TERME
-!                 /     \    |  DENDRICITY        DE DENDRICITE ET
-!                /       \   |                    SPHERICITE
-!               2---------3  -  0                 DESCRIBED WITH
-!                                                 SPHERICITY AND
-!               |---------|                       DENDRICITY
-!               0         1
-!               SPHERICITE
-!               SPHERICITY
-
-!               4---------5  -
-!               |         |  |
-!               |         |  | DIAMETRE  (OU TAILLE)
-!               |         |  | DIAMETER  (OR SIZE  )
-!               |         |  |                 
-!               |         |  |                   NEIGE NON DENDRITIQUE
-!               6---------7  -                   ---------------------
-
-!                                                SPHERICITE ET TAILLE
-!                                                SPHERICITY AND SIZE 
-
-!              LES VARIABLES DU MODELE : 
-!              -------------------------
-!              CAS DENDRITIQUE             CAS NON DENDRITIQUE
-!  
-!            SGRAN1(JST) : DENDRICITE      SGRAN1(JST) : SPHERICITE
-!            SGRAN2(JST) : SPHERICITE      SGRAN2(JST) : TAILLE (EN METRE)
-!                                                        SIZE
-
-! 
-!    CAS DENDRITIQUE/ DENDRITIC CASE
-!    -------------------------------
-!    SGRAN1(JST) VARIE DE -XVGRAN1 (-99 PAR DEFAUT) (ETOILE) A 0
-!  (DENDRICITY)  >D OU LA DIVISION PAR -XVGRAN1 POUR OBTENIR DES VALEURS
-!                 ENTRE 1 ET 0
-!                 VARIES FROM -XVGRAN1 (DEFAULT -99) (FRESH SNOW) TO 0
-!                 DIVISION BY -XVGRAN1 TO OBTAIN VALUES BETWEEN 0 AND 1
-
-!    SGRAN2(JST) VARIE DE 0 (CAS COMPLETEMENT ANGULEUX) A XVGRAN1
-!  (SPHERICITY)  (99 PAR DEFAUT)
-!                >D OU LA DIVISION PAR XVGRAN1 POUR OBTENIR DES VALEURS
-!                 ENTRE 0 ET 1
-!                 VARIES FROM 0 (SPHERICITY=0) TO XVGRAN1
-
-
-!    CAS NON DENDRITIQUE / NON DENDRITIC CASE
-!    ---------------------------------------
-
-!    SGRAN1(JST) VARIE DE 0 (CAS COMPLETEMENT ANGULEUX) A XVGRAN1
-!  (SPHERICITY)  (99 PAR DEFAUT) (CAS SPHERIQUE)
-!                >D OU LA DIVISION PAR XVGRAN1 POUR OBTENIR DES VALEURS
-!                 ENTRE 0 ET 1
-!                 VARIES FROM 0 TO 99
-
-!    SGRAN2(JST) EST SUPERIEUR A XVDIAM1-SPHERICITE (3.E-4 M) ET NE FAIT QUE CROITRE
-!     (SIZE)     IS GREATER THAN XVDIAM1-SPHERICITE (3.E-4 M) ALWAYS INCREASE
-
-
-!    EXEMPLES : POINTS CARACTERISTIQUES DE LA FIGURE
-!    --------
-
-!                 SGRAN1     SGRAN2    DENDRICITE  SPHERICITE  TAILLE
-!                                      DENDRICITY  SPHERICITY  SIZE
-!      --------------------------------------------------------------
-!                                                               (M)
-!        1        -XVGRAN1    VNSPH3        1           0.5
-!        2           0         0           0            0
-!        3           0       XVGRAN1        0            1
-!        4           0       XVDIAM1                     0        4.E-4 
-!        5         XVGRAN1    XVDIAM1-XVSPHE1              1        3.E-4
-!        6           0         --                       0        --
-!        7         XVGRAN1      --                       1        --
-
-!     PAR DEFAUT : XVGRAN1 =99   VNSPH3=50 XVSPHE1=1. XVDIAM1=4.E-4
-
-
-!     METHODE.
-!     --------
-!     EVOLUTION DES TYPES DE GRAINS : SELON LES LOIS DECRITES 
-!     DANS BRUN ET AL (1992)
-!     PLUSIEURS CAS SONT A DISTINGUER
-!      1.2 NEIGE HUMIDE
-!      1.3 METAMORPHOSE NEIGE SECHE
-!        1.3.1 FAIBLE GRADIENT
-!        1.3.2 GRADIENT MOYEN
-!        1.3.3 FORT GRADIENT
-!     DANS CHAQUE CAS ON SEPARE NEIGE DENDRITIQUE ET NON DENDRITIQUE
-!     LE PASSAGE DENDRITIQUE => NON DENDRITIQUE SE FAIT LORSQUE 
-!     SGRAN1 DEVIENT > 0
-         
-!     TASSEMENT : LOIS DE VISCOSITE ADAPTEE SELON LE TYPE DE GRAINS
-
-!     VARIABLES HISTORIQUES (CAS NON DENDRITIQUE SEULEMENT)
-
-!     MSHIST DEFAUT
-!        0           CAS NORMAL
-!     NVHIS1   1     GRAINS ANGULEUX
-!     NVHIS2   2     GRAINS AYANT ETE EN PRESENCE D EAU LIQUIDE 
-!                    MAIS N'AYANT PAS EU DE CARATERE ANGULEUX 
-!     NVHIS3   3     GRAINS AYANT ETE EN PRESENCE D EAU LIQUIDE
-!                    AYANT EU AUPARAVANT UN CARACTERE ANGULEUX 
-
+!    
 !     GRAIN METAMORPHISM ACCORDING TO BRUN ET AL (1992)
 !     THE DIFFERENT CASES ARE :
 !     1.2 WET SNOW
@@ -2235,7 +2118,6 @@ IF ((HSNOWMETAMO/='C13')) THEN
               ZSPHE(JJ,JST)=MIN(XVSPHE3,ZSPHE(JJ,JST))!sphericity limited to 0.5
               GCOND_SPH(JJ,JST)=(ZSPHE(JJ,JST)<XVSPHE3-XUEPSI)
               ZCOEF_SPH(JJ,JST) = 2.5
-
             ELSE
               ZVDENT2(JJ,JST) = XVSPHE2 * ZVAP
               ! CONDITION POUR LE CAS NON DENDRITIQUE SPHERICITE NON LIMITEE
@@ -2306,7 +2188,6 @@ IF ((HSNOWMETAMO/='C13')) THEN
         ELSEIF (GCOND_B21(JJ,JST) .AND. (ZGRADT(JJ,JST) >= XVGRAT2)) THEN
           !CASE WHEN DRY SNOW AND TEMPERATURE GRADIENT >= 15 K/m AND S=0 ( work from Carmagnola et al. 2014 )
           ZDANGL = SNOW3L_MARBOUTY(PSNOWRHO(JJ,JST),PSNOWTEMP(JJ,JST),ZGRADT(JJ,JST))   
-
           IF (ZSPHE(JJ,JST)> 0.) THEN
               ZDSPHESURDT = ZVDENT2(JJ,JST)
           ELSE
@@ -2315,7 +2196,6 @@ IF ((HSNOWMETAMO/='C13')) THEN
           PSNOWDIAMOPT(JJ,JST) = PSNOWDIAMOPT(JJ,JST) + ((1 +ZSPHE(JJ,JST))/2.  * ZDANGL * XVFI &
                                  + ZDSPHESURDT*(PSNOWDIAMOPT(JJ,JST)-XVDIAM1)/(1+ZSPHE(JJ,JST)) ) &
                                  * PTSTEP
-
         ENDIF
         PSNOWSPHERI(JJ,JST)=ZSPHE(JJ,JST)
       ENDIF
@@ -4378,8 +4258,12 @@ INTEGER, DIMENSION(:), INTENT(INOUT)      :: KNLVLS_USE
 !
 REAL, DIMENSION(SIZE(PLES3L))       :: ZRADSINK
 REAL, DIMENSION(SIZE(PLES3L))       :: ZSNOWHEATC
+REAL, DIMENSION(SIZE(PLES3L))       :: ZSUBLIM ! mass of snow that sublimates kg m-2
+REAL, DIMENSION(SIZE(PLES3L))       :: ZSNOWHEATSUBLIM ! enthalpy of snow that sublimates W m-2
 INTEGER, DIMENSION(SIZE(PLES3L))    :: ISNOWGONE_DELTA
+REAL :: ZSNOWSWE, ZSNOWSWEC
 !
+LOGICAL, DIMENSION(SIZE(PLES3L))    :: GALLSUBLIM, GALLMELT
 INTEGER  :: JJ
 !
 REAL(KIND=JPRB) :: ZHOOK_HANDLE
@@ -4399,7 +4283,7 @@ END DO
 !
 ISNOWGONE_DELTA(:) = 1
 !
-! 1. Simple test to see if snow vanishes:
+! 1. Test to see if snow vanishes:
 ! ---------------------------------------
 ! If so, set thicknesses (and therefore mass and heat) and liquid content
 ! to zero, and adjust fluxes of water, evaporation and heat into underlying
@@ -4408,9 +4292,37 @@ ISNOWGONE_DELTA(:) = 1
 ! takes into account the heat content corresponding to the occasional
 ! sublimation  and then PGRNDFLUX
 !
-ZSNOWHEATC(:) = ZSNOWHEATC(:) + MAX( 0., PLES3L(:)*PTSTEP ) 
+! Mass that should be sublimated if available
+ZSUBLIM(:) = MAX( 0., PLES3L(:)*PTSTEP ) / XLSTT
 !
-WHERE ( PGFLUXSNOW(:)+ZRADSINK(:)-PGRNDFLUX(:) >= (-ZSNOWHEATC(:)/PTSTEP) )
+! Enthalpy of sublimated snow (cumulate enthalpy of layers from the surface until
+! sublimation is reached)
+DO JJ = 1,SIZE(ZRADSINK)
+  ZSNOWSWEC = 0.
+  ZSNOWHEATSUBLIM(JJ) = 0.
+  DO JST =1, KNLVLS_USE(JJ)
+    ZSNOWSWE = PSNOWDZ(JJ,JST)*PSNOWRHO(JJ,JST)-PSNOWLIQ(JJ,JST)*XRHOLW
+    ZSNOWSWEC = ZSNOWSWEC + ZSNOWSWE
+    IF (ZSNOWSWEC < ZSUBLIM(JJ)) THEN
+      ! Layer fully sublimated
+      ZSNOWHEATSUBLIM(JJ) = ZSNOWHEATSUBLIM(JJ) + PSNOWHEAT(JJ,JST)
+    ELSE
+      ! Layer partially sublimated
+      ZSNOWHEATSUBLIM(JJ) = ZSNOWHEATSUBLIM(JJ) &
+      + PSNOWHEAT(JJ,JST)*(ZSNOWSWE+ZSUBLIM(JJ)-ZSNOWSWEC)/ZSNOWSWE
+      EXIT
+    ENDIF
+  END DO
+END DO
+! Enthalpy of not sublimated snow
+ZSNOWHEATC(:) = ZSNOWHEATC(:) - ZSNOWHEATSUBLIM
+! Logical true if all snow is sublimated
+GALLSUBLIM(:) = ZSNOWHEATC(:) >= 0.
+! Logical true if all non-sublimated snow melts
+GALLMELT(:)   = PGFLUXSNOW(:)+ZRADSINK(:)-PGRNDFLUX(:) >= (-ZSNOWHEATC(:)/PTSTEP)
+!
+! Where snow disappears, transfer energy and mass to soil and remove all snow layers
+WHERE (GALLMELT .OR. GALLSUBLIM)
   PGRNDFLUX(:)       = PGFLUXSNOW(:) + (ZSNOWHEATC(:)/PTSTEP)
   PEVAPCOR (:)       = PLES3L(:)/XLSTT
   PRADXS   (:)       = 0.0
@@ -4639,7 +4551,7 @@ USE MODD_SURF_PAR, ONLY : XUNDEF
 USE MODD_TYPE_DATE_SURF,  ONLY: DATE_TIME
 USE MODD_CSTS,     ONLY : XLMTT, XTT, XCI, XRHOLI, XCL
 !
-USE MODD_SNOW_METAMO, ONLY : XNDEN1, XNDEN2, XNDEN3, XVGRAN1, &
+USE MODD_SNOW_METAMO, ONLY : XNDEN1, XNDEN2, XNDEN3, &
                              XNSPH1, XNSPH2, XNSPH3, XNSPH4, NVHIS2
 USE MODD_PREP_SNOW, ONLY : NIMPUR
 !
@@ -5108,13 +5020,12 @@ DO JJ = 1,SIZE(PSNOW(:))
     !
     IF (  HSNOWDRIFT=='DFLT' ) THEN
       PSNOWDIAMOPTF(JJ) = XVDIAM6
-      PSNOWSPHERIF(JJ) = XNSPH3/XVGRAN1
+      PSNOWSPHERIF(JJ) = 0.5
     ELSE IF ( HSNOWDRIFT=='GA01' ) THEN
 !           2nd Option : deposited grains have a thresold wind speed equal to
 !           the current 5m wind speed (cf Gallee et al, 2001)
-      ZMOB = MAX(MIN(2.868*EXP(-0.085*PVMOD(JJ))-1.,1.),0.)
-      ZCOEF = MAX(-XVGRAN1,- ZMOB * XVGRAN1*396./395.)/ ( -XVGRAN1 )
-      PSNOWSPHERIF(JJ) = 1 - 49.*(ZCOEF/99.) 
+      ZCOEF = MIN(MAX(2.868*EXP(-0.085*PVMOD(JJ))-1.,0.),1.)
+      PSNOWSPHERIF(JJ) = 1. - 0.495 * ZCOEF
       PSNOWDIAMOPTF(JJ) = XVDIAM6 * &
                       ( ZCOEF + ( 1.- ZCOEF ) * &
                                 ( 3.*PSNOWSPHERIF(JJ) + 4.*(1.-PSNOWSPHERIF(JJ)) ) )
@@ -5122,8 +5033,6 @@ DO JJ = 1,SIZE(PSNOW(:))
     ELSE IF ((HSNOWDRIFT=='VI13') .OR. (HSNOWDRIFT== 'R21F') .OR. (HSNOWDRIFT=='R21W') .OR. (HSNOWDRIFT=='R21R')) THEN
 !          3rd Option : parameterization of Vionnet et al (2013) that allows
 !       simulatneous snow transport and snowfall for wind speed higher than 6 m/s
-      !PSNOWSPHERIF(JJ) = MIN(MAX(0.14/4.*(ZWIND_GRAIN(JJ)-2.)+0.5,0.5),0.9)
-      !ZCOEF =  MAX(MIN(-0.07*(ZWIND_GRAIN(JJ)-2.)+1.,1.),0.2)
       ! Expression (B.3) and (B.4), Vionnet et al (2013):
       PSNOWSPHERIF(JJ) = MIN(MAX(0.035*ZWIND_GRAIN(JJ)+0.43,0.5),0.9)
       ZCOEF =  MIN(MAX(1.14-0.07*ZWIND_GRAIN(JJ),0.2),1.)
@@ -5131,8 +5040,8 @@ DO JJ = 1,SIZE(PSNOW(:))
                       ( ZCOEF + ( 1.- ZCOEF ) * &
                                 ( 3.*PSNOWSPHERIF(JJ) + 4.*(1.-PSNOWSPHERIF(JJ)) ) )                 
     ELSE IF ( HSNOWDRIFT=='NONE' ) THEN
-      PSNOWSPHERIF(JJ) = MIN( MAX( XNSPH1*ZWIND_GRAIN(JJ)+XNSPH2, XNSPH3 ), XNSPH4 ) / XVGRAN1
-      ZCOEF = MAX( MIN( XNDEN1*ZWIND_GRAIN(JJ)-XNDEN2, XNDEN3 ), -XVGRAN1 ) / ( -XVGRAN1 )
+      PSNOWSPHERIF(JJ) = MIN( MAX( 0.0795*ZWIND_GRAIN(JJ)+0.38, 0.5), 0.9 ) 
+      ZCOEF = MAX( MIN( -0.173*ZWIND_GRAIN(JJ)+1.29, 0.2 ), 1.) 
       PSNOWDIAMOPTF(JJ) = XVDIAM6 * &
                       ( ZCOEF + ( 1.- ZCOEF ) * &
                                 ( 3.*PSNOWSPHERIF(JJ) + 4.*(1.-PSNOWSPHERIF(JJ)) ) )
@@ -5145,7 +5054,7 @@ DO JJ = 1,SIZE(PSNOW(:))
       PSNOWDIAMOPTF(JJ)=(PSNOWDIAMOPTF(JJ)*PSR(JJ) + PBLOWSNW(JJ,3)*PBLOWSNW(JJ,1) + XVDIAM3*ZPSR_SNOWMAK(JJ))/ &
       (PSR(JJ)+PBLOWSNW(JJ,1)+ZPSR_SNOWMAK(JJ))
       ! SPECIFICATION SPHERICITY
-      PSNOWSPHERIF(JJ)=(PSNOWSPHERIF(JJ)*PSR(JJ) + PBLOWSNW(JJ,4)*PBLOWSNW(JJ,1) + XNSPH4/XVGRAN1*ZPSR_SNOWMAK(JJ))/ &
+      PSNOWSPHERIF(JJ)=(PSNOWSPHERIF(JJ)*PSR(JJ) + PBLOWSNW(JJ,4)*PBLOWSNW(JJ,1) + 0.9*ZPSR_SNOWMAK(JJ))/ &
       (PSR(JJ)+PBLOWSNW(JJ,1)+ZPSR_SNOWMAK(JJ))
     ELSE IF ( PBLOWSNW(JJ,1) > XUEPSI) THEN
       PSNOWDIAMOPTF(JJ) = (PSNOWDIAMOPTF(JJ) * PSR(JJ) + PBLOWSNW(JJ,3) * PBLOWSNW(JJ,1)) / (PSR(JJ) + PBLOWSNW(JJ,1))
