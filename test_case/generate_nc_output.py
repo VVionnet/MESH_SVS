@@ -90,7 +90,7 @@ for ific,fic in enumerate(list_fic):
 
 # List of cumulated variable that need to be reprocessed to handle the fact that they are reset to zero 
 # every day at 12 UTC by MESH-SVS (to mimic GEM-Hydro daily integration cycle)
-var_cum=['RSNOW_AC','ESNCAF','RSNOWV_AC']
+var_cum=['RSNOW_AC','ESNCAF','RSNV_AC']
 
 for var in var_cum:
 	if var in ref.data_vars:
