@@ -25,7 +25,7 @@
                    CG,CVP, EMISVL, EMISVH, SKINCOND_VL, &
                    RESAGR, RESA_VL, RESA_VH, RESASA, RESASV, RESAGRV, RES_SNCA, &
                    RNETSN, HFLUXSN,LESLNOFRAC, LESNOFRAC, ESNOFRAC, SUBLDRIFT, &
-                   ALPHAS, &
+                   ALPHAS, RSNOW, &
                    TSNS, &
                    RNETSV, HFLUXSV,LESLVNOFRAC, LESVNOFRAC, ESVNOFRAC, SUBLDRIFTV, &
                    ALPHASV, &
@@ -74,7 +74,7 @@
       REAL HV_VL(N), HV_VH(N), HVSN_VH(N), DEL_VL(N), DEL_VH(N),  RS(N)
       REAL CG(N), CVP(N),   EMISVL(N), EMISVH(N), SKINCOND_VL(N)
       REAL LAI(N), GAMVEG(N), ALGR(N), EMGR(N), ALGRV(N), EMGRV(N)
-      REAL RNET(N), HFLUX(N), LE(N), ALPHAS(N)
+      REAL RNET(N), HFLUX(N), LE(N), ALPHAS(N), RSNOW(N)
       REAL ALBT(N)
       REAL LEG(N), LEVL(N), LEVH(N), LER_VL(N), LETR_VL(N),LEGV(N), GFLUX(N)
       REAL LER_VH(N), LETR_VH(N)
@@ -926,7 +926,7 @@
 !                                            ---------------
 !        ------------------
 !        EXPOSED BARE GROUND
-        IF(WTG(I,indx_svs2_vh).ge.EPSILON_SVS) THEN
+        IF(WTG(I,indx_svs2_bg) .GE. EPSILON_SVS) THEN
 !                                            Evaporation rate from ground (for watsurf_budget.ftn)
 !
             EG(I) = RHOA(I)*(HRSURF(I)* ZQSATGRT(I) - HU(I)) / RESAGR(I)
@@ -934,14 +934,14 @@
 !                                            the exposed bare ground
 !
             LEG(I) = WTG(I,indx_svs2_bg) *  LEFF(I) *EG(I)
-
-!
 !
 !
 !                                            Water vapor flux from ground
             EGF(I) = WTG(I,indx_svs2_bg) * EG(I) / RHOA(I)
+!
+!
         ELSE
-           ! NO HIGH VEGETATION --- SET FLUXES TO ZERO
+           ! NO BARE GROUND EXPOSED TO ATM --- SET FLUXES TO ZERO
            EG(I)  = 0.0
            LEG(I)  = 0.0
            EGF(I)  = 0.0
@@ -950,7 +950,7 @@
 !        ------------------
 !         GROUND BELOW HIGH VEGETATION --- SET FLUXES TO ZERO if NO HIGH VEGETATION
 
-        IF(WTG(I,indx_svs2_vh).ge.EPSILON_SVS) THEN
+        IF(WTG(I,indx_svs2_gv).ge.EPSILON_SVS) THEN
 !                                            Evaporation rate from ground below high veg. (for watsurf_budget.ftn)
 !
            EGV(I) = RHOA(I)* (HRSURFGV(I)* ZQSATGRVT(I) - HU(I)) / RESAGRV(I)
@@ -975,26 +975,26 @@
 !        ------------------
 !        SNOW FREE LOW VEGETATION --- SET FLUXES TO ZERO if NO SNOW FREE LOW VEGETATION
 !
-          IF( WTG(I,indx_svs2_vl) .ge.EPSILON_SVS) THEN
+        IF( WTG(I,indx_svs2_vl) .ge.EPSILON_SVS) THEN
 !
-!            Check if if qsat> HU, i.e. no condensation
-             ZHVGL(I) = MAX(0.0 , SIGN(1.,ZQSATVGLT(I) - HU(I)))
+!          Check if if qsat> HU, i.e. no condensation
+           ZHVGL(I) = MAX(0.0 , SIGN(1.,ZQSATVGLT(I) - HU(I)))
 !
-!            Transpiration rate (for watsurf_budget.ftn)
-             ETR_VL(I) = RHOA(I)*ZHVGL(I)*(1. - DEL_VL(I))*(ZQSATVGLT(I) -HU(I))/(RESA_VL(I) + RS(I))
+!          Transpiration rate (for watsurf_budget.ftn)
+           ETR_VL(I) = RHOA(I)*ZHVGL(I)*(1. - DEL_VL(I))*(ZQSATVGLT(I) -HU(I))/(RESA_VL(I) + RS(I))
 !
-!            Evapotranspiration rate from low veg. (for watsurf_budget.ftn) (no fraction)
-             EV_VL(I) =  RHOA(I)*HV_VL(I) * (ZQSATVGLT(I) - HU(I)) / RESA_VL(I)
+!          Evapotranspiration rate from low veg. (for watsurf_budget.ftn) (no fraction)
+           EV_VL(I) =  RHOA(I)*DEL_VL(I) * (ZQSATVGLT(I) - HU(I)) / RESA_VL(I)
 !
-             !  EV is limited to WR/DT+RR+ETR to avoid negative WR in watsurf_budget when direct evaporation exceeds rainrate
-             !  When snow is present, rain falls through vegetation to snow bank... so is not considered in evaporation... This is to conserve water budget.
-             IF( SNM(I).GE.CRITSNOWMASS) THEN
-                ! snow over low veg is present, rain falls directly to snow
-                EV_VL(I) = MIN (EV_VL(I),(WR_VL(I)/DT))!+ETR_VL(I)))
-             ELSE
-                ! no snow present, all rain is considered evaporation
-                EV_VL(I) = MIN (EV_VL(I),(WR_VL(I)/DT+RR(I)))
-             ENDIF
+           !  EV is limited to WR/DT+RR+ETR to avoid negative WR in watsurf_budget when direct evaporation exceeds rainrate
+           !  When snow is present, rain falls through vegetation to snow bank... so is not considered in evaporation... This is to conserve water budget.
+           IF( SNM(I).GE.CRITSNOWMASS .OR. RSNOW(I).GE. EPSILON_SVS ) THEN
+              ! snow over low veg is present, rain falls directly to snow
+              EV_VL(I) = MIN (EV_VL(I),(WR_VL(I)/DT))!+ETR_VL(I)))
+           ELSE
+              ! no snow present, all rain is considered evaporation
+              EV_VL(I) = MIN (EV_VL(I),(WR_VL(I)/DT+RR(I)))
+           ENDIF
 
         ELSE
            ! NO SNOW FREE LOW VEGETATION --- SET FLUXES TO ZERO

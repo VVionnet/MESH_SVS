@@ -170,7 +170,7 @@ SUBROUTINE WATSURF_BUDGET_SVS2 ( DT, ESUBSNC, SUBSNC_CUM, &
 
     IF( WTG(I,indx_svs2_vl) .GE.EPSILON_SVS) THEN
 
-     IF (SNM(I).GE.CRITSNOWMASS)THEN
+     IF (SNM(I).GE.CRITSNOWMASS .OR. RSNOW(I).GE. EPSILON_SVS )THEN
         !                                  There is snow on the ground, remove evaporation
         !                                  then drain all liquid water from the vegetation
         WR_VLT(I) = WR_VL(I) - DT * ER_VL(I)
@@ -182,7 +182,7 @@ SUBROUTINE WATSURF_BUDGET_SVS2 ( DT, ESUBSNC, SUBSNC_CUM, &
         !                                  Remove P-E from liquid water in vegetation and rain can be trapped by low veg
         !                                  Sanity check: WR_VHT must be positive
         !                                  since ER is limited to WR/DT+RR in ebudget
-        WR_VLT(I) = MAX(0., WR_VL(I) - DT * (ER_VL(I) -  RR(I)))
+        WR_VLT(I) = MAX(0., WR_VL(I) - DT * (ER_VL(I) - RR(I)))
         !                                  Compute canopy drip
         !                                  if Wr > Wrmax, there is runoff
         RVEG_VL(I) = MAX(0., (WR_VLT(I) - WRMAX_VL(I)) / DT )
@@ -209,12 +209,12 @@ SUBROUTINE WATSURF_BUDGET_SVS2 ( DT, ESUBSNC, SUBSNC_CUM, &
   !                                  otherwise goes to snowpack, and reaches ground as snow runoff
   !
   DO I=1,N
-      IF( (WTG(I,indx_svs2_vh)+ WTG(I,indx_svs2_vl)) .ge.EPSILON_SVS) THEN
+      IF( (WTG(I,indx_svs2_vh)+ WTG(I,indx_svs2_vl)) .GE.EPSILON_SVS) THEN
          ! There is vegetation -- first add snowpack runoff and runoff from vegetation
-         PG(I) = (1.-WTG(I,indx_svs2_vh)) * RSNOW(I) + WTG(I,indx_svs2_vh) * RSNOWV(I) + &
+         PG(I) = (1. - WTG(I,indx_svs2_vh)) * RSNOW(I) + WTG(I,indx_svs2_vh) * RSNOWV(I) + &
             WTG(I,indx_svs2_vl)*RVEG_VL(I) + WTG(I,indx_svs2_vh) * RVEG_VH(I)
 
-         IF( SNM(I).LT.CRITSNOWMASS ) THEN
+         IF( SNM(I).LT.CRITSNOWMASS .AND. RSNOW(I) .LT. EPSILON_SVS ) THEN
             ! No snow on bare ground and low veg, rain falls to bare ground
             PG(I) = PG(I) + WTG(I,indx_svs2_bg) * RR(I)
          ENDIF
