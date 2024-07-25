@@ -1725,10 +1725,10 @@ ierr = 200
                wsoil_tot = wsoil_tot + 1000.0*busptr(vd%wsoil%i)%ptr(j, trnch)*delz(j) !mm
                isoil_tot = isoil_tot + 1000.0*busptr(vd%isoil%i)%ptr(j, trnch)*delz(j) !mm
            end do
-           snow_tot = busptr(vd%snoma%i)%ptr(1, trnch)*(1 - busptr(vd%vegh%i)%ptr(1, trnch)) +  &
+           snow_tot = busptr(vd%snoma%i)%ptr(1, trnch)* (1.-busptr(vd%vegh%i)%ptr(1, trnch)) + & ! busptr(vd%svs_wtg%i)%ptr(5, trnch) +  & ! busptr(vd%vegl%i)%ptr(1, trnch) + &
                       busptr(vd%snvma%i)%ptr(1, trnch)*busptr(vd%vegh%i)%ptr(1, trnch)
 
-           veg_tot =  busptr(vd%wveg_vl%i)%ptr(1, trnch)*busptr(vd%vegl%i)%ptr(1, trnch) +  &
+           veg_tot =  busptr(vd%wveg_vl%i)%ptr(1, trnch)*busptr(vd%svs_wtg%i)%ptr(3, trnch) +  & # Weight of vl
                       busptr(vd%wveg_vh%i)%ptr(1, trnch) *busptr(vd%vegh%i)%ptr(1, trnch) +  &
                       busptr(vd%sncma%i)%ptr(1, trnch) *busptr(vd%vegh%i)%ptr(1, trnch) 
 
