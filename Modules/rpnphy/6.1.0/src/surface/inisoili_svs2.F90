@@ -40,7 +40,7 @@ subroutine inisoili_svs2(ni, trnch)
    REAL, dimension(ni,nl_stp) :: wsat_geo, wwilt_geo, wfc_geo, b_geo, psisat_geo, &
            ksat_geo, wfcint_geo, fb_geo ,quartz_geo,rhosoil_geo,conddry_geo,condsld_geo, soilhcapz_dry
    ! 100% soil organic content variables 
-   REAL, dimension(ni,nl_stp) :: wsat_soc, wwilt_soc, wfc_soc, b_soc, psisat_soc, &
+   REAL, dimension(ni,nl_svs) :: wsat_soc, wwilt_soc, wfc_soc, b_soc, psisat_soc, &
            ksat_soc, wfcint_soc, fb_soc ,conddry_soc,condsld_soc, hcap_soc
    real, pointer, dimension(:) :: zcgsat, zgrkef, zdraindens, zslop
 
@@ -191,7 +191,7 @@ subroutine inisoili_svs2(ni, trnch)
    enddo
    !     Computer 100% soil organic content properties for typical peat soil profile (Decharme et al. 2016)
    do i=1,ni
-      do k=1,nl_stp
+          do k=1,nl_svs
 
          if (k .EQ. 1) then
             soillayer_depth = delz(k) * 0.5
