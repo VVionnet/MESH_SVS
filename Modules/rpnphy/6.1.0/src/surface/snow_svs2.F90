@@ -596,7 +596,7 @@ ZSOILCOND(:) = PSOILCONDZ(:)
 !
 !
 !    To Conserve mass in ISBA without MEB, 
-!    EVAP must be weignted by the snow fraction
+!    EVAP must be weighted by the snow fraction
 !    in the calulation of THRUFAL
   ZPSN(:) = PPSN(:)
 !
@@ -1402,7 +1402,7 @@ DO JJ=1,KSIZE1
   ZGSFCSNOW    (JI)   = ZP_GSFCSNOW    (JJ)
   PLES3L       (JI)   = ZP_LES3L       (JJ)
   PLEL3L       (JI)   = ZP_LEL3L       (JJ)
-  PEVAP        (JI)   = ZP_EVAP        (JJ)
+  PEVAP        (JI)   = ZP_EVAP        (JJ) 
   ZSOILCOR      (JI) = ZP_SOILCOR     (JJ)
   !
   PSWNETSNOW   (JI) = ZP_SWNETSNOW   (JJ)

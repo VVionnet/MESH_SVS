@@ -281,6 +281,7 @@ include "isbapar.cdk"
              ! Snow cover fraction close eqals to one as soon as snow is present on the ground
              ! NEED to BE REVISITED. Used for test with Crocus
             PSNVH(I)  =  MIN( SVM(I) / (1.0) , 1.0)
+            !PSNVH(I)  =  1.
 
 !                       SNOW FRACTION AS SEEN FROM THE SPACE
 !                       NEED TO ACCOUNT FOR SHIELDING OF LEAVES/TREES
