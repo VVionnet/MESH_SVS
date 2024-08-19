@@ -115,7 +115,7 @@ contains
       if( WT(i,indx_svs2_vl) .lt. min_wt )  WT(i,indx_svs2_vl) = 0.0
       if( WT(i,indx_svs2_sv) .lt. min_wt )  WT(i,indx_svs2_sv) = 0.0             
       if( WT(i,indx_svs2_gv) .lt. min_wt )  WT(i,indx_svs2_gv) = 0.0  
-
+      if( (WT(i,indx_svs2_gv)+WT(i,indx_svs2_sv)) .lt. min_wt )  WT(i,indx_svs2_vh) = 0.0  
 
       IF(HTYPE =='ATM') THEN ! Fraction seen from the atmosphere 
       !     EXPOSED BARE GROUND (NOT COVERED BY SNOW)
@@ -124,6 +124,7 @@ contains
       ! Aggregate
       WT(i,indx_svs2_ag) =  WT(i,indx_svs2_bg) + WT(i,indx_svs2_vl) + WT(i,indx_svs2_vh) + &
                              WT(i,indx_svs2_sn) + WT(i,indx_svs2_sv) + WT(i,indx_svs2_gv)
+
       ELSE IF(HTYPE =='GROUND') THEN   ! Fraction seen from the ground
           !     EXPOSED BARE GROUND (NOT COVERED BY SNOW)
           WT(i,indx_svs2_bg) = 1.0 - WT(i,indx_svs2_sn)  - WT(i,indx_svs2_vl) &

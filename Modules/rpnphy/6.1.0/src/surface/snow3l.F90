@@ -8,7 +8,7 @@
                 PPET_A_COEF, PPEQ_A_COEF, PPET_B_COEF, PPEQ_B_COEF,       &
                 PSNOWSWE,PSNOWRHO,PSNOWHEAT,PSNOWALB,                     &
                 PSNOWAGE,                                                 &                
-                PTSTEP,PPS,PSR,PRR,PPSN3L, PRSURF ,                       &
+                PTSTEP,PPS,PSR,PRR,PPSN3L, PRESA_SV ,                       &
                 PTA,PTG,PSW_RAD,PQA,PVMOD,PWIND_DRIFT,PLW_RAD, PRHOA,                 &
                 PUREF,PEXNS,PEXNA,PDIRCOSZW,                              &
                 PZREF,PZ0,PZ0EFF,PZ0H,PALB,                               &
@@ -158,8 +158,8 @@ REAL, DIMENSION(:), INTENT(IN)    :: PSOILCOND, PD_G, PPSN3L
 !                                                  Used to calculate ground/snow heat flux
 !                                      PPSN3L    = snow fraction
 !
-REAL, DIMENSION(:)                :: PRSURF     
-!                                 Additional aerodynamic surface resistance if Ta and HR above canopy
+REAL, DIMENSION(:)                :: PRESA_SV     
+!                                 Aerodynamic  resistance if Ta and HR above canopy
 REAL, DIMENSION(:), INTENT(IN)    :: PZREF, PUREF, PEXNS, PEXNA, PDIRCOSZW, PRHOA, PZ0, PZ0EFF, &
                                        PALB, PZ0H, PPERMSNOWFRAC, PFORESTFRAC 
 !                                      PZ0EFF    = roughness length for momentum
@@ -1300,7 +1300,7 @@ PRI(:)=ZRI(:)
 !
 ! Surface aerodynamic resistance for heat transfers
 !
- CALL SURFACE_AERO_COND(ZRI, PZREF, PUREF, PVMOD, PZ0, PZ0H, PRSURF, ZAC, PRA, PCHSNOW, HSNOWRES)
+ CALL SURFACE_AERO_COND(ZRI, PZREF, PUREF, PVMOD, PZ0, PZ0H, PRESA_SV, ZAC, PRA, PCHSNOW, HSNOWRES)
 !
 ! For atmospheric model coupling:
 !

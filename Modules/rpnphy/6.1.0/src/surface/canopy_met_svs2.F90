@@ -16,17 +16,17 @@
 
       SUBROUTINE CANOPY_MET_SVS2 (T, HU,VMOD, ISW, ILW, TVEG, ZU,ZT,          &
                                  SUNCOS,VGH_HEIGHT,VGH_DENS,    &
-                                 Z0MVH,Z0SNOW, VEGH,LAIVH,SKYVIEW,EMISVH, &
+                                 Z0MVH,Z0SNOW, WTG,LAIVH,SKYVIEW,EMISVH, &
                                  ISW_CAN,ILW_CAN,VMOD_CAN,T_CAN,HU_CAN,   &
                                  VMOD_TOP, PUREF_VEG, PTREF_VEG,  &
-                                 PRSURF, PWIND_DRIFT, N )
+                                 PWIND_DRIFT, N )
 
       use tdpack
-      use sfclayer_mod,   only : sl_prelim,sl_sfclayer,SL_OK
       use sfc_options, only: cano_ref_forcing
       use CANOPY_CSTS, only: KEXT, RCHD, HSUBCANO, ZRALAI, ZBETA, lwind_forest, CLUMPING
       USE MODE_THERMOS
       use svs_configs
+      use svs2_tile_configs
       implicit none
 
       INTEGER N
@@ -34,12 +34,12 @@
       REAL T(N), HU(N), VMOD(N)
       REAL ISW(N), ILW(N),SUNCOS(N)
       REAL TVEG(N)
-      REAL ZU(N), ZT(N),Z0MVH(N)
-      REAL SKYVIEW(N), LAIVH(N),VGH_HEIGHT(N),VEGH(N)
+      REAL ZU(N), ZT(N),Z0MVH(N),WTG(N,svs2_tilesp1)
+      REAL SKYVIEW(N), LAIVH(N),VGH_HEIGHT(N)
       REAL VGH_DENS(N), Z0SNOW(N)
       REAL ISW_CAN(N), ILW_CAN(N), EMISVH(N)
       REAL VMOD_CAN(N),T_CAN(N),HU_CAN(N),PUREF_VEG(N),PTREF_VEG(N),VMOD_TOP(N), PWIND_DRIFT(N)
-      REAL PRSURF(N)  ! aerodynamic resistance between surface and canopy
+
 !
 !
 !Author
@@ -91,9 +91,8 @@
 
       DO I=1,N
 
-        PRSURF(I) = 0.
 
-        IF(VEGH(I)>EPSILON_SVS) THEN   ! High vegetation present in the grid cell
+        IF(WTG(I,indx_svs2_vh) .GE. EPSILON_SVS) THEN   ! High vegetation present in the grid cell
 
 
 
@@ -118,14 +117,6 @@
 
                VMOD_CAN(I) =  VMOD(I)
 
-               ! Calculation of aerodynamic resistance between surface and canopy (cf Gouttevin et al. 2015)
-
-               Z0H = 0.1 * Z0SNOW(I) ! Roughness length for heat transfer from FSM (Essery 2015). Gouttevin et al. 2015 use 0.9999 instead of 0.1
-
-               USTAR = VMOD(I) * KARMAN / LOG((ZUREF-DH)/Z0MVH(I)) ! Friction velocity above canopy
-
-               FSURF = 1. + ZRALAI * (1. - EXP(-CLUMPING * LAIVH(I) * VGH_DENS(I))) ! Only LAI used in Gouttevin et al. 2015, check which one should be used
-               PRSURF(I) = LOG(Z0MVH(I) / Z0H) / (USTAR * KARMAN) * FSURF ! In Gouttevin et al. 2015, it is indeed the ratio ZOMVH/ZOH with ZOH at the surface
 
                ! Calculation of the wind speed for snow drift under the canopy
                ! Wind speed for snow drift calculation under the canopy at PUREF_VEG
@@ -136,7 +127,7 @@
                IF (LWIND_FOREST .EQ. 'VDENS_WCAN') THEN
  
                    ! Wind speed at canopy base height, dense canopy, assuming exp profile between canopy top and canopy base height
-                   WCAN = ZBETA * CLUMPING *LAIVH(I) * VGH_DENS(I)  ! From Marke et al., (2016); Liston and Elder (2006)
+                   WCAN = ZBETA * LAIVH(I) * VGH_DENS(I)  ! From Marke et al., (2016); Liston and Elder (2006)
                    VMOD_SUB = VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1.))
 
                    PWIND_DRIFT(I) = VMOD_SUB
@@ -147,7 +138,7 @@
                ELSE IF  (LWIND_FOREST  .EQ. 'WEIGHT_AVG') THEN
 
                    ! Wind speed at canopy base height, dense canopy, assuming exp profile between canopy top and canopy base height
-                   WCAN = ZBETA * CLUMPING *LAIVH(I)   ! From Marke et al., (2016); Liston and Elder (2006)
+                   WCAN = ZBETA * LAIVH(I)   ! From Marke et al., (2016); Liston and Elder (2006)
                    VMOD_SUB = VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1.))
 
                    ! PWIND_DRIFT re-calculated at PUREF as weighthed average of wind below the canopy (re-calculated at PUREF) 
@@ -174,12 +165,12 @@
                ! Wind speed at canopy base height, dense canopy, assuming exp profile between canopy top and canopy base height
                IF (LWIND_FOREST .EQ. 'VDENS_WCAN') THEN
 
-                    WCAN = ZBETA * CLUMPING * LAIVH(I) * VGH_DENS(I)
+                    WCAN = ZBETA * LAIVH(I) * VGH_DENS(I)
                     VMOD_CAN(I) = VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1.))
 
                ELSE IF  (LWIND_FOREST .EQ. 'WEIGHT_AVG') THEN
 
-                    WCAN = ZBETA * CLUMPING * LAIVH(I) 
+                    WCAN = ZBETA * LAIVH(I) 
                     VMOD_SUB = VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1.))
                     VMOD_CLEARING = VMOD(I)*LOG(PUREF_VEG(I)/Z0SNOW(I))/LOG(ZUREF/Z0SNOW(I)) ! Transfer from ZUREF to PUREF_VEG(I)
                     VMOD_CAN(I) = VMOD_SUB * VGH_DENS(I)**(0.5) + (1.-VGH_DENS(I)**(0.5))* VMOD_CLEARING
@@ -215,7 +206,7 @@
 
       ! Radiation under canopy
       DO I=1,N
-        IF(VEGH(I)>EPSILON_SVS) THEN   ! High vegetation present in the grid cell
+        IF(WTG(I,indx_svs2_vh) .GE. EPSILON_SVS) THEN   ! High vegetation present in the grid cell
 
           IF (CANO_REF_FORCING == 'FOR') THEN  ! Forcing already in forest below canopy
                ILW_CAN(I) = ILW(I)

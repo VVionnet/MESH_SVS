@@ -103,7 +103,6 @@
 
 
 
-
 !
 !Author
 !          S. Belair et al. (January 2016)
@@ -548,7 +547,7 @@
 !                       we set the vegetation temperature to
 !                       that of the ground, when no vegetation is present
 !
-             IF(WTG(I,indx_svs2_vh).ge.EPSILON_SVS)THEN
+             IF(WTG(I,indx_svs2_vh) .GE. EPSILON_SVS)THEN
                 TVGHDT(I) = (TVGHD(I) + DT*TVGHST(I)/86400.) / (1.+DT/86400.)
              ELSE
                 TVGHDT(I) = TGRDT(I)
@@ -572,7 +571,7 @@
                      LW_UVH = (WTG(I,indx_svs2_sv) *(EMSNV * STEFAN * TSVS(I,1)**4) + &
                               WTG(I,indx_svs2_gv) *(EMGRV(I) * STEFAN * TGRVS(I)**4)) / &
                              (WTG(I,indx_svs2_sv) + WTG(I,indx_svs2_gv))
-                     ALB_UVH = WTG(I,indx_svs2_sv) * ALPHASV(I) + WTG(I,indx_svs2_gv) * ALGRV(I)/ &
+                     ALB_UVH = (WTG(I,indx_svs2_sv) * ALPHASV(I) + WTG(I,indx_svs2_gv) * ALGRV(I))/ &
                              (WTG(I,indx_svs2_sv) + WTG(I,indx_svs2_gv))
 
       !
@@ -626,7 +625,7 @@
 !                       we set the vegetation temperature to
 !                       that of the ground, when no vegetation is present
 !
-             IF(WTG(I,indx_svs2_gv) .GE. EPSILON_SVS)THEN
+             IF(WTG(I,indx_svs2_vh) .GE. EPSILON_SVS)THEN
                 TVGHDT(I) = TVGHST(I) ! No deep temperature here
              ELSE
                 TVGHDT(I) = TGRDT(I)
@@ -950,7 +949,7 @@
 !        ------------------
 !         GROUND BELOW HIGH VEGETATION --- SET FLUXES TO ZERO if NO HIGH VEGETATION
 
-        IF(WTG(I,indx_svs2_gv).ge.EPSILON_SVS) THEN
+        IF(WTG(I,indx_svs2_gv) .GE. EPSILON_SVS) THEN
 !                                            Evaporation rate from ground below high veg. (for watsurf_budget.ftn)
 !
            EGV(I) = RHOA(I)* (HRSURFGV(I)* ZQSATGRVT(I) - HU(I)) / RESAGRV(I)
@@ -959,14 +958,13 @@
 !
            LEGV(I) = WTG(I,indx_svs2_gv) * LEFF(I) *EGV(I)
 !
-
 !
 !                                            Water vapor flux from ground below high vegetation
 !
            EGVF(I) = WTG(I,indx_svs2_gv) * EGV(I)  / RHOA(I)
 !
         ELSE
-           ! NO HIGH VEGETATION --- SET FLUXES TO ZERO
+           ! NO BARE GROUND BELOW HIGH VEGETATION --- SET FLUXES TO ZERO
            LEGV(I)  = 0.0
            EGVF(I)  = 0.0
            EGV(I)  = 0.0
@@ -993,7 +991,7 @@
               EV_VL(I) = MIN (EV_VL(I),(WR_VL(I)/DT))!+ETR_VL(I)))
            ELSE
               ! no snow present, all rain is considered evaporation
-              EV_VL(I) = MIN (EV_VL(I),(WR_VL(I)/DT+RR(I)))
+              EV_VL(I) = MIN (EV_VL(I),(WR_VL(I)/DT+RR(I)))!+ETR_VL(I)))
            ENDIF
 
         ELSE
@@ -1044,12 +1042,8 @@
               !  ESN_VH is limited to SNCMA/DT to avoid negative SNCMA in watsurf_budget_svs2
               ESN_VH(I) = MIN(ESN_VH(I),SNCMA(I)/DT)
 
-              ! With fraction
-              ESN_VHF(I) = WTG(I,indx_svs2_vh) * ESN_VH(I) / RHOA(I)
-
            ELSE ! O2F
               ! Sublimation rate is calculated in snow_interception_svs2.F90
-              ESN_VHF(I) = WTG(I,indx_svs2_vh) * ESN_VH(I) / RHOA(I)
            ENDIF
 
         ELSE
@@ -1060,6 +1054,10 @@
            EV_VH(I) = 0.0
            ESN_VH(I) =  0.0
         ENDIF
+
+
+!       Sublimation of the intercepted snow with fraction 
+        ESN_VHF(I) = WTG(I,indx_svs2_vh) * ESN_VH(I) / RHOA(I)
 
 !       Water vapor flux from high vegetation (including fraction)
         EVHF(I) =  WTG(I,indx_svs2_vh) * (EV_VH(I)+ETR_VH(I))/ RHOA(I)

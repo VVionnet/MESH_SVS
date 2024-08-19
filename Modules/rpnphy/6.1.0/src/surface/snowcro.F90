@@ -8,7 +8,7 @@
                       PPET_A_COEF, PPEQ_A_COEF, PPET_B_COEF, PPEQ_B_COEF,       &
                       PSNOWSWE,PSNOWRHO,PSNOWHEAT,PSNOWALB,                     &
                       PSNOWDIAMOPT,PSNOWSPHERI,PSNOWHIST,PSNOWAGE, PSNOWIMPUR,     &
-                      PTSTEP,PPS,PSR,PRR,PPSN3L, PRSURF,                 &
+                      PTSTEP,PPS,PSR,PRR,PPSN3L, PRESA_SV,                 &
                       PTA,PTG,PSW_RAD,PQA,PVMOD,PWIND_DRIFT,PLW_RAD, PRHOA,     &
                       PUREF,PEXNS,PEXNA,PDIRCOSZW,                              &
                       PZREF,PZ0,PZ0EFF,PZ0H,PALB,                               &
@@ -208,7 +208,7 @@ REAL, DIMENSION(:), INTENT(IN)         :: PPS, PTA, PSW_RAD, PQA, PVMOD, PWIND_D
 !                                      PPS     = surface pressure
 !                                      PQA     = atmospheric specific humidity
 !                                                at level za
-REAL, DIMENSION(:), INTENT(IN)         :: PRSURF ! Aerodynamic surface resistance for snow under canopy (cf. Gouttevin et al. 2013)                                       
+REAL, DIMENSION(:), INTENT(IN)         :: PRESA_SV ! Aerodynamic resistance for snow under canopy (cf. Gouttevin et al. 2013)                                       
 REAL, DIMENSION(:,:), INTENT(IN)       :: P_DIR_SW, P_SCA_SW ! direct and diffuse spectral irradiance (W/m2/um)
 !
 REAL, DIMENSION(:,:), INTENT(IN)       :: PIMPWET, PIMPDRY  !Dry and wet deposit coefficient from Forcing File(g/m²/s)
@@ -1418,10 +1418,10 @@ DO JST = 1, IMAX_USE
       PTHRUFAL (JJ) = PTHRUFAL (JJ)  +  MAX(0.,PSNOWLIQ(JJ,JST) - ZWHOLDMAX(JJ,JST)) * XRHOLW /PTSTEP 
       PSNOWLIQ  (JJ,JST) = PSNOWLIQ(JJ,JST) - ZLIQHEATXS(JJ)*PTSTEP/(XRHOLW*XLMTT)
       PSNOWLIQ  (JJ,JST) = MAX( 0.0, PSNOWLIQ(JJ,JST) )
-      PGRNDFLUX (JJ)     = PGRNDFLUX(JJ) + ZLIQHEATXS(JJ)
-      PSNOWTEMP (JJ,JST) = ZSNOWTEMP(JJ,JST)
       ! Update total density
       PSNOWRHO  (JJ,JST) = ZDRYDENSITY(JJ,JST) + PSNOWLIQ(JJ,JST) * XRHOLW / PSNOWDZ(JJ,JST) 
+      PGRNDFLUX (JJ)     = PGRNDFLUX(JJ) + ZLIQHEATXS(JJ)
+      PSNOWTEMP (JJ,JST) = ZSNOWTEMP(JJ,JST)
   !   Heat content using total density
       ZSCAP     (JJ,JST) = PSNOWRHO(JJ,JST) * XCI
       PSNOWHEAT (JJ,JST) = PSNOWDZ(JJ,JST) * &
@@ -3021,7 +3021,7 @@ PRI(:) = ZRI(:)
 !
 
 
- CALL SURFACE_AERO_COND(ZRI, PZREF, PUREF, PVMOD, PZ0, PZ0H, PRSURF, ZAC, PRA, PCHSNOW, HSNOWRES)
+ CALL SURFACE_AERO_COND(ZRI, PZREF, PUREF, PVMOD, PZ0, PZ0H, PRESA_SV, ZAC, PRA, PCHSNOW, HSNOWRES)
 
 !
 PRSRA(:) = PRHOA(:) / PRA(:)
@@ -4398,7 +4398,7 @@ REAL, DIMENSION(:,:), INTENT(INOUT)   :: PSNOWAGE  ! Snow grain age
 REAL, DIMENSION(:,:), INTENT(INOUT)   :: PSNOWTEMP  ! snow temperature profile            (K)
 REAL, DIMENSION(:,:), INTENT(INOUT)   :: PSNOWLIQ   ! snow liquid water profile           (m)
 ! 
-INTEGER, DIMENSION(:), INTENT(IN)      :: KNLVLS_USE
+INTEGER, DIMENSION(:), INTENT(INOUT)      :: KNLVLS_USE
 CHARACTER(3), INTENT(IN)              :: HSNOWMETAMO ! metamorphism scheme
 !
 !*      0.2    declarations of local variables
@@ -4438,30 +4438,34 @@ GVANISHSOMEWHERE = .FALSE.
 DO JJ = 1,SIZE(PSNOWRHO,1)
    !
    IF ( PSNOWDZ(JJ,1)==0.0 ) THEN
-     !
-     GVANISHSOMEWHERE = .TRUE.
-     !
-     DO JST = 2,IMAX_USE
-       IF (JST <= KNLVLS_USE(JJ)) THEN
-         ! Update total density 
-         ZSNOWRHO(JJ,JST)  = PDRYDENSITY(JJ,JST) +  PSNOWLIQ(JJ,JST) * XRHOLW / PSNOWDZ(JJ,JST)
-         !
-         ZSNOWHEAT_1D(JJ) = ZSNOWHEAT_1D(JJ) + PSNOWDZ(JJ,JST) * &
+     IF ( KNLVLS_USE(JJ)==1 ) THEN
+        KNLVLS_USE(JJ) = 0
+     ELSE 
+        !
+        GVANISHSOMEWHERE = .TRUE.
+        !
+        DO JST = 2,IMAX_USE
+           IF (JST <= KNLVLS_USE(JJ)) THEN
+             ! Update total density 
+             ZSNOWRHO(JJ,JST)  = PDRYDENSITY(JJ,JST) +  PSNOWLIQ(JJ,JST) * XRHOLW / PSNOWDZ(JJ,JST)
+             !
+             ZSNOWHEAT_1D(JJ) = ZSNOWHEAT_1D(JJ) + PSNOWDZ(JJ,JST) * &
                             ( ZSNOWRHO(JJ,JST)*XCI * (ZSNOWTEMP(JJ,JST)-XTT) &
                               - XLMTT * PSNOWRHO(JJ,JST) ) &
                             + XLMTT * XRHOLW * PSNOWLIQ(JJ,JST) 
-         ZSNOW       (JJ) = ZSNOW       (JJ) + PSNOWDZ(JJ,JST)
-         ZSNOWRHO_1D (JJ) = ZSNOWRHO_1D (JJ) + PSNOWDZ(JJ,JST) * ZSNOWRHO(JJ,JST)
-         ZSNOWAGE_1D (JJ) = ZSNOWAGE_1D (JJ) + PSNOWDZ(JJ,JST) * ZSNOWRHO(JJ,JST) * PSNOWAGE(JJ,JST)
-         !  
-         IF (  PSNOWDIAMOPT(JJ,JST)<XVDIAM6*(4.-PSNOWSPHERI(JJ,JST))-XUEPSI  ) THEN   ! Dendritic snow
-           INDENT(JJ) = INDENT(JJ) + 1
-         ELSE                                    ! Non dendritic snow
-           INVIEU(JJ) = INVIEU(JJ) + 1
-         ENDIF
-         !
-       ENDIF
-     ENDDO
+             ZSNOW       (JJ) = ZSNOW       (JJ) + PSNOWDZ(JJ,JST)
+             ZSNOWRHO_1D (JJ) = ZSNOWRHO_1D (JJ) + PSNOWDZ(JJ,JST) * ZSNOWRHO(JJ,JST)
+             ZSNOWAGE_1D (JJ) = ZSNOWAGE_1D (JJ) + PSNOWDZ(JJ,JST) * ZSNOWRHO(JJ,JST) * PSNOWAGE(JJ,JST)
+             !  
+             IF (  PSNOWDIAMOPT(JJ,JST)<XVDIAM6*(4.-PSNOWSPHERI(JJ,JST))-XUEPSI  ) THEN   ! Dendritic snow
+               INDENT(JJ) = INDENT(JJ) + 1
+             ELSE                                    ! Non dendritic snow
+               INVIEU(JJ) = INVIEU(JJ) + 1
+             ENDIF
+           !
+           ENDIF
+        ENDDO
+     ENDIF
      !
    ENDIF
    !

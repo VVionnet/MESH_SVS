@@ -4,7 +4,7 @@
 !SFX_LIC for details. version 1.
 !   ######################################################################
     SUBROUTINE SURFACE_AERO_COND(PRI, PZREF, PUREF, PVMOD, PZ0,&
-                                     PZ0H, PRSURF, PAC, PRA, PCH    ,HSNOWRES       )
+                                     PZ0H, PRESA_SV, PAC, PRA, PCH    ,HSNOWRES       )
 !   ######################################################################
 !
 !!****  *SURFACE_AERO_COND*  
@@ -81,7 +81,7 @@ REAL, DIMENSION(:), INTENT(IN)    :: PUREF    ! reference height of the wind
                                               ! NOT when coupled to a model (MesoNH)
 REAL, DIMENSION(:), INTENT(IN)    :: PZ0      ! roughness length for momentum
 REAL, DIMENSION(:), INTENT(IN)    :: PZ0H     ! roughness length for heat
-REAL, DIMENSION(:)                :: PRSURF     ! aerodynamic surface resistance if Ta and HR above canopy
+REAL, DIMENSION(:)                :: PRESA_SV   ! aerodynamic surface resistance if Ta and HR above canopy, = 0 if in the open
 !
 REAL, DIMENSION(:), INTENT(OUT)   :: PAC      ! aerodynamical conductance
 REAL, DIMENSION(:), INTENT(OUT)   :: PRA      ! aerodynamical resistance
@@ -144,21 +144,21 @@ DO JJ=1,SIZE(PRI)
                       ) 
         PAC(JJ) = ZCDN(JJ) * (  ZVMOD(JJ)-15.* ZSTA(JJ)*ZDI(JJ)  )  *  ZFH(JJ) ! 1/ra = CDN * U * f_Ri
 
-        PRSURF(JJ) = PRSURF(JJ) / (  ZVMOD(JJ)-15.* ZSTA(JJ)*ZDI(JJ)  ) * ZVMOD(JJ) ! rs = rs / f_Ri
 
       ELSE
         ZDI(JJ) = SQRT(ZWORK3(JJ) + 5. * ZSTA(JJ) )
         PAC(JJ) = ZCDN(JJ) *ZVMOD(JJ)/(1.+15.*ZSTA(JJ)*ZDI(JJ)  &  ! 1/ra = CDN * U * f_Ri
                  / ZWORK3(JJ) /ZVMOD(JJ) )*ZFH(JJ)    
 
-        PRSURF(JJ) = PRSURF(JJ) / (1./(1.+15.*ZSTA(JJ)*ZDI(JJ)  & ! rs = rs / f_Ri
-                 / ZWORK3(JJ) /ZVMOD(JJ) )*ZFH(JJ)) 
+      ENDIF
 
+      IF (PRESA_SV(JJ) == 0) THEN  ! In the open or O2F or FOR
+        PRA(JJ) = 1. / PAC(JJ) 
+      ELSE ! In the forest, resistance calculated in drag_svs2
+        PRA(JJ) = PRESA_SV(JJ)
+        PAC(JJ) = 1. / PRA(JJ) 
       ENDIF
     
-      PRA(JJ) = 1. / PAC(JJ) + PRSURF(JJ)
-
-
       PCH(JJ) = 1. / (PRA(JJ) * ZVMOD(JJ))
 
   ELSE IF (HSNOWRES=='M98')THEN
@@ -181,13 +181,18 @@ DO JJ=1,SIZE(PRI)
         ENDIF
     ENDIF
     
-    PCH(JJ) = ZMARTIN(JJ) * ZCDN_M98(JJ)
 
-    PRSURF(JJ) = PRSURF(JJ) / ZMARTIN(JJ) ! ZMARTIN(JJ) is the stability correction function
 
-    PRA(JJ)=1./(PCH(JJ)*ZVMOD(JJ)) + PRSURF(JJ) ! Nota B. Cluzet : checked in noilhan and mahfouf seems ok
+    IF (PRESA_SV(JJ) == 0) THEN ! In the open or O2F or FOR
+      PCH(JJ) = ZMARTIN(JJ) * ZCDN_M98(JJ)
+      PRA(JJ)=1./(PCH(JJ)*ZVMOD(JJ))  ! Nota B. Cluzet : checked in noilhan and mahfouf seems ok
+    ELSE ! In the forest, resistance calculated in drag_svs2
+      PRA(JJ) = PRESA_SV(JJ)
+      PCH(JJ)=1./(PRA(JJ)*ZVMOD(JJ))  ! Nota B. Cluzet : checked in noilhan and mahfouf seems ok
+    ENDIF
 
     PAC(JJ)=1./(PRA(JJ))
+
   ENDIF
 
 ENDDO

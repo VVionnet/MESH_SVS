@@ -53,7 +53,7 @@ REAL, PARAMETER ::  CVAI = 4.4 ! Intercepted snow capacity per unit lai (kg/m^2)
           ! Note that HP98 are using a temperature-dependant param for falling snow density that could be considered later
           ! The maximum canopy snow interception load in HP98 also depends on the type of trees.
 REAL, PARAMETER ::  M_SCAP = 5. ! Intercepted snow coefficient per unit lai (kg/m^2) from Andreadis et a. (2009)
-CHARACTER(LEN=4) :: HCANO_HM = 'G15'  ! Select the approach used to compute the mass loss due sublimation of intercepted snow
+CHARACTER(LEN=4) :: HCANO_HM = 'E03'  ! Select the approach used to compute the mass loss due sublimation of intercepted snow
               ! 'E03': using Essery et al. (2003) approach. Also in FSM2
               ! 'G15': formulation proposed by Gouttevin et al. (2015)
 

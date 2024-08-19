@@ -15,26 +15,26 @@
 !-------------------------------------- LICENCE END ---------------------------
 
       SUBROUTINE SNOW_INTERCEPTION_SVS2 (DT, TVEG, T, HU, PS, WIND_TOP, ISWR,  RHOA,    &
-                     RR, SR,SNCMA, WRMAX_VH, SKYVIEW, ESUBSNC,SUBSNC_CUM, LAIVH, VEGH, HM_CAN,   &
+                     RR, SR, SNCMA, WRMAX_VH, SKYVIEW, ESUBSNC,SUBSNC_CUM, LAIVH, WTG, HM_CAN,   &
                      VGH_DENS, SCAP, WR_VH, RR_VEG, SR_VEG,  FCANS, N)
 
 
       use tdpack
-      use sfclayer_mod, only: sl_sfclayer,SL_OK
       use sfc_options
       use svs_configs
       USE MODE_THERMOS
       USE MODD_CSTS
       USE CANOPY_CSTS, only : ALPHA, ZVENT, RADIUS_ICESPH, CLUMPING, &
             ALBEDO_ICESPH, KS, FRACT, MWAT, RGAZ, CICE, TCNC, TCNM, ZBETA
+      use svs2_tile_configs
       implicit none
 
       INTEGER N
 
 
       REAL SNCMA(N), RR(N), SR(N),  RR_VEG(N), SR_VEG(N), ISWR(N)
-      REAL PS(N), RHOA(N), HU(N), SKYVIEW(N)
-      REAL LAIVH(N), TVEG(N), VEGH(N),WIND_TOP(N),VGH_DENS(N), T(N)
+      REAL PS(N), RHOA(N), HU(N), WTG(N, svs2_tilesp1), SKYVIEW(N)
+      REAL LAIVH(N), TVEG(N), WIND_TOP(N),VGH_DENS(N), T(N)
       REAL ESUBSNC(N), SUBSNC_CUM(N), SCAP(N), FCANS(N), HM_CAN(N)
       REAL DT, SNCMA_INI(N), WRMAX_VH(N), WR_VH(N)
 
@@ -71,7 +71,6 @@
 !             - Input (other parameters)
 ! DT          time step [s]
 ! LAIVH       Vegetation leaf area index for HIGH vegetation only [m2/m2]
-! VEGH        fraction of HIGH vegetation [0-1]
 ! VGH_DENS    tree cover density in  HIGH vegetation [0-1]
 ! SCAP       Vegetation layer snow capacities (kg m-2)
 ! HM_CAN    Heat mass for the high vegetation layer (J K-1 m-2)
@@ -109,7 +108,6 @@
       REAL C1, SIGMA, SVDENS, SUB_RATE,SUB_POT, MPM, CE
       REAL NU, NR, MU,DVAP
 
-
       !
       ! 0. Initialise variables
       !
@@ -143,8 +141,8 @@
             ENDIF
          ENDIF
 
-         IF (VEGH(I).GE.EPSILON_SVS) THEN
-            IF(SNCMA(I) .GT. EPSILON_SVS .OR. SR(I) .GT. 0.) THEN  ! Snow is present on the canopy or occurrence of snowfall
+         IF (WTG(I,indx_svs2_vh).GE.EPSILON_SVS) THEN
+            IF(SNCMA(I) .GT. 0. .OR. SR(I) .GT. 0.) THEN  ! Snow is present on the canopy or occurrence of snowfall
 
 
                !!!!!!!!
@@ -373,7 +371,7 @@
 
       DO I=1,N
 
-         IF (VEGH(I).GE.EPSILON_SVS) THEN
+         IF (WTG(I,indx_svs2_vh).GE.EPSILON_SVS) THEN
 
             ! Rain is first intercepted by high veg (rain * (1.-SKYVIEW))
             ! Excess of WRMAX_VH drips + drip from melting intercepted snow + rain*SKYVIEW reach ground
@@ -381,7 +379,6 @@
             WR_VH(I) = WR_VH(I) + DT * (1.-SKYVIEW(I)) * RR(I)
             RR_VEG(I) = MAX(0., (WR_VH(I) - WRMAX_VH(I))/DT) + DRIP_CPY(I)/DT + SKYVIEW(I) * RR(I)
             WR_VH(I) = MIN(WR_VH(I), WRMAX_VH(I))
-
 
             ! Snowfall rate below high vegetation
             SR_VEG(I) = NET_SNOW(I)/DT
