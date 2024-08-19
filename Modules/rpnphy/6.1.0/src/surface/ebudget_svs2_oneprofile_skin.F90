@@ -981,45 +981,46 @@
 !          Transpiration rate (for watsurf_budget.ftn)
            ETR_VL(I) = RHOA(I)*ZHVGL(I)*(1. - DEL_VL(I))*(ZQSATVGLT(I) -HU(I))/(RESA_VL(I) + RS(I))
 !
-!          Evapotranspiration rate from low veg. (for watsurf_budget.ftn) (no fraction)
-           EV_VL(I) =  RHOA(I)*DEL_VL(I) * (ZQSATVGLT(I) - HU(I)) / RESA_VL(I)
+!          Evaporation rate from low veg. (for watsurf_budget.ftn) (no fraction)
+           ER_VL(I) =  RHOA(I)*DEL_VL(I) * (ZQSATVGLT(I) - HU(I)) / RESA_VL(I)
 !
-           !  EV is limited to WR/DT+RR+ETR to avoid negative WR in watsurf_budget when direct evaporation exceeds rainrate
+           !  ER is limited to WR/DT+RR+ETR to avoid negative WR in watsurf_budget when direct evaporation exceeds rainrate
            !  When snow is present, rain falls through vegetation to snow bank... so is not considered in evaporation... This is to conserve water budget.
            IF( SNM(I).GE.CRITSNOWMASS .OR. RSNOW(I).GE. EPSILON_SVS ) THEN
               ! snow over low veg is present, rain falls directly to snow
-              EV_VL(I) = MIN (EV_VL(I),(WR_VL(I)/DT))!+ETR_VL(I)))
+              ER_VL(I) = MIN (ER_VL(I),(WR_VL(I)/DT))
            ELSE
               ! no snow present, all rain is considered evaporation
-              EV_VL(I) = MIN (EV_VL(I),(WR_VL(I)/DT+RR(I)))!+ETR_VL(I)))
+              ER_VL(I) = MIN (ER_VL(I),(WR_VL(I)/DT+RR(I)))
            ENDIF
 
         ELSE
            ! NO SNOW FREE LOW VEGETATION --- SET FLUXES TO ZERO
            ZHVGL(I) = 0.0
            ETR_VL(I) = 0.0
-           EV_VL(I) = 0.0
+           ER_VL(I) = 0.0
         ENDIF
 
+!
+!       Evapotranspiration rate from low veg. 
+        EV_VL(I) = ETR_VL(I) + ER_VL(I)
+!
 !       Latent heat of transpiration (with fraction)
         LETR_VL(I) = WTG(I,indx_svs2_vl)* CHLC * ETR_VL(I)
 !
+!       Latent heat of direct evaporation  (including fraction)
+        LER_VL(I)  = WTG(I,indx_svs2_vl)* CHLC * ER_VL(I)
+!
 !       Water vapor flux from low vegetation (including fraction)
-        EVLF(I) =  WTG(I,indx_svs2_vl)  *(EV_VL(I) + ETR_VL(I))/ RHOA(I)
+        EVLF(I) =  WTG(I,indx_svs2_vl)  * EV_VL(I) / RHOA(I)
 
 !       Latent heat of evaporation from low vegetation (including fraction)
         LEVL(I) = RHOA(I) * CHLC * EVLF(I)
 !
-!       Direct evapo. rate from low veg. (no. fraction) (for watsurf_budget.ftn)
-        ER_VL(I) = EV_VL(I) !- ETR_VL(I)
-!
-!       Latent heat of direct evaporation  (including fraction)
-        LER_VL(I)  = LEVL(I) - LETR_VL(I)
-!
 !        ------------------
 !        HIGH VEGETATION --- SET FLUXES TO ZERO if NO HIGH VEGETATION
 !
-        IF(WTG(I,indx_svs2_vh) .GE.EPSILON_SVS) THEN
+        IF(WTG(I,indx_svs2_vh) .GE. EPSILON_SVS) THEN
 !
 !            Check if if qsat> HU, we do not consider condensation in the transpiration term.
            ZHVGH(I) = MAX(0.0 , SIGN(1.,ZQSATVGHT(I) - HU(I)))
@@ -1027,12 +1028,12 @@
 !            Transpiration rate (for watsurf_budget.ftn) (no fraction)
            ETR_VH(I) = VGH_DENS(I) * RHOA(I)*ZHVGH(I)*(1. - DEL_VH(I))* (1.-FCANS(I))*(ZQSATVGHT(I)-HU(I))/(RESA_VH(I) + RS(I)) * (CHLC)/LCAN(I)
 !
-!            Evapotranspiration rate from high veg. (for watsurf_budget.ftn)
-           EV_VH(I) = VGH_DENS(I) * RHOA(I) * DEL_VH(I) * (1.-FCANS(I)) * (ZQSATVGHT(I) - HU(I)) / RESA_VH(I) *(CHLC)/LCAN(I)
+!          Evaporation rate from high veg. (for watsurf_budget.ftn)
+           ER_VH(I) = VGH_DENS(I) * RHOA(I) * DEL_VH(I) * (1.-FCANS(I)) * (ZQSATVGHT(I) - HU(I)) / RESA_VH(I) *(CHLC)/LCAN(I)
 
-!          EV is limited to WR/DT+RR to avoid negative WR in watsurf_budget when direct evaporation exceeds rainrate
+!          ER is limited to WR/DT+RR to avoid negative WR in watsurf_budget when direct evaporation exceeds rainrate
 !          TODO: make sure it's alright to remove ETR_VH from WR mass balance
-           EV_VH(I) = MIN (EV_VH(I),(WR_VH(I)/DT))!+ETR_VH(I)))
+           ER_VH(I) = MIN (ER_VH(I),(WR_VH(I)/DT))
 
 !          Sublimation rate of intercepted snow in high veg. (for snow_interception_svs2) and applied to intercepted snow in watsurf_budget_svs2
            IF (CANO_REF_FORCING .EQ.'ABV') THEN
@@ -1051,19 +1052,24 @@
            ZHVGL(I) = 0.0
            LETR_VH(I) = 0.0
            ETR_VH(I) = 0.0
-           EV_VH(I) = 0.0
+           ER_VH(I) = 0.0
            ESN_VH(I) =  0.0
         ENDIF
-
+!
+!       Evapotranspiration rate from high veg. 
+        EV_VH(I) =  ER_VH(I) + ETR_VH(I)
 
 !       Sublimation of the intercepted snow with fraction 
         ESN_VHF(I) = WTG(I,indx_svs2_vh) * ESN_VH(I) / RHOA(I)
 
 !       Water vapor flux from high vegetation (including fraction)
-        EVHF(I) =  WTG(I,indx_svs2_vh) * (EV_VH(I)+ETR_VH(I))/ RHOA(I)
+        EVHF(I) =  WTG(I,indx_svs2_vh) * EV_VH(I) / RHOA(I)
 
 !       Latent heat of transpiration (with fraction )
         LETR_VH(I) =  WTG(I,indx_svs2_vh) * CHLC * ETR_VH(I)
+
+!       Latent heat of transpiration (with fraction )
+        LER_VH(I) =  WTG(I,indx_svs2_vh) * CHLC * ER_VH(I)
 
 !       Latent heat of evaporation from high vegetation (including fraction)
         LEVH(I) = RHOA(I) * CHLC * EVHF(I)
@@ -1074,13 +1080,6 @@
 !       Update  evaporation from high vegetation that includes sublimation of intercepted snow (including fraction)
         LEVH(I) = LEVH(I) + LESNVH(I)
         EVHF(I) = EVHF(I) + ESN_VHF(I)
-
-!
-!       Direct evapo. rate from high veg. (no. fraction) (for watsurf_budget.ftn)
-        ER_VH(I) = EV_VH(I) !- ETR_VH(I)
-!
-!       Latent heat of direct evaporation  (including fraction)
-        LER_VH(I)  = LEVH(I) !- LETR_VH(I)
 !
 !        ------------------
 !        SNOW ABOVE BARE GROUND AND LOW VEGETATION
