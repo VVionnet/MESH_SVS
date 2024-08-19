@@ -19,7 +19,7 @@
                               PS, RS, Z0, Z0LOC, Z0VG, WFC, WSAT, CLAY1,  &
                               SAND1, LAI_VL, LAI_VH, WRMAX_VL,WRMAX_VH,&
                               ZUSL, ZTSL, LAT, PSNVH, &
-                              FCOR, Z0HA, VEGL, VEGH, &
+                              FCOR, Z0HA, WTG, &
                               VGH_DENS, Z0MVH,Z0MVL, Z0SNOW, Z0HSN,  VEGHEIGHT,  &
                               LAIVH, ZVCAN, FCANS,SNCMA, &
                               RESAGR,RESAGRV, RESA_VL, RESA_VH, RES_SNCA, RESA_SV, &
@@ -33,6 +33,7 @@
       use svs_configs
       use MODE_THERMOS
       use MODD_CSTS
+      use svs2_tile_configs
       use canopy_csts, only: ZRALAI, RCHD, RADIUS_ICESPH, ZVENT, lres_snca,&
                              ZBETA
 !
@@ -48,7 +49,7 @@
       REAL RESAGR(N),RESAGRV(N), RESA_VL(N), RESA_VH(N), RES_SNCA(N), RESA_SV(N)
       REAL HUSURF(N),HUSURFGV(N), HV_VL(N), HV_VH(N), HVSN_VH(N), DEL_VL(N), DEL_VH(N)
       REAL HRSURF(N),HRSURFGV(N), WD1(N), Z0SNOW(N), Z0HSN(N), PSNVH(N)
-      REAL VEGH(N), VEGL(N), TGRVS(N), SNCMA(N), RHOA(N)
+      REAL WTG(N,svs2_tilesp1), TGRVS(N), SNCMA(N), RHOA(N)
       REAL TSV(N,NSL)
 !
 !Author
@@ -88,7 +89,7 @@
 ! TGRVS      skin (surface) temperature of ground below high veg.
 ! TVGLS      skin (surface) temperature of low vegetation
 ! TVGHS      skin (surface) temperature of high vegetation
-! TSV       Temperature of the top snow layer in the high vegetation
+! TSV       Temperature of the snow layers in the high vegetation
 ! WD1       Soil volumetric water content (first level)
 ! WR_VL     water content retained by the low vegetation canopy
 ! WR_VH     water content retained by the high vegetation canopy
@@ -115,8 +116,7 @@
 ! FCOR      Coriolis factor
 ! Z0HA      AVERAGED Local roughness associated with exposed (no snow)
 !           vegetation only (also no orography), for heat transfer
-! VEGH     fraction of HIGH vegetation
-! VEGL     fraction of LOW vegetation
+! WTG       Weights for SVS2 surface types as seen from GROUND
 ! VGH_DENS   Density of trees in areas of high vegeation (m)
 ! VEGHEIGHT Height of trees in areas of high vegeation (m)
 ! ZVCAN   Wind speed within or above the canopy depending on CANO_REF_FORCING (m/s)
@@ -154,7 +154,7 @@
            z0gv_n, qsatgrv,wcrit_hrsurfgv, z0hg, zz0hgv, ZZ0HVH, ZZ0HVL, TSV_CORR
      real, dimension(n) :: ZUGV, ZTGV, ZZ0MGV, ZDH, QSATI_VH, VSUBL, Z0MVH_EFF, &
                            STABM_VH, ZUSTAR_VH, & ! Related to VGH
-                           ZUSTAR_BELOW, ZRSURF, VMOD_BELOW, & ! Related to surface below VGH
+                           ZUSTAR_BELOW, ZRSURF, VMOD_BELOW, Z_BELOW, & ! Related to surface below VGH
                            LZZ0T_BELOW, STABT_BELOW, & ! Related to surface below VGH 
                            LZZ0M_BELOW, STABM_BELOW  ! Related to surface below VGH
      real :: ZFSURF
@@ -309,7 +309,7 @@
 !
           DO I=1,N
 !
-              IF(VEGH(I) > EPSILON_SVS) THEN ! High vegetation is present
+              IF(WTG(I,indx_svs2_vh) .GE. EPSILON_SVS) THEN ! High vegetation is present
 
 !                         first calculate the saturation vapor
 !                         pressure and specific humidity
@@ -380,7 +380,7 @@
 !
 !                          calculate DEL
 !
-         IF(VEGL(I)>EPSILON_SVS) THEN   ! Low vegetation present in the grid cell
+         IF( WTG(I,indx_svs2_vl) .GE. EPSILON_SVS) THEN   ! Low vegetation present in the grid cell
 !
              DEL_VL(I) =   (WR_VL(I)/WRMAX_VL(I))**(2./3.)
 !
@@ -402,7 +402,7 @@
 !                         step resavg to calculate specific
 !                         humidity of low vegetation
 !
-         IF(VEGL(I)>EPSILON_SVS) THEN   ! Low vegetation present in the grid cell
+         IF(WTG(I,indx_svs2_vl) .GE. EPSILON_SVS) THEN   ! Low vegetation present in the grid cell
              HV_VL(I) = 1. - MAX(0.,SIGN(1.,QSAT_VL(I)-HU(I)))&
                    *RS(I)*(1.-DEL_VL(I)) / (RESA_VL(I)+RS(I))
 
@@ -459,7 +459,7 @@
       endif
 
       DO I=1,N
-         IF(VEGL(I)>EPSILON_SVS) THEN   ! Low vegetation present in the grid cell
+         IF(WTG(I,indx_svs2_vl) .GE. EPSILON_SVS) THEN   ! Low vegetation present in the grid cell
              RESA_VL(I) = 1. / CTUVL(I)
          ELSE
              RESA_VL(I) = 1.
@@ -495,7 +495,7 @@
 !
 !                          calculate DEL_VH
 !
-         IF(VEGH(I) .GE. EPSILON_SVS) THEN   ! High vegetation present in the grid cell
+         IF(WTG(I,indx_svs2_vh) .GE. EPSILON_SVS) THEN   ! High vegetation present in the grid cell
              COEF_VH(I) = 1. + 2.*LAI_VH(I)
 !
              IF (HU(I) .GT. QSAT_VH(I)) THEN ! Condensation
@@ -529,7 +529,7 @@
 !                         step RESA_VH to calculate specific 
       !                         humidity of vegetation
       !
-         IF(VEGH(I) .GE. EPSILON_SVS) THEN   ! High vegetation present in the grid cell
+         IF(WTG(I,indx_svs2_vh) .GE. EPSILON_SVS) THEN   ! High vegetation present in the grid cell
                HV_VH(I) = 1. - MAX(0.,SIGN(1.,QSAT_VH(I)-HU(I)))&
                   *RS(I)*(1.-DEL_VH(I)) / (RESA_VH(I)+RS(I))
 
@@ -592,7 +592,7 @@
       endif
 
       DO I=1,N
-         IF(VEGH(I) .GT. EPSILON_SVS) THEN   ! High vegetation present in the grid cell
+         IF(WTG(I,indx_svs2_vh) .GE. EPSILON_SVS) THEN   ! High vegetation present in the grid cell
            RESA_VH(I) = 1. / CTUVH(I)
 
 !          TODO: should VEG_DENS impact the aero resistance for a sparse canopy?
@@ -686,16 +686,28 @@
          IF (CANO_REF_FORCING == 'ABV') THEN ! Reference height above the canopy. In this case, z0 should be the canopy roughness lengths and the heights above canopy
 
              DO I=1,N
+                IF (WTG(I,indx_svs2_vh) .GE. EPSILON_SVS) THEN
+
                  ! Determine the surface resistance using the momentum stability calculated above
                  ZFSURF = 1. + ZRALAI * (1. - EXP(- LAIVH(I) * VGH_DENS(I)))
 
                  ! The heat roughness length should be the one at the surface below canopy
                  ZRSURF(I) = LOG(Z0MVH_EFF(I) / ZZ0HGV(I)) / (ZUSTAR_VH(I) * KARMAN) * ZFSURF 
 
+                    ! Height of the vegetation 
+                    Z_BELOW(I) = VEGHEIGHT(I)
+
                  ! Estimate ustar below canopy/above surface from ZRSURF and roughness lengths of surface (see SNOWPACK code)
-                 ZUSTAR_BELOW(I) = 1./(ZRSURF(I)*KARMAN) * LOG(VEGHEIGHT(I)/ZZ0HGV(I))
+                    ZUSTAR_BELOW(I) = 1./(ZRSURF(I)*KARMAN) * LOG(Z_BELOW(I)/ZZ0HGV(I))
                  
-                 VMOD_BELOW(I) = ZUSTAR_BELOW(I)/KARMAN * LOG(VEGHEIGHT(I)/Z0GV_N(I))
+                    VMOD_BELOW(I) = ZUSTAR_BELOW(I)/KARMAN * LOG(Z_BELOW(I)/Z0GV_N(I))
+
+                ELSE !  This is placed to fill the values if there is no vegetation to run sl_sfclayer
+                    ZRSURF(I) = 1.
+                    ZUSTAR_BELOW(I) = ZUSTAR_VH(I)
+                    VMOD_BELOW(I) = VMOD(I)
+                    Z_BELOW(I) = ZUSL(I)
+                ENDIF
 
 
              ENDDO
@@ -703,7 +715,7 @@
 
              ! Calculate the atm stability below the canopy
              ! Temperature and height of vegetation are used instead of atm temperature and zref
-             i = sl_sfclayer( TVGHS, ZQS_VH, VMOD_BELOW, VDIR, VEGHEIGHT, VEGHEIGHT, &
+             i = sl_sfclayer( TVGHS, ZQS_VH, VMOD_BELOW, VDIR, Z_BELOW, Z_BELOW, &
                   TGRVS, HUSURFGV, Z0GV_N, ZZ0HGV, LAT, FCOR, &
                   L_min=sl_Lmin_soil, &
                   stabm=STABM_BELOW, lzz0m=LZZ0M_BELOW, &
@@ -711,11 +723,11 @@
 
              do i=1,N
                  ! Apply atm stability to RSURF 
-                 ZUSTAR_BELOW(I) = VMOD_BELOW(I) * KARMAN  / (LOG(VEGHEIGHT(I)/Z0GV_N(I)) + STABM_BELOW(I)-LZZ0M_BELOW(I))
-                 ZRSURF(I) = 1./(ZUSTAR_BELOW(I)*KARMAN) * (LOG(VEGHEIGHT(I)/ZZ0HGV(I)) + STABT_BELOW(I)-LZZ0T_BELOW(I)) 
+                 ZUSTAR_BELOW(I) = VMOD_BELOW(I) * KARMAN  / (LOG(Z_BELOW(I)/Z0GV_N(I)) + STABM_BELOW(I)-LZZ0M_BELOW(I))
+                 ZRSURF(I) = 1./(ZUSTAR_BELOW(I)*KARMAN) * (LOG(Z_BELOW(I)/ZZ0HGV(I)) + STABT_BELOW(I)-LZZ0T_BELOW(I)) 
                  CTUGRV(I) = 1. / (RESA_VH(I) + ZRSURF(I))
 
-                 Z0HGV(i) = ZZ0HGV(i)
+                 Z0HGV(I) = ZZ0HGV(I)
              enddo
 
          ELSE ! O2F or FOREST
@@ -740,7 +752,7 @@
 
 
       DO I=1,N
-        IF(VEGH(I) .GE. EPSILON_SVS) THEN
+        IF(WTG(I,indx_svs2_vh) .GE. EPSILON_SVS) THEN
             RESAGRV(I) = 1. / CTUGRV(I)
          ELSE
             RESAGRV(I) = 1.
@@ -784,33 +796,44 @@
 
          DO I=1,N
 
+             IF (WTG(I,indx_svs2_vh) .GE. EPSILON_SVS) THEN
              ! Determine the surface resistance using the momentum stability calculated above
              ZFSURF = 1. + ZRALAI * (1. - EXP(- LAIVH(I) * VGH_DENS(I)))
 
              ! The heat roughness length should be the one at the surface below canopy
              ZRSURF(I) = LOG(Z0MVH_EFF(I) / Z0HSN(I)) / (ZUSTAR_VH(I) * KARMAN) * ZFSURF
 
+                ! Height of the vegetation 
+                Z_BELOW(I) = VEGHEIGHT(I)
+
              ! Estimate ustar below canopy/above surface from ZRSURF and roughness lengths of surface (see SNOWPACK code)
              ZUSTAR_BELOW(I) = 1./(ZRSURF(I)*KARMAN) * LOG(VEGHEIGHT(I)/Z0HSN(I))
              
              VMOD_BELOW(I) = ZUSTAR_BELOW(I)/KARMAN * LOG(VEGHEIGHT(I)/Z0SNOW(I))
 
+            ELSE !  This is placed to fill the values if there is no vegetation to run sl_sfclayer
+                ZRSURF(I) = 1.
+                ZUSTAR_BELOW(I) = ZUSTAR_VH(I)
+                VMOD_BELOW(I) = VMOD(I)
+                Z_BELOW(I) = ZUSL(I)
+            ENDIF
+
          ENDDO
 
          ! Calculate the atm stability below the canopy
          ! Temperature and height of vegetation are used instead of atm temperature and zref
-         i = sl_sfclayer( TVGHS, ZQS_VH, VMOD_BELOW, VDIR, VEGHEIGHT, VEGHEIGHT, &
+         i = sl_sfclayer( TVGHS, ZQS_VH, VMOD_BELOW, VDIR, Z_BELOW, Z_BELOW, &
               TSV_CORR, QSAT_SV, Z0SNOW, Z0HSN, LAT, FCOR, &
               L_min=sl_Lmin_soil, &
               stabm=STABM_BELOW, lzz0m=LZZ0M_BELOW, & 
               stabt=STABT_BELOW, lzz0t=LZZ0T_BELOW )
 
          do i=1,N
-            IF(VEGH(I) .GE. EPSILON_SVS) THEN
+            IF(WTG(I,indx_svs2_vh) .GE. EPSILON_SVS) THEN
 
                  ! Apply atm stability to RSURF
-                 ZUSTAR_BELOW(I) = VMOD_BELOW(I) * KARMAN  / (LOG(VEGHEIGHT(I)/Z0SNOW(I)) + STABM_BELOW(I)-LZZ0M_BELOW(I))
-                 ZRSURF(I) = 1./(ZUSTAR_BELOW(I)*KARMAN) * (LOG(VEGHEIGHT(I)/Z0HSN(I)) + STABT_BELOW(I)-LZZ0T_BELOW(I)) 
+                 ZUSTAR_BELOW(I) = VMOD_BELOW(I) * KARMAN  / (LOG(Z_BELOW(I)/Z0SNOW(I)) + STABM_BELOW(I)-LZZ0M_BELOW(I))
+                 ZRSURF(I) = 1./(ZUSTAR_BELOW(I)*KARMAN) * (LOG(Z_BELOW(I)/Z0HSN(I)) + STABT_BELOW(I)-LZZ0T_BELOW(I)) 
 
                  ! TODO: VV and NL, should the VEG_DEN impact the aero resistance for a sparse canopy
                  RESA_SV(I) = RESA_VH(I) + ZRSURF(I)

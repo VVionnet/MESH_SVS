@@ -633,7 +633,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            bus(x(LAIVL,1,1)),bus(x(LAIVH,1,1)), WRMAX_VL, WRMAX_VH, &
            bus(x(zusl,1,1)), bus(x(ztsl,1,1)),    &
            bus(x (DLAT,1,1)), bus(x(PSNVH ,1,1)),&
-           bus(x(FCOR,1,1)),bus(x(Z0HA ,1,1)), bus(x(VEGL,1,1)), bus(x(VEGH,1,1)), &
+           bus(x(FCOR,1,1)),bus(x(Z0HA ,1,1)), BUS(x(SVS_WTG,1,1)), &
            bus(x(VGH_DENS,1,1)), BUS(x(Z0MVH  ,1,1)),  BUS(x(Z0MVL  ,1,1)), PZ0, PZ0HNAT, &
            bus(x(VGH_HEIGHT   ,1,1)),BUS(x(LAIVH  ,1,1)), bus(x(VCA,1,1)),PFCANS,bus(x(SNCMA,1,1)),  &
            bus(x(RESAGR,1,1)),bus(x(RESAGRV,1,1)), &
