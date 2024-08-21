@@ -82,6 +82,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_WVEG = 'WVEG'
     character(len = *), parameter, public :: VN_SVS_WVEG_VL = 'WVEG_VL' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_WVEG_VH = 'WVEG_VH' ! For svs2 only
+    character(len = *), parameter, public :: VN_SVS_SNCMA = 'SNCMA' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_TSNOW = 'TSNOW'
     character(len = *), parameter, public :: VN_SVS_SNODPL = 'SNODPL'
     character(len = *), parameter, public :: VN_SVS_SNODEN = 'SNODEN'
@@ -1844,6 +1845,9 @@ ierr = 200
           write(iout_svs2_restart, *)
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'wveg_vh',busptr(vd%wveg_vh%i)%ptr(:, trnch)
+          write(iout_svs2_restart, *)
+
+          write(iout_svs2_restart, FMT_GEN, advance = 'no') 'SNCMA',busptr(vd%sncma%i)%ptr(:, trnch)
           write(iout_svs2_restart, *)
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'tground', busptr(vd%tground%i)%ptr(:, trnch) 

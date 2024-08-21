@@ -1620,7 +1620,17 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
                     end if
                     call assign_line_args(svs_mesh%vs%wveg_vh, p, args(2:), istat)
                 end if
-
+            case (VN_SVS_SNCMA )
+                if (.not. svs_mesh%PROCESS_ACTIVE  .or. svs_mesh%vs%schmsol=='SVS'  .or. .not. svs_mesh%vs%lread_restart) then
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    if (SHDFILEFMT == 2) then
+                        p = shd%lc%NML
+                    else
+                        p = shd%lc%NTYPE
+                    end if
+                    call assign_line_args(svs_mesh%vs%sncma, p, args(2:), istat)
+                end if
             case (VN_SVS_WVEG)
                 if (.not. svs_mesh%PROCESS_ACTIVE) then
                     istat = istat + radix(istat)**pstat%INACTIVE
