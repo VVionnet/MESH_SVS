@@ -86,13 +86,10 @@
       INTEGER I, K
 
 
-      LOGICAL LSNOW_EFFECT ! Swithc to include or not the effect of the snow cover
       INTEGER OPT_SNOW  ! Option to compute the heat flux between the snowpack and the soil
       INTEGER OPT_FRAC    ! Option to compute the snow cover fraction        
       INTEGER OPT_LIQWAT  ! Option to compute the unfrozen redisudal water content  
-      INTEGER OPT_VEGFLUX ! Option to compute the surface heat flux from the snow-free vegetation 
       INTEGER OPT_VEGCOND ! Option to compute the skin conductivity from the snow-free vegetation 
-      INTEGER OPT_AGGFLUX ! Option to compute the surface average heat flux
 
 
       REAL LAMI, CICE, DAY, MYOMEGA 
@@ -101,7 +98,7 @@
 
       REAL HNET,HNETR,TTEST, TTEST2, UFWC,DFWC, FWCTEST, QLAT
       REAL RTH_GRND, RTH_SNO,RTH_SNV,FAC_SNW
-      REAL HFLUX_GRND, HFLUX_SNO,HFLUX_SNV, HFLUX_VEG
+      REAL, DIMENSION(N) :: HFLUX_GRND, HFLUX_SNO,HFLUX_SNV, HFLUX_VEG
       REAL, DIMENSION(N, NL_SVS+1) :: RTH, HFLUX
       REAL, DIMENSION(N, NL_SVS) :: WC, RFS, ISOILT
       REAL, DIMENSION(NL_SVS)   :: ZLAYER
@@ -118,34 +115,24 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !
 
-      LSNOW_EFFECT = .TRUE. ! Activate effect of snow cover on soil freezing
-
       OPT_SNOW = 2 ! Option to compute the heat flux between the snowpack and the soil 
                    ! 0: use the deep snow temperature and half the snow depth
                    ! 1: use the deep snow temperature and the full snow depth
                    ! 2: use the deep snow temp. and the max of half the snow depth
-                   !     and the full snow depth minus the damping depth
+                   !     and the full snow depth minus the damping depth (Recommended) 
 
-      OPT_FRAC = 1 ! Option to compute the snow cover fraction
+      OPT_FRAC = 2 ! Option to compute the snow cover fraction
                    ! 1: use a fraction = SWE/1 mm
-                   ! 2: use the formulation of Niu and Yang (2007)
+                   ! 2: use the formulation of Niu and Yang (2007) (Recommended) 
 
       OPT_LIQWAT = 2 ! Option to handle unfrozen liquid water content
                    ! 1: use a constant value of 0.06 (as in VSMB)
-                   ! 2: use a value that depends on soil texture
-
-      OPT_VEGFLUX = 2 ! Option to compute the surface heat flux from the snow-free vegetation 
-                   ! 1: use surface bare ground temperature from FR scheme and resistance from bare ground
-                   ! 2: use surface vegetation temperature from  FR scheme and resistance from bare ground
-                   ! 3: use surface vegetation temperature from  FR scheme and skin conductivity for vegetation 
+                   ! 2: use a value that depends on soil texture (Recommended for large scale simulations) 
 
       OPT_VEGCOND = 1 ! Option to compute the skin conductivity for the vegetation 
-                   ! 1: same value of 10 for low and high veg. in both stable and unstable conditions ()
-                   ! 2: different values for low and high veg. in stable and unstable conditions ()
+                   ! 1: same value of 10 for low and high veg. in both stable and unstable conditions (Most recent version of EC Land, Boussetta et al., 2021; Recommended)
+                   ! 2: different values for low and high veg. in stable and unstable conditions (See Trigo et al., JGR, 2015)
 
-      OPT_AGGFLUX = 2  ! Option to compute the surface average heat flux 
-                   ! 1: initial option developped in the soil freezing scheme (not correct, to be removed)
-                   ! 2: correct formulation to 
                    
       IF(OPT_SNOW ==0) THEN
               FAC_SNW = 0.5
@@ -202,6 +189,8 @@
             ELSE  ! Unstable case
                  LAM_VEG(I) =(VEGL(I)*LAM_VEGL_UNSTAB+VEGH(I)*LAM_VEGH_UNSTAB)/(VEGL(I)+VEGH(I))
             ENDIF                 
+        ELSE
+            LAM_VEG(I) = 1. ! Set default value to make sure code is running           
         ENDIF
 
         ! Snow cover fraction used for the exchanges with the surface
@@ -269,46 +258,51 @@
         ! Treatment of surface layer!
         !
 
-        IF(LSNOW_EFFECT) THEN
+        ! Upper boundary condition for snow-free bare ground
           RTH_GRND = 0.5*DELZ(1)/SOILCONDZ(I,1)  
-          HFLUX_GRND = (TGRS(I) - TSOIL(I,1)) / RTH_GRND
+        HFLUX_GRND(I) = (TGRS(I) - TSOIL(I,1)) / RTH_GRND
 
-          IF(OPT_VEGFLUX==1) THEN
-              HFLUX_VEG = HFLUX_GRND
-          ELSE IF(OPT_VEGFLUX==2) THEN
-              HFLUX_VEG = (TVEGS(I) - TSOIL(I,1)) / RTH_GRND
-          ELSE IF(OPT_VEGFLUX==3) THEN
-              HFLUX_VEG = (TVEGS(I) - TSOIL(I,1)) * LAM_VEG(I)              
-          ENDIF
+        ! Upper boundary condition for snow-free vegetation
+         HFLUX_VEG(I) = (TVEGS(I) - TSOIL(I,1)) * LAM_VEG(I)              
+
+        ! Upper boundary condition for snow over bare ground and low veg.
+        IF(SNODP(I) > 0.) THEN ! Snow is present
 
           IF(OPT_SNOW ==0 .OR. OPT_SNOW ==1) THEN
              RTH_SNO = FAC_SNW*SNODP(I)/LAMS(I) + 0.5*DELZ(1)/SOILCONDZ(I,1)
-             HFLUX_SNO = (TSNO(I) - TSOIL(I,1)) / RTH_SNO
-        
-             RTH_SNV = FAC_SNW*SNVDP(I)/LAMSV(I) + 0.5*DELZ(1)/SOILCONDZ(I,1)
-             HFLUX_SNV = (TSNV(I) - TSOIL(I,1)) / RTH_SNV
           ELSE
              RTH_SNO = MAX(SNODP(I)/2., SNODP(I)-DAMPD(I))/LAMS(I) + 0.5*DELZ(1)/SOILCONDZ(I,1)
-             HFLUX_SNO = (TSNO(I) - TSOIL(I,1)) / RTH_SNO
+           ENDIF
         
-             RTH_SNV = MAX(SNVDP(I)/2., SNVDP(I)-DAMPDV(I))/LAMSV(I) + 0.5*DELZ(1)/SOILCONDZ(I,1)
-             HFLUX_SNV = (TSNV(I) - TSOIL(I,1)) / RTH_SNV
+           ! Heat flux at the snow/soil interface
+           HFLUX_SNO(I) = (TSNO(I) - TSOIL(I,1)) / RTH_SNO
+
+        ELSE ! No snow 
+           HFLUX_SNO(I) = 0.
           ENDIF
                  
-          ! Compute average surface heat flux using fractions
-          IF(OPT_AGGFLUX ==1) THEN
-               HFLUX(I,1) = (1.0-VEGH(I)) * ((1.0-FRAC_SNWL(I)) * HFLUX_GRND + FRAC_SNWL(I) * HFLUX_SNO)    + &
-                               VEGH(I) * ((1.0-FRAC_SNWH(I)) * HFLUX_VEG + FRAC_SNWH(I) * HFLUX_SNV)
+        ! Upper boundary condition for snow below high vegetation. 
+        IF(SNVDP(I) > 0.) THEN ! Snow is present
+                
+           IF(OPT_SNOW ==0 .OR. OPT_SNOW ==1) THEN
+              RTH_SNV = FAC_SNW*SNVDP(I)/LAMSV(I) + 0.5*DELZ(1)/SOILCONDZ(I,1)
           ELSE 
-               HFLUX(I,1) = WTG(I,2) * HFLUX_GRND + WTG(I,3) * HFLUX_VEG + &
-                               WTG(I,4) * HFLUX_SNO + WTG(I,5) * HFLUX_SNV 
+             RTH_SNV = MAX(SNVDP(I)/2., SNVDP(I)-DAMPDV(I))/LAMSV(I) + 0.5*DELZ(1)/SOILCONDZ(I,1)
           ENDIF
 
-        ELSE
-          RTH(I,1) = 0.5*DELZ(1)/SOILCONDZ(I,1)  
-          HFLUX(I,1) = (TGRS(I) - TSOIL(I,1)) / RTH(I,1)
+           ! Heat flux at the snow/soil interface
+           HFLUX_SNV(I) = (TSNV(I) - TSOIL(I,1)) / RTH_SNV
 
+        ELSE ! No snow 
+           HFLUX_SNV(I) = 0.
         ENDIF
+                
+        ! Compute average surface heat flux using weights for each surface tile
+        HFLUX(I,1) = WTG(I,2) * HFLUX_GRND(I) + WTG(I,3) * HFLUX_VEG(I) + &
+                               WTG(I,4) * HFLUX_SNO(I) + WTG(I,5) * HFLUX_SNV(I) 
+        !
+        !
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!               
         !
         ! Treatment of the following layers
         !
