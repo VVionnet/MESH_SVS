@@ -66,6 +66,8 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_CLAY = 'CLAY'
     character(len = *), parameter, public :: VN_SVS_WSOIL = 'WSOIL'
     character(len = *), parameter, public :: VN_SVS_ISOIL = 'ISOIL'
+    character(len = *), parameter, public :: VN_SVS_LATFL = 'LATFL'
+    character(len = *), parameter, public :: VN_SVS_WATFL = 'WATFL'
     character(len = *), parameter, public :: VN_SVS_KTHERMAL = 'KTHERMAL'
     character(len = *), parameter, public :: VN_SVS_TGROUND = 'TGROUND'
     character(len = *), parameter, public :: VN_SVS_VF = 'VF'
@@ -1255,7 +1257,13 @@ ierr = 200
            write(level, FMT_GEN) j
            write(iout_svs1_soil, FMT_CSV, advance = 'no') &
                             trim(VN_SVS_ISOIL) // '_' // trim(adjustl(level)), &
-                            trim(VN_SVS_WSOIL) // '_' // trim(adjustl(level))
+                            trim(VN_SVS_WSOIL) // '_' // trim(adjustl(level)), &
+                            trim(VN_SVS_LATFL) // '_' // trim(adjustl(level))
+       end do
+       do j = 1, nl_svs+1
+           write(level, FMT_GEN) j
+           write(iout_svs1_soil, FMT_CSV, advance = 'no') &
+                            trim(VN_SVS_WATFL) // '_' // trim(adjustl(level))
        end do
        if(svs_mesh%vs%lsoil_freezing_svs1) then 
           do j = 1, nl_svs
@@ -1560,7 +1568,12 @@ ierr = 200
               do i = 1, nl_svs
                  write(iout_svs1_soil, FMT_CSV, advance = 'no') &
                      busptr(vd%isoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) , &
-                     busptr(vd%wsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+                     busptr(vd%wsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), & 
+                     busptr(vd%latflw%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+              end do
+              do i = 1, nl_svs+1
+                 write(iout_svs1_soil, FMT_CSV, advance = 'no') &
+                     busptr(vd%watflow%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
               end do
               if(svs_mesh%vs%lsoil_freezing_svs1) then
                  do i = 1, nl_svs
