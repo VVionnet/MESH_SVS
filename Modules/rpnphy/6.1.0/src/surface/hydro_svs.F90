@@ -36,10 +36,13 @@ SUBROUTINE HYDRO_SVS ( DT, &
 
   REAL DT, W
 
-  INTEGER KFICE ! Option for the correction factor for hydraulic conductivity
-  !    0: Correction factor taken from Zhang and Gray (1997). Same as CLASS 3.6
+  INTEGER KFICE ! Option for the correction factor for hydraulic conductivity (Options 2, 3 and 4 added by B. Bouchard on 2024-09-23)
+  !    0: Correction factor taken from Zhao and Gray (1997). Used in CLASS 3.6 (see eq. 2 from Ganji et al., 2017)
   !    1: Impedance factor taken from SURFEX (Boone et al., 2000)
-  !    3: No modification of hydraulic conductivity in presence of ice 
+  !    2: linear function for the impedance factor (Smirnova et al., 2000)
+  !    3: linear function for the impedance factor with respect to WSAT (Smirnova et al., 2000 modified)
+  !    4: degree 3 exponential function for the impedance factor (from Mao et al., 2007)
+  !    5: No modification of hydraulic conductivity in presence of ice 
 
   INTEGER WAT_REDIS ! Option for the redistribution of water in case of over-saturation after the soil_fluxes solver
   !    0: Default param:
@@ -190,10 +193,14 @@ SUBROUTINE HYDRO_SVS ( DT, &
   ENDDO
 
   ! Option for soil freezing
-  !    0: Correction factor taken from Zhang and Gray (1997). Same as CLASS 3.6
+  !    0: Correction factor taken from Zhao and Gray (1997). Used in CLASS 3.6 (see eq. 2 from Ganji et al., 2017) 
   !    1: Impedance factor taken from SURFEX (Boone et al., 2000)
-  !    3: No modification of hydraulic conductivity in presence of ice 
-  KFICE = 0
+  !    2: linear function for the impedance factor (Smirnova et al., 2000)
+  !    3: linear function for the impedance factor with respect to WSAT (Smirnova et al., 2000 modified)
+  !    4: degree 3 exponential function for the impedance factor (from Mao et al., 2007)
+  !    5: No modification of hydraulic conductivity in presence of ice
+  
+  KFICE = 4
 
   !
   ! Option for the redistribution of water in case of over-saturation after the soil_fluxes solver
@@ -347,16 +354,27 @@ SUBROUTINE HYDRO_SVS ( DT, &
 
         !Adjust ksat and wsat for presence of ice
         IF(KFICE==0) THEN
-            FICE = (1.0-MAX(0.0,MIN((WSAT(I,K)-CRITWATER)/WSAT(I,K),WF(I,K)/WSAT(I,K))))**2.
+            FICE = (1.0-MAX(0.0,MIN((WSAT(I,K)-CRITWATER)/WSAT(I,K),WF(I,K)/WSAT(I,K))))**2.   ! Correction factor taken from Zhao and Gray (1997). Used in CLASS 3.6 (see eq. 2 from Ganji et al., 2017)
         ELSE IF (KFICE ==1) THEN    
-            FICE =  EXP(LOG(10.0)*(-6*WF(I,K)/(WF(I,K)+WD(I,K))))
+            FICE =  EXP(LOG(10.0)*(-6*WF(I,K)/(WF(I,K)+WD(I,K))))   ! Impedance factor taken from SURFEX (Boone et al., 2000)
+        ELSE IF (KFICE ==2) THEN    
+            FICE =  (1 - WF(I,K)/(WF(I,K)+WD(I,K)))   ! linear function for the impedance factor (Smirnova et al., 2000)
         ELSE IF (KFICE ==3) THEN    
-            FICE = 1.   
+            FICE =  (1 - WF(I,K)/WSAT(I,K))   ! linear function for the impedance factor with respect to WSAT (Smirnova et al., 2000 modified)
+        ELSE IF (KFICE ==4) THEN    
+            FICE =  (1 - WF(I,K))**3.   ! degree 3 exponential function for the impedance factor (from Mao et al., 2007)
+        ELSE IF (KFICE ==5) THEN    
+            FICE = 1.   ! No modification of hydraulic conductivity in presence of ice
         ELSE
             FICE = 1.   
         ENDIF 
         KSATC(I,K) = KSAT(I,K)*FICE
         WSATC(I,K)= MAX((WSAT(I,K)-WF(I,K)-0.00001), CRITWATER)
+
+        IF( K==1 .and.WF(I,K)>0.  ) THEN
+             WRITE(*,*) 'WSAT',WSAT(I,K),'WSOL',WD(I,K)
+             WRITE(*,*) 'ISOL',WF(I,K),'FICE',FICE
+        ENDIF  
 
         ! Calculate parameters needed for WATDRAIN
         ! ASAT0  bulk saturation at the begining of time step (WD/WDSAT)
