@@ -200,7 +200,7 @@ SUBROUTINE HYDRO_SVS ( DT, &
   !    4: degree 3 exponential function for the impedance factor (from Mao et al., 2007)
   !    5: No modification of hydraulic conductivity in presence of ice
   
-  KFICE = 4
+  KFICE = 0
 
   !
   ! Option for the redistribution of water in case of over-saturation after the soil_fluxes solver
