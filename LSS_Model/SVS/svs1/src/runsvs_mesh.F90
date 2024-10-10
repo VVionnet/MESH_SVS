@@ -53,8 +53,6 @@ module runsvs_mesh
 
     real preacc_tot,wsoil_tot,isoil_tot,snow_tot,veg_tot     
 
-    real preacc_tot,wsoil_tot,isoil_tot,snow_tot,veg_tot
-
     !> SVS variables names for I/O (direct variables).
     character(len = *), parameter, public :: VN_SVS_DEGLAT = 'DEGLAT'
     character(len = *), parameter, public :: VN_SVS_DEGLNG = 'DEGLNG'
