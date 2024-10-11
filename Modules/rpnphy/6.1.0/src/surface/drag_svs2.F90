@@ -175,15 +175,15 @@
 !         local momentum roughness of bare ground, times a scaling factor.
 
       DO I=1,N
-         Z0BG_N(I) = Z0(I)
-         Z0HG(I) = Z0M_TO_Z0H * Z0(I)
+         Z0BG_N(I) = Z0MBG
+         Z0HG(I) = Z0M_TO_Z0H * Z0BG_N(I)
       END DO
 !
 !         GROUND BELOW HIGH VEG LOCAL HEAT ROUGHNESS.  It is approximated by the
 !         local momentum roughness of bare ground, times a scaling factor.
 
       DO I=1,N
-         Z0GV_N(I) = Z0(I) ! Value is the same as BG
+         Z0GV_N(I) = Z0MBG ! Value is the same as BG
          ZZ0HGV(I) = Z0M_TO_Z0H * Z0GV_N(I)
       END DO
 !
@@ -630,7 +630,7 @@
 
       else
          i = sl_sfclayer( THETAA, HU, VMOD, VDIR, ZUSL, ZTSL, &
-              TGRS, HUSURF, Z0BG_N, Z0HG, LAT, FCOR, &
+              TGRS, HUSURF, Z0, Z0HG, LAT, FCOR, &
               L_min=sl_Lmin_soil, &
               coeft=CTUGR )
 
