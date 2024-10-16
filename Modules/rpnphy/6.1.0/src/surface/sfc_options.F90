@@ -403,6 +403,19 @@ module sfc_options
    logical           :: lcano_svs2 = .true.
    namelist /surface_cfgs/ lcano_svs2
 
+   !# Options for minimum length of MO
+   !# * 'NON'   :  lmo_winter is fixed to -1 and a minimum wind speed is imposed
+   !# * 'CST'   :  a minimum constant length of MO is specified by the used (lmin_stable)
+   !# * 'VAR'   :  a minimum length of MO in the winter is specified by the used (lmo_winter)
+   character(len=3) :: lvar_lmin_stable    = 'NON'
+   namelist /surface_cfgs/ lvar_lmin_stable 
+   character(len=*), parameter :: LVAR_LMIN_STABLE_OPT(3) = (/ &
+        'NON',  &
+        'CST',  &
+        'VAR'   &
+        /)
+
+
    !# Emissivity for water
    !# * '_constant_' : A fixed floating point value used as a constant
    character(len=16) :: water_emiss = '1.'

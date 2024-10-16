@@ -426,6 +426,35 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
                     call assign_line_args(svs_mesh%vs%hveglpol, p, args(2:), istat)
                 end if
 
+
+
+            case (VN_SVS_LMIN_STABLE)
+                if (.not. svs_mesh%PROCESS_ACTIVE ) then
+
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    p = 1
+                    call assign_line_args(svs_mesh%vs%lmin_stable, args(2), istat)
+                end if
+
+            case (VN_SVS_LMO_WINTER)
+                if (.not. svs_mesh%PROCESS_ACTIVE) then
+
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    p = 1
+                    call assign_line_args(svs_mesh%vs%lmo_winter, args(2), istat)
+                end if
+
+
+            case (VN_SVS_LVAR_LMIN_STABLE)
+                if (.not. svs_mesh%PROCESS_ACTIVE  ) then
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    p = 1
+                    call assign_line_args(svs_mesh%vs%lvar_lmin_stable, args(2), istat)
+                end if
+
             case (VN_SVS_LOUT_SVS1_WATBAL)
                 if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS2' ) then
                     istat = istat + radix(istat)**pstat%INACTIVE

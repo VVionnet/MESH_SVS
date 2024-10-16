@@ -149,7 +149,10 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_HVEGLPOL = 'HVEGLPOL' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_LWRITE_RESTART = 'LWRITE_RESTART' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LREAD_RESTART = 'LREAD_RESTART' ! For svs2 only 
-        
+    character(len = *), parameter, public :: VN_SVS_LVAR_LMIN_STABLE = 'LVAR_LMIN_STABLE ' ! Should be used for svs2 only 
+    character(len = *), parameter, public :: VN_SVS_LMO_WINTER = 'LMO_WINTER' ! Should be used for SVS1 = -1
+    character(len = *), parameter, public :: VN_SVS_LMIN_STABLE = 'LMIN_STABLE' ! Is used for SVS2 if LVAR_LMIN_STABLE == .true.
+
     !> SVS variables names for I/O (modifiers/special conditions).
     character(len = *), parameter, public :: VN_SVS_SAND_N = 'SAND_N'
     character(len = *), parameter, public :: VN_SVS_CLAY_N = 'CLAY_N'
@@ -276,6 +279,10 @@ module runsvs_mesh
         real, dimension(:), allocatable :: vgh_dens
         real, dimension(:), allocatable :: hveglpol
         logical :: read_hveglpol = .true.
+
+        character(len = DEFAULT_FIELD_LENGTH) :: LVAR_LMIN_STABLE = 'NON'
+        real :: lmo_winter = -1.0 !
+        real :: lmin_stable = 20. !
     end type
 
     !* PROCESS_ACTIVE: Variable to enable SVS.
@@ -312,9 +319,6 @@ module runsvs_mesh
     integer, private :: bus_length
     integer, allocatable, private :: bus_ptr(:)
     real, private :: time_dt = 0
-    real, private :: lmo_winter = -1.0
-    logical, private :: lvar_lmin_stable = .true. ! If true, use a user specified value for lmin_soil (lmin_stable)
-    real :: lmin_stable = 20.
     integer :: kount_reset = 0
     integer, private :: kount = 0
     integer, parameter, private :: trnch = 1
@@ -621,6 +625,9 @@ module runsvs_mesh
            if (allocated(svs_mesh%vs%watpond)) svs_bus(a1(watpond):z1(watpond)) = svs_mesh%vs%watpond
         endif
 
+        if((svs_mesh%vs%schmsol=='SVS' .or. svs_mesh%vs%schmsol=='SVS2')) then
+           lvar_lmin_stable = svs_mesh%vs%lvar_lmin_stable
+        endif
 
         ! Snow initialisation
         if(svs_mesh%vs%schmsol=='SVS') then
@@ -2098,18 +2105,20 @@ ierr = 200
         kount = kount + 1
 
         !> Update 'lmin' if active (greater than zero).
-        if (lvar_lmin_stable) then ! Use new value of 20 m for lmin_soil to avoid underestimation of turbulent fluxes under very stable atm 
-            sl_lmin_soil = lmin_stable
+        if (lvar_lmin_stable .EQ. 'CST') then ! Use new value of 20 m for lmin_soil to avoid underestimation of turbulent fluxes under very stable atm 
+            sl_lmin_soil = svs_mesh%vs%lmin_stable
+        else if (LVAR_LMIN_STABLE .EQ. 'NON') then
+            sl_lmin_soil = -1.
         else
-            if (lmo_winter > 0.0) then
+            if (svs_mesh%vs%lmo_winter > 0.0) then
                 if (ic%now%jday < 210) then
 
                     !> Jun 15 -> 167.
-                    sl_lmin_soil = 1.0 + (lmo_winter - 1.0)*1.0/(1.0 + exp(0.3*(ic%now%jday - 167)))
+                    sl_lmin_soil = 1.0 + (svs_mesh%vs%lmo_winter - 1.0)*1.0/(1.0 + exp(0.3*(ic%now%jday - 167)))
                 else
 
                     !> Sep 15 -> 259.
-                    sl_lmin_soil = 1.0 + (lmo_winter - 1.0)*1.0/(1.0 + exp(-0.3*(ic%now%jday - 259)))
+                    sl_lmin_soil = 1.0 + (svs_mesh%vs%lmo_winter - 1.0)*1.0/(1.0 + exp(-0.3*(ic%now%jday - 259)))
                 end if
             end if
         end if
