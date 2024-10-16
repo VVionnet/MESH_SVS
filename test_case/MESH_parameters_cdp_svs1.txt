@@ -84,3 +84,8 @@ wsnow            0.0 !kg m**-2
 
 !> Output
 lout_svs1_watbal .true. ! Add water balance output for SVS1.
+
+! Specify how to manage the minimum MO length under stable conditions (CST, VAR, NON)
+lvar_lmin_stable NON
+! lmin_stable 20.  ! Only used if lvar_lmin_stable = CST
+! lmo_winter -1. ! Only used if lvar_lmin_stable = VAR
