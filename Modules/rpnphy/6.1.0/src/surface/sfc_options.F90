@@ -406,7 +406,7 @@ module sfc_options
    !# Options for minimum length of MO
    !# * 'NON'   :  lmo_winter is fixed to -1 and a minimum wind speed is imposed
    !# * 'CST'   :  a minimum constant length of MO is specified by the used (lmin_stable)
-   !# * 'VAR'   :  a minimum length of MO in the winter is specified by the used (lmo_winter)
+   !# * 'VAR'   :  a variable length of MO is used as a function of the season. It ranges between the value lmo_winter in wintertime (value provided by the user) and 1 in summer.
    character(len=3) :: lvar_lmin_stable    = 'NON'
    namelist /surface_cfgs/ lvar_lmin_stable 
    character(len=*), parameter :: LVAR_LMIN_STABLE_OPT(3) = (/ &
