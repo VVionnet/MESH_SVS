@@ -149,9 +149,9 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_HVEGLPOL = 'HVEGLPOL' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_LWRITE_RESTART = 'LWRITE_RESTART' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LREAD_RESTART = 'LREAD_RESTART' ! For svs2 only 
-    character(len = *), parameter, public :: VN_SVS_LVAR_LMIN_STABLE = 'LVAR_LMIN_STABLE ' ! Should be used for svs2 only 
-    character(len = *), parameter, public :: VN_SVS_LMO_WINTER = 'LMO_WINTER' ! Should be used for SVS1 = -1
-    character(len = *), parameter, public :: VN_SVS_LMIN_STABLE = 'LMIN_STABLE' ! Is used for SVS2 if LVAR_LMIN_STABLE == .true.
+    character(len = *), parameter, public :: VN_SVS_LVAR_LMIN_STABLE = 'LVAR_LMIN_STABLE '
+    character(len = *), parameter, public :: VN_SVS_LMO_WINTER = 'LMO_WINTER'  ! Used if LVAR_LMIN_STABLE == 'VAR'
+    character(len = *), parameter, public :: VN_SVS_LMIN_STABLE = 'LMIN_STABLE' ! Used if LVAR_LMIN_STABLE == 'CST'
 
     !> SVS variables names for I/O (modifiers/special conditions).
     character(len = *), parameter, public :: VN_SVS_SAND_N = 'SAND_N'
@@ -2104,12 +2104,12 @@ ierr = 200
         !> Increment 'kount'.
         kount = kount + 1
 
-        !> Update 'lmin' if active (greater than zero).
-        if (lvar_lmin_stable .EQ. 'CST') then ! Use new value of 20 m for lmin_soil to avoid underestimation of turbulent fluxes under very stable atm 
+        if (lvar_lmin_stable .EQ. 'CST') then ! Use constant lmin = lmin_stable 
             sl_lmin_soil = svs_mesh%vs%lmin_stable
         else if (LVAR_LMIN_STABLE .EQ. 'NON') then
             sl_lmin_soil = -1.
         else
+        !> Update 'lmin' if active (greater than zero).
             if (svs_mesh%vs%lmo_winter > 0.0) then
                 if (ic%now%jday < 210) then
 
