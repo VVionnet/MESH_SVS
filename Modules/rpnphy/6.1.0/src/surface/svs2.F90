@@ -740,8 +740,6 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
          bus(x(LFLUXSA ,I,1))  = LESNOFRAC(I) + LESLNOFRAC(I)
          bus(x(LFLUXSV ,I,1))  = LESVNOFRAC(I) + LESVLNOFRAC(I)
 
-         write(*,*) bus(x(LFLUXSA ,I,1)),LESNOFRAC(I),LESVNOFRAC(I) 
-
       ENDDO
 
 !
