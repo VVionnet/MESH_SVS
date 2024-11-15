@@ -89,7 +89,8 @@ subroutine sfc_businit(moyhr,ni,nk)
         fbcof, frootd, gamvh, gamvl, grkef, grksat, hfluxsa, hfluxsv, &
         impervu, &
         khc, ksat, ksatc, laictem, laideci, laiva, laivf26, laivh, laivl, &
-        latflw, lesv, psi, psisat, psngrvl, psnvh, psnvha, &
+        latflw, lesv, lfluxsa, lfluxsv,      &
+        psi, psisat, psngrvl, psnvh, psnvha, &
         rcctem, resagr, resavg, resasa, resasv, resaef, rglvh, rglvl, &
         rnetsa, rnetsv, rsnowsa, &
         rsnowsv, rveg, sanden, skyview, slop, snodpl, snval, &
@@ -375,6 +376,8 @@ subroutine sfc_businit(moyhr,ni,nk)
       PHYVAR2D1(lesv,         'VN=lesv         ;ON=LSV ;VD=latent heat flux over snow-under-veg                              ;VB=v0')
       PHYVAR2D1(letr,         'VN=letr         ;ON=LT  ;VD=latent heat of evapotransp.                                       ;VB=v0')
       PHYVAR2D1(lev,          'VN=lev          ;ON=LV  ;VD=latent heat flux over vegetation                                  ;VB=v0')
+      PHYVAR2D1(lfluxsa,      'VN=lfluxsa      ;ON=LFSA;VD=latent heat flux (snow only)                                      ;VB=p0')
+      PHYVAR2D1(lfluxsv,      'VN=lfluxsv      ;ON=LFSV;VD=latent heat flux (snow under veg. only)                           ;VB=p0')
       PHYVAR2D1(maxpond,      'VN=maxpond      ;ON=MAXP;VD=maximum depth[m] of ponded water at surface                       ;VB=p0')
       PHYVAR2D1(melts,        'VN=melts        ;ON=MLTS;VD=accum. snow melting (kg/m2)                                       ;VB=p0')
       PHYVAR2D1(meltsr,       'VN=meltsr       ;ON=MLTR;VD=accum. snow melting due to rain (kg/m2)                           ;VB=p0')

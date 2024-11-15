@@ -1799,11 +1799,12 @@ ierr = 200
                  ! Write file containing snow energy balance outputs
                   write(iout_snow_enbal, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
                   write(iout_snow_enbal, FMT_CSV, advance = 'no') busptr(vd%rnetsa%i)%ptr(:, trnch),busptr(vd%swnetsa%i)%ptr(:, trnch), &
-                       busptr(vd%lwnetsa%i)%ptr(:, trnch), -1.0*busptr(vd%les%i)%ptr(:, trnch), -1.0*busptr(vd%hfluxsa%i)%ptr(:, trnch), &
+                       busptr(vd%lwnetsa%i)%ptr(:, trnch), -1.0*busptr(vd%lfluxsa%i)%ptr(:, trnch), -1.0*busptr(vd%hfluxsa%i)%ptr(:, trnch), &
                        busptr(vd%subldrifta%i)%ptr(:, trnch), -1.0*busptr(vd%gfluxsa%i)%ptr(:, trnch), busptr(vd%hpsa%i)%ptr(:, trnch), busptr(vd%esa%i)%ptr(:, trnch)
                   if( svs_mesh%vs%lout_snow_vegh) then
                           write(iout_snow_enbal, FMT_CSV, advance = 'no') busptr(vd%lwca%i)%ptr(:, trnch),busptr(vd%swca%i)%ptr(:,trnch) , &
-                           busptr(vd%tca%i)%ptr(:, trnch),busptr(vd%qca%i)%ptr(:, trnch),busptr(vd%vca%i)%ptr(:, trnch), -1.0*busptr(vd%lesv%i)%ptr(:, trnch), -1.0*busptr(vd%HFLUXSV%i)%ptr(:, trnch) 
+                           busptr(vd%tca%i)%ptr(:, trnch),busptr(vd%qca%i)%ptr(:, trnch),busptr(vd%vca%i)%ptr(:, trnch),  &
+                           -1.0*busptr(vd%lfluxsv%i)%ptr(:, trnch), -1.0*busptr(vd%HFLUXSV%i)%ptr(:, trnch) 
                   endif
                   write(iout_snow_enbal, *)
               end if

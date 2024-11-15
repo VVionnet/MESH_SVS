@@ -673,9 +673,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                          BUS(x(HVEGAPOL,1,1)),N, NL_SVS)
       if (phy_error_L) return
 
-
-
-
+  
 ! Define temperature use as a lower boundary condition for the snowpack below high vegetation
       DO I=1,N
           DO J=1,NL_SVS
@@ -737,6 +735,12 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 !        Cumulated liquid water runoff leaving the snowpack
          bus(x(RSNOWS_ACC,I,1)) = bus(x(RSNOWS_ACC,I,1)) + bus(x(RSNOWSA,I,1))*DT
          bus(x(RSNOWSV_ACC,I,1)) = bus(x(RSNOWSV_ACC,I,1)) + bus(x(RSNOWSV,I,1))*DT
+
+         ! Total latent heat flux from snow
+         bus(x(LFLUXSA ,I,1))  = LESNOFRAC(I) + LESLNOFRAC(I)
+         bus(x(LFLUXSV ,I,1))  = LESVNOFRAC(I) + LESVLNOFRAC(I)
+
+         write(*,*) bus(x(LFLUXSA ,I,1)),LESNOFRAC(I),LESVNOFRAC(I) 
 
       ENDDO
 

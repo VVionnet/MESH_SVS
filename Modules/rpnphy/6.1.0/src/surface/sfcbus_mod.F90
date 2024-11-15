@@ -239,6 +239,8 @@ module sfcbus_mod
       SFCVAR(ler_vl, 'ler_vl')
       SFCVAR(ler_vh, 'ler_vh')
       SFCVAR(les, 'les')
+      SFCVAR(lfluxsa, 'lfluxsa')
+      SFCVAR(lfluxsv, 'lfluxsv')
       SFCVAR(esnc, 'esnc')
       SFCVAR(esncaf, 'esncaf')      
       SFCVAR(lesv, 'lesv')
