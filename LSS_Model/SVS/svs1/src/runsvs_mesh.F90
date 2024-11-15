@@ -625,9 +625,9 @@ module runsvs_mesh
            if (allocated(svs_mesh%vs%watpond)) svs_bus(a1(watpond):z1(watpond)) = svs_mesh%vs%watpond
         endif
 
-        if((svs_mesh%vs%schmsol=='SVS' .or. svs_mesh%vs%schmsol=='SVS2')) then
-           lvar_lmin_stable = svs_mesh%vs%lvar_lmin_stable
-        endif
+        !if((svs_mesh%vs%schmsol=='SVS' .or. svs_mesh%vs%schmsol=='SVS2')) then
+        !   lvar_lmin_stable = svs_mesh%vs%lvar_lmin_stable
+        !endif
 
         ! Snow initialisation
         if(svs_mesh%vs%schmsol=='SVS') then
@@ -2105,9 +2105,13 @@ ierr = 200
         !> Increment 'kount'.
         kount = kount + 1
 
-        if (lvar_lmin_stable .EQ. 'CST') then ! Use constant lmin = lmin_stable 
+        !# Options for minimum length of MO
+        !# * 'NON'   :  lmo_winter is fixed to -1 and a minimum wind speed is imposed
+        !# * 'CST'   :  a minimum constant length of MO is specified by the used (lmin_stable)
+        !# * 'VAR'   :  a variable length of MO is used as a function of the season. It ranges between the value lmo_winter in wintertime (value provided by the user) and 1 in summer.
+        if (svs_mesh%vs%lvar_lmin_stable .EQ. 'CST') then ! Use constant lmin = lmin_stable 
             sl_lmin_soil = svs_mesh%vs%lmin_stable
-        else if (LVAR_LMIN_STABLE .EQ. 'NON') then
+        else if (svs_mesh%vs%lvar_lmin_stable .EQ. 'NON') then
             sl_lmin_soil = -1.
         else
         !> Update 'lmin' if active (greater than zero).

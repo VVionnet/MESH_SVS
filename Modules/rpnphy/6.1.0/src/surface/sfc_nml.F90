@@ -362,13 +362,6 @@ contains
             return
          endif
 
-         if (.not.any(lvar_lmin_stable == LVAR_LMIN_STABLE_OPT)) then
-            call str_concat(msg_S, LVAR_LMIN_STABLE_OPT, ', ')
-            call msg(MSG_ERROR, '(sfc_nml_check) lvar_lmin_stable = '//trim(lvar_lmin_stable)//&
-                 ' : Should be one of: '//trim(msg_S))
-            return
-         endif
-
          if (.not.any(vf_type == VFTYPE_OPT)) then
             call str_concat(msg_S, VFTYPE_OPT,', ')
             call msg(MSG_ERROR,'(sfc_nml_check) vf_type = '//trim(vf_type)//' : Should be one of: '//trim(msg_S))
