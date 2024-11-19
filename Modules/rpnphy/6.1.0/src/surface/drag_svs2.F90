@@ -594,9 +594,13 @@
       else
 
 
+          ! First call to sfc_layer to derive the friction velocity and
+          ! the wind speed at the top of the Canopy (VGH_HEIGHT). The
+          ! term VGH_HEIGHT-ZDISPLCAN is used to account for the
+          ! displacement height  
           i = sl_sfclayer( THETAA, HU, VMOD, VDIR,ZUREF_VH, ZTREF_VH, &
               TVGHS, ZQS_VH, Z0MVH_EFF, ZZ0HVH , LAT, FCOR, &
-              hghtm_diag_row =VGH_HEIGHT,L_min=sl_Lmin_soil, &
+              hghtm_diag_row =VGH_HEIGHT-ZDISPLCAN,L_min=sl_Lmin_soil, &
               coeft=CTUVH, stabm=STABM_VH,lzz0m=LZZ0M_VH, &
               ue = ZUSTAR_VH, u_diag = ZU_TOP, v_diag = ZV_TOP )
 
@@ -606,7 +610,7 @@
          endif
 
          ! Second call to sfc_layer to determine the stability term used
-         ! in the resistance aboce the canopy (see left term in Eq 60 of
+         ! in the resistance above the canopy (see left term in Eq 60 of
          ! Esery et al. (2024)
           i = sl_sfclayer( THETAA, HU, VMOD, VDIR,ZUREF_VH, ZTREF_VH, &
               TVGHS, ZQS_VH, Z0MVH_EFF, VGH_HEIGHT-ZDISPLCAN , LAT, FCOR, &
@@ -643,7 +647,7 @@
            ! the canopy where the wind follws an exponential profile
            ! (2nd term in Eq 25 in Mahat et al, WRR, 2013)
            ZRUPPER_CAN(I) =  ( VGH_HEIGHT(I) )/(ZWCAN(I)*ZKH(I)) *&
-                    ( EXP(ZWCAN(I) - ZWCAN(I)*(Z0MVH_EFF(I)+ZDISPLCAN(I))/VGH_HEIGHT(I)) - 1)
+                    ( EXP(ZWCAN(I) -ZWCAN(I)*(Z0MVH_EFF(I)+ZDISPLCAN(I))/VGH_HEIGHT(I)) - 1.)
 
            ! Wind speed at the base of high vegetation (height = HSUBCANO)
            ! Assuming an exponential profile in the canopy
