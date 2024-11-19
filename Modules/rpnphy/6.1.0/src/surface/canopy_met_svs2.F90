@@ -23,7 +23,7 @@
 
       use tdpack
       use sfc_options, only: cano_ref_forcing
-      use CANOPY_CSTS, only: KEXT, RCHD, HSUBCANO, ZRALAI, ZBETA, lwind_forest, CLUMPING
+      use CANOPY_CSTS
       USE MODE_THERMOS
       use svs_configs
       use svs2_tile_configs
@@ -127,7 +127,7 @@
                IF (LWIND_FOREST .EQ. 'VDENS_WCAN') THEN
  
                    ! Wind speed at canopy base height, dense canopy, assuming exp profile between canopy top and canopy base height
-                   WCAN = ZBETA * LAIVH(I) * VGH_DENS(I)  ! From Marke et al., (2016); Liston and Elder (2006)
+                   WCAN = WIND_CANO_COEF(LAIVH(I),VGH_DENS(I))  ! From Marke et al., (2016); Liston and Elder (2006)
                    VMOD_SUB = VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1.))
 
                    PWIND_DRIFT(I) = VMOD_SUB
@@ -165,7 +165,7 @@
                ! Wind speed at canopy base height, dense canopy, assuming exp profile between canopy top and canopy base height
                IF (LWIND_FOREST .EQ. 'VDENS_WCAN') THEN
 
-                    WCAN = ZBETA * LAIVH(I) * VGH_DENS(I)
+                    WCAN = WIND_CANO_COEF(LAIVH(I),VGH_DENS(I))
                     VMOD_CAN(I) = VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1.))
 
                ELSE IF  (LWIND_FOREST .EQ. 'WEIGHT_AVG') THEN

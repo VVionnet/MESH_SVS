@@ -624,7 +624,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 !
       CALL DRAG_SVS2 ( bus(x(TGROUND,1,1)),bus(x(TGROUNDV,1,1))  , &
            bus(x(TVEGEL,1,1)), bus(x(TVEGEH,1,1)), bus(x(TSNOWV_SVS,1,1)), &
-           bus(x(WSOIL ,1,1)) ,  &
+           bus(x(TSNOW_SVS,1,1)),bus(x(WSOIL ,1,1)) ,  &
            bus(x(WVEG_VL,1,1)),bus(x(WVEG_VH,1,1)),  zthetaa,  &
            VMOD, VDIR, hu, RHOA,    &
            ps, STOM_RS,   &
@@ -681,6 +681,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
           ENDDO
       ENDDO
 
+
+
 !
 !     Snow under high veg  as in SVS1
 
@@ -706,7 +708,6 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                              LESVNOFRAC, LESVLNOFRAC, bus(x(ESV,1,1)),PZENITH, &
                              bus(x (DLAT,1,1)), bus(x (DLON,1,1)), PFOREST_V,bus(x(SNOTYPEV_SVS,1,1)), &
                              PHVEGAPOL_V, N, NL_SVS)
-
 
       if (phy_error_L) return
 

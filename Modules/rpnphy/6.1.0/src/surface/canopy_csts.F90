@@ -24,7 +24,7 @@ MODULE CANOPY_CSTS
 implicit none
 !
 !       ------------------------------------------------------
-!               Used in canopy_met_svs2
+!               Used in canopy_met_svs2 and drag_svs2
 !       ------------------------------------------------------
 !
 ! Choice of the method to calculate the wind in the forest
@@ -87,5 +87,28 @@ REAL, PARAMETER ::  EMSNV = 1. ! Emissivity of snow below high vegetation
 REAL, PARAMETER ::  ABARK  = 0.15  !   Albedo of Bark (S. Wang, Ecological Modelling, 2005)
 REAL, PARAMETER ::  ALSNV = 0.3 ! Snow-covered canopy albedo (Goottevin et al. 2015)
 
+!       ------------------------------------------------------
+!                  Function used in drag_svs2 and canopy_met_svs2
+!       ------------------------------------------------------
+CONTAINS 
+
+REAL FUNCTION WIND_CANO_COEF(LAIVH,VGH_DENS)
+    !    
+    ! Compute wind speed attenuation coefficient in the canopy 
+    ! From Marke et al., (2016); Liston and Elder (2006)
+    !          - Input -
+    !   LAIVH: LAI of trees in areas of high vegeation (-)
+    !   VGH_DENS: density of trees in areas of high vegeation (-)
+    !          - Output -
+    !   WIND_CANO_COEF: wind speed attenuation coefficient 
+
+    REAL, INTENT(IN) :: LAIVH,VGH_DENS
+
+    ! Use a minimum value of 1 to ensure a proper reduction of wind speed 
+    ! in the canopy
+    WIND_CANO_COEF =  MAX(1.,ZBETA * LAIVH * VGH_DENS)
+
+    RETURN
+END FUNCTION WIND_CANO_COEF
 
 END MODULE CANOPY_CSTS 

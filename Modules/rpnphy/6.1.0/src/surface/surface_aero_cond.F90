@@ -158,7 +158,7 @@ DO JJ=1,SIZE(PRI)
         PRA(JJ) = PRESA_SV(JJ)
         PAC(JJ) = 1. / PRA(JJ) 
       ENDIF
-    
+
       PCH(JJ) = 1. / (PRA(JJ) * ZVMOD(JJ))
 
   ELSE IF (HSNOWRES=='M98')THEN
