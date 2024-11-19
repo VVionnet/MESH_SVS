@@ -35,7 +35,6 @@ REAL, PARAMETER :: KEXT = 0.5    ! Vegetation light extinction coefficient
 
 REAL, PARAMETER :: RCHD = 0.67    ! Ratio of displacement height to canopy height
 REAL, PARAMETER :: HSUBCANO = 1.5 ! Sub canopy reference height for wind, tair and hu
-REAL, PARAMETER :: ZRALAI = 3.! Parameter for excess resistance introduced by canopy between surface and ref level (cf Table 1, Gouttevin et al. 2015)
 REAL, PARAMETER :: ZBETA = 0.9 ! Constant used in the canopy wind decay coefficient WCAN ( Marke et al., 2016; Liston and Elder, 2006)
 
 !       ------------------------------------------------------
@@ -106,7 +105,7 @@ REAL FUNCTION WIND_CANO_COEF(LAIVH,VGH_DENS)
 
     ! Use a minimum value of 1 to ensure a proper reduction of wind speed 
     ! in the canopy
-    WIND_CANO_COEF =  MAX(1.,ZBETA * LAIVH * VGH_DENS)
+    WIND_CANO_COEF =  MAX(1.0,ZBETA * LAIVH * VGH_DENS)
 
     RETURN
 END FUNCTION WIND_CANO_COEF

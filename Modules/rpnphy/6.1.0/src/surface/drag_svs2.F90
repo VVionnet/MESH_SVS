@@ -153,12 +153,15 @@
      real, dimension(n) :: ZUGV, ZTGV, ZZ0MGV, ZDH, QSATI_VH, VSUBL, Z0MVH_EFF, &
                            ZDISPLCAN,ZUREF_VH,ZTREF_VH, &
                            STABM_VH, ZUSTAR_VH,LZZ0M_VH, & ! Related to VGH
+                           STABT_VH,LZZ0T_VH, & ! Related to VGH
+                           STABT_VH2,LZZ0T_VH2, & ! Related to VGH
                            ZRSURF, VMOD_BELOW, & ! Related to surface below VGH
                            LZZ0T_BELOW, STABT_BELOW, & ! Related to surface below VGH 
                            LZZ0M_BELOW, STABM_BELOW, &  ! Related to surface below VGH
                            ZU_TOP,ZV_TOP,VMOD_TOP, &
                            ZKH, ZWCAN, ZRUPPER_CAN, &
-                           VMOD_DISPL,ZUSTAR_BELOW  
+                           VMOD_DISPL,ZUSTAR_BELOW , & 
+                           ZRABV_CAN,ZRABV_CAN2
      real :: ZFSURF
      REAL :: NU, MU, NR, DVAP
      REAL :: XI2,EXT2
@@ -591,10 +594,12 @@
          endif
       else
 
-         i = sl_sfclayer( THETAA, HU, VMOD, VDIR,ZUREF_VH, ZTREF_VH, &
-              TVGHS, ZQS_VH, Z0MVH_EFF, ZZ0HVH, LAT, FCOR, &
-              hghtm_diag_row =VGH_HEIGHT, L_min=sl_Lmin_soil, &
+
+          i = sl_sfclayer( THETAA, HU, VMOD, VDIR,ZUREF_VH, ZTREF_VH, &
+              TVGHS, ZQS_VH, Z0MVH_EFF, ZZ0HVH , LAT, FCOR, &
+              hghtm_diag_row =VGH_HEIGHT,L_min=sl_Lmin_soil, &
               coeft=CTUVH, stabm=STABM_VH,lzz0m=LZZ0M_VH, &
+              stabt=STABT_VH,lzz0t=LZZ0T_VH, &
               ue = ZUSTAR_VH, u_diag = ZU_TOP, v_diag = ZV_TOP )
 
          if (i /= SL_OK) then
@@ -602,12 +607,20 @@
             return
          endif
 
+
          do i=1,n 
             z0hvh(i)=zz0hvh(i)
 
            ! Compute wind speed at the canopy top from wind components
            ! at canopy top provided by sfclayer
            VMOD_TOP(I) = (ZU_TOP(I)**2. + ZV_TOP(I)**2.)**0.5
+
+           ! Aerodynamic resistance above the canopy
+           ! See left term in Eq 60 of Essery et al., 2024
+           ! Stability term is derived from the call to sfc_layer
+           ZRABV_CAN(I) = 1./(KARMAN*ZUSTAR_VH(I))*  &
+               (LOG(ZTREF_VH(I) /(VGH_HEIGHT(I)-ZDISPLCAN(I))) + &
+                   STABT_VH(I)-LZZ0T_VH(I))
 
            ! Compute eddy diffusion coefficient for the canopy at
            ! height VGH_HEIGHT (eq 24 in Mahat et al, WRR, 2013)
@@ -635,7 +648,7 @@
 
       DO I=1,N
          IF(WTG(I,indx_svs2_vh) .GE. EPSILON_SVS) THEN   ! High vegetation present in the grid cell
-           RESA_VH(I) = 1. / (CTUVH(I)) + ZRUPPER_CAN(I) 
+           RESA_VH(I) = ZRABV_CAN(I) + ZRUPPER_CAN(I) 
 
 !          TODO: should VEG_DENS impact the aero resistance for a sparse canopy?
 !          IF (VGH_DENS(I) .GT. EPSILON_SVS) THEN
