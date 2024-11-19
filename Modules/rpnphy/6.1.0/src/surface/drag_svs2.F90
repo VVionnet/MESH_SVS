@@ -154,14 +154,13 @@
                            ZDISPLCAN,ZUREF_VH,ZTREF_VH, &
                            STABM_VH, ZUSTAR_VH,LZZ0M_VH, & ! Related to VGH
                            STABT_VH,LZZ0T_VH, & ! Related to VGH
-                           STABT_VH2,LZZ0T_VH2, & ! Related to VGH
                            ZRSURF, VMOD_BELOW, & ! Related to surface below VGH
                            LZZ0T_BELOW, STABT_BELOW, & ! Related to surface below VGH 
                            LZZ0M_BELOW, STABM_BELOW, &  ! Related to surface below VGH
                            ZU_TOP,ZV_TOP,VMOD_TOP, &
                            ZKH, ZWCAN, ZRUPPER_CAN, &
                            VMOD_DISPL,ZUSTAR_BELOW , & 
-                           ZRABV_CAN,ZRABV_CAN2
+                           ZRABV_CAN
      real :: ZFSURF
      REAL :: NU, MU, NR, DVAP
      REAL :: XI2,EXT2
@@ -599,8 +598,19 @@
               TVGHS, ZQS_VH, Z0MVH_EFF, ZZ0HVH , LAT, FCOR, &
               hghtm_diag_row =VGH_HEIGHT,L_min=sl_Lmin_soil, &
               coeft=CTUVH, stabm=STABM_VH,lzz0m=LZZ0M_VH, &
-              stabt=STABT_VH,lzz0t=LZZ0T_VH, &
               ue = ZUSTAR_VH, u_diag = ZU_TOP, v_diag = ZV_TOP )
+
+         if (i /= SL_OK) then
+            call physeterror('drag_svs', 'error 2 returned by sl_sfclayer()')
+            return
+         endif
+
+         ! Second call to sfc_layer to determine the stability term used
+         ! in the resistance aboce the canopy (see left term in Eq 60 of
+         ! Esery et al. (2024)
+          i = sl_sfclayer( THETAA, HU, VMOD, VDIR,ZUREF_VH, ZTREF_VH, &
+              TVGHS, ZQS_VH, Z0MVH_EFF, VGH_HEIGHT-ZDISPLCAN , LAT, FCOR, &
+              L_min=sl_Lmin_soil,stabt=STABT_VH,lzz0t=LZZ0T_VH)
 
          if (i /= SL_OK) then
             call physeterror('drag_svs', 'error 2 returned by sl_sfclayer()')
@@ -618,9 +628,9 @@
            ! Aerodynamic resistance above the canopy
            ! See left term in Eq 60 of Essery et al., 2024
            ! Stability term is derived from the call to sfc_layer
-           ZRABV_CAN(I) = 1./(KARMAN*ZUSTAR_VH(I))*  &
-               (LOG(ZTREF_VH(I) /(VGH_HEIGHT(I)-ZDISPLCAN(I))) + &
-                   STABT_VH(I)-LZZ0T_VH(I))
+           ZRABV_CAN(I) = 1./(KARMAN*ZUSTAR_VH(I))*STABT_VH(I)
+               !(LOG(ZTREF_VH(I) /(VGH_HEIGHT(I)-ZDISPLCAN(I))) + &
+               !    STABT_VH(I)-LZZ0T_VH(I))
 
            ! Compute eddy diffusion coefficient for the canopy at
            ! height VGH_HEIGHT (eq 24 in Mahat et al, WRR, 2013)
