@@ -151,7 +151,7 @@
            zqs_vl, zqs_vh, ctugr, ctugrv, ctuvh, ctuvl, wcrit_hrsurf, z0bg_n,ra,&
            z0gv_n, qsatgrv,wcrit_hrsurfgv, z0hg, zz0hgv, ZZ0HVH, ZZ0HVL, TSV_CORR
      real, dimension(n) :: ZUGV, ZTGV, ZZ0MGV, ZDH, QSATI_VH, VSUBL, Z0MVH_EFF, &
-                           ZDISPLCAN,ZUREF_VH,ZTREF_VH, &
+                           ZDISPLCAN,ZUREF_VH,ZTREF_VH,ZDIAG_TOP,ZZ0_TOP, &
                            STABM_VH, ZUSTAR_VH,LZZ0M_VH, & ! Related to VGH
                            STABT_VH,LZZ0T_VH, & ! Related to VGH
                            ZRSURF, VMOD_BELOW, & ! Related to surface below VGH
@@ -565,6 +565,8 @@
 
       do i=1,n 
 
+        IF(WTG(I,indx_svs2_vh) .GE. EPSILON_SVS) THEN   ! High vegetation present in the grid cell
+
         ! Compute displacement height
         ZDISPLCAN(I) = VGH_HEIGHT(I)*RCHD
 
@@ -576,6 +578,22 @@
         ! including the displacement height  (as in urban_drag, TEB)
         ZTREF_VH(I) = ZTSL(I) +  VGH_HEIGHT(I) - ZDISPLCAN(I)
 
+           ! Compute height use to compute the wind speed at the top of
+           ! the canopy (taking into account the displacement height)
+           ZDIAG_TOP(I) = VGH_HEIGHT(I)-ZDISPLCAN(I)
+
+           ! Compute height use derive the stability term used
+           ! in the resistance above the canopy 
+           ZZ0_TOP(I) = VGH_HEIGHT(I)-ZDISPLCAN(I)
+
+        ELSE
+           ZDISPLCAN(I) = 0.
+           ZUREF_VH(I)  = ZUSL(I) 
+           ZTREF_VH(I)  = ZTSL(I)
+           ZDIAG_TOP(I) = 10.
+           ZZ0_TOP(I)   =  ZZ0HVH(I)   
+        ENDIF 
+             
       end do
       
       if ( svs_dynamic_z0h ) then
@@ -600,7 +618,7 @@
           ! displacement height  
           i = sl_sfclayer( THETAA, HU, VMOD, VDIR,ZUREF_VH, ZTREF_VH, &
               TVGHS, ZQS_VH, Z0MVH_EFF, ZZ0HVH , LAT, FCOR, &
-              hghtm_diag_row =VGH_HEIGHT-ZDISPLCAN,L_min=sl_Lmin_soil, &
+              hghtm_diag_row =ZDIAG_TOP,L_min=sl_Lmin_soil, &
               coeft=CTUVH, stabm=STABM_VH,lzz0m=LZZ0M_VH, &
               ue = ZUSTAR_VH, u_diag = ZU_TOP, v_diag = ZV_TOP )
 
@@ -613,7 +631,7 @@
          ! in the resistance above the canopy (see left term in Eq 60 of
          ! Esery et al. (2024)
           i = sl_sfclayer( THETAA, HU, VMOD, VDIR,ZUREF_VH, ZTREF_VH, &
-              TVGHS, ZQS_VH, Z0MVH_EFF, VGH_HEIGHT-ZDISPLCAN , LAT, FCOR, &
+              TVGHS, ZQS_VH, Z0MVH_EFF, ZZ0_TOP , LAT, FCOR, &
               L_min=sl_Lmin_soil,stabt=STABT_VH,lzz0t=LZZ0T_VH)
 
          if (i /= SL_OK) then
@@ -624,6 +642,8 @@
 
          do i=1,n 
             z0hvh(i)=zz0hvh(i)
+
+            IF(WTG(I,indx_svs2_vh) .GE. EPSILON_SVS) THEN
 
            ! Compute wind speed at the canopy top from wind components
            ! at canopy top provided by sfclayer
@@ -656,6 +676,7 @@
            ! Wind speed in the middle of the canopy (height = ZDISPLCAN)
            ! Assuming an exponential profile in the canopy
            VMOD_DISPL(I) = VMOD_TOP(I)*EXP(ZWCAN(I)*(ZDISPLCAN(I)/VGH_HEIGHT(I)-1.))
+           ENDIF
 
          enddo
       endif
