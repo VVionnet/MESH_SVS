@@ -116,9 +116,10 @@
 include "isbapar.cdk"
 
       INTEGER I
+      INTEGER OPT_SNOWCOND ! Option to compute the effective thermal conductivity of snow
 !
 !
-      REAL LAMI, CICE, DAY, CWAT, DT_12MIN
+      REAL LAMI, CICE, RHO_ICE, DAY, CWAT, DT_12MIN
       
       REAL EMISSN, RAIN1, RAIN2, MLTRAIN 
       REAL CRMIN, CRMAX, TAUHOUR, RHOE, MYOMEGA
@@ -136,6 +137,11 @@ include "isbapar.cdk"
 !
 !************************************************************************
 !
+!Flag for the effective thermal conductivity of snow - Yen (1981) versus Fourteau (2021)
+      OPT_SNOWCOND = 0 ! Option to compute the effective thermal conductivity
+                       ! 0: Use default option from Yen (1981) that depends on snow density
+                       ! 1: Updated parameterization from Fourteau et al. (2021) that is tempearture and snow density dependant
+!
 !
 !
 !                                THE FOLLOWING SHOULD BE PUT IN 
@@ -143,7 +149,8 @@ include "isbapar.cdk"
 !
 !
       LAMI    = 2.22 
-      CICE    = 2.106E3  ! specific heat of ice 
+      CICE    = 2.106E3  ! specific heat of ice
+      RHO_ICE = 0.917 ! kg m-3 (density of ice)
       DAY     = 86400.
       EMISSN  = 0.97
       CRMIN   = 0.03
@@ -216,8 +223,28 @@ include "isbapar.cdk"
 !                          
 !
       DO I=1,N
+!
+        ! Snow thermal conductitivy
+        IF(OPT_SNOWCOND==0) THEN  !Model from Yen (1981)
+            LAMS(I) = LAMI * RHOSL(I)**1.88
+!            
+        ELSE IF(OPT_SNOWCOND == 1) THEN !Model from Fourteau et al. (2021)
+            IF (TSND(I) >= 273) THEN
+                LAMS(I) = 1.776*(RHOSL(I)/RHO_ICE)**2 + 0.147*(RHOSL(I)/RHO_ICE) + 0.0455
+            ELSE IF (TSND(I) < 273 .AND. TSND(I) >= 268) THEN
+                LAMS(I) = 1.883*(RHOSL(I)/RHO_ICE)**2 + 0.107*(RHOSL(I)/RHO_ICE) + 0.0386
+            ELSE IF (TSND(I) < 268 .AND. TSND(I) >= 263) THEN
+                LAMS(I) = 1.985*(RHOSL(I)/RHO_ICE)**2 + 0.073*(RHOSL(I)/RHO_ICE) + 0.0336
+            ELSE IF (TSND(I) < 263 .AND. TSND(I) >= 248) THEN
+                LAMS(I) = 2.172*(RHOSL(I)/RHO_ICE)**2 + 0.015*(RHOSL(I)/RHO_ICE) + 0.0252
+            ELSE IF (TSND(I) < 248) THEN
+                LAMS(I) = 2.564*(RHOSL(I)/RHO_ICE)**2 - 0.059*(RHOSL(I)/RHO_ICE) + 0.0205
+            ENDIF
+        ENDIF
+!     
+
 !                          First calculate the conductivity of snow (Yen,1981)
-        LAMS(I) = LAMI * RHOSL(I)**1.88
+!        LAMS(I) = LAMI * RHOSL(I)**1.88
 !
 !                          Heat capacity
 !

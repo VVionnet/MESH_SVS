@@ -30,9 +30,8 @@ SUBROUTINE HYDRO_SVS ( DT, &
   INTEGER N,K 
   ! CONSTANTS for horizontal decay of GRKSAT
   ! 
-  REAL, PARAMETER :: GRKSAT_C1=10.0
-  REAL, PARAMETER :: GRKSAT_C2=5.0
-
+  REAL, PARAMETER :: GRKSAT_C1=10
+  REAL, PARAMETER :: GRKSAT_C2=5
 
   REAL DT, W
 
@@ -45,7 +44,13 @@ SUBROUTINE HYDRO_SVS ( DT, &
   !    0: Default param:
   !    1: New param:  - in case of vertical redistribution, liquid water that flows to the next layer is limited by 
   !                       the effective porosity. Any water in excess is added to the lateral flow
-  !                   - harmonic mean of the hydraulic conductivity  
+  !                   - harmonic mean of the hydraulic conductivity
+
+  INTEGER GRKSAT_OPT ! Option for the anisotropy of hydraulic conductivity of soil at saturation
+  !    0: C1 and C2 originally implemented in SVS (see eq. 7 from Alavi et al. 2016)
+  !    1: Modified C1 and C2 parameters to emulate simple exponential from Brooks et al (2004)
+  !    2: Integrated double exponential function from Brooks et al. (2004) 
+
 
   ! input
   real, dimension(n)        :: eg, er, etr, rr, impervu
@@ -190,9 +195,12 @@ SUBROUTINE HYDRO_SVS ( DT, &
   ENDDO
 
   ! Option for soil freezing
-  !    0: Correction factor taken from Zhang and Gray (1997). Same as CLASS 3.6
+  !    0: Correction factor taken from Zhao and Gray (1997). Used in CLASS 3.6 (see eq. 2 from Ganji et al., 2017) 
   !    1: Impedance factor taken from SURFEX (Boone et al., 2000)
-  !    3: No modification of hydraulic conductivity in presence of ice 
+  !    2: linear function for the impedance factor (Smirnova et al., 2000)
+  !    3: linear function for the impedance factor with respect to WSAT (Smirnova et al., 2000 modified)
+  !    4: degree 3 exponential function for the impedance factor (from Mao et al., 2007)
+  !    5: No modification of hydraulic conductivity in presence of ice
   KFICE = 0
 
   !
@@ -201,7 +209,13 @@ SUBROUTINE HYDRO_SVS ( DT, &
   !    1: New param:  - in case of vertical redistribution, liquid water that flows to the next layer is limited by 
   !                       the effective porosity. Any water in excess is added to the lateral flow
   !                   - harmonic mean of the hydraulic conductivity  
-  WAT_REDIS = 1
+  WAT_REDIS = 0
+
+  !    0: C1 and C2 originally implemented in SVS (see eq. 7 from Alavi et al. 2016)
+  !    1: Modified C1 and C2 parameters to emulate simple exponential from Brooks et al (2004)
+  !    2: Integrated double exponential function from Brooks et al. (2004) 
+  GRKSAT_OPT = 2
+  
   !
   !-------------------------------------
   !   1.        EVOLUTION OF THE EQUVALENT WATER CONTENT Wr
@@ -347,16 +361,27 @@ SUBROUTINE HYDRO_SVS ( DT, &
 
         !Adjust ksat and wsat for presence of ice
         IF(KFICE==0) THEN
-            FICE = (1.0-MAX(0.0,MIN((WSAT(I,K)-CRITWATER)/WSAT(I,K),WF(I,K)/WSAT(I,K))))**2.
+            FICE = (1.0-MAX(0.0,MIN((WSAT(I,K)-CRITWATER)/WSAT(I,K),WF(I,K)/WSAT(I,K))))**2.   ! Correction factor taken from Zhao and Gray (1997). Used in CLASS 3.6 (see eq. 2 from Ganji et al., 2017)
         ELSE IF (KFICE ==1) THEN    
-            FICE =  EXP(LOG(10.0)*(-6*WF(I,K)/(WF(I,K)+WD(I,K))))
+            FICE =  EXP(LOG(10.0)*(-6*WF(I,K)/(WF(I,K)+WD(I,K))))   ! Impedance factor taken from SURFEX (Boone et al., 2000)
+        ELSE IF (KFICE ==2) THEN    
+            FICE =  (1 - WF(I,K)/(WF(I,K)+WD(I,K)))   ! linear function for the impedance factor (Smirnova et al., 2000)
         ELSE IF (KFICE ==3) THEN    
-            FICE = 1.   
+            FICE =  (1 - WF(I,K)/WSAT(I,K))   ! linear function for the impedance factor with respect to WSAT (Smirnova et al., 2000 modified)
+        ELSE IF (KFICE ==4) THEN    
+            FICE =  (1 - WF(I,K))**3.   ! degree 3 exponential function for the impedance factor (from Mao et al., 2007)
+        ELSE IF (KFICE ==5) THEN    
+            FICE = 1.   ! No modification of hydraulic conductivity in presence of ice
         ELSE
             FICE = 1.   
         ENDIF 
         KSATC(I,K) = KSAT(I,K)*FICE
         WSATC(I,K)= MAX((WSAT(I,K)-WF(I,K)-0.00001), CRITWATER)
+
+        !IF( K==1 .and.WF(I,K)>0.  ) THEN
+        !     WRITE(*,*) 'WSAT',WSAT(I,K),'WSOL',WD(I,K)
+        !     WRITE(*,*) 'ISOL',WF(I,K),'FICE',FICE
+        !ENDIF
 
         ! Calculate parameters needed for WATDRAIN
         ! ASAT0  bulk saturation at the begining of time step (WD/WDSAT)
@@ -365,7 +390,18 @@ SUBROUTINE HYDRO_SVS ( DT, &
         ASATFC(I,K) = WFCINT(I,K)/ WSAT(I,K)
 
         ! Horizontal soil hydraulic conductivity decays with depth
-        GRKSAT (I,K) = GRKSAT_C1 * EXP( GRKSAT_C2 *(DL_SVS(NL_SVS)-DL_SVS(K))/DL_SVS(NL_SVS))*KSATC(I,K)
+        IF (GRKSAT_OPT == 0) THEN
+            GRKSAT (I,K) = GRKSAT_C1 * EXP( GRKSAT_C2 *(DL_SVS(NL_SVS)-DL_SVS(K))/DL_SVS(NL_SVS))*KSATC(I,K)
+        ELSE IF (GRKSAT_OPT == 1) THEN
+            GRKSAT (I,K) = 9.4e-7 * EXP( 16.5 *(DL_SVS(NL_SVS)-DL_SVS(K))/DL_SVS(NL_SVS))*KSATC(I,K)
+        ELSE IF (GRKSAT_OPT == 2) THEN
+            IF (K == 1) THEN
+                GRKSAT (I,K) = (-2 * (EXP( -5.5 * DL_SVS(K)) - 1) - 1.8 * (EXP( -50 * DL_SVS(K)) - 1))*KSATC(I,K)
+            ELSE    
+                GRKSAT (I,K) = (-2 * (EXP( -5.5 * DL_SVS(K)) - EXP( -5.5 * DL_SVS(K-1))) - 1.8 * (EXP( -50 * DL_SVS(K)) - EXP( -50 * DL_SVS(K-1))))*KSATC(I,K)
+            ENDIF
+        ENDIF
+        
         GRKEFL (I,K) = GRKEF(I)*GRKSAT(I,K)
      END DO
   END DO
@@ -400,7 +436,11 @@ SUBROUTINE HYDRO_SVS ( DT, &
         ! update amount of ponding water
         watpnd(I) = watpnd(I) + (1. - IMPERVU(I) ) * abstract(I) / 1000.0
 
-     ENDIF 
+     ENDIF
+
+     !WRITE(*,*) 'watpond',watpnd(I)
+     !WRITE(*,*) 'maxpond',maxpnd(I)
+
 
   END DO
 

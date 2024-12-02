@@ -313,6 +313,7 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            BUS(x(ISOIL  ,1,1)), &  
            BUS(x(SNOMA  ,1,1)), BUS(x(SNVMA  ,1,1)), &   
            BUS(x(SNORO  ,1,1)), BUS(x(SNVRO  ,1,1)), &  
+           BUS(x(TSNOW  ,1,2)), BUS(x(TSNOWVEG  ,1,2)), &
            BUS(x(VEGH   ,1,1)), &  
            BUS(x(VEGL   ,1,1)), BUS(x(CGSAT  ,1,1)), &  
            BUS(x(WSAT   ,1,1)), BUS(x(WWILT  ,1,1)), &  
@@ -509,9 +510,9 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                 bus(x(tground, 1,1)), bus(x(tvege,1,1)), &
                 bus(x(wsoil   ,1,1)) , bus(x(isoil   ,1,1)), &
                 bus(x(snoro   ,1,1)) , bus(x(snodpl   ,1,1)), &
-                bus(x(tsnow   ,1,2)) ,  &
+                bus(x(tsnow   ,1,2)) , bus(x(tsnow   ,1,1)) ,  &
                 bus(x(snvro   ,1,1)) , bus(x(snvdp   ,1,1)), &
-                bus(x(tsnowveg   ,1,2)) ,bus(x(tperm, 1,1)),   &
+                bus(x(tsnowveg   ,1,2)) , bus(x(tsnowveg   ,1,1)), bus(x(tperm, 1,1)),   &
                 bus(x(wunfrz, 1,1)), &
                 N )
       ENDIF

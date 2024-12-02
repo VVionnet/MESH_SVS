@@ -23,6 +23,7 @@ subroutine inisoili_svs(ni, trnch)
 !!!#include <arch_specific.hf>
 
    integer ni, trnch
+   integer OPT_SOILCOND
 
    !@Author  Maria Abrahamowicz, Stephane Belair , Vincent Fortin (20xx)
    !@Object  Compute soil properties for given soil texture. Compute these properties on 
@@ -42,7 +43,7 @@ subroutine inisoili_svs(ni, trnch)
 
    ! variables on the levels of SVS
    real, pointer, dimension(:,:) :: zbcoef, zclay, zfbcof, zksat, zpsisat, zsand, zwfc, zwfcint, zwsat, zwwilt, & 
-                                         zconddry, zcondsld , zquartz, zrhosoil,zwunfrz 
+                                         zconddry, zcondsld , zquartz, zrhosoil,zwunfrz
 
   
 #define MKPTR1D(NAME1,NAME2) nullify(NAME1); if (vd%NAME2%i > 0 .and. associated(busptr(vd%NAME2%i)%ptr)) NAME1(1:ni) => busptr(vd%NAME2%i)%ptr(:,trnch)
@@ -69,7 +70,13 @@ subroutine inisoili_svs(ni, trnch)
    MKPTR2D(zrhosoil , rhosoil)
    MKPTR2D(zquartz , quartz)
 
-   
+  OPT_SOILCOND = 4 ! Option for the Calculation of soil thermal conductivity 
+               ! 0: use the model from Peters-Lidard et al. (1998) for frozen soil that involve the Kersten number (Johanssen, 1975)
+               ! 1: Use the model from Hansson et al. (2004) that adaps the empirical model from Campbell (1985) for frozen soil
+               ! 2: Use the model from CLASS as described by Verseghy (1991)
+               ! 3 : Use the model from Wang et al. (2017)
+               ! 4 : Use the model from Tian et al. (2016)
+
 
    ! calculate soil parameters on native GEO layers, and then map them unto model layers. 
    ! calculate weights to be used in phybusinit.... because here... we are
@@ -136,9 +143,18 @@ subroutine inisoili_svs(ni, trnch)
         endif
 
 !       Soil dry conductivity:
-        conddry_geo(i,k) = (0.135*rhosoil_geo(i,k) + 64.7) / &
-                        (2700. - 0.947*rhosoil_geo(i,k))
 
+        if (OPT_SOILCOND == 2) then
+            conddry_geo(i,k) = condsld_geo(i,k)**(1-wsat_geo(i,k))
+        else 
+            conddry_geo(i,k) = (0.135*rhosoil_geo(i,k) + 64.7) / &
+                            (2700. - 0.947*rhosoil_geo(i,k))
+        endif
+
+        if (OPT_SOILCOND == 4) then
+            condsld_geo(i,k) = 7.7**(zsand(i,k)/100)*1.93**(zclay(i,k)/100)*2.74**((100 - zsand(i,k) - zclay(i,k))/100)
+        endif
+        
 !       Unfrozen residual water content obtained from Niu and Yang (2006)
 !       Average value between -10 and -2 deg C
         wunfrz_geo(i,k) = 0. 

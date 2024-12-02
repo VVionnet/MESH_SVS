@@ -3,8 +3,8 @@
       SUBROUTINE SOIL_FREEZING(DT, TSOIL, VEGL, VEGH, PSN, PSNVH,  &
                                 SOILCONDZ, SOILHCAPZ , TGRS, TVEGS,   &
                                 WSOIL, ISOIL,  &
-                                SNORO, SNODP, TSNO, &
-                                SNVRO, SNVDP, TSNV, &
+                                SNORO, SNODP, TSNO, TSKIN_BG, &
+                                SNVRO, SNVDP, TSNV, TSKIN_VEG, &
                                 TDEEP, WUNFRZ, N)
 
 
@@ -20,8 +20,8 @@
       REAL DT
 
       REAL, DIMENSION(N)        :: VEGL, VEGH, PSN, PSNVH, TGRS, TDEEP,TVEGS
-      REAL, DIMENSION(N)        :: SNORO, SNODP, TSNO 
-      REAL, DIMENSION(N)        :: SNVRO, SNVDP, TSNV 
+      REAL, DIMENSION(N)        :: SNORO, SNODP, TSNO, TSKIN_BG 
+      REAL, DIMENSION(N)        :: SNVRO, SNVDP, TSNV, TSKIN_VEG 
       REAL, DIMENSION(N,NL_SVS) :: TSOIL,SOILCONDZ, SOILHCAPZ,WSOIL,ISOIL, WUNFRZ
 
       !
@@ -64,10 +64,12 @@
       ! TVEGS         surface vegetation temperature from Force Restore
       ! SNODP         snow depth for snow over bare ground/low veg
       ! SNORO         snow density for snow over bare ground/low veg
+      ! TSKIN_BG      skin snow temperature over bare ground 
       ! TSNO          deep snow temperature for snow over bare ground/low veg
       ! SNVDP         snow depth for snow over under high veg
       ! SNVRO         snow density for snow under high veg
       ! TSNV          deep snow temperature for snow under high veg
+      ! TSKIN_VEG     skin snow temperature under high vegetation 
       !
       !          - INPUT/OUTPUT  -
       !
@@ -89,10 +91,13 @@
       INTEGER OPT_SNOW  ! Option to compute the heat flux between the snowpack and the soil
       INTEGER OPT_FRAC    ! Option to compute the snow cover fraction        
       INTEGER OPT_LIQWAT  ! Option to compute the unfrozen redisudal water content  
-      INTEGER OPT_VEGCOND ! Option to compute the skin conductivity from the snow-free vegetation 
+      INTEGER OPT_VEGCOND ! Option to compute the skin conductivity from the snow-free vegetation
+      INTEGER OPT_SNOWCOND ! Option to compute the effective thermal conductivity of snow
+      INTEGER OPT_DBTM ! Option to set the depth of temperature for the lower boundary condition below the soil column
+      
 
 
-      REAL LAMI, CICE, DAY, MYOMEGA 
+      REAL LAMI, CICE, RHO_ICE, DAY, MYOMEGA 
       REAL LAM_VEGL_STAB, LAM_VEGH_STAB,LAM_VEGL_UNSTAB, LAM_VEGH_UNSTAB
       REAL MFAC, RHONEW,Z0
 
@@ -115,13 +120,15 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !
 
-      OPT_SNOW = 2 ! Option to compute the heat flux between the snowpack and the soil 
+      OPT_SNOW = 3 ! Option to compute the heat flux between the snowpack and the soil 
                    ! 0: use the deep snow temperature and half the snow depth
                    ! 1: use the deep snow temperature and the full snow depth
                    ! 2: use the deep snow temp. and the max of half the snow depth
-                   !     and the full snow depth minus the damping depth (Recommended) 
+                   !     and the full snow depth minus the damping depth (Recommended)
+                   ! 3: if snow depth is lower than damping depth, use the full snow depth and the skin temperature
+                   !    if snow depth is greater than damping depth, use half snow depth and deep snow temp.
 
-      OPT_FRAC = 2 ! Option to compute the snow cover fraction
+      OPT_FRAC = 1 ! Option to compute the snow cover fraction
                    ! 1: use a fraction = SWE/1 mm
                    ! 2: use the formulation of Niu and Yang (2007) (Recommended) 
 
@@ -132,6 +139,15 @@
       OPT_VEGCOND = 1 ! Option to compute the skin conductivity for the vegetation 
                    ! 1: same value of 10 for low and high veg. in both stable and unstable conditions (Most recent version of EC Land, Boussetta et al., 2021; Recommended)
                    ! 2: different values for low and high veg. in stable and unstable conditions (See Trigo et al., JGR, 2015)
+
+      OPT_SNOWCOND = 0 ! Option to compute the effective thermal conductivity
+                       ! 0: Use default option from Yen (1981) that depends on snow density
+                       ! 1: Updated parameterization from Fourteau et al. (2021) that is tempearture and snow density dependant
+
+      OPT_DBTM = 1 ! Option to set the depth of the lower boundrary condition below the soil column
+                       ! 0: default condition. The temperature is set at a depth of half the thickness of the lower layer below the bottom of the soil column
+                       ! 1: the temperature is set at a depth of 2.5 times the total thickness of the soil colum with a minimum (minimum 7.5 m and maximum 12.5 m below the surface)
+                       ! 2: Zero flux condition at the bottom of the soil column
 
                    
       IF(OPT_SNOW ==0) THEN
@@ -144,7 +160,8 @@
       LAMI   = 2.22 ! Thermal conductivity of ice
       DAY     = 86400.
       CICE    = 2.106E3  ! specific heat of ice 
-      MYOMEGA   = ( 2*PI )/ DAY         
+      MYOMEGA   = ( 2*PI )/ DAY
+      RHO_ICE = 0.917 ! kg m-3 (density of ice)
 
       ! Option for Niu and Yang snow cover fraction
       MFAC = 1.6
@@ -176,19 +193,60 @@
       
       DO  I=1,N
         TBTM(I) = TDEEP(I) ! K
-        DBTM(I) = ZLAYER(NL_SVS) + 0.5* DELZ(NL_SVS) ! m
+        IF (OPT_DBTM == 0 .OR. OPT_DBTM == 2) THEN
+            DBTM(I) = ZLAYER(NL_SVS) + 0.5* DELZ(NL_SVS) ! m
+        ELSE IF (OPT_DBTM == 1) THEN
+            IF (ZLAYER(NL_SVS) < 3.0) THEN                                        ! If the soil column is thinner than 3 m, set DBTM to 8.5 m (min condition)
+                DBTM(I) = 7.5 ! m
+            ELSE IF (ZLAYER(NL_SVS) >= 5.0 .AND. ZLAYER(NL_SVS) < 12.5) THEN      ! if the soil column thickness is between 8 and 20 m, set DBTM to 20 m (max condition)
+                DBTM(I) = 12.5 ! m
+            ELSE IF (ZLAYER(NL_SVS) >= 12.5) THEN                                 ! if the soil column is thicker than 20 m, use the default parameterization to compute DBTM (to avoid computational errors)
+                DBTM(I) = ZLAYER(NL_SVS) + 0.5* DELZ(NL_SVS) ! m
+            ELSE                                                                  ! if soil layer thickness is between 3 and 8 m, DBTM corresponds to 2.5 times the thickness of the soil column.
+                DBTM(I) = ZLAYER(NL_SVS)*2.5 ! m
+            ENDIF
+        ENDIF
 
-         ! Snow thermal conductitivy
-        LAMS(I) = LAMI * SNORO(I)**1.88
-        LAMSV(I) = LAMI * SNVRO(I)**1.88
-
+        ! Snow thermal conductitivy
+        IF(OPT_SNOWCOND==0) THEN 
+            LAMS(I) = LAMI * SNORO(I)**1.88
+            LAMSV(I) = LAMI * SNVRO(I)**1.88
+            
+        ELSE IF(OPT_SNOWCOND == 1) THEN !Model from Fourteau et al. (2021)
+            IF (TSNO(I) >= 273) THEN
+                LAMS(I) = 1.776*(SNORO(I)/RHO_ICE)**2 + 0.147*(SNORO(I)/RHO_ICE) + 0.0455
+            ELSE IF (TSNO(I) < 273 .AND. TSNO(I) >= 268) THEN
+                LAMS(I) = 1.883*(SNORO(I)/RHO_ICE)**2 + 0.107*(SNORO(I)/RHO_ICE) + 0.0386
+            ELSE IF (TSNO(I) < 268 .AND. TSNO(I) >= 263) THEN
+                LAMS(I) = 1.985*(SNORO(I)/RHO_ICE)**2 + 0.073*(SNORO(I)/RHO_ICE) + 0.0336
+            ELSE IF (TSNO(I) < 263 .AND. TSNO(I) >= 248) THEN
+                LAMS(I) = 2.172*(SNORO(I)/RHO_ICE)**2 + 0.015*(SNORO(I)/RHO_ICE) + 0.0252
+            ELSE IF (TSNO(I) < 248) THEN
+                LAMS(I) = 2.564*(SNORO(I)/RHO_ICE)**2 - 0.059*(SNORO(I)/RHO_ICE) + 0.0205
+            ENDIF
+            
+            IF (TSNV(I) >= 273) THEN
+                LAMSV(I) = 1.776*(SNVRO(I)/RHO_ICE)**2 + 0.147*(SNVRO(I)/RHO_ICE) + 0.0455
+            ELSE IF (TSNV(I) < 273 .AND. TSNV(I) >= 268) THEN
+                LAMSV(I) = 1.883*(SNVRO(I)/RHO_ICE)**2 + 0.107*(SNVRO(I)/RHO_ICE) + 0.0386
+            ELSE IF (TSNV(I) < 268 .AND. TSNV(I) >= 263) THEN
+                LAMSV(I) = 1.985*(SNVRO(I)/RHO_ICE)**2 + 0.073*(SNVRO(I)/RHO_ICE) + 0.0336
+            ELSE IF (TSNV(I) < 263 .AND. TSNV(I) >= 248) THEN
+                LAMSV(I) = 2.172*(SNVRO(I)/RHO_ICE)**2 + 0.015*(SNVRO(I)/RHO_ICE) + 0.0252
+            ELSE IF (TSNV(I) < 248) THEN
+                LAMSV(I) = 2.564*(SNVRO(I)/RHO_ICE)**2 - 0.059*(SNVRO(I)/RHO_ICE) + 0.0205
+            ENDIF
+        ENDIF
+        
         ! Vegetation average skin conductivity
         IF(VEGL(I)+VEGH(I)> 0.) THEN
+            
             IF(TVEGS(I) > TSOIL(I,1)) THEN ! Stable case
                  LAM_VEG(I) =(VEGL(I)*LAM_VEGL_STAB+VEGH(I)*LAM_VEGH_STAB)/(VEGL(I)+VEGH(I))
             ELSE  ! Unstable case
                  LAM_VEG(I) =(VEGL(I)*LAM_VEGL_UNSTAB+VEGH(I)*LAM_VEGH_UNSTAB)/(VEGL(I)+VEGH(I))
-            ENDIF                 
+            ENDIF
+            
         ELSE
             LAM_VEG(I) = 1. ! Set default value to make sure code is running           
         ENDIF
@@ -218,7 +276,7 @@
             ISOILT(I,K) = ISOIL(I,K)  ! Initialize frozen soil volumetric water (to be updated in the routine) 
         ENDDO
 
-        IF(OPT_SNOW ==2) THEN
+        IF(OPT_SNOW ==2 .OR. OPT_SNOW == 3) THEN !Calculation of damping depth
 ! 
              IF( SNODP(I)>0.) THEN
 
@@ -236,7 +294,7 @@
                 DAMPDV(I) = 0.
              ENDIF
 
-        ENDIF             
+        ENDIF        
       ENDDO
 
       ! Compute weights of surface type in SVS:
@@ -259,48 +317,67 @@
         !
 
         ! Upper boundary condition for snow-free bare ground
-          RTH_GRND = 0.5*DELZ(1)/SOILCONDZ(I,1)  
+        RTH_GRND = 0.5*DELZ(1)/SOILCONDZ(I,1)  
         HFLUX_GRND(I) = (TGRS(I) - TSOIL(I,1)) / RTH_GRND
 
         ! Upper boundary condition for snow-free vegetation
-         HFLUX_VEG(I) = (TVEGS(I) - TSOIL(I,1)) * LAM_VEG(I)              
+        HFLUX_VEG(I) = (TVEGS(I) - TSOIL(I,1)) * LAM_VEG(I)              
 
         ! Upper boundary condition for snow over bare ground and low veg.
         IF(SNODP(I) > 0.) THEN ! Snow is present
-
-          IF(OPT_SNOW ==0 .OR. OPT_SNOW ==1) THEN
-             RTH_SNO = FAC_SNW*SNODP(I)/LAMS(I) + 0.5*DELZ(1)/SOILCONDZ(I,1)
-          ELSE
-             RTH_SNO = MAX(SNODP(I)/2., SNODP(I)-DAMPD(I))/LAMS(I) + 0.5*DELZ(1)/SOILCONDZ(I,1)
-           ENDIF
+            IF(OPT_SNOW ==0 .OR. OPT_SNOW ==1) THEN
+                RTH_SNO = FAC_SNW*SNODP(I)/LAMS(I) + 0.5*DELZ(1)/SOILCONDZ(I,1)
+            ELSE IF (OPT_SNOW == 2) THEN
+                RTH_SNO = MAX(SNODP(I)/2., SNODP(I)-DAMPD(I))/LAMS(I) + 0.5*DELZ(1)/SOILCONDZ(I,1)
+            ELSE
+                IF (SNODP(I) > DAMPD(I)) THEN
+                    RTH_SNO = MAX(SNODP(I)/2., SNODP(I)-DAMPD(I))/LAMS(I) + 0.5*DELZ(1)/SOILCONDZ(I,1)
+                ELSE
+                    RTH_SNO = SNODP(I)/LAMS(I) + 0.5*DELZ(1)/SOILCONDZ(I,1)
+                ENDIF
+            ENDIF
         
-           ! Heat flux at the snow/soil interface
-           HFLUX_SNO(I) = (TSNO(I) - TSOIL(I,1)) / RTH_SNO
-
+            ! Heat flux at the snow/soil interface
+            IF (OPT_SNOW == 3 .AND. SNODP(I) <= DAMPD(I)) THEN
+                HFLUX_SNO(I) = (TSKIN_BG(I) - TSOIL(I,1)) / RTH_SNO
+            ELSE
+                HFLUX_SNO(I) = (TSNO(I) - TSOIL(I,1)) / RTH_SNO
+            ENDIF
         ELSE ! No snow 
-           HFLUX_SNO(I) = 0.
-          ENDIF
+            HFLUX_SNO(I) = 0.
+        ENDIF
+
                  
         ! Upper boundary condition for snow below high vegetation. 
         IF(SNVDP(I) > 0.) THEN ! Snow is present
                 
-           IF(OPT_SNOW ==0 .OR. OPT_SNOW ==1) THEN
-              RTH_SNV = FAC_SNW*SNVDP(I)/LAMSV(I) + 0.5*DELZ(1)/SOILCONDZ(I,1)
-          ELSE 
-             RTH_SNV = MAX(SNVDP(I)/2., SNVDP(I)-DAMPDV(I))/LAMSV(I) + 0.5*DELZ(1)/SOILCONDZ(I,1)
-          ENDIF
-
-           ! Heat flux at the snow/soil interface
-           HFLUX_SNV(I) = (TSNV(I) - TSOIL(I,1)) / RTH_SNV
-
+            IF (OPT_SNOW ==0 .OR. OPT_SNOW ==1) THEN
+                RTH_SNV = FAC_SNW*SNVDP(I)/LAMSV(I) + 0.5*DELZ(1)/SOILCONDZ(I,1)
+            ELSE IF (OPT_SNOW == 2) THEN 
+                RTH_SNV = MAX(SNVDP(I)/2., SNVDP(I)-DAMPDV(I))/LAMSV(I) + 0.5*DELZ(1)/SOILCONDZ(I,1)
+            ELSE
+                IF (SNVDP(I) > DAMPDV(I)) THEN
+                    RTH_SNV = MAX(SNVDP(I)/2., SNVDP(I)-DAMPDV(I))/LAMSV(I) + 0.5*DELZ(1)/SOILCONDZ(I,1)
+                ELSE
+                    RTH_SNV = SNVDP(I)/LAMSV(I) + 0.5*DELZ(1)/SOILCONDZ(I,1)
+                ENDIF
+            ENDIF
+!
+!            ! Heat flux at the snow/soil interface
+            IF (OPT_SNOW == 3 .AND. SNVDP(I) <= DAMPDV(I)) THEN
+                HFLUX_SNV(I) = (TSKIN_VEG(I) - TSOIL(I,1)) / RTH_SNV
+            ELSE
+                HFLUX_SNV(I) = (TSNV(I) - TSOIL(I,1)) / RTH_SNV
+            ENDIF
+!
         ELSE ! No snow 
            HFLUX_SNV(I) = 0.
         ENDIF
                 
+
         ! Compute average surface heat flux using weights for each surface tile
         HFLUX(I,1) = WTG(I,2) * HFLUX_GRND(I) + WTG(I,3) * HFLUX_VEG(I) + &
-                               WTG(I,4) * HFLUX_SNO(I) + WTG(I,5) * HFLUX_SNV(I) 
-        !
+                               WTG(I,4) * HFLUX_SNO(I) + WTG(I,5) * HFLUX_SNV(I)
         !
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!               
         !
@@ -309,13 +386,27 @@
         DO K =2, NL_SVS
              RTH(I,K) = 0.5*DELZ(K-1)/SOILCONDZ(I,K-1) + 0.5*DELZ(K)/SOILCONDZ(I,K)
              HFLUX(I,K) = (TSOIL(I,K-1) - TSOIL(I,K))/ RTH(I,K)
+             !IF(SNODP(I) > 0 .AND. K == 2 ) THEN ! Snow is present
+             !    WRITE(*,*) 'Fsurf',HFLUX(I,1),'Fsoil',HFLUX(I,K)
+             !    WRITE(*,*) 'Tsoil_1',TSOIL(I,K-1), 'Tsoil_2',TSOIL(I,K), 'ksoil',SOILCONDZ(I,K)
+             !    WRITE(*,*) 'ksoil',SOILCONDZ(I,K),'rth_sn', RTH_SNO, 'rth_sl',RTH(I,K) 
+             !ENDIF
         ENDDO
         !
         ! Treatment of the bottom layer
         ! Use thermal conductivity of the deepest SVS layer
         !
         RTH(I,NL_SVS+1) = 0.5* DELZ(NL_SVS)/ SOILCONDZ(I,NL_SVS) + (DBTM(I) - ZLAYER(NL_SVS)) / SOILCONDZ(I,NL_SVS)
-        HFLUX(I,NL_SVS+1) = ( TSOIL(I,NL_SVS)- TBTM(I)) / RTH(I,NL_SVS+1)
+
+        IF (OPT_DBTM == 0 .OR. OPT_DBTM == 1) THEN                                       !Flux below the soil column based on DBTM.
+            HFLUX(I,NL_SVS+1) = ( TSOIL(I,NL_SVS)- TBTM(I)) / RTH(I,NL_SVS+1)
+        ELSE IF (OPT_DBTM == 2) THEN                                                     !Zero flux condition
+            HFLUX(I,NL_SVS+1) = 0
+        ENDIF
+        
+        IF(SNODP(I) > 0) THEN ! Snow is present
+            WRITE(*,*) 'Fbase',HFLUX(I,NL_SVS+1), 'Tsoilk',TSOIL(I,NL_SVS),'Tbtm',TBTM(I), 'rth', RTH(I,NL_SVS+1), 'DBTM', DBTM(I), 'zlayer', ZLAYER(NL_SVS)
+        ENDIF
         !
       ENDDO
       !
@@ -331,7 +422,6 @@
       DO I=1, N
         DO K =1, NL_SVS
            HNET = (HFLUX(I,K)- HFLUX(I,K+1))*DT ! Heat flux received by layer K
-
            IF(TSOIL(I,K) - TRPL .GT. EPSILON_SVS_TK) THEN
               !TSOIL POSITIVE
                 TTEST = TSOIL(I,K) + HNET/(SOILHCAPZ(I,K)*DELZ(K))
