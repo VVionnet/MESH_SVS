@@ -31,7 +31,7 @@
         use svs_configs
         use svs2_tile_configs
         use sfc_options, only: read_emis, urban_params_new
-        USE MODD_CSTS,    ONLY : XCL, XCI, XRHOLW, XRHOLI, XCONDI, XCONDWTR
+        USE MODD_CSTS,    ONLY : XCL, XCI, XRHOLW, XRHOLI
         USE CANOPY_CSTS, only : CLUMPING
      implicit none
 !!!#include <arch_specific.hf>
@@ -144,14 +144,11 @@
 ! PSOILHCAPZ soil heat capacity
 !
 include "isbapar.cdk"
+include "svs2_par.cdk"
+
 
 !
       INTEGER I,K
-!
-      REAL LAMI, CI, DAY
-!
-      REAL ADRYSAND, AWETSAND, ADRYCLAY, AWETCLAY
-      REAL EDRYSAND, EWETSAND, EDRYCLAY, EWETCLAY
 
       REAL LOG_CONDI, LOG_CONDW, XF, XU, WORK1, WORK2, WORK3, CONDSAT
       REAL SATDEG, KERSTEN
@@ -167,31 +164,6 @@ include "isbapar.cdk"
       ENDIF
 !
 !***********************************************************************
-!
-!
-!
-!
-!
-!                                    Define some constants for
-!                                    the ice
-!
-!                                    NOTE:  these definitions should
-!                                           be put in a COMMON
-!
-      LAMI   = 2.22
-      CI     = 2.106E3
-      DAY    = 86400.
-!                       Albedo values from literature
-      ADRYSAND = 0.35
-      AWETSAND = 0.24
-      ADRYCLAY = 0.15
-      AWETCLAY = 0.08
-!                       Emissivity values from van Wijk and Scholte Ubing (1963)
-      EDRYSAND = 0.95
-      EWETSAND = 0.98
-      EDRYCLAY = 0.95
-      EWETCLAY = 0.97
-
 !
 !
 !
@@ -581,8 +553,8 @@ include "isbapar.cdk"
 !               ------------------------------------------
 !
 !
-       LOG_CONDI = LOG(XCONDI)
-       LOG_CONDW = LOG(XCONDWTR)
+       LOG_CONDI = LOG(LAMI)
+       LOG_CONDW = LOG(LAMW)
 
        DO I=1,N
 

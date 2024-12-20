@@ -1,4 +1,4 @@
-!SFX_LIC Copyright 1994-2014 CNRS, Meteo-France and Universite Paul Sabatier
+!SFX_LIC Copyright 2008-2019 CNRS, Meteo-France and Universite Paul Sabatier
 !SFX_LIC This is part of the SURFEX software governed by the CeCILL-C licence
 !SFX_LIC version 1. See LICENSE, CeCILL-C_V1-en.txt and CeCILL-C_V1-fr.txt
 !SFX_LIC for details. version 1.
@@ -30,11 +30,17 @@
 !!
 !!    MODIFICATIONS
 !!    -------------
-!!      Original       02/2008
+!!      Original       02/2008                
+!  P. Wautelet 19/09/2019: correct support of 64bit integers (MNH_INT=8)
+!  B. Decharme 25/03/2018: XSNOWDZMIN very small to better close energy budget with ISBA
+!! R. Nheili   06/09/2021: Necessary modification for extern CROCUS, and to run it on simple precision
+!!                         See commit d1935cf2 
 !-------------------------------------------------------------------------------
 !
 !*       0.   DECLARATIONS
 !             ------------
+!
+! VV use modd_netcdf_sfx, only: IDCDF_KIND
 !
 IMPLICIT NONE
 !
@@ -42,7 +48,7 @@ IMPLICIT NONE
 !
 ! minimum snow layer thickness for thermal calculations.
 ! Used to prevent numerical problems as snow becomes vanishingly thin.
-REAL, PARAMETER                 :: XSNOWDZMIN = 0.0001
+REAL, PARAMETER                 :: XSNOWDZMIN = 1.E-9 ! 0.0001
 !
 ! Optical diameter properties
 REAL, PARAMETER                 :: XDIAET = 1.E-4
@@ -142,11 +148,11 @@ REAL, PARAMETER                 :: XVTELV1 = 0.005
 !
 INTEGER,PARAMETER               :: NVDENT1 = 3
 !
-INTEGER :: NVARDIMS !number of dimensions of netcdf input variable
-INTEGER :: NLENDIM1,NLENDIM2,NLENDIM3
-INTEGER :: NID_VAR ! Netcdf IDs for  variable
+! VV INTEGER(kind=IDCDF_KIND) :: NVARDIMS !number of dimensions of netcdf input variable
+! VV INTEGER(kind=IDCDF_KIND) :: NLENDIM1,NLENDIM2,NLENDIM3
+! VV INTEGER(kind=IDCDF_KIND) :: NID_VAR ! Netcdf IDs for  variable
 !
-INTEGER :: NID_FILE
+! VV INTEGER(kind=IDCDF_KIND) :: NID_FILE
 REAL, DIMENSION(:,:,:), POINTER :: XDRDT0,XTAU,XKAPPA   ! field read
 !
 END MODULE MODD_SNOW_METAMO

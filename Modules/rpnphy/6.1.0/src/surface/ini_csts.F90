@@ -54,6 +54,9 @@
 !              ------------
 !
 USE MODD_CSTS
+#ifdef SFX_MNH
+USE MODD_PRECISION, ONLY: MNHREAL
+#endif
 !
 !
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
@@ -80,13 +83,15 @@ REAL(KIND=JPRB) :: ZHOOK_HANDLE
 IF (LHOOK) CALL DR_HOOK('INI_CSTS',0,ZHOOK_HANDLE)
 
 #ifdef SFX_MNH
-#ifdef MNH_MPI_DOUBLE_PRECISION
-XSURF_TINY    = 1.0e-80
-#else
+#if (MNH_REAL == 8)
+XSURF_TINY    = 1.0e-80_MNHREAL
+#elif (MNH_REAL == 4)
 XSURF_TINY    = TINY    (XSURF_TINY    )
+#else
+#error "Invalid MNH_REAL"
 #endif
 #else
-XSURF_TINY    = TINY    (XSURF_TINY    )
+XSURF_TINY    = 1.0e-80
 #endif
 XSURF_TINY_12 = SQRT    (XSURF_TINY    )
 XSURF_EPSILON = EPSILON (XSURF_EPSILON ) * 10.0
@@ -103,11 +108,11 @@ XAVOGADRO   = 6.0221367E+23
 !*       2.     ASTRONOMICAL CONSTANTS
 !               ----------------------
 !
-XDAY   = 86400.
-XSIYEA = 365.25*XDAY*2.*XPI/ 6.283076
-XSIDAY = XDAY/(1.+XDAY/XSIYEA)
-XOMEGA = 2.*XPI/XSIDAY
-NDAYSEC = 24*3600 ! Number of seconds in a day
+XDAY    = 86400.
+XSIYEA  = 365.25*XDAY*2.*XPI/ 6.283076
+XSIDAY  = XDAY/(1.+XDAY/XSIYEA)
+XOMEGA  = 2.*XPI/XSIDAY
+NDAYSEC = 86400 ! Number of seconds in a day
 !
 !-------------------------------------------------------------------------------!
 !
@@ -148,7 +153,6 @@ XCPV   = 4.* XRV
 XRHOLW = 1000.
 XRHOLI = 917.
 XCONDI = 2.22
-XCONDWTR  = 0.57
 XCL    = 4.218E+3
 XCI    = 2.106E+3
 XTT    = 273.16
@@ -172,7 +176,7 @@ XALPI  = LOG(XESTT) + (XBETAI /XTT) + (XGAMI *LOG(XTT))
 !*       7.     TURBULENCE CONSTANTS
 !               --------------------
 !
-! CALL INI_CTURBS
+ CALL INI_CTURBS
 !-------------------------------------------------------------------------------
 !
 !*       8.     OCEAN CONSTANTS

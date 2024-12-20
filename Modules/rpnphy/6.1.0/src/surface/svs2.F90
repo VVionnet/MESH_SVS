@@ -160,6 +160,8 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
    real,dimension(n) :: prat_veg   ! Surface incoming longwave radiation under high vegetation
    real,dimension(n) :: pwind_drift_open ! Wind speed for snowdrift routine in open terrain
    real,dimension(n) :: pwind_top  ! Wind speed at canopy top
+   real,dimension(n) :: punload_open ! Unload term in open terrain (set to zero)
+   real,dimension(n) :: punload_forest  ! Unload term in forested terrain (computed if snow interception is simulated)
    real,dimension(n) :: puref_veg  ! Forcing height for wind under high vegetation
    real,dimension(n) :: ptref_veg  ! Forcing height for temperature/humidity under high vegetation
    real,dimension(n) :: PZ0HVH  ! Canopy roughness length for heat
@@ -650,9 +652,10 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
 !     Snow over bare/low ground
 
-      ! Compute wind speed for snow drift effect
+      ! Compute wind speed for snow drift effect and unloading term 
       do I=1,N
             PWIND_DRIFT_OPEN(I) = VMOD(I)
+            PUNLOAD_OPEN(I) = 0. ! No unloading in open terrain
       enddo
 
       CALL SNOW_SVS2(   bus(x(SNOMA_SVS,1,1)), bus(x(TSNOW_SVS,1,1)), bus(x(WSNOW_SVS,1,1)),    &
@@ -662,7 +665,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                          ps,tt,zfsolis,     &
                          hu, VMOD, PWIND_DRIFT_OPEN, &
                          bus(x(FDSI,1,1)),         &
-                         RAINRATE_MM, SNOWRATE_MM,    RESA_SV_OPEN,                    &
+                         RAINRATE_MM, SNOWRATE_MM,PUNLOAD_OPEN,RESA_SV_OPEN,                    &
                          RHOA, bus(x(zusl,1,1)),  bus(x(ztsl,1,1)),             &
                          BUS(X(ALGR,1,1)), PD_G, PDZG,                          &
                          bus(x(RSNOWSA,1,1)), bus(x(GFLUXSA,1,1)),bus(x(RNETSA,1,1)),bus(x(HFLUXSA,1,1)) , &
@@ -690,6 +693,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       ! The effect of low basal vegetation is also considered for snow in forested environment
       DO I = 1,N
           PHVEGAPOL_V(I) = BUS(x(HVEGAPOL  ,I,1))
+          PUNLOAD_FOREST(I) = 0. ! Temporary unloading term
       ENDDO
 
       CALL SNOW_SVS2(   bus(x(SNOMAV_SVS,1,1)), bus(x(TSNOWV_SVS,1,1)), bus(x(WSNOWV_SVS,1,1)),    &
@@ -699,7 +703,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                              ps, bus(x(TCA,1,1)),bus(x(SWCA,1,1)),     &
                              bus(x(QCA,1,1)), bus(x(VCA,1,1)), bus(x(VCA_DRIFT,1,1)), &
                              bus(x(LWCA,1,1)),         &
-                             RAINRATE_MM_VEG, SNOWRATE_MM_VEG, RESA_SV_FOREST,                                   &
+                             RAINRATE_MM_VEG, SNOWRATE_MM_VEG,PUNLOAD_FOREST, RESA_SV_FOREST,               &
                              RHOA,  PUREF_VEG,   PTREF_VEG,            &
                              BUS(X(ALGR,1,1)), PD_G, PDZG,                          &
                              bus(x(RSNOWSV,1,1)), bus(x(GFLUXSV,1,1)),bus(x(RNETSV,1,1)) , bus(x(HFLUXSV ,1,1)), &

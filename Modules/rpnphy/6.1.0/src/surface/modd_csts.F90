@@ -34,6 +34,7 @@
 !!      V. Masson   05/10/98  add XRHOLI
 !!      C. Mari     31/10/00  add NDAYSEC
 !!      J. Escobar     06/13  add XSURF_TIMY XSURF_TIMY_12 XSURF_EPSILON for REAL*4
+!!      M. Goret     04/04/17 add NB_MONTH, NB_DAY, NB_HOUR
 !-------------------------------------------------------------------------------
 !
 !*       0.   DECLARATIONS
@@ -80,9 +81,17 @@ REAL, SAVE        :: XTH00      ! reference value  for the potential
                                 ! temperature
 REAL,SAVE :: XRHOLI             ! Volumic mass of ice
 REAL,SAVE :: XCONDI             ! thermal conductivity of ice (W m-1 K-1)
-REAL,SAVE :: XCONDWTR           ! thermal conductivity of water (W m-1 K-1)
 !
 INTEGER, SAVE :: NDAYSEC        ! Number of seconds in a day
+INTEGER, PARAMETER :: NB_MONTH  = 12   ! Number of months in one year
+INTEGER, PARAMETER :: NB_DAY    = 7    ! Number of days in one week
+INTEGER, PARAMETER :: NB_HOUR   = 24   ! Number of hours in one day
+INTEGER, PARAMETER, DIMENSION(NB_MONTH) :: NMONTHDAY_NON =(/31,28,31,30,31,30,31,31,30,31,30,31/)
+                                                 !number of day in a month (starting from january)
+                                                 !for a non bissextile year
+INTEGER, PARAMETER, DIMENSION(NB_MONTH) :: NMONTHDAY_BIS =(/31,29,31,30,31,30,31,31,30,31,30,31/)
+                                                 !number of day in a month (starting from january)
+                                                 !for a bissextile year
 !
 REAL,SAVE     :: XSURF_TINY          ! minimum real on this machine
 REAL,SAVE     :: XSURF_TINY_12       ! sqrt(minimum real on this machine)

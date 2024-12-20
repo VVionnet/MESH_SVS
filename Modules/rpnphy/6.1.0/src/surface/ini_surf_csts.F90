@@ -51,7 +51,7 @@ USE MODD_SURF_CONF, ONLY : CPROGNAME
 USE MODD_WATER_PAR
 USE MODD_FLOOD_PAR
 USE MODD_MEB_PAR,   ONLY : XTAU_LW,                            &
-                            XRAGNC_FACTOR, XKDELTA_WR
+                           XRAGNC_FACTOR, XKDELTA_WR
 #endif
 USE MODD_SNOW_PAR,  ONLY : XEMISSN, XANSMIN, XANSMAX,          &
                            XAGLAMIN, XAGLAMAX, XHGLA,          &
@@ -63,7 +63,7 @@ USE MODD_SNOW_PAR,  ONLY : XEMISSN, XANSMIN, XANSMAX,          &
                            XVAGING_NOGLACIER, XVAGING_GLACIER, &
                            XPERCENTAGEPORE,                    &
                            XPERCENTAGEPORE_FRZ,                &
-                           XPERCENTAGEPORE_ICE,                &                           
+                           XPERCENTAGEPORE_ICE,                &
                            LMEBREC,                            &
                            XANSFRACMEL, XTEMPANS, XANSMINMEB,  &
                            XIMPUR_WET, XIMPUR_DRY,          &
@@ -72,7 +72,11 @@ USE MODD_SNOW_PAR,  ONLY : XEMISSN, XANSMIN, XANSMAX,          &
                            XPP_D1, XPP_D2, XPP_D3, XPP_H1,     &
                            XPP_H2, XPP_H3, XPP_H4, XWT, XPTR , &
                            XPROD_SCHEME, XSM_END, XFREQ_GRO,   & !Grooming and Snowmaking option by P.Spandre 20160211
-                           XSCAVEN_COEF
+                           XSCAVEN_COEF, XAGELIMPAPPUS,        &
+                           XWINDTHRFRESH, XRHODEPPAPPUS,       &
+                           XDIAMDEPPAPPUS, XSPHDEPPAPPUS,      &
+                           XLFETCHPAPPUS, XAGELIMPAPPUS2,      &
+                           XDEMAXVFALL
 USE MODD_SNOW_METAMO, ONLY : XVVISC3
 !
 #ifdef CROCUS_EXT
@@ -87,9 +91,9 @@ USE MODI_OPEN_NAMELIST
 USE MODI_CLOSE_NAMELIST
 USE MODE_POS_SURF
 !
- USE MODD_REPROD_OPER,  ONLY : XEVERG_RSMIN, XEVERG_VEG, &
-                                    CDGAVG, CIMPLICIT_WIND,   &
-                                    CQSAT, CCHARNOCK, CDGDIF
+USE MODD_REPROD_OPER,  ONLY : XEVERG_RSMIN, XEVERG_VEG, &
+                                   CDGAVG, CIMPLICIT_WIND,   &
+                                   CQSAT, CCHARNOCK, CDGDIF
 USE MODI_TEST_NAM_VAR_SURF
 !
 #endif
@@ -127,7 +131,11 @@ NAMELIST/NAM_SURF_SNOW_CSTS/ XZ0ICEZ0SNOW, XRHOTHRESHOLD_ICE,          &
                              XPP_D1, XPP_D2, XPP_D3, XPP_H1,           &
                              XPP_H2, XPP_H3, XPP_H4, XWT, XPTR ,       &
                              XPROD_SCHEME, XSM_END, XFREQ_GRO,         &
-                             XSCAVEN_COEF
+                             XSCAVEN_COEF, XAGELIMPAPPUS,              &
+                             XWINDTHRFRESH, XRHODEPPAPPUS,             &
+                             XDIAMDEPPAPPUS, XSPHDEPPAPPUS,            &
+                             XLFETCHPAPPUS, XAGELIMPAPPUS2,            &
+                             XDEMAXVFALL
 !
 NAMELIST/NAM_REPROD_OPER/ LREPROD_OPER, XEVERG_RSMIN, XEVERG_VEG, &
                           CDGAVG, CDGDIF, CIMPLICIT_WIND, CQSAT,  &
@@ -139,13 +147,15 @@ NAMELIST/NAM_REPROD_OPER/ LREPROD_OPER, XEVERG_RSMIN, XEVERG_VEG, &
 !-------------------------------------------------------------------------------
 !
 IF (LHOOK) CALL DR_HOOK('INI_SURF_CSTS',0,ZHOOK_HANDLE)
-!VV !
-!VV XALBWAT     = XUNDEF
-!VV XALBSEAICE  = XUNDEF
-!VV XALBWATICE  = XUNDEF
-!VV XALBWATSNOW = XUNDEF
-!VV XEMISWAT    = XUNDEF
-!VV XEMISWATICE = XUNDEF
+!
+#ifndef CROCUS_EXT
+XALBWAT     = XUNDEF
+XALBSEAICE  = XUNDEF
+XALBWATICE  = XUNDEF
+XALBWATSNOW = XUNDEF
+XEMISWAT    = XUNDEF
+XEMISWATICE = XUNDEF
+#endif
 XEMISSN     = XUNDEF
 !
 !-------------------------------------------------------------------------------
@@ -213,7 +223,7 @@ XZ0SN = 0.001
 !
 XZ0HSN = 0.0001
 !
-! Maximum Richardson number limit for very stable conditions over snow using the 'RIL', 'RI1', or 'RI2' option
+! Maximum Richardson number limit for very stable conditions over snow using the 'RIL','RI1', or 'RI2' options
 IF (HSNOWRES .EQ.'RIL') THEN
     X_RI_MAX = 0.2
 ELSE IF (HSNOWRES .EQ.'RI1') THEN
@@ -221,7 +231,6 @@ ELSE IF (HSNOWRES .EQ.'RI1') THEN
 ELSE IF (HSNOWRES .EQ.'RI2') THEN
     X_RI_MAX = 0.026
 END IF
-
 !
 ! Snow Melt timescale with D95 (s): needed to prevent time step 
 ! dependence of melt when snow fraction < unity.
@@ -250,7 +259,6 @@ XKDELTA_WR   = 0.25 ! -
 !
 ! Roughness length ratio between ice and snow
 XZ0ICEZ0SNOW = 10.
-!
 !
 ! 3 bands spectral albedo for glacier ice (CROCUS)
 ! Default values from Lejeune et al 2009 (Zongo, Bolivia)
@@ -321,7 +329,7 @@ XSCAVEN_COEF=(/0.0,0.0,0.,0.,0./)
 #ifdef CROCUS_EXT
 ! VV Add init needed for the externalized version of Crocus
 IF (HSNOWRES .EQ.'RIL') THEN
-    XRIMAX = 0.2
+XRIMAX=0.2
 ELSE IF (HSNOWRES .EQ.'RI1') THEN
     XRIMAX = 0.1
 ELSE IF (HSNOWRES .EQ.'RI2') THEN
@@ -331,7 +339,16 @@ LALDTHRES = .FALSE.
 XCISMIN = 0. ! Not used when LALDTHRES = .FALSE.
 XVMODMIN  = 0. ! Not used when LALDTHRES = .FALSE.
 #endif
+! Snowpappus transport scheme
 
+XRHODEPPAPPUS = 250.
+XDIAMDEPPAPPUS = 3E-4
+XSPHDEPPAPPUS = 1.
+XAGELIMPAPPUS = 0.05
+XAGELIMPAPPUS2 = 0.05
+XWINDTHRFRESH = 6.  !value used in Vionnet 2013, from Sato 2008 obs.
+XLFETCHPAPPUS = 250. ! default value used for the fetch 
+XDEMAXVFALL = 0.5 ! calibrated on lac blanc data ( see Baron et al. 2023 )
 #ifndef CROCUS_EXT
 !-------------------------------------------------------------------------------
 !
@@ -381,11 +398,11 @@ CCHARNOCK = 'NEW'
 !*       2. User values
 !-------------------------------------------------------------------------------
 !
- CALL GET_LUOUT(CPROGNAME,ILUOUT)
-!    
- CALL OPEN_NAMELIST(CPROGNAME,ILUNAM)
+CALL GET_LUOUT(CPROGNAME,ILUOUT)
 !
- CALL POSNAM(ILUNAM,'NAM_SURF_CSTS',GFOUND,ILUOUT)
+CALL OPEN_NAMELIST(CPROGNAME,ILUNAM)
+!
+CALL POSNAM(ILUNAM,'NAM_SURF_CSTS',GFOUND,ILUOUT)
 IF (GFOUND) READ(UNIT=ILUNAM,NML=NAM_SURF_CSTS)
 !
 IF(LMEBREC)THEN
@@ -407,17 +424,17 @@ IF (GFOUND) READ(UNIT=ILUNAM,NML=NAM_SURF_SNOW_CSTS)
 !*       3. For Reproductibility
 !-------------------------------------------------------------------------------
 !
- CALL POSNAM(ILUNAM,'NAM_REPROD_OPER',GFOUND,ILUOUT)
+CALL POSNAM(ILUNAM,'NAM_REPROD_OPER',GFOUND,ILUOUT)
 IF (GFOUND) READ(UNIT=ILUNAM,NML=NAM_REPROD_OPER)
 !
- CALL TEST_NAM_VAR_SURF(ILUOUT,'CDGAVG',CDGAVG,'ARI','INV')
- CALL TEST_NAM_VAR_SURF(ILUOUT,'CDGDIF',CDGDIF,'SOIL','ROOT')
- CALL TEST_NAM_VAR_SURF(ILUOUT,'CIMPLICIT_WIND',CIMPLICIT_WIND,'NEW','OLD')
- CALL TEST_NAM_VAR_SURF(ILUOUT,'CQSAT',CIMPLICIT_WIND,'NEW','OLD')
- CALL TEST_NAM_VAR_SURF(ILUOUT,'CCHARNOCK',CIMPLICIT_WIND,'NEW','OLD')
+CALL TEST_NAM_VAR_SURF(ILUOUT,'CDGAVG',CDGAVG,'ARI','INV')
+CALL TEST_NAM_VAR_SURF(ILUOUT,'CDGDIF',CDGDIF,'SOIL','ROOT')
+CALL TEST_NAM_VAR_SURF(ILUOUT,'CIMPLICIT_WIND',CIMPLICIT_WIND,'NEW','OLD')
+CALL TEST_NAM_VAR_SURF(ILUOUT,'CQSAT',CIMPLICIT_WIND,'NEW','OLD')
+CALL TEST_NAM_VAR_SURF(ILUOUT,'CCHARNOCK',CIMPLICIT_WIND,'NEW','OLD')
 !
- CALL TEST_NAM_VAR_SURF(ILUOUT,'XEVERG_RSMIN',XEVERG_RSMIN,175.0,250.0)
- CALL TEST_NAM_VAR_SURF(ILUOUT,'XEVERG_VEG',XEVERG_VEG,1.0,0.99) 
+CALL TEST_NAM_VAR_SURF(ILUOUT,'XEVERG_RSMIN',XEVERG_RSMIN,175.0,250.0)
+CALL TEST_NAM_VAR_SURF(ILUOUT,'XEVERG_VEG',XEVERG_VEG,1.0,0.99) 
 !
 IF(LREPROD_OPER)THEN
   XEVERG_RSMIN   = 250.
@@ -488,20 +505,20 @@ ENDIF
 !
 ! Snow emissivity:
 !
- IF(XEMISSN==XUNDEF)THEN
+IF(XEMISSN==XUNDEF)THEN
   IF(LREPROD_OPER)THEN
     XEMISSN =  1.0
   ELSE
 #endif
 ! In externalized Crocus LREPROD_OPER is not defined and XEMISS needs to be defined. 
-     XEMISSN =  0.99
+    XEMISSN =  0.99
 #ifndef CROCUS_EXT
- ENDIF
+  ENDIF
 ENDIF
 !
 !-------------------------------------------------------------------------------
 !
- CALL CLOSE_NAMELIST(CPROGNAME,ILUNAM)
+CALL CLOSE_NAMELIST(CPROGNAME,ILUNAM)
 !
 #endif
 IF (LHOOK) CALL DR_HOOK('INI_SURF_CSTS',1,ZHOOK_HANDLE)

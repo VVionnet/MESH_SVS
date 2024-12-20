@@ -23,7 +23,10 @@
 !!
 !!    MODIFICATIONS
 !!    -------------
-!!      Original       04/2013                      
+!!      Original       04/2013     
+!!
+!!      B. Decharme  06/2020 ADD LOLDGRID
+!
 !-------------------------------------------------------------------------------
 !
 !*       0.   DECLARATIONS
@@ -84,6 +87,9 @@ CHARACTER(LEN=3) :: CCHARNOCK ! Charnock parameter option
 !                             ! 'NEW' = vary between 0.011 et 0.018 according
 !                             !         to Chris Fairall's data as in coare3.0
 !                             !         (recommended)
+!
+LOGICAL          :: LISBA_OLDGRID  ! True  = soil grid optimization if ecoclimap, 14 layers and DIF
+                                   ! False = no optimization (default)
 !
 !--------------------------------------------------------------------------------
 !

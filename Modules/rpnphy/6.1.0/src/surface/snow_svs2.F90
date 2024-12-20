@@ -7,7 +7,7 @@ SUBROUTINE SNOW_SVS2(  PSNOWSWE,PSNOWTEMP, PSNOWLIQ,PSNOWRHO,PSNOWALB,  &
                       PSNOWAGE, PSNOWDIAMOPT, PSNOWSPHERI, PSNOWHIST,     & 
                       PTSTEP,PTG, PCT, PSOILHCAPZ, & 
                       PSOILCONDZ, PPS, PTA,PSW_RAD, PQA, PVMOD,  PWIND_DRIFT,    &
-                      PLW_RAD,PRR, PSR, PRESA_SV, PRHOA, PUREF,         &
+                      PLW_RAD,PRR, PSR, PUNLOAD, PRESA_SV, PRHOA, PUREF,         &
                       PZREF, PALB, PD_G, PDZG,         &
                       PTHRUFAL, PGRNDFLUX,PRNSNOW,PHSNOW, PGFLUXSNOW,        &
                       PSWNETSNOW, PLWNETSNOW,PSUBLDRIFT,                     &
@@ -146,11 +146,12 @@ REAL, DIMENSION(N),   INTENT(IN)    :: PCT, PSOILCONDZ
 !                                      PSOILHCAPZ= soil heat capacity (J m-3 K-1)
 !
 REAL, DIMENSION(N), INTENT(IN)      :: PPS, PTA, PSW_RAD, PQA,                       &
-                                       PVMOD, PWIND_DRIFT, PLW_RAD, PSR, PRR  
+                                       PVMOD, PWIND_DRIFT, PLW_RAD, PSR, PRR, PUNLOAD  
 !                                      PSW_RAD = incoming solar radiation (W/m2)
 !                                      PLW_RAD = atmospheric infrared radiation (W/m2)
 !                                      PRR     = rain rate [kg/(m2 s)]
 !                                      PSR     = snow rate (SWE) [kg/(m2 s)]
+!                                      PUNLOAD = unload rate (for snow below canopy) [kg/(m2 s)]
 !                                      PTA     = atmospheric temperature at level za (K)
 !                                      PVMOD   = modulus of the wind parallel to the orography (m/s)
 !                                      PWIND_DRIFT   = modulus of the wind under canopy if PVMOD is above canopy, otherwise PWIND_DRIFT = PVMOD (m/s)
@@ -251,11 +252,13 @@ REAL, DIMENSION(SIZE(PTA))          :: ZRRSNOW, ZSOILCOND, ZSNOW, ZSNOWFALL,  &
 !
 TYPE(DATE_TIME)  :: TPTIME      ! current date and time
 
-REAL, DIMENSION(SIZE(PTA))          :: ZEXNS,ZEXNA,ZDIRCOSZW 
+REAL, DIMENSION(SIZE(PTA))          :: ZEXNS,ZEXNA,ZDIRCOSZW,ZSLOPEDIR, ZAZIM
 !                                      ZEXNS     = Exner function at surface
 !                                      ZEXNA     = Exner function at lowest atmos level
 !                                      ZDIRCOSZW = Cosinus of the angle between the 
 !                                                  normal to the surface and the vertical
+!                                      ZSLOPEDIR   = Slope direction
+!                                      ZAZIM       =  azimuthal angle      (radian from North, clockwise)
 
 LOGICAL     :: LMEB                ! Activate the Multi-Energy Budget Option present in SURFEX (set to FALSE since snow-vegeation
                                    ! interactions is handle differently in SVS)
@@ -269,8 +272,12 @@ CHARACTER(LEN=3)    :: CSNOWZREF
                                          ! reference height is constant or variable from the snow surface
                                          ! CSNOWZREF='CST' constant reference height from the snow surface  (Default in SVS-Cro)
                                          ! CSNOWZREF='VAR' variable reference height from the snow surface (i.e. constant from the ground)
+CHARACTER(LEN=4)    ::  CSNOWFPAPPUS
+                                       ! Option to force fresh snow characteristics when snowpappus is used (Not activated in SVS2)
+                                       ! 'GM98' => forces fresh snow characteristics as if HSNOWDRIFT = 'NONE'
+                                       ! 'VI13' => """" 'VI13'
+                                       ! 'NONE' => no influence ( it is forced when snowpappus is not activated )
 !
-LOGICAL     :: LGLACIER          ! Activate treatment of glacier in Crocus (default FALSE in SVS)
 LOGICAL     :: LSNOW_ABS_ZENITH  ! Activate parametrization of solar absorption for polar regions (default FALSE in SVS)
                                  ! Need to be tested in the Arctic
 LOGICAL     :: LATMORAD          ! Activate atmotartes scheme in the TARTES snowpack radiative scheme (default FALSE in SVS-Cro)
@@ -300,7 +307,7 @@ REAL, DIMENSION(SIZE(PTA))     ::  ZLAT, ZLON
 !
 REAL, DIMENSION(SIZE(PTA))       :: ZLVTT, ZLSTT ! = latent heats for hydrology
 !
-REAL, DIMENSION(SIZE(PTA))  :: ZFLSN_COR, ZEVAPCOR, ZSNOWHMASS, ZGSFCSNOW,               &
+REAL, DIMENSION(SIZE(PTA))  :: ZFLSN_COR, ZEVAPCOR, ZSNOWHMASS, ZRESTOREN,               &
                                        ZDELHEATG, ZDELHEATG_SFC
 !                                      ZFLSN_COR = soil/snow correction heat flux (W/m2) (not MEB)
 
@@ -312,20 +319,25 @@ REAL, DIMENSION(SIZE(PTA))  :: ZFLSN_COR, ZEVAPCOR, ZSNOWHMASS, ZGSFCSNOW,      
 !                                      ZSNOWHMASS = heat content change due to mass
 !                                                   changes in snowpack (J/m2): for budget
 !                                                   calculations only.
-!                                      ZGSFCSNOW  = heat flux between the surface and sub-surface 
+!                                      ZRESTOREN  = heat flux between the surface and sub-surface 
 !                                                   snow layers (for energy budget diagnostics) (W/m2)
 !                                      ZDELHEATG     = ground heat content change (diagnostic) (W/m2)
 !                                                      note, modified if ground-snow flux adjusted
 !                                      ZDELHEATG_SFC = ground heat content change in sfc only (diagnostic) (W/m2)
 !                                                      note, modified if ground-snow flux adjusted
 
-REAL, DIMENSION(SIZE(PTA))   :: ZSRSFC, ZRRSFC, ZSNOWSFCH, ZDELHEATN, ZDELHEATN_SFC
+REAL, DIMENSION(SIZE(PTA))   :: ZSRSFC, ZRRSFC, ZSNOWSFCH, ZDELHEATN, ZDELHEATN_SFC,ZDELPHASEN, &
+                                       ZDELPHASEN_SFC, ZMELTSTOT, ZSNREFREEZ
 !                                      ZSRSFC = snow rate on soil/veg surface when SNOWES in use
 !                                      ZRRSFC = rain rate on soil/veg surface when SNOWES in use
 !                                      ZSNOWSFCH = snow surface layer pseudo-heating term owing to
 !                                                  changes in grid thickness            (W m-2)
 !                                      ZDELHEATN = total snow heat content change in the surface layer (W m-2)
 !                                      ZDELHEATN_SFC = total snow heat content change during the timestep (W m-2)
+!                                      ZDELPHASEN = latent heating due to snow melt/freeze  (W m-2)
+!                                      ZDELPHASEN_SFC = latent heating due to surface layer snow melt/freeze  (W m-2)
+!                                      ZMELTSTOT = snowmelt in the snowpack  [kg/(m2 s)]
+!                                      ZSNREFREEZ = refreezing of water in the snowpack  [kg/(m2 s)]
 !
 REAL, DIMENSION(SIZE(PTA))  :: ZUSTARSNOW, ZCDSNOW, ZCHSNOW, ZRI,ZEMISNOW
 !                                      ZCDSNOW    = drag coefficient for momentum over snow (-)
@@ -339,6 +351,7 @@ REAL, DIMENSION(SIZE(PTA))        :: ZQS
 
 REAL, DIMENSION(SIZE(PTA))        :: ZPA
 !                                      ZQS = air pressure at the atmospheric forcing level (Pa)
+!
 
 INTEGER                           :: ZYY, ZMO, ZDD, ZHH, ZMN, ZSEC
 !
@@ -379,6 +392,9 @@ ZSOILCOR(:)    = 0.0
 ZSNOW_MASS_BUDGET(:) = 0.0
 ZQS(:)         = XUNDEF
 !
+ZMELTSTOT (:) = 0.0
+ZSNREFREEZ(:) = 0.0
+!
 ZSNOW(:)       = 0.0
 ZSNOWD(:)      = 0.0
 ZGRNDFLUXN(:)  = 0.0
@@ -395,7 +411,6 @@ ZWORK(:)       = 0.0
 ZC2(:)         = PCT(:)
 ZSNOWMAK(:) = 0.0
 !
-
 !
 ZWGHT(:)       = 0.0
 ZWORK(:)       = 0.0
@@ -416,8 +431,8 @@ LMEB=.FALSE.
 
 CIMPLICIT_WIND = 'NEW'
 CSNOWZREF='CST'
+CSNOWFPAPPUS='NONE'
 
-LGLACIER = .FALSE.
 LSNOW_ABS_ZENITH = .FALSE.
 LATMORAD = .FALSE.
 
@@ -458,12 +473,13 @@ ZEXNA(:)   = (ZPA(:)/XP00)**(XRD/XCPD)
 
 ! We assume so far a flat terrain.
 ZDIRCOSZW(:) = 1.
-
+ZSLOPEDIR(:) = 0.
+ZAZIM(:) = 0. ! Azimuthal angle set to zero since it is not use internally in SVS2/Crocus so far
+           ! To be modified when TARTES will be used
 
 ! Latent heats are initialized as in init_veg_pgdn.F90 from SURFEX
 ZLSTT(:)   = XLSTT
 ZLVTT(:)   = XLVTT
-
 
 ! No blowing snow variables are considerd in SVS at the moment
 ! Set the default value to 1 to avoid issues when running with Crocus
@@ -611,6 +627,8 @@ ZSOILCOND(:) = PSOILCONDZ(:)
     PEVAP(:)            = PLES3L(:)/ZLSTT(:)
     PTHRUFAL(:)         = MAX(0.0, ZSNOWSWE_1D(:)/PTSTEP + PSR(:) - PEVAP(:)*ZPSN(:) + ZRRSNOW(:)) ! kg m-2 s-1
     ZTHRUFAL(:)         = MAX(0.0, ZSNOWSWE_1D(:)/PTSTEP + PSR(:) - PEVAP(:)         + ZRRSNOW(:)) ! kg m-2 s-1
+    ZMELTSTOT(:)    = PTHRUFAL(:)
+    ZSNREFREEZ(:)   = 0.0    
     !
     ZSRSFC(:)       = 0.0
     ZRRSFC(:)       = ZRRSFC(:)
@@ -627,11 +645,14 @@ ZSOILCOND(:) = PSOILCONDZ(:)
     PGFLUXSNOW(:)   = PRNSNOW(:) - PHSNOW(:) - PLES3L(:) - PLEL3L(:)
     ZSNOWHMASS(:)   = -PSR(:)*(XLMTT*PTSTEP)
     !
-    ZGSFCSNOW(:)        = 0.0
+    ZRESTOREN(:)        = 0.0
     ZDELHEATN(:)        = -ZSNOWH(:) /PTSTEP
     ZDELHEATN_SFC(:)    = -ZSNOWH1(:)/PTSTEP
+    ZDELPHASEN(:)    = 0.0
+    ZDELPHASEN_SFC(:)= 0.0     
+
     ZSNOWSFCH(:)        = ZDELHEATN_SFC(:) - (ZSWNET_NS(:) + PLWNETSNOW(:)    &
-                           - PHSNOW(:) - PLES3L(:) - PLEL3L(:)) + ZGSFCSNOW(:)     &
+                           - PHSNOW(:) - PLES3L(:) - PLEL3L(:)) + ZRESTOREN(:)      &
                            - ZSNOWHMASS(:)/PTSTEP 
     ZGRNDFLUXN(:)       = (ZSNOWH(:)+ZSNOWHMASS(:))/PTSTEP + PGFLUXSNOW(:)
     ZWORK(:)            = PTSTEP * ZPSN(:) * (ZGRNDFLUXN(:) - PGRNDFLUX(:) - ZFLSN_COR(:))
@@ -780,6 +801,7 @@ REAL, DIMENSION(KSIZE1,KSIZE2,NIMPUR) :: ZP_SNOWIMPUR
 REAL, DIMENSION(KSIZE1,NIMPUR) :: ZP_IMPWET
 REAL, DIMENSION(KSIZE1,NIMPUR) :: ZP_IMPDRY 
 REAL, DIMENSION(KSIZE1,KSIZE4) :: ZP_BLOWSNW
+REAL, DIMENSION(KSIZE1)        :: ZP_VFRIC_T
 REAL, DIMENSION(KSIZE1)        :: ZP_SNOWALB
 REAL, DIMENSION(KSIZE1)        :: ZP_SWNETSNOW
 REAL, DIMENSION(KSIZE1)        :: ZP_SWNETSNOWS
@@ -787,8 +809,10 @@ REAL, DIMENSION(KSIZE1)        :: ZP_LWNETSNOW
 REAL, DIMENSION(KSIZE1)        :: ZP_PS
 REAL, DIMENSION(KSIZE1)        :: ZP_SRSNOW
 REAL, DIMENSION(KSIZE1)        :: ZP_RRSNOW
+REAL, DIMENSION(KSIZE1)        :: ZP_UNLOAD
 REAL, DIMENSION(KSIZE1)        :: ZP_PSN3L
-REAL, DIMENSION(KSIZE1)        :: ZP_TA
+REAL, DIMENSION(KSIZE1)        :: ZP_TAR
+REAL, DIMENSION(KSIZE1)        :: ZP_TAC
 REAL, DIMENSION(KSIZE1)        :: ZP_CT
 REAL, DIMENSION(KSIZE1,KSIZE3) :: ZP_TG
 REAL, DIMENSION(KSIZE1,KSIZE3) :: ZP_D_G
@@ -797,6 +821,8 @@ REAL, DIMENSION(KSIZE1,KSIZE3) :: ZP_SOILHCAPZ
 REAL, DIMENSION(KSIZE1)        :: ZP_SOILD
 REAL, DIMENSION(KSIZE1)        :: ZP_DELHEATG
 REAL, DIMENSION(KSIZE1)        :: ZP_DELHEATG_SFC
+REAL, DIMENSION(KSIZE1)        :: ZP_DELPHASEN
+REAL, DIMENSION(KSIZE1)        :: ZP_DELPHASEN_SFC
 REAL, DIMENSION(KSIZE1)        :: ZP_SW_RAD
 REAL, DIMENSION(KSIZE1)        :: ZP_QA
 REAL, DIMENSION(KSIZE1)        :: ZP_LVTT
@@ -810,6 +836,8 @@ REAL, DIMENSION(KSIZE1)        :: ZP_PRESA_SV
 REAL, DIMENSION(KSIZE1)        :: ZP_EXNS
 REAL, DIMENSION(KSIZE1)        :: ZP_EXNA
 REAL, DIMENSION(KSIZE1)        :: ZP_DIRCOSZW
+REAL, DIMENSION(KSIZE1)        :: ZP_SLOPEDIR
+REAL, DIMENSION(KSIZE1)        :: ZP_AZIM
 REAL, DIMENSION(KSIZE1)        :: ZP_ZREF
 REAL, DIMENSION(KSIZE1)        :: ZP_Z0NAT
 REAL, DIMENSION(KSIZE1)        :: ZP_Z0HNAT
@@ -817,9 +845,11 @@ REAL, DIMENSION(KSIZE1)        :: ZP_Z0EFF
 REAL, DIMENSION(KSIZE1)        :: ZP_ALB
 REAL, DIMENSION(KSIZE1)        :: ZP_SOILCOND
 REAL, DIMENSION(KSIZE1)        :: ZP_THRUFAL
+REAL, DIMENSION(KSIZE1)        :: ZP_MELTSTOT
+REAL, DIMENSION(KSIZE1)        :: ZP_SNREFREEZ
 REAL, DIMENSION(KSIZE1)        :: ZP_GRNDFLUX
 REAL, DIMENSION(KSIZE1)        :: ZP_FLSN_COR
-REAL, DIMENSION(KSIZE1)        :: ZP_GSFCSNOW
+REAL, DIMENSION(KSIZE1)        :: ZP_RESTOREN
 REAL, DIMENSION(KSIZE1)        :: ZP_EVAPCOR
 REAL, DIMENSION(KSIZE1)        :: ZP_SOILCOR
 REAL, DIMENSION(KSIZE1)        :: ZP_GFLXCOR
@@ -916,6 +946,7 @@ GCOMPUTECRODIAG = .FALSE.
 ZP_PSN_GFLXCOR(:)  = 0.
 ZP_WORK(:)         = 0.
 ZP_SOILD(:)        = 0.
+ZP_UNLOAD(:)       = 0.
 !
 !
 ! pack the variables
@@ -933,18 +964,21 @@ DO JWRK=1,KSIZE2
    ENDDO
 ENDDO
 !
-DO JWRK=1,KSIZE2
-    DO JJ=1,KSIZE1
-      JI = KMASK(JJ)
-      ZP_SNOWDIAMOPT(JJ,JWRK) = PSNOWDIAMOPT (JI,JWRK)
-      ZP_SNOWSPHERI(JJ,JWRK) = PSNOWSPHERI (JI,JWRK)
-      ZP_SNOWHIST (JJ,JWRK) = PSNOWHIST  (JI,JWRK)
-    ENDDO
-ENDDO
-
-
 IF (HSNOWSCHEME=='CRO') THEN
 
+    DO JWRK=1,KSIZE2
+      DO JJ=1,KSIZE1
+        JI = KMASK(JJ)
+        ZP_SNOWDIAMOPT(JJ,JWRK) = PSNOWDIAMOPT (JI,JWRK)
+        ZP_SNOWSPHERI(JJ,JWRK) = PSNOWSPHERI (JI,JWRK)
+        ZP_SNOWHIST (JJ,JWRK) = PSNOWHIST  (JI,JWRK)
+      ENDDO
+    ENDDO
+
+    DO JJ=1,KSIZE1
+      JI = KMASK(JJ)
+      ZP_VFRIC_T    (JJ) = 0. !VV Value not used since threshold friction velocity is computed in Crocus. 
+    ENDDO
 
      DO JIMP=1,NIMPUR 
       DO JWRK=1,KSIZE2
@@ -1028,8 +1062,10 @@ DO JJ=1,KSIZE1
 
    ZP_PS      (JJ) = PPS      (JI)
    ZP_SRSNOW  (JJ) = PSR      (JI)
+   ZP_UNLOAD  (JJ) = PUNLOAD  (JI)
    ZP_CT      (JJ) = PCT      (JI)
-   ZP_TA      (JJ) = PTA      (JI)
+   ZP_TAR     (JJ) = PTA      (JI)
+   ZP_TAC     (JJ) = PTA      (JI)  ! Use same value for Canopy air space 
    ZP_DELHEATG(JJ) = ZDELHEATG(JI)
    ZP_DELHEATG_SFC(JJ) = ZDELHEATG_SFC(JI)
    ZP_SW_RAD  (JJ) = PSW_RAD  (JI)
@@ -1043,6 +1079,8 @@ DO JJ=1,KSIZE1
    ZP_EXNS    (JJ) = ZEXNS    (JI)
    ZP_EXNA    (JJ) = ZEXNA    (JI)
    ZP_DIRCOSZW(JJ) = ZDIRCOSZW(JI)
+   ZP_SLOPEDIR(JJ) = ZSLOPEDIR(JI)
+   ZP_AZIM(JJ)     = ZAZIM(JI)
    ZP_ZREF    (JJ) = PZREF    (JI)
    ZP_ALB     (JJ) = PALB     (JI)
 
@@ -1071,7 +1109,7 @@ DO JJ=1,KSIZE1
    ZP_DELHEATN    (JJ) = ZDELHEATN    (JI)
    ZP_DELHEATN_SFC(JJ) = ZDELHEATN_SFC(JI)
    ZP_SNOWSFCH    (JJ) = ZSNOWSFCH    (JI)
-   ZP_GSFCSNOW    (JJ) = ZGSFCSNOW    (JI)
+   ZP_RESTOREN    (JJ) = ZRESTOREN    (JI)
    ZP_LES3L       (JJ) = PLES3L       (JI) 
    ZP_LEL3L       (JJ) = PLEL3L       (JI)  
    ZP_EVAP        (JJ) = PEVAP        (JI)
@@ -1136,7 +1174,7 @@ IF(LMEB)THEN
    ZP_LWNETSNOW(:)   = ZP_LWNETSNOW(:)   *ZP_PSN_INV(:)
    ZP_HSNOW(:)       = ZP_HSNOW(:)       *ZP_PSN_INV(:)
    ZP_GFLUXSNOW(:)   = ZP_GFLUXSNOW(:)   *ZP_PSN_INV(:) 
-   ZP_GSFCSNOW(:)    = ZP_GSFCSNOW(:)    *ZP_PSN_INV(:) 
+   ZP_RESTOREN(:)    = ZP_RESTOREN(:)    *ZP_PSN_INV(:) 
    ZP_SNOWHMASS(:)   = ZP_SNOWHMASS(:)   *ZP_PSN_INV(:)   
    ZP_LES3L(:)       = ZP_LES3L(:)       *ZP_PSN_INV(:)
    ZP_LEL3L(:)       = ZP_LEL3L(:)       *ZP_PSN_INV(:)
@@ -1145,6 +1183,8 @@ IF(LMEB)THEN
    ZP_HPSNOW(:)      = ZP_HPSNOW(:)      *ZP_PSN_INV(:)
    ZP_DELHEATN(:)    = ZP_DELHEATN(:)    *ZP_PSN_INV(:)
    ZP_DELHEATN_SFC(:)= ZP_DELHEATN_SFC(:)*ZP_PSN_INV(:)
+   ZP_DELPHASEN(:)   = ZP_DELPHASEN(:)   *ZP_PSN_INV(:)
+   ZP_DELPHASEN_SFC(:)= ZP_DELPHASEN_SFC(:)*ZP_PSN_INV(:)   
    ZP_SNOWSFCH(:)    = ZP_SNOWSFCH(:)    *ZP_PSN_INV(:)
 
    ZP_SRSNOW(:)      = ZP_SRSNOW(:)      *ZP_PSN_INV(:)
@@ -1163,30 +1203,31 @@ ENDIF
 ! Call ISBA-SNOW3L model:  
 !  
 IF (HSNOWSCHEME=='CRO') THEN 
-      CALL SNOWCRO(HSNOWRES, TPTIME, LMEB, LGLACIER, CIMPLICIT_WIND,    &
+      CALL SNOWCRO(HSNOWRES, TPTIME, LMEB, CIMPLICIT_WIND,    &
                 ZP_PEW_A_COEF, ZP_PEW_B_COEF, ZP_PET_A_COEF, ZP_PEQ_A_COEF,   &
                 ZP_PET_B_COEF, ZP_PEQ_B_COEF, ZP_SNOWSWE, ZP_SNOWRHO,         &
-                ZP_SNOWHEAT, ZP_SNOWALB, ZP_SNOWDIAMOPT, ZP_SNOWSPHERI,          &
+                ZP_SNOWHEAT, ZP_SNOWALB, ZP_SNOWDIAMOPT, ZP_SNOWSPHERI,       &
                 ZP_SNOWHIST, ZP_SNOWAGE,ZP_SNOWIMPUR, PTSTEP, ZP_PS,          &
-                ZP_SRSNOW,ZP_RRSNOW, ZP_PSN3L, ZP_PRESA_SV, ZP_TA, ZP_TG(:,1),ZP_SW_RAD,   &
+                ZP_SRSNOW,ZP_UNLOAD,ZP_RRSNOW, ZP_PSN3L, ZP_PRESA_SV,         &
+                ZP_TAR, ZP_TG(:,1),ZP_SW_RAD,                                 &
                 ZP_QA,ZP_VMOD,ZP_VMOD_DRIFT, ZP_LW_RAD, ZP_RHOA, ZP_UREF,     &
                 ZP_EXNS, ZP_EXNA,                                             &
-                ZP_DIRCOSZW, ZP_ZREF, ZP_Z0NAT, ZP_Z0EFF, ZP_Z0HNAT,          &
+                ZP_DIRCOSZW,ZP_SLOPEDIR, ZP_ZREF, ZP_Z0NAT, ZP_Z0EFF, ZP_Z0HNAT,          &
                 ZP_ALB, ZP_SOILCOND, ZP_D_G(:,1), ZP_SNOWLIQ, ZP_SNOWTEMP,    &
                 ZP_SNOWDZ, ZP_THRUFAL, ZP_GRNDFLUX, ZP_EVAPCOR,ZP_GFLXCOR,    &
                 ZP_SWNETSNOW, ZP_SWNETSNOWS, ZP_LWNETSNOW,ZP_RNSNOW,ZP_HSNOW, & 
                 ZP_GFLUXSNOW, ZP_HPSNOW, ZP_LES3L, ZP_LEL3L,ZP_EVAP,          &
                 ZP_SNDRIFT, ZP_RI,ZP_EMISNOW, ZP_CDSNOW,ZP_USTARSNOW,         &
                 ZP_CHSNOW, ZP_SNOWHMASS, ZP_QS, ZP_VEGTYPE, ZP_ZENITH,        &
-                ZP_ANGL_ILLUM, ZP_LAT, ZP_LON, ZP_BLOWSNW,                    &
-                HSNOWDRIFT_CRO, LSNOWDRIFT_SUBLIM,LSNOW_ABS_ZENITH,           &
+                ZP_AZIM, ZP_LAT, ZP_LON, ZP_BLOWSNW,                    &
+                HSNOWDRIFT_CRO, CSNOWFPAPPUS, LSNOWDRIFT_SUBLIM,LSNOW_ABS_ZENITH,    &
                 HSNOWMETAMO,HSNOWRAD,LATMORAD,ZP_DIR_SW,                      &
-                ZP_SCA_SW,ZP_SPEC_ALB, ZP_DIFF_RATIO,ZP_SPEC_TOT,ZP_GSFCSNOW, &
+                ZP_SCA_SW,ZP_SPEC_ALB, ZP_DIFF_RATIO,ZP_SPEC_TOT,ZP_RESTOREN, &
                 ZP_IMPWET,ZP_IMPDRY,                                          &
                 HSNOWFALL, HSNOWCOND, HSNOWHOLD, HSNOWCOMP,                   &
                 CSNOWZREF,ZP_SNOWMAK, LSNOWCOMPACT_BOOL,                      &
                 LSNOWMAK_BOOL,LSNOWTILLER,LSELF_PROD,                         &
-                LSNOWMAK_PROP, ZP_HVEGAPOL)
+                LSNOWMAK_PROP,ZP_VFRIC_T, ZP_HVEGAPOL)
 
       ! Purely diagnostic, this routine can be called only at output time steps
       CALL SNOWCRO_DIAG(HSNOWHOLD, HSNOWMETAMO, ZP_SNOWDZ, ZP_SNOWSWE, ZP_SNOWRHO, ZP_SNOWDIAMOPT, ZP_SNOWSPHERI, ZP_SNOWAGE,  &
@@ -1203,7 +1244,8 @@ IF (HSNOWSCHEME=='CRO') THEN
   ZP_GFLXCOR (:) = 0.0
   ZP_FLSN_COR(:) = 0.0
   ZP_SOILCOR (:) = 0.0
-
+  ZP_MELTSTOT (:) = 0.0
+  ZP_SNREFREEZ(:) = 0.0  
 
 ! Compute net shortwave and longwave fluxes
    
@@ -1219,21 +1261,21 @@ IF (HSNOWSCHEME=='CRO') THEN
              ZP_PEW_A_COEF, ZP_PEW_B_COEF,                                 &
              ZP_PET_A_COEF, ZP_PEQ_A_COEF,ZP_PET_B_COEF, ZP_PEQ_B_COEF,    &
              ZP_SNOWSWE, ZP_SNOWRHO, ZP_SNOWHEAT, ZP_SNOWALB,              &
-             ZP_SNOWAGE, PTSTEP,                                           &
-             ZP_PS, ZP_SRSNOW, ZP_RRSNOW, ZP_PSN3L, ZP_PRESA_SV, ZP_TA, ZP_TG(:,1),  &
+             ZP_SNOWAGE, PTSTEP,ZP_PS, ZP_SRSNOW, ZP_UNLOAD,               &
+             ZP_RRSNOW, ZP_PSN3L, ZP_PRESA_SV, ZP_TAR, ZP_TAC, ZP_TG(:,1), &
              ZP_SW_RAD, ZP_QA, ZP_VMOD, ZP_VMOD_DRIFT, ZP_LW_RAD, ZP_RHOA, ZP_UREF,       &
              ZP_EXNS, ZP_EXNA, ZP_DIRCOSZW, ZP_ZREF, ZP_Z0NAT, ZP_Z0EFF,   &
              ZP_Z0HNAT, ZP_ALB, ZP_SOILCOND, ZP_D_G(:,1),                  &
              ZP_LVTT, ZP_LSTT, ZP_SNOWLIQ,                                 &
-             ZP_SNOWTEMP, ZP_SNOWDZ, ZP_THRUFAL, ZP_GRNDFLUX ,             &
-             ZP_EVAPCOR, ZP_SOILCOR, ZP_GFLXCOR, ZP_SNOWSFCH,              &
-             ZP_DELHEATN, ZP_DELHEATN_SFC,                                 &
-             ZP_SWNETSNOW, ZP_SWNETSNOWS, ZP_LWNETSNOW, ZP_GSFCSNOW,       &
+             ZP_SNOWTEMP, ZP_SNOWDZ, ZP_THRUFAL,ZP_MELTSTOT, ZP_SNREFREEZ, &
+             ZP_GRNDFLUX,ZP_EVAPCOR, ZP_SOILCOR, ZP_GFLXCOR, ZP_SNOWSFCH,  &
+             ZP_DELHEATN, ZP_DELHEATN_SFC, ZP_DELPHASEN, ZP_DELPHASEN_SFC, &
+             ZP_SWNETSNOW, ZP_SWNETSNOWS, ZP_LWNETSNOW, ZP_RESTOREN,       &
              ZP_RNSNOW, ZP_HSNOW, ZP_GFLUXSNOW, ZP_HPSNOW, ZP_LES3L,       &
              ZP_LEL3L, ZP_EVAP, ZP_SNDRIFT, ZP_RI,                         &
              ZP_EMISNOW, ZP_CDSNOW, ZP_USTARSNOW,                          &
              ZP_CHSNOW, ZP_SNOWHMASS, ZP_QS, ZP_VEGTYPE,  ZP_FOREST,       &
-              ZP_ZENITH, HSNOWDRIFT_ES, LSNOWDRIFT_SUBLIM )
+             ZP_ZENITH, HSNOWDRIFT_ES, LSNOWDRIFT_SUBLIM )
  ENDIF
 !
 
@@ -1256,8 +1298,10 @@ IF (HSNOWSCHEME=='CRO') THEN
      ZP_GFLUXSNOW(:)   = ZP_GFLUXSNOW(:)   /ZP_PSN_INV(:) 
      ZP_DELHEATN(:)    = ZP_DELHEATN(:)    /ZP_PSN_INV(:) 
      ZP_DELHEATN_SFC(:)= ZP_DELHEATN_SFC(:)/ZP_PSN_INV(:) 
+     ZP_DELPHASEN(:)    = ZP_DELPHASEN(:)    /ZP_PSN_INV(:)
+     ZP_DELPHASEN_SFC(:)= ZP_DELPHASEN_SFC(:)/ZP_PSN_INV(:)     
      ZP_SNOWSFCH(:)    = ZP_SNOWSFCH(:)    /ZP_PSN_INV(:) 
-     ZP_GSFCSNOW(:)    = ZP_GSFCSNOW(:)    /ZP_PSN_INV(:) 
+     ZP_RESTOREN(:)    = ZP_RESTOREN(:)    /ZP_PSN_INV(:) 
 
      ZP_SRSNOW(:)      = ZP_SRSNOW(:)      /ZP_PSN_INV(:)
      ZP_RRSNOW(:)      = ZP_RRSNOW(:)      /ZP_PSN_INV(:)
@@ -1271,6 +1315,8 @@ IF (HSNOWSCHEME=='CRO') THEN
      
      ZP_SNOWHMASS(:)  = ZP_SNOWHMASS(:)/ZP_PSN_INV(:)
      ZP_THRUFAL(:)    = ZP_THRUFAL(:)  /ZP_PSN_INV(:)
+     ZP_MELTSTOT(:)   = ZP_MELTSTOT(:) /ZP_PSN_INV(:)
+     ZP_SNREFREEZ(:)  = ZP_SNREFREEZ(:)/ZP_PSN_INV(:)     
 !
 !    Final Adjustments:
 !    ------------------
@@ -1398,12 +1444,16 @@ DO JJ=1,KSIZE1
   ZFLSN_COR    (JI)   = ZP_FLSN_COR    (JJ)
   ZDELHEATN    (JI)   = ZP_DELHEATN    (JJ)
   ZDELHEATN_SFC(JI)   = ZP_DELHEATN_SFC(JJ)
+  ZDELPHASEN    (JI)  = ZP_DELPHASEN    (JJ)
+  ZDELPHASEN_SFC(JI)  = ZP_DELPHASEN_SFC(JJ)  
+  ZRESTOREN    (JI)   = ZP_RESTOREN    (JJ)
   ZSNOWSFCH    (JI)   = ZP_SNOWSFCH    (JJ)
-  ZGSFCSNOW    (JI)   = ZP_GSFCSNOW    (JJ)
   PLES3L       (JI)   = ZP_LES3L       (JJ)
   PLEL3L       (JI)   = ZP_LEL3L       (JJ)
   PEVAP        (JI)   = ZP_EVAP        (JJ) 
   ZSOILCOR      (JI) = ZP_SOILCOR     (JJ)
+  ZMELTSTOT    (JI)   = ZP_MELTSTOT    (JJ)
+  ZSNREFREEZ   (JI)   = ZP_SNREFREEZ   (JJ)  
   !
   PSWNETSNOW   (JI) = ZP_SWNETSNOW   (JJ)
   ZSWNET_NS    (JI) = ZP_SWNETSNOWS  (JJ)
