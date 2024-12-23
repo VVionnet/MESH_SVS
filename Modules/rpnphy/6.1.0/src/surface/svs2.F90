@@ -612,6 +612,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
 
       ! Store rainfall and snowfall rate below high vegetation (in m) to be consistent with rainrate and snowrate in the bus
+      ! Unloading is added for mass conservation. 
       DO I=1,N
          ! Set snowfall and rainfall rate below vegetation to zero if no high vegetation is present.
          ! This is used to make sure that Crocus is not called to simulate snowpack evolution below high vegetation
@@ -621,7 +622,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
              snowrate_mm_veg(i) = 0.
          ENDIF
          bus(x(rainrate_vgh,i,1))  = rainrate_mm_veg(i)/1000.
-         bus(x(snowrate_vgh,i,1))  = snowrate_mm_veg(i)/1000.
+         bus(x(snowrate_vgh,i,1))  = snowrate_mm_veg(i)/1000. + punload_forest(i)/1000.
       ENDDO
 !
       CALL DRAG_SVS2 ( bus(x(TGROUND,1,1)),bus(x(TGROUNDV,1,1))  , &
