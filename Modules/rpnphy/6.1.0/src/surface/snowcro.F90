@@ -1201,7 +1201,7 @@ ELSE
                    ZCT,PEMISNOW,PRHOA,ZTSTERM1,ZTSTERM2,ZRA,PCDSNOW,PCHSNOW,    &
                    ZQSAT, ZDQSAT, ZRSRA, ZUSTAR2_IC, PRI,                       &
                    ZPET_A_COEF_T,ZPEQ_A_COEF_T,ZPET_B_COEF_T,ZPEQ_B_COEF_T ,    &
-                   GFRZRAIN,PRR)
+                   GFRZRAIN,PRR, PRESA_SV)
 END IF
 !
 !***************************************DEBUG IN**********************************************
@@ -1732,6 +1732,7 @@ DO JST = 1, IMAX_USE
     IF (JST <= INLVLS_USE(JJ)) THEN
       ZLIQHEATXS(JJ)     = MAX( 0.0, (PSNOWLIQ(JJ,JST) - ZWHOLDMAX(JJ,JST)) * XRHOLW ) * XLMTT/PTSTEP
       PSNOWLIQ  (JJ,JST) = PSNOWLIQ(JJ,JST) - ZLIQHEATXS(JJ)*PTSTEP/(XRHOLW*XLMTT)
+      PTHRUFAL (JJ) = PTHRUFAL (JJ)  +  MAX(0.,PSNOWLIQ(JJ,JST) - ZWHOLDMAX(JJ,JST)) * XRHOLW /PTSTEP   ! VV to ensure mass conservation      
       PSNOWLIQ  (JJ,JST) = MAX( 0.0, PSNOWLIQ(JJ,JST) )
       ! Update total density
       PSNOWRHO  (JJ,JST) = ZDRYDENSITY(JJ,JST) + PSNOWLIQ(JJ,JST) * XRHOLW / PSNOWDZ(JJ,JST)    
@@ -2967,7 +2968,7 @@ SUBROUTINE SNOWCROEBUD(HSNOWRES, HIMPLICIT_WIND,                                
                        PCT,PEMIST,PRHOA,PTSTERM1,PTSTERM2,PRA,PCDSNOW,PCHSNOW,     &
                        PQSAT,PDQSAT,PRSRA,PUSTAR2_IC, PRI,                         &
                        PPET_A_COEF_T,PPEQ_A_COEF_T,PPET_B_COEF_T,PPEQ_B_COEF_T,    &
-                       OFRZRAIN,PRR)
+                       OFRZRAIN,PRR, PRESA_SV)
 !
 !!    PURPOSE
 !!    -------
@@ -3029,6 +3030,7 @@ REAL, DIMENSION(:), INTENT(IN)     :: PSW_RAD, PLW_RAD, PTA, PQA, PPS, PRHOA
 REAL, DIMENSION(:), INTENT(IN)     :: PUREF, PEXNS, PEXNA, PDIRCOSZW, PVMOD
 !
 REAL, DIMENSION(:), INTENT(IN)     :: PRR
+REAL, DIMENSION(:), INTENT(IN)     :: PRESA_SV
 LOGICAL, DIMENSION(:), INTENT(IN)  :: OFRZRAIN
 !
 REAL, DIMENSION(:), INTENT(OUT)    :: PTSTERM1, PTSTERM2, PEMIST, PRA,         &

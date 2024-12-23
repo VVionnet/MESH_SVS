@@ -48,7 +48,8 @@ IMPLICIT NONE
 !
 ! minimum snow layer thickness for thermal calculations.
 ! Used to prevent numerical problems as snow becomes vanishingly thin.
-REAL, PARAMETER                 :: XSNOWDZMIN = 1.E-9 ! 0.0001
+!VV REAL, PARAMETER                 :: XSNOWDZMIN = 1.E-9 ! 0.0001
+REAL, PARAMETER                 :: XSNOWDZMIN =  0.0001
 !
 ! Optical diameter properties
 REAL, PARAMETER                 :: XDIAET = 1.E-4
