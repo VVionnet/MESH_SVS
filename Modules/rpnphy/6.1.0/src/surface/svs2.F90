@@ -597,7 +597,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                            rainrate_mm,snowrate_mm, bus(x(SNCMA     ,1,1)), wrmax_vh, bus(x(SKYVIEW,1,1)),&
                            bus(x(ESNC     ,1,1)), bus(x(ESNCAF     ,1,1)),  BUS(x(LAIVH  ,1,1)),   &
                            BUS(x(SVS_WTG,1,1)),PHM_CAN, BUS(x(VGH_DENS   ,1,1)), PSCAP,   &
-                           bus(x(wveg_vh  ,1,1)), rainrate_mm_veg,snowrate_mm_veg  ,               &
+                           bus(x(wveg_vh  ,1,1)), rainrate_mm_veg, snowrate_mm_veg, punload_forest,      &
                            PFCANS, N)
 
       ELSE
@@ -693,7 +693,6 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       ! The effect of low basal vegetation is also considered for snow in forested environment
       DO I = 1,N
           PHVEGAPOL_V(I) = BUS(x(HVEGAPOL  ,I,1))
-          PUNLOAD_FOREST(I) = 0. ! Temporary unloading term
       ENDDO
 
       CALL SNOW_SVS2(   bus(x(SNOMAV_SVS,1,1)), bus(x(TSNOWV_SVS,1,1)), bus(x(WSNOWV_SVS,1,1)),    &

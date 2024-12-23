@@ -25,7 +25,7 @@
                       PSPEC_ALB, PDIFF_RATIO,PSPEC_TOT,PSNOWFLUX,PIMPWET,PIMPDRY,&
                       HSNOWFALL, HSNOWCOND,HSNOWHOLD,HSNOWCOMP,HSNOWZREF,       &
                       PSNOWMAK, OSNOWCOMPACT_BOOL, OSNOWMAK_BOOL, OSNOWTILLER,  &
-                      OSELF_PROD, OSNOWMAK_PROP, PVFRIC_T, PHVEGPOL  )
+                      OSELF_PROD, OSNOWMAK_PROP, PVFRIC_T, PHVEGPOL, OFOREST  )
 
 !     ##########################################################################
 !
@@ -437,6 +437,8 @@ LOGICAL, INTENT(IN)                    :: OATMORAD ! activate atmotartes scheme
                                        ! HSNOWZREF='VAR' variable reference height from the snow surface (i.e. constant from the ground)
                                        !-----------------------
 !
+LOGICAL, INTENT(IN)                    :: OFOREST ! True if Crocus is called in a forested environment. 
+!
 !*      0.2    declarations of local variables
 !
 REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2))        :: ZSNOWSSA_BEFORE, ZSNOWSSA_AFTER,ZSNOWDSSA
@@ -784,9 +786,10 @@ END DO
 ! Note that in that case the MEB solving has not seen any snow...
 ZSR(:) = PSR(:)
 ZUNLOAD(:) = PUNLOAD(:)
-IF (OMEB) THEN
+!VV IF (OMEB) THEN
+IF (OMEB .OR. OFOREST) THEN
   DO JJ=1,SIZE(ZSNOW)
-    IF ((INLVLS_USE(JJ) == 0) .AND. (ZUNLOAD(JJ) > 0.) .AND. (ZSR(JJ) < XUEPSI)) THEN
+    IF ((INLVLS_USE(JJ) == 0) .AND. (ZUNLOAD(JJ) > 0.) .AND. (ZSR(JJ) < XUEPSI_SMP)) THEN
       ZSR(JJ) = ZSR(JJ)+ZUNLOAD(JJ)
       ZUNLOAD(JJ) = 0.
     END IF
@@ -876,6 +879,13 @@ IF (.NOT. OMEB) THEN
                              PSNOWHIST, PSNOWAGE, PSNOWIMPUR, PRR, PTA, PTSTEP, INLVLS_USE)
   END IF
 END IF
+
+! For SVS2 call snow unloading after SNOWFALL
+IF(OFOREST) THEN
+    CALL SNOWCROUNLOAD(PSNOWDZ, PSNOWRHO, PSNOWHEAT, PSNOWDIAMOPT, PSNOWSPHERI, &
+                   PSNOWHIST, PSNOWAGE, PSNOWIMPUR, ZUNLOAD, PTA, PTSTEP, INLVLS_USE)
+END IF
+
 !*       4.     Liquid water content and snow temperature
 !               -----------------------------------------
 !

@@ -282,6 +282,8 @@ LOGICAL     :: LSNOW_ABS_ZENITH  ! Activate parametrization of solar absorption 
                                  ! Need to be tested in the Arctic
 LOGICAL     :: LATMORAD          ! Activate atmotartes scheme in the TARTES snowpack radiative scheme (default FALSE in SVS-Cro)
 !
+LOGICAL     :: LFOREST           ! Logical to determine when Crocus in SVS2 is called in a forested environement 
+!
 
 LOGICAL     :: LSNOWCOMPACT_BOOL,LSNOWMAK_BOOL,LSNOWTILLER,LSELF_PROD,& ! Logical for artificial snow making (default FALSE in SVS-Cro)
                 LSNOWMAK_PROP
@@ -475,7 +477,7 @@ ZEXNA(:)   = (ZPA(:)/XP00)**(XRD/XCPD)
 ZDIRCOSZW(:) = 1.
 ZSLOPEDIR(:) = 0.
 ZAZIM(:) = 0. ! Azimuthal angle set to zero since it is not use internally in SVS2/Crocus so far
-           ! To be modified when TARTES will be used
+              ! To be modified when TARTES will be used
 
 ! Latent heats are initialized as in init_veg_pgdn.F90 from SURFEX
 ZLSTT(:)   = XLSTT
@@ -501,6 +503,8 @@ TPTIME%TIME = ZHH*3600.+ZMN*60+ZSEC
 ZLAT(:) = PLAT(:)* 180./ACOS(-1.)
 ZLON(:) = PLON(:)* 180./ACOS(-1.)
 
+! Determine if snow scheme is called in a snow environement
+LFOREST= ANY(PFOREST==1.)
 
 !###########################################################################################
 !########      End Initialization of variables for phasing with SVS
@@ -1227,7 +1231,7 @@ IF (HSNOWSCHEME=='CRO') THEN
                 HSNOWFALL, HSNOWCOND, HSNOWHOLD, HSNOWCOMP,                   &
                 CSNOWZREF,ZP_SNOWMAK, LSNOWCOMPACT_BOOL,                      &
                 LSNOWMAK_BOOL,LSNOWTILLER,LSELF_PROD,                         &
-                LSNOWMAK_PROP,ZP_VFRIC_T, ZP_HVEGAPOL)
+                LSNOWMAK_PROP,ZP_VFRIC_T, ZP_HVEGAPOL, LFOREST)
 
       ! Purely diagnostic, this routine can be called only at output time steps
       CALL SNOWCRO_DIAG(HSNOWHOLD, HSNOWMETAMO, ZP_SNOWDZ, ZP_SNOWSWE, ZP_SNOWRHO, ZP_SNOWDIAMOPT, ZP_SNOWSPHERI, ZP_SNOWAGE,  &
