@@ -389,7 +389,7 @@ DO JJ = 1,SIZE(PSNOW(:))
   IF (OSNOWMAK_BOOL) ZPSR_SNOWMAK(JJ) = PSNOWMAK(JJ)*XRHO_SNOWMAK/PTSTEP
 !
 !VV  IF (PSR(JJ)>XUEPSI .OR. PBLOWSNW(JJ,1) > XUEPSI  .OR. ZPSR_SNOWMAK(JJ) > XUEPSI ) THEN
-   IF (PSR(JJ)>XUEPSI_SMP*500./PTSTEP .OR. PBLOWSNW(JJ,1) > XUEPSI  .OR. ZPSR_SNOWMAK(JJ) > XUEPSI) THEN          
+   IF (PSR(JJ)>XUEPSI_SMP*200./PTSTEP .OR. PBLOWSNW(JJ,1) > XUEPSI  .OR. ZPSR_SNOWMAK(JJ) > XUEPSI) THEN          
     !
     ! newly fallen snow characteristics:
     !Case of new snowfall on a previously snow-free surface
@@ -421,7 +421,7 @@ DO JJ = 1,SIZE(PSNOW(:))
     PSNOWHMASS(JJ) = (PSR(JJ)+PBLOWSNW(JJ,1)+ZPSR_SNOWMAK(JJ))*&
                     (XCI*(ZSNOWTEMP(JJ)-XTT)-XLMTT)*PTSTEP  !20160211
 !VV    IF (PSR(JJ)>XUEPSI) THEN 
-    IF (PSR(JJ)>XUEPSI_SMP*500./PTSTEP) THEN !VV Modification for single precision            
+    IF (PSR(JJ)>XUEPSI_SMP*200./PTSTEP) THEN !VV Modification for single precision            
       !
       !! Cluzet et al 2016
       !! implementation of different parametrical options for fresh snow density.
