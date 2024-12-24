@@ -484,8 +484,8 @@ ZLSTT(:)   = XLSTT
 ZLVTT(:)   = XLVTT
 
 ! No blowing snow variables are considerd in SVS at the moment
-! Set the default value to 1 to avoid issues when running with Crocus
-IBLOWSNW = 1
+! Set the default value to 4 to avoid issues when running with Crocus
+IBLOWSNW = 4
 ! Variables to keep track of heat exchanges when snow is remove are set to 0.
 ZDELHEATG(:) = 0.
 ZDELHEATG_SFC(:) = 0.

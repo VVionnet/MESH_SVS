@@ -804,6 +804,18 @@ IF (GCRODEBUGDETAILSPRINT) THEN
   PRINT*, "machine-made snow: ", PSNOWMAK(IDEBUG)*XRHO_SNOWMAK/PTSTEP > XUEPSI
   PRINT*, "freezing rain / temperature: ", GFRZRAIN(IDEBUG), PRR(IDEBUG), PTA(IDEBUG)
 END IF
+
+! For SVS2 call snow unloading before SNOWFALL
+IF(OFOREST) THEN
+    CALL SNOWCROUNLOAD(PSNOWDZ, PSNOWRHO, PSNOWHEAT, PSNOWDIAMOPT, PSNOWSPHERI, &
+                   PSNOWHIST, PSNOWAGE, PSNOWIMPUR, ZUNLOAD, PTA, PTSTEP, INLVLS_USE)
+   ! Update ZSNOW
+    DO JJ = 1,SIZE(ZSNOW)
+       ZSNOW(JJ) = SUM(PSNOWDZ(JJ,1:INLVLS_USE(JJ)))
+    END DO
+    ZSNOWBIS(:) = ZSNOW(:)
+END IF
+
 !
 ! save previous number of layers
 INLVLS_USE_OLD = INLVLS_USE
@@ -880,11 +892,11 @@ IF (.NOT. OMEB) THEN
   END IF
 END IF
 
-! For SVS2 call snow unloading after SNOWFALL
-IF(OFOREST) THEN
-    CALL SNOWCROUNLOAD(PSNOWDZ, PSNOWRHO, PSNOWHEAT, PSNOWDIAMOPT, PSNOWSPHERI, &
-                   PSNOWHIST, PSNOWAGE, PSNOWIMPUR, ZUNLOAD, PTA, PTSTEP, INLVLS_USE)
-END IF
+
+!VV Update total snow depth after ice layer from freezing rain
+DO JJ = 1,SIZE(ZSNOW)
+  ZSNOW(JJ) = SUM(PSNOWDZ(JJ,1:INLVLS_USE(JJ)))
+END DO
 
 !*       4.     Liquid water content and snow temperature
 !               -----------------------------------------
