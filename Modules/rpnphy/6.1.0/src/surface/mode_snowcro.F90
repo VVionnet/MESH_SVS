@@ -1338,8 +1338,8 @@ INTEGER :: INLVLSMAX
 !
 ! Properties of unloaded snow
 REAL, PARAMETER :: PPRHO_UNLOAD = 200. ! density
-REAL, PARAMETER :: PPDIAMOPT_UNLOAD = 2.E-4 ! optical diameter, values from Bouchard et al. (2024)
-REAL, PARAMETER :: PPSNOWSPHER_UNLOAD = 0.1 ! sphericity
+REAL, PARAMETER :: PPDIAMOPT_UNLOAD = 2.E-4 ! optical diameter, values from Bouchard et al. (2024) for snow older than 3.1 days
+REAL, PARAMETER :: PPSNOWSPHER_UNLOAD = 0.95 ! sphericity
 !
 REAL, DIMENSION(SIZE(PSNOWDZ, 1), SIZE(PSNOWDZ, 2)) :: ZSNOWDZO, ZSNOWDZN ! new snow profile after unloading
 REAL, DIMENSION(SIZE(PSNOWDZ, 1)) :: ZSNOW, ZSNOWTEMP, ZSNOWHEATF, ZDZUNLOAD, ZSCAP ! temperature of new snow
