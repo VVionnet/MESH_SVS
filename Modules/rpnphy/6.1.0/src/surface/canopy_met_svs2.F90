@@ -128,7 +128,8 @@
  
                    ! Wind speed at canopy base height, dense canopy, assuming exp profile between canopy top and canopy base height
                    WCAN = WIND_CANO_COEF(LAIVH(I),VGH_DENS(I))  ! From Marke et al., (2016); Liston and Elder (2006)
-                   VMOD_SUB = VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1.))
+                   ! Impose a minimum value of 0.2 m/s
+                   VMOD_SUB =MAX(0.2,VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1.)))
 
                    PWIND_DRIFT(I) = VMOD_SUB
 
@@ -139,7 +140,8 @@
 
                    ! Wind speed at canopy base height, dense canopy, assuming exp profile between canopy top and canopy base height
                    WCAN = ZBETA * LAIVH(I)   ! From Marke et al., (2016); Liston and Elder (2006)
-                   VMOD_SUB = VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1.))
+                   ! Impose a minimum value of 0.2 m/s                   
+                   VMOD_SUB =MAX(0.2,VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1.)))
 
                    ! PWIND_DRIFT re-calculated at PUREF as weighthed average of wind below the canopy (re-calculated at PUREF) 
                    !and wind in the open as in Mazzotti et al. (2024)
@@ -157,23 +159,21 @@
                PUREF_VEG(I) =  HSUBCANO
                PTREF_VEG(I) = ZT(I)
 
-
                ! Wind speed at canopy top, assuming logarithmic profile above canopy, dense canopy
                VMOD_TOP(I) = VMOD(I) * LOG((VGH_HEIGHT(I)-DH)/Z0MVH(I))/LOG((ZUREF-DH)/Z0MVH(I))
-
 
                ! Wind speed at canopy base height, dense canopy, assuming exp profile between canopy top and canopy base height
                IF (LWIND_FOREST .EQ. 'VDENS_WCAN') THEN
 
                     WCAN = WIND_CANO_COEF(LAIVH(I),VGH_DENS(I))
-                    VMOD_CAN(I) = VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1.))
+                    VMOD_CAN(I) = MAX(0.2,VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1.)))
 
                ELSE IF  (LWIND_FOREST .EQ. 'WEIGHT_AVG') THEN
 
                     WCAN = ZBETA * LAIVH(I) 
                     VMOD_SUB = VMOD_TOP(I)*EXP(WCAN*(HSUBCANO/VGH_HEIGHT(I)-1.))
                     VMOD_CLEARING = VMOD(I)*LOG(PUREF_VEG(I)/Z0SNOW(I))/LOG(ZUREF/Z0SNOW(I)) ! Transfer from ZUREF to PUREF_VEG(I)
-                    VMOD_CAN(I) = VMOD_SUB * VGH_DENS(I)**(0.5) + (1.-VGH_DENS(I)**(0.5))* VMOD_CLEARING
+                    VMOD_CAN(I) = MAX(0.2,VMOD_SUB * VGH_DENS(I)**(0.5)+(1.-VGH_DENS(I)**(0.5))* VMOD_CLEARING)
 
                ENDIF
 
