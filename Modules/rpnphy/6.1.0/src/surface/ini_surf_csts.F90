@@ -76,7 +76,7 @@ USE MODD_SNOW_PAR,  ONLY : XEMISSN, XANSMIN, XANSMAX,          &
                            XWINDTHRFRESH, XRHODEPPAPPUS,       &
                            XDIAMDEPPAPPUS, XSPHDEPPAPPUS,      &
                            XLFETCHPAPPUS, XAGELIMPAPPUS2,      &
-                           XDEMAXVFALL
+                           XDEMAXVFALL, XCROCOEF_FF
 USE MODD_SNOW_METAMO, ONLY : XVVISC3
 !
 #ifdef CROCUS_EXT
@@ -135,7 +135,7 @@ NAMELIST/NAM_SURF_SNOW_CSTS/ XZ0ICEZ0SNOW, XRHOTHRESHOLD_ICE,          &
                              XWINDTHRFRESH, XRHODEPPAPPUS,             &
                              XDIAMDEPPAPPUS, XSPHDEPPAPPUS,            &
                              XLFETCHPAPPUS, XAGELIMPAPPUS2,            &
-                             XDEMAXVFALL
+                             XDEMAXVFALL, XCROCOEF_FF
 !
 NAMELIST/NAM_REPROD_OPER/ LREPROD_OPER, XEVERG_RSMIN, XEVERG_VEG, &
                           CDGAVG, CDGDIF, CIMPLICIT_WIND, CQSAT,  &
@@ -349,6 +349,8 @@ XAGELIMPAPPUS2 = 0.05
 XWINDTHRFRESH = 6.  !value used in Vionnet 2013, from Sato 2008 obs.
 XLFETCHPAPPUS = 250. ! default value used for the fetch 
 XDEMAXVFALL = 0.5 ! calibrated on lac blanc data ( see Baron et al. 2023 )
+
+XCROCOEF_FF = 1.25 ! coefficient for gust diagnosis from average wind
 #ifndef CROCUS_EXT
 !-------------------------------------------------------------------------------
 !

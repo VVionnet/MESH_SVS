@@ -150,6 +150,9 @@ REAL, SAVE        ::XLFETCHPAPPUS !constant fetch distance applied to all points
 REAL, SAVE        ::XDEMAXVFALL !when option MIXT is chosen for terminal fall speed calculation, minimum dendricity to have full
 ! young fall speed
 !
+! coefficient for gust diagnosis from average wind ! for CROCUS now in namelist (see XCOEF_FF below)
+REAL, SAVE        :: XCROCOEF_FF
+!
 !--------------------------------------------------------------------------------
 ! Snow on the ground: PARAMETER
 !--------------------------------------------------------------------------------
@@ -445,9 +448,10 @@ REAL, PARAMETER :: XVSIZEMIN = 3.E-4 !  minimum size decrease
 ! modif_EB pour sublim
 ! a pour but de tenir compte du fait que le vent moyen est < rafales
 ! on en tient compte egalement pour diminuer la duree de l'effet
-REAL, PARAMETER :: XCOEF_FF = 1.25 ! coefficient for gust diagnosis from average wind
-! NB some parametrisation in Crocus are made with average wind -> XCOEFF_FF in Crocus is 1.0
+REAL, PARAMETER :: XCOEF_FF = 1.0 ! coefficient for gust diagnosis from average wind
+! NB in Crocus, some parametrisation are made with average wind -> XCOEF_FF in Crocus should be 1.0
 ! See M. Lafaysse for this double choice 1.0 / 1.25
+! Double choice 1.0 / 1.25 -> XCROCOEF_FF in namelist NAM_SURF_SNOW_CSTS for Crocus (See M. Lafaysse)
 !
 REAL, PARAMETER :: XCOEF_EFFECT = 1.0 ! coefficient for impact on density du drift
 REAL, PARAMETER :: XCOEF_EFFECT_R21 = 3.0 ! increase in coefficient for impact on density due
