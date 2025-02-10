@@ -34,7 +34,7 @@ character(10) :: lwind_forest = 'VDENS_WCAN' ! 'VDENS_WCAN' or 'WEIGHT_AVG'
 REAL, PARAMETER :: KEXT = 0.5    ! Vegetation light extinction coefficient
 
 REAL, PARAMETER :: RCHD = 0.67    ! Ratio of displacement height to canopy height
-REAL, PARAMETER :: HSUBCANO = 1.5 ! Sub canopy reference height for wind, tair and hu
+REAL, PARAMETER :: HSUBCANO = 2.0 ! Sub canopy reference height for wind, tair and hu
 REAL, PARAMETER :: ZBETA = 0.9 ! Constant used in the canopy wind decay coefficient WCAN ( Marke et al., 2016; Liston and Elder, 2006)
 
 !       ------------------------------------------------------
@@ -103,9 +103,9 @@ REAL FUNCTION WIND_CANO_COEF(LAIVH,VGH_DENS)
 
     REAL, INTENT(IN) :: LAIVH,VGH_DENS
 
-    ! Use a minimum value of 1 to ensure a proper reduction of wind speed 
-    ! in the canopy
-    WIND_CANO_COEF =  MAX(1.0,ZBETA * LAIVH * VGH_DENS)
+    ! Use a minimum value of 1 to ensure a proper reduction of wind speed in the canopy
+    ! Set a maximum value of 4 according to Mahat et al (2013), Bonan(1991)
+    WIND_CANO_COEF =  MIN(4.,MAX(1.0,ZBETA * LAIVH * VGH_DENS))
 
     RETURN
 END FUNCTION WIND_CANO_COEF

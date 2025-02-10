@@ -147,21 +147,17 @@
 !
       INTEGER I, zopt
 
-      real, dimension(n) :: temp, coef_vh, qsatgr, qsat_vl, qsat_vh, qsat_sv, &
+      real, dimension(n) :: temp, coef_vh, qsatgr, qsat_vl, qsat_vh,qsat_sv, &
            zqs_vl, zqs_vh, ctugr, ctugrv, ctuvh, ctuvl, wcrit_hrsurf, z0bg_n,ra,&
-           z0gv_n, qsatgrv,wcrit_hrsurfgv, z0hg, zz0hgv, ZZ0HVH, ZZ0HVL, TSV_CORR
+           z0gv_n, qsatgrv,wcrit_hrsurfgv, z0hg, zz0hgv, ZZ0HVH, ZZ0HVL,TSV_CORR
      real, dimension(n) :: ZUGV, ZTGV, ZZ0MGV, ZDH, QSATI_VH, VSUBL, Z0MVH_EFF, &
-                           ZDISPLCAN,ZUREF_VH,ZTREF_VH,ZDIAG_TOP,ZZ0_TOP, &
+                           ZDISPLCAN, ZBELOW, ZUREF_VH,ZTREF_VH,ZDIAG_TOP,ZZ0_TOP, &
                            STABM_VH, ZUSTAR_VH,LZZ0M_VH, & ! Related to VGH
                            STABT_VH,LZZ0T_VH, & ! Related to VGH
                            ZRSURF, VMOD_BELOW, & ! Related to surface below VGH
-                           LZZ0T_BELOW, STABT_BELOW, & ! Related to surface below VGH 
-                           LZZ0M_BELOW, STABM_BELOW, &  ! Related to surface below VGH
                            ZU_TOP,ZV_TOP,VMOD_TOP, &
-                           ZKH, ZWCAN, ZRUPPER_CAN, &
-                           VMOD_DISPL,ZUSTAR_BELOW , & 
-                           ZRABV_CAN
-     real :: ZFSURF
+                           ZKH, ZWCAN, ZRUPPER_CAN, ZRLOWER_CAN, &
+                           VMOD_DISPL,ZRABV_CAN
      REAL :: NU, MU, NR, DVAP
      REAL :: XI2,EXT2
 !
@@ -567,16 +563,19 @@
 
         IF(WTG(I,indx_svs2_vh) .GE. EPSILON_SVS) THEN   ! High vegetation present in the grid cell
 
-        ! Compute displacement height
-        ZDISPLCAN(I) = VGH_HEIGHT(I)*RCHD
+           ! Compute displacement height
+           ZDISPLCAN(I) = VGH_HEIGHT(I)*RCHD
 
-        ! Compute reference forcing level for momentum for high veg.
-        ! including the displacement height (as in urban_drag, TEB)
-        ZUREF_VH(I) = ZUSL(I) +  VGH_HEIGHT(I) - ZDISPLCAN(I)
+           ! Compute height of the level below the canopy 
+           ZBELOW(I) = HSUBCANO
+           
+           ! Compute reference forcing level for momentum for high veg.
+           ! including the displacement height (as in urban_drag, TEB)
+           ZUREF_VH(I) = ZUSL(I) +  VGH_HEIGHT(I) - ZDISPLCAN(I)
 
-        ! Compute reference forcing level for heat for high veg.
-        ! including the displacement height  (as in urban_drag, TEB)
-        ZTREF_VH(I) = ZTSL(I) +  VGH_HEIGHT(I) - ZDISPLCAN(I)
+           ! Compute reference forcing level for heat for high veg.
+           ! including the displacement height  (as in urban_drag, TEB)
+           ZTREF_VH(I) = ZTSL(I) +  VGH_HEIGHT(I) - ZDISPLCAN(I)
 
            ! Compute height use to compute the wind speed at the top of
            ! the canopy (taking into account the displacement height)
@@ -645,37 +644,43 @@
 
             IF(WTG(I,indx_svs2_vh) .GE. EPSILON_SVS) THEN
 
-           ! Compute wind speed at the canopy top from wind components
-           ! at canopy top provided by sfclayer
-           VMOD_TOP(I) = (ZU_TOP(I)**2. + ZV_TOP(I)**2.)**0.5
+              ! Compute wind speed at the canopy top from wind components
+              ! at canopy top provided by sfclayer
+              VMOD_TOP(I) = (ZU_TOP(I)**2. + ZV_TOP(I)**2.)**0.5
 
-           ! Aerodynamic resistance above the canopy
-           ! See left term in Eq 60 of Essery et al., 2024
-           ! Stability term is derived from the call to sfc_layer
-           ZRABV_CAN(I) = 1./(KARMAN*ZUSTAR_VH(I))*STABT_VH(I)
-               !(LOG(ZTREF_VH(I) /(VGH_HEIGHT(I)-ZDISPLCAN(I))) + &
-               !    STABT_VH(I)-LZZ0T_VH(I))
+              ! Aerodynamic resistance above the canopy
+              ! See left term in Eq 60 of Essery et al., 2024
+              ! Stability term is derived from the call to sfc_layer
+              ZRABV_CAN(I) = 1./(KARMAN*ZUSTAR_VH(I))*STABT_VH(I)
 
-           ! Compute eddy diffusion coefficient for the canopy at
-           ! height VGH_HEIGHT (eq 24 in Mahat et al, WRR, 2013)
-           ZKH(I)  = KARMAN * ZUSTAR_VH(I) * (VGH_HEIGHT(I)-ZDISPLCAN(I))    
+              ! Compute eddy diffusion coefficient for the canopy at
+              ! height VGH_HEIGHT (eq 24 in Mahat et al, WRR, 2013)
+              ZKH(I)  = KARMAN * ZUSTAR_VH(I) * (VGH_HEIGHT(I)-ZDISPLCAN(I))    
 
-           ! Compute wind speed attenuation coefficient in the canopy
-           ZWCAN(I) = WIND_CANO_COEF(LAIVH(I),VGH_DENS(I))
+              ! Compute wind speed attenuation coefficient in the canopy
+              ZWCAN(I) = WIND_CANO_COEF(LAIVH(I),VGH_DENS(I))
 
-           ! Compute additional resistance term from the upper part of
-           ! the canopy where the wind follws an exponential profile
-           ! (2nd term in Eq 25 in Mahat et al, WRR, 2013)
-           ZRUPPER_CAN(I) =  ( VGH_HEIGHT(I) )/(ZWCAN(I)*ZKH(I)) *&
+              ! Compute additional resistance term from the upper part of
+              ! the canopy where the wind follws an exponential profile
+              ! (2nd term in Eq 25 in Mahat et al, WRR, 2013)
+              ZRUPPER_CAN(I) =  ( VGH_HEIGHT(I) )/(ZWCAN(I)*ZKH(I)) *&
                     ( EXP(ZWCAN(I) -ZWCAN(I)*(Z0MVH_EFF(I)+ZDISPLCAN(I))/VGH_HEIGHT(I)) - 1.)
 
-           ! Wind speed at the base of high vegetation (height = HSUBCANO)
-           ! Assuming an exponential profile in the canopy
-           VMOD_BELOW(I) = VMOD_TOP(I)*EXP(ZWCAN(I)*(HSUBCANO/VGH_HEIGHT(I)-1.))
+              ! Wind speed at the base of high vegetation (height = HSUBCANO)
+              ! Assuming an exponential profile in the canopy
+              ! A minimum value of 0.2 m/s is used to ensure certain turbulent exchanges below the canopy
+              VMOD_BELOW(I) =MAX(0.2,VMOD_TOP(I)*EXP(ZWCAN(I)*(HSUBCANO/VGH_HEIGHT(I)-1.)))
 
-           ! Wind speed in the middle of the canopy (height = ZDISPLCAN)
-           ! Assuming an exponential profile in the canopy
-           VMOD_DISPL(I) = VMOD_TOP(I)*EXP(ZWCAN(I)*(ZDISPLCAN(I)/VGH_HEIGHT(I)-1.))
+              ! Wind speed in the middle of the canopy (height = ZDISPLCAN)
+              ! Assuming an exponential profile in the canopy
+              VMOD_DISPL(I) =MAX(0.2,VMOD_TOP(I)*EXP(ZWCAN(I)*(ZDISPLCAN(I)/VGH_HEIGHT(I)-1.)))
+
+              ! Compute resistance from the lower part of the canopy
+              ! between  HSUBCANO and ZDISPLCAN + Z0V
+              ZRLOWER_CAN(I) = ( VGH_HEIGHT(I) *EXP(ZWCAN(I)))/(ZWCAN(I)*ZKH(I)) *&
+                        ( EXP(-ZWCAN(I)*HSUBCANO/VGH_HEIGHT(I)) -  &
+                          EXP(-ZWCAN(I)*(Z0MVH_EFF(I)+ZDISPLCAN(I))/VGH_HEIGHT(I))) 
+         
            ENDIF
 
          enddo
@@ -778,15 +783,12 @@
              DO I=1,N
                 IF (WTG(I,indx_svs2_vh) .GE. EPSILON_SVS) THEN
 
-                   ! Compute the below-canopy aerodynamic resistance for neutral atmospheric conditions following the
-                   ! assumption of an exponential wind profile in the canopy (from HSUBCANO to VGH_HEIGHT(I)) 
-                   ! and a logarithmic wind profile below the canopy (below HSUBCANO)
-                   ! See Eq 62 in Essery et al (2024, GMD)
-                ZRSURF(I) = ( VGH_HEIGHT(I) *EXP(ZWCAN(I)))/(ZWCAN(I)*ZKH(I)) *&
-                        ( EXP(-ZWCAN(I)*HSUBCANO/VGH_HEIGHT(I)) -  &
-                          EXP(-ZWCAN(I)*(Z0MVH_EFF(I)+ZDISPLCAN(I))/VGH_HEIGHT(I))) &
-                       +   1./(KARMAN**2. * VMOD_BELOW(I))  * &
-                           LOG(HSUBCANO/Z0GV_N(I))*LOG(HSUBCANO/ZZ0HGV(I))
+                   ! Compute the below-canopy aerodynamic resistance with two components: 
+                   !   -  exponential wind profile in the canopy (from HSUBCANO to ZDISPLCAN) ZRLOWER_CAN (no stability included )
+                   !   - logarithmic wind profile below the canopy (below HSUBCANO) (no stability included) 
+                   ZRSURF(I) = ZRLOWER_CAN(I) +    &
+                             + 1./(KARMAN**2. * VMOD_BELOW(I))   &
+                             * LOG(HSUBCANO/Z0GV_N(I))*LOG(HSUBCANO/ZZ0HGV(I))
 
                 ELSE !  This is placed to fill the values if there is no vegetation to run sl_sfclayer
                     ZRSURF(I) = 1.
@@ -797,23 +799,11 @@
 
              ENDDO
 
-
-             ! Calculate the atm stability below the canopy
-             ! Temperature and height of vegetation are used instead of atm temperature and zref
-             i = sl_sfclayer( TVGHS, ZQS_VH, VMOD_DISPL, VDIR, ZDISPLCAN, ZDISPLCAN, &
-                  TGRVS, HUSURFGV, Z0GV_N, ZZ0HGV, LAT, FCOR, &
-                  L_min=sl_Lmin_soil, &
-                  stabm=STABM_BELOW, lzz0m=LZZ0M_BELOW, &
-                  stabt=STABT_BELOW, lzz0t=LZZ0T_BELOW )
-
-             do i=1,N
-                 ! Apply atm stability to the below-canopy aerodynamic resistance as in Mahat et al. (2013, WRR)
-                 ZRSURF(I) = ZRSURF(I) * (STABM_BELOW(I)*STABT_BELOW(I))/(LZZ0M_BELOW(I) * LZZ0T_BELOW(I))                 
-                 
+             DO I=1,N
+                 ! Compute final resistance between the ground below the canopy and the atmospheric forcing level
                  CTUGRV(I) = 1. / (RESA_VH(I) + ZRSURF(I))
-
                  Z0HGV(I) = ZZ0HGV(I)
-             enddo
+             ENDDO
 
          ELSE ! O2F or FOREST
 
@@ -861,13 +851,11 @@
 
       
      DO I=1,N
-
          IF (TSV(I,1) .LT. EPSILON_SVS) THEN ! If there is no snow, TSV == 0 and it creates issues
             TSV_CORR(I) = 273.15
          ELSE
             TSV_CORR(I) = TSV(I,1)
          ENDIF
-     
      ENDDO
 
      QSAT_SV(:) = QSATI( TSV_CORR(:), PS(:) )
@@ -878,15 +866,12 @@
 
              IF (WTG(I,indx_svs2_vh) .GE. EPSILON_SVS) THEN
 
-                ! Compute the below-canopy aerodynamic resistance for neutral atmospheric conditions following the
-                ! assumption of an exponential wind profile in the canopy (from HSUBCANO to VGH_HEIGHT(I)) 
-                ! and a logarithmic wind profile below the canopy (below HSUBCANO)
-                ! See Eq 62 in Essery et al (2024, GMD)
-                ZRSURF(I) = ( VGH_HEIGHT(I) *EXP(ZWCAN(I)))/(ZWCAN(I)*ZKH(I)) *&
-                        ( EXP(-ZWCAN(I)*HSUBCANO/VGH_HEIGHT(I)) -  &
-                          EXP(-ZWCAN(I)*(Z0MVH_EFF(I)+ZDISPLCAN(I))/VGH_HEIGHT(I))) &
-                       +   1./(KARMAN**2. * VMOD_BELOW(I))  * &
-                           LOG(HSUBCANO/Z0SNOW(I))*LOG(HSUBCANO/Z0HSN(I))
+                 ! Compute the below-canopy aerodynamic resistance with two components: 
+                 !   -  exponential wind profile in the canopy (from HSUBCANO to ZDISPLCAN) (no stability included)
+                 !   - logarithmic wind profile below the canopy (below HSUBCANO) (no stability included) 
+                ZRSURF(I) =  ZRLOWER_CAN(I) +                   &
+                             1./(KARMAN**2. * VMOD_BELOW(I))  * &
+                             LOG(HSUBCANO/Z0SNOW(I))*LOG(HSUBCANO/Z0HSN(I))
 
              ELSE !  This is placed to fill the values if there is no vegetation to run sl_sfclayer
                 ZRSURF(I) = 1.
@@ -896,23 +881,10 @@
 
          ENDDO
 
-         ! Calculate the atm stability below the canopy
-         ! Temperature and height of vegetation are used instead of atm temperature and zref
-         i = sl_sfclayer( TVGHS, ZQS_VH, VMOD_DISPL, VDIR, ZDISPLCAN, ZDISPLCAN, &
-              TSV_CORR, QSAT_SV, Z0SNOW, Z0HSN, LAT, FCOR, &
-              L_min=sl_Lmin_soil, &
-              stabm=STABM_BELOW, lzz0m=LZZ0M_BELOW, & 
-              stabt=STABT_BELOW, lzz0t=LZZ0T_BELOW )
-
          do i=1,N
             IF(WTG(I,indx_svs2_vh) .GE. EPSILON_SVS) THEN
-
-                 ! Apply atm stability to RSURF as in Mahat et al. (2013, WRR)
-                 ZRSURF(I) = ZRSURF(I) * (STABM_BELOW(I)*STABT_BELOW(I))/(LZZ0M_BELOW(I) * LZZ0T_BELOW(I))
-
-                 ! TODO: VV and NL, should the VEG_DEN impact the aero resistance for a sparse canopy
+                 ! Total resistance between the surface and the atmospheric forcing level 
                  RESA_SV(I) = RESA_VH(I) + ZRSURF(I)
-
             ELSE
                  ! Set to 0 in that case. If it's 0, aero resistance for snow is calculated in surface_aero_cond
                  RESA_SV(I) = 0. 

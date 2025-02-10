@@ -1510,18 +1510,19 @@ END SUBROUTINE TREAT_ICE_LAYER
 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
-SUBROUTINE SNOWCRO_TARTES(PSNOWDIAMOPT,PSNOWSPHERI,PSNOWRHO,PSNOWDZ,PSNOWG0,PSNOWY0,PSNOWW0,PSNOWB0, &
-                          PSNOWIMPUR, PALB,PSW_RAD,PZENITH,PANGL_ILLUM,PDIRCOSZW,KNLVLS_USE,      &
-                          PSNOWALB,PRADSINK,PRADXS,ODEBUG,HSNOWMETAMO,P_DIR_SW, P_SCA_SW, PSNOWALB_SP,&
-                          PSPEC_DIR, PSPEC_DIF,OATMORAD,PSNOWALB_FB)
+SUBROUTINE SNOWCRO_TARTES(PSNOWDIAMOPT, PSNOWSPHERI, PSNOWRHO, PSNOWDZ, PSNOWG0, PSNOWY0, PSNOWW0, PSNOWB0, &
+                          PSNOWIMPUR, PALB, PSW_RAD, PZENITH, PAZIM, PDIRCOSZW,  PSLOPEDIR, KNLVLS_USE,     &
+                          PSNOWALB, PRADSINK, PRADXS, ODEBUG, HSNOWMETAMO, P_DIR_SW, P_SCA_SW, PSNOWALB_SP, &
+                          PSPEC_DIR, PSPEC_DIF, OATMORAD, PSNOWALB_FB)
 
 ! Interface between Tartes and Crocus
 ! M. Lafaysse 26/08/2013
 !
-USE MODD_PREP_SNOW,   ONLY : NIMPUR
-USE MODD_SNOW_METAMO,  ONLY : XUEPSI
-USE MODD_CONST_TARTES,   ONLY : XSNOWIMP_DENSITY
-USE MODD_SURF_PAR, ONLY : XUNDEF
+USE MODD_PREP_SNOW,     ONLY : NIMPUR
+USE MODD_SNOW_METAMO,   ONLY : XUEPSI
+USE MODD_CONST_TARTES,  ONLY : XSNOWIMP_DENSITY
+USE MODD_SURF_PAR,      ONLY : XUNDEF
+USE MODD_CSTS,          ONLY : XPI
 !
 IMPLICIT NONE
 !
@@ -1539,8 +1540,11 @@ REAL, DIMENSION(:), INTENT(IN)     :: PALB ! soil/vegetation albedo (npoints)
 !
 REAL, DIMENSION(:), INTENT(IN)     :: PSW_RAD ! global broadband incident light (W/m^2) (npoints)
 REAL, DIMENSION(:,:), INTENT(IN)   :: P_DIR_SW, P_SCA_SW ! diffuse and direct spectral irradiance (npoints, jpnbands_atm)
-REAL, DIMENSION(:), INTENT(IN)     :: PZENITH ! zenithal solar angle (npoints)
-REAL, DIMENSION(:), INTENT(IN)     :: PANGL_ILLUM  ! effective illumination angle (npoints),angle between the sun and the normal to the ground(taking slope effects into account)
+REAL, DIMENSION(:), INTENT(IN)     :: PZENITH    ! zenithal solar angle (npoints)
+REAL, DIMENSION(:), INTENT(IN)     :: PAZIM      ! azimuthal angle      (radian from North, clockwise)
+REAL, DIMENSION(:), INTENT(IN)     :: PDIRCOSZW  ! Cosinus of the angle between the
+!                                                  normal to the surface and the vertical
+REAL, DIMENSION(:), INTENT(IN)     :: PSLOPEDIR ! Slope direction
 !
 INTEGER, DIMENSION(:), INTENT(IN)  :: KNLVLS_USE ! number of effective snow layers (npoints)
 !
@@ -1555,8 +1559,7 @@ REAL, DIMENSION(:,:), INTENT(OUT) :: PSPEC_DIR, PSPEC_DIF
 LOGICAL, INTENT(IN) :: ODEBUG ! Print for debugging
 LOGICAL, INTENT(IN) :: OATMORAD ! activate atmotartes scheme
 CHARACTER(3), INTENT(IN)          :: HSNOWMETAMO ! metamorphism scheme
-REAL, DIMENSION(:), INTENT(IN)     :: PDIRCOSZW ! Cosinus of the angle between the
-!                                                  normal to the surface and the vertical
+
 !packed variables
 REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2),NIMPUR) :: ZSNOWIMP_DENSITY_P !impurities density (kg/m^3) (npoints,nlayer,ntypes_impurities)
 REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2),NIMPUR) :: ZSNOWIMP_CONTENT_P !impurities content (g/g) (npoints,nlayer,ntypes_impurities)
@@ -1575,6 +1578,7 @@ REAL, DIMENSION(SIZE(PSNOWRHO,1)) :: ZALB_P ! soil/vegetation albedo (npoints)
 REAL, DIMENSION(SIZE(PSNOWRHO,1)) :: ZSW_RAD_P ! global broadband incident light (W/m^2) (npoints)
 REAL, DIMENSION(SIZE(PSNOWRHO,1),SIZE(P_DIR_SW,2)) :: ZP_DIR_SW,ZP_SCA_SW ! spectral incident light (direct and diffuse) (W/m^2) (npoints)
 REAL, DIMENSION(SIZE(PSNOWRHO,1)) :: ZZENITH_P ! zenithal solar angle (npoints)
+REAL, DIMENSION(SIZE(PSNOWRHO,1)) :: ZANGL_ILLUM ! for calculus of effective illumination
 REAL, DIMENSION(SIZE(PSNOWRHO,1)) :: ZANGLILLUM_P ! effective illumination angle (npoints),angle between the sun and the normal to the ground(taking slope effects into account)
 REAL, DIMENSION(SIZE(PSNOWRHO,1)) :: ZDIRCOSZW_P ! Cosinus of the angle between the
 !                                                  normal to the surface and the vertical
@@ -1623,6 +1627,16 @@ DO JJ = 1,INPOINTS
   END IF
 END DO
 !
+! Compute the effective illumination angle by BC from Tuzet calc.
+ZANGL_ILLUM(:) = PZENITH(:)
+!
+DO JJ=1,SIZE(PZENITH,1)
+  !
+  ZANGL_ILLUM(JJ) = ACOS( MIN(1.0_JPRB,MAX(-1.0_JPRB, COS(PZENITH(JJ))*COS(ACOS(MIN(1.0_JPRB,MAX(-1.0_JPRB,PDIRCOSZW(JJ))))) + &
+  SIN(PZENITH(JJ))*SIN(ACOS(MIN(1.0_JPRB,MAX(-1.0_JPRB,PDIRCOSZW(JJ))))*COS(PAZIM(JJ)-(PSLOPEDIR(JJ)*XPI/180.0_JPRB))) )))
+  !
+ENDDO
+!
 IF ( IPOINTDAY>=1 ) THEN
   !
   ! Pack 1D variables
@@ -1630,12 +1644,12 @@ IF ( IPOINTDAY>=1 ) THEN
     !
     JJ = IDAYMASK(JJ_P)
     !
-    ZALB_P      (JJ_P) = PALB      (JJ)
-    ZSW_RAD_P   (JJ_P) = PSW_RAD   (JJ)
-    ZZENITH_P   (JJ_P) = PZENITH   (JJ)
-    ZANGLILLUM_P (JJ_P) = PANGL_ILLUM(JJ)
-    INLVLS_USE_P(JJ_P) = KNLVLS_USE(JJ)
-    ZDIRCOSZW_P   (JJ_P) = PDIRCOSZW(JJ)
+    ZALB_P      (JJ_P) = PALB       (JJ)
+    ZSW_RAD_P   (JJ_P) = PSW_RAD    (JJ)
+    ZZENITH_P   (JJ_P) = PZENITH    (JJ)
+    ZANGLILLUM_P(JJ_P) = ZANGL_ILLUM(JJ)
+    INLVLS_USE_P(JJ_P) = KNLVLS_USE (JJ)
+    ZDIRCOSZW_P (JJ_P) = PDIRCOSZW  (JJ)
     !
   END DO
   !
@@ -1654,7 +1668,7 @@ IF ( IPOINTDAY>=1 ) THEN
       ZSNOWG0_P     (JJ_P,JL) = PSNOWG0     (JJ,JL)
       ZSNOWY0_P     (JJ_P,JL) = PSNOWY0     (JJ,JL)
       ZSNOWW0_P     (JJ_P,JL) = PSNOWW0     (JJ,JL)
-      ZSNOWB0_P     (JJ_P,JL) = PSNOWB0     (JJ,JL)      
+      ZSNOWB0_P     (JJ_P,JL) = PSNOWB0     (JJ,JL)
       ZSNOWDZ_P     (JJ_P,JL) = PSNOWDZ     (JJ,JL)
       !
     END DO

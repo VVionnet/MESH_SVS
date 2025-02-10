@@ -589,7 +589,7 @@
                               + RORAVGH(I) * HVSN_VH(I) * ZDQSATVGH(I)
 
 
-                     BVH(I) = PHM_CAN(I) / DT + &
+                     BVH(I) = PHM_CAN(I) / DT  &
                            +  6.*EMVH_SN(I)*SIGMA_F*STEFAN*(TVGHS(I)**3) &
                            + RORAVGH(I)* HVSN_VH(I)*ZDQSATVGH(I)
 

@@ -55,6 +55,8 @@
 !     B. Decharme       01/2015 - Added optical snow grain size diameter
 !     B. Cluzet         08/2015 - deleted unused procedures SNOWCROHOLD_3,2,1D
 !                               - added lwc options (functions SNOWO04HOLD_0D, SNOWS02HOLD_0D) 
+!     A. Alias          03/2019 - Bugfix in SNOW3LGRID_2D and SNOW3LGRID_1D (linked with optional PSNOWDZ_OLD)
+!     A. Haddjeri       03/2021 - added CHECK_DENDRITIC GETDENDRICITY GETGRAINSIZE function
 !----------------------------------------------------------------------------
 !
 !*       0.    DECLARATIONS
@@ -478,7 +480,7 @@ PWHOLDMAX = ZHOLDMAXR*PSNOWDZ*ZSNOWRHO/XRHOLW
 IF (LHOOK) CALL DR_HOOK('MODE_SNOW3L:SNOW3LHOLD_0D',1,ZHOOK_HANDLE)
 !
 END FUNCTION SNOW3LHOLD_0D
-
+!
 !####################################################################
       FUNCTION SNOWCROHOLD_3D(PSNOWRHO,PSNOWLIQ,PSNOWDZ, PPERCENTAGEPORE) RESULT(PWHOLDMAX)
 !
@@ -1263,7 +1265,7 @@ ENDDO
 !
 IF (PRESENT(PSNOWDZ_OLD)) THEN
   DO JI=1,INI
-    IF (.NOT.GREGRID(JI)) PSNOWDZ(JI,:)=PSNOWDZ_OLD(JI,:) 
+    IF((PSNOW(JI)/=XUNDEF).AND.(.NOT.GREGRID(JI))) PSNOWDZ(JI,:)=PSNOWDZ_OLD(JI,:)
   ENDDO
 ENDIF
 !
@@ -1558,7 +1560,7 @@ ENDIF
 IF (PSNOW==XUNDEF) PSNOWDZ(:) = XUNDEF
 !
 IF (PRESENT(PSNOWDZ_OLD)) THEN
-  IF (.NOT.GREGRID) PSNOWDZ(:) = PSNOWDZ_OLD(:)
+  IF ((PSNOW==XUNDEF).AND.(.NOT.GREGRID)) PSNOWDZ(:) = PSNOWDZ_OLD(:)
 ENDIF
 !
 IF (LHOOK) CALL DR_HOOK('MODE_SNOW3L:SNOW3LGRID_1D',1,ZHOOK_HANDLE)
@@ -1766,7 +1768,6 @@ REAL :: ZPROPOR, ZMASDZ_OLD, ZDIAM
 REAL :: ZSNOWHEAN, ZMASTOTN, ZSPHERMOYN, ZALBMOYN, ZHISTMOYN
 REAL :: ZAGEMOYN
 REAL :: ZPREVIOUS_MASS
-LOGICAL:: GDENDRITIC
 !
 REAL, DIMENSION(NIMPUR) :: ZIMPURMOYN
 !
@@ -2649,7 +2650,8 @@ END SUBROUTINE SNOW3LALB
 !####################################################################
 !####################################################################
 SUBROUTINE SNOW3LFALL(PTSTEP,PSR,PTA,PVMOD,PSNOW,PSNOWRHO,PSNOWDZ,        &
-                      PSNOWHEAT,PSNOWHMASS,PSNOWAGE,PPERMSNOWFRAC)  
+                      PSNOWHEAT,PSNOWHMASS,PSNOWHMASS1, PSNOWAGE,       &
+                      PPERMSNOWFRAC, PUNLOAD, PSNOWMASSNEW              )
 !
 !!    PURPOSE
 !!    -------
@@ -2672,13 +2674,14 @@ IMPLICIT NONE
 !
 REAL, INTENT(IN)                    :: PTSTEP
 !
-REAL, DIMENSION(:), INTENT(IN)      :: PSR, PTA, PVMOD, PPERMSNOWFRAC
+REAL, DIMENSION(:), INTENT(IN)      :: PSR, PTA, PVMOD, PPERMSNOWFRAC, &
+                                       PUNLOAD
 !
 REAL, DIMENSION(:), INTENT(INOUT)   :: PSNOW
 !
 REAL, DIMENSION(:,:), INTENT(INOUT) :: PSNOWRHO, PSNOWDZ, PSNOWHEAT, PSNOWAGE
 !
-REAL, DIMENSION(:), INTENT(OUT)     :: PSNOWHMASS
+REAL, DIMENSION(:), INTENT(OUT)     :: PSNOWHMASS, PSNOWMASSNEW, PSNOWHMASS1
 !
 !
 !*      0.2    declarations of local variables
@@ -2692,6 +2695,17 @@ REAL, DIMENSION(SIZE(PTA))          :: ZSNOWFALL, ZRHOSNEW,        &
                                        ZSNOW, ZSNOWTEMP,           &
                                        ZSNOWFALL_DELTA, ZSCAP,     &
                                        ZAGENEW
+!                               
+! Local parameters:
+!
+REAL, PARAMETER                     :: ZSNOWRHO_UNLOAD = 200. ! (kg m-3)
+                                       ! This is the assumed density of snow
+                                       ! unloading from vegetation. It is a very
+                                       ! simple approximation to avoid the density of 
+                                       ! unloaded snow being computed as fresh snowfall.  
+                                       ! Eventually a prognostic density or other 
+                                       ! improved variable/parameterization/prognostic variable
+                                       ! should likely be used.
 !                               
 REAL(KIND=JPRB) :: ZHOOK_HANDLE
 !
@@ -2710,8 +2724,10 @@ ZAGENEW (:)     = 0.0
 ZSNOWFALL(:)    = 0.0
 ZSCAP(:)        = 0.0
 ZSNOW(:)        = PSNOW(:)
+PSNOWMASSNEW(:) = PSR(:) + PUNLOAD(:)
 !
 PSNOWHMASS(:)   = 0.0
+PSNOWHMASS1(:)   = 0.0
 !
 ! 1. Incorporate snowfall into snowpack:
 ! --------------------------------------
@@ -2728,32 +2744,33 @@ PSNOWHMASS(:)   = 0.0
 ZSNOWTEMP(:)  = XTT
 ZSCAP    (:)  = SNOW3LSCAP(PSNOWRHO(:,1))
 !
-WHERE (PSR(:) > 0.0 .AND. PSNOWDZ(:,1)>0.)
+WHERE (PSNOWMASSNEW(:) > 0.0 .AND. PSNOWDZ(:,1)>0.)
   ZSNOWTEMP(:)  = XTT + (PSNOWHEAT(:,1) +                              &
                     XLMTT*PSNOWRHO(:,1)*PSNOWDZ(:,1))/                   &
                     (ZSCAP(:)*MAX(XSNOWDMIN/INLVLS,PSNOWDZ(:,1)))  
   ZSNOWTEMP(:)  = MIN(XTT, ZSNOWTEMP(:))
 END WHERE
 !
-WHERE (PSR(:) > 0.0)
+WHERE (PSNOWMASSNEW(:) > 0.0)
 !
-  PSNOWHMASS(:) = PSR(:)*(XCI*(ZSNOWTEMP(:)-XTT)-XLMTT)*PTSTEP
+  PSNOWHMASS(:) = PSNOWMASSNEW(:)*(XCI*(ZSNOWTEMP(:)-XTT)-XLMTT)*PTSTEP
 !
 ! Snowfall density: Following CROCUS (Pahaut 1976)
 !
-   ZRHOSNEW(:)   = MAX(XRHOSMIN_ES, XSNOWFALL_A_SN + XSNOWFALL_B_SN*(PTA(:)-XTT)+         &
-                     XSNOWFALL_C_SN*SQRT(PVMOD(:)))  
+  ZRHOSNEW(:) = MAX(XRHOSMIN_ES, XSNOWFALL_A_SN + XSNOWFALL_B_SN*(PTA(:)-XTT)+XSNOWFALL_C_SN*SQRT(PVMOD(:)))*&
+                (PSR(:)/PSNOWMASSNEW(:)) + ZSNOWRHO_UNLOAD*(PUNLOAD(:)/PSNOWMASSNEW(:))
 !
 !
 ! Fresh snowfall changes the snowpack age,
 ! decreasing in uppermost snow layer (mass weighted average):
 !
-   PSNOWAGE(:,1) = (PSNOWAGE(:,1)*PSNOWDZ(:,1)*PSNOWRHO(:,1)+ZAGENEW(:)*PSR(:)*PTSTEP) / &
-                   (PSNOWDZ(:,1)*PSNOWRHO(:,1)+PSR(:)*PTSTEP)
+   PSNOWAGE(:,1) = (PSNOWAGE(:,1)*PSNOWDZ(:,1)*PSNOWRHO(:,1) +         &
+                    ZAGENEW(:)*PSNOWMASSNEW(:)*PTSTEP) /               &
+                   (PSNOWDZ(:,1)*PSNOWRHO(:,1)+PSNOWMASSNEW(:)*PTSTEP)
 !
 ! Augment total pack depth:
 !
-   ZSNOWFALL(:)  = PSR(:)*PTSTEP/ZRHOSNEW(:)    ! snowfall thickness (m)
+   ZSNOWFALL(:)  = PSNOWMASSNEW(:)*PTSTEP/ZRHOSNEW(:)    ! snowfall thickness (m)
 !
    PSNOW(:)      = PSNOW(:) + ZSNOWFALL(:)
 !
@@ -2784,7 +2801,7 @@ END WHERE
 ! for this case)
 !
 ZSNOWFALL_DELTA(:)    = 0.0
-WHERE(ZSNOW(:) == 0.0 .AND. PSR(:) > 0.0)
+WHERE(ZSNOW(:) == 0.0 .AND. PSNOWMASSNEW(:) > 0.0)
    ZSNOWFALL_DELTA(:) = 1.0
 END WHERE
 !
@@ -2805,6 +2822,9 @@ DO JJ=1,INLVLS
 !
    ENDDO
 ENDDO
+!
+PSNOWHMASS1(:) = (1.0-ZSNOWFALL_DELTA(:)) * PSNOWHMASS(:)  &
+               +      ZSNOWFALL_DELTA(:)  * PSNOWHMASS(:)/INLVLS 
 !
 IF (LHOOK) CALL DR_HOOK('MODE_SNOW3L:SNOW3LFALL',1,ZHOOK_HANDLE)
 !
@@ -3157,8 +3177,6 @@ IF (LHOOK) CALL DR_HOOK('MODE_SNOW3L:SNOW3LTRANSF',1,ZHOOK_HANDLE)
 END SUBROUTINE SNOW3LTRANSF
 !####################################################################
 !####################################################################
-!####################################################################
-!####################################################################
 SUBROUTINE SNOWCROTHRM(PSNOWRHO,PSCOND,PSNOWTEMP,PPS,PSNOWLIQ, &
                        HSNOWCOND)
 !
@@ -3390,9 +3408,6 @@ PSNOWGRAN2F = ZGRAN2
 END SUBROUTINE CONVERTFROMDIAMOPT
 !####################################################################
 !####################################################################
-
-!####################################################################
-!####################################################################
 SUBROUTINE CONVERT2DIAMOPTB21(PSNOWGRAN1I,PSNOWGRAN2I,PDIAMOPT,PSPHERI)
 !
 !!    PURPOSE
@@ -3483,7 +3498,6 @@ ENDIF
 END SUBROUTINE CONVERTFROMDIAMOPTB21
 !####################################################################
 !####################################################################
-
 SUBROUTINE CHECK_DENDRITIC(PDIAMOPT,PSPHERI,PDENDRITIC)
 !
 !!    PURPOSE
@@ -3548,7 +3562,7 @@ SUBROUTINE GETDENDRICITY(PDIAMOPT,PSPHERI,PDENDRITIC)
     LOGICAL             ::CHECKDENDRI
     CHECKDENDRI=.FALSE.
 CALL CHECK_DENDRITIC(PDIAMOPT,PSPHERI,CHECKDENDRI)
-    write(*,*)'CHECKDENDRI',CHECKDENDRI
+    !write(*,*)'CHECKDENDRI',CHECKDENDRI
     IF (CHECKDENDRI)THEN
         PDENDRITIC=((PDIAMOPT/XVDIAM6)-4+PSPHERI)/(PSPHERI-3)
         ELSE
@@ -3558,7 +3572,6 @@ CALL CHECK_DENDRITIC(PDIAMOPT,PSPHERI,CHECKDENDRI)
     END IF
 
 END SUBROUTINE GETDENDRICITY
-
 !####################################################################
 !####################################################################
 SUBROUTINE GETGRAINSIZE(PDIAMOPT,PSPHERI,PGRAINSIZE,HSNOWMETAMO)
@@ -3622,7 +3635,8 @@ SUBROUTINE GETGRAINSIZE(PDIAMOPT,PSPHERI,PGRAINSIZE,HSNOWMETAMO)
     END IF
 
 END SUBROUTINE GETGRAINSIZE
-
+!####################################################################
+!####################################################################
 SUBROUTINE GETGRAINSIZE_B21(PDIAMOPT,PSPHERI,PGRAINSIZE)
     !
     !!    PURPOSE
@@ -3665,6 +3679,5 @@ SUBROUTINE GETGRAINSIZE_B21(PDIAMOPT,PSPHERI,PGRAINSIZE)
       PGRAINSIZE=(2*PDIAMOPT+XVDIAM1*(PSPHERI-1))/(PSPHERI+1)
     ENDIF
   END SUBROUTINE GETGRAINSIZE_B21
- 
 
 END MODULE MODE_SNOW3L

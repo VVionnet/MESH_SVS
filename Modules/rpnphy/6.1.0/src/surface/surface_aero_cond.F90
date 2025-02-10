@@ -3,8 +3,8 @@
 !SFX_LIC version 1. See LICENSE, CeCILL-C_V1-en.txt and CeCILL-C_V1-fr.txt  
 !SFX_LIC for details. version 1.
 !   ######################################################################
-    SUBROUTINE SURFACE_AERO_COND(PRI, PZREF, PUREF, PVMOD, PZ0,&
-                                     PZ0H, PRESA_SV, PAC, PRA, PCH    ,HSNOWRES       )
+    SUBROUTINE SURFACE_AERO_COND(PRI, PZREF, PUREF, PVMOD, PZ0,    &
+                                     PZ0H, PRESA_SV, PAC, PRA, PCH, HSNOWRES )
 !   ######################################################################
 !
 !!****  *SURFACE_AERO_COND*  
@@ -81,121 +81,135 @@ REAL, DIMENSION(:), INTENT(IN)    :: PUREF    ! reference height of the wind
                                               ! NOT when coupled to a model (MesoNH)
 REAL, DIMENSION(:), INTENT(IN)    :: PZ0      ! roughness length for momentum
 REAL, DIMENSION(:), INTENT(IN)    :: PZ0H     ! roughness length for heat
-REAL, DIMENSION(:)                :: PRESA_SV   ! aerodynamic surface resistance if Ta and HR above canopy, = 0 if in the open
+REAL, DIMENSION(:), INTENT(IN)    :: PRESA_SV ! aerodynamic surface resistance from external scheme (0 if not used) 
+
 !
 REAL, DIMENSION(:), INTENT(OUT)   :: PAC      ! aerodynamical conductance
 REAL, DIMENSION(:), INTENT(OUT)   :: PRA      ! aerodynamical resistance
 REAL, DIMENSION(:), INTENT(OUT)   :: PCH      ! drag coefficient for heat
-CHARACTER(LEN=3), INTENT(IN)  ::HSNOWRES !surface exchange coefficient option 
+!
+CHARACTER(LEN=3), INTENT(IN), OPTIONAL :: HSNOWRES !surface exchange coefficient option 
+!
 !
 !*      0.2    declarations of local variables
 !
 !
-REAL, DIMENSION(SIZE(PRI)) :: ZZ0, ZZ0H, ZMU,          &
-                               ZFH, ZCHSTAR, ZPH, ZCDN, &
-                               ZSTA, ZDI, ZWORK1, ZWORK2, ZWORK3 
-REAL, DIMENSION(SIZE(PRI)) :: ZVMOD, ZMARTIN,ZCDN_M98
+REAL, DIMENSION(SIZE(PRI)) :: ZZ0, ZZ0H, ZMU, ZFH, ZCHSTAR, &
+                              ZPH, ZCDN, ZSTA, ZDI, ZWORK1, &
+                              ZWORK2, ZWORK3, ZVMOD,        &
+                              ZMARTIN, ZCDN_M98
 !
-INTEGER                    :: JJ
+CHARACTER(LEN=3) :: YSNOWRES
+!
+INTEGER         :: INI, JI
 REAL(KIND=JPRB) :: ZHOOK_HANDLE
 !
+!-------------------------------------------------------------------------------
 ! Functions:
-REAL :: X, CHSTAR, PH
-CHSTAR(X) = 3.2165 + 4.3431*X + 0.5360*X*X - 0.0781*X*X*X
-PH    (X) = 0.5802 - 0.1571*X + 0.0327*X*X - 0.0026*X*X*X
+!
+REAL :: ZX, CHSTAR, PH
+!
+CHSTAR(ZX) = 3.2165 + 4.3431*ZX + 0.5360*ZX*ZX - 0.0781*ZX*ZX*ZX
+PH    (ZX) = 0.5802 - 0.1571*ZX + 0.0327*ZX*ZX - 0.0026*ZX*ZX*ZX
 !
 !-------------------------------------------------------------------------------
+IF (LHOOK) CALL DR_HOOK('SURFACE_AERO_COND',0,ZHOOK_HANDLE)
+!-------------------------------------------------------------------------------
 !
-!*       4.     Surface aerodynamic resistance for heat transfers
+!*       1.     Surface aerodynamic resistance for heat transfers
 !               -------------------------------------------------
 !
-IF (LHOOK) CALL DR_HOOK('SURFACE_AERO_COND',0,ZHOOK_HANDLE)
+INI = SIZE(PRI)
+!
+IF(PRESENT(HSNOWRES))THEN
+   YSNOWRES=HSNOWRES
+ELSE
+   YSNOWRES='DEF'
+ENDIF
+!
 ZVMOD(:) = WIND_THRESHOLD(PVMOD(:),PUREF(:))
 !
-DO JJ=1,SIZE(PRI)
-  ZZ0(JJ)  = MIN(PZ0(JJ),PUREF(JJ)*0.5)
-  ZZ0H(JJ) = MIN(ZZ0(JJ),PZ0H(JJ))
-  ZZ0H(JJ) = MIN(ZZ0H(JJ),PZREF(JJ)*0.5)
+DO JI=1,INI
 !
-  ZWORK1(JJ)=LOG( PUREF(JJ)/ZZ0(JJ) )
-  ZWORK2(JJ)=PZREF(JJ)/ZZ0H(JJ)
-  ZWORK3(JJ)=ZVMOD(JJ)*ZVMOD(JJ)
-  ZMU(JJ) = MAX( LOG( ZZ0(JJ)/ZZ0H(JJ) ), 0.0 )
-  ZFH(JJ) = ZWORK1(JJ) / LOG(ZWORK2(JJ))
+  ZZ0 (JI) = MIN(PZ0(JI),PUREF(JI)*0.5)
+  ZZ0H(JI) = MIN(ZZ0(JI),PZ0H(JI))
+  ZZ0H(JI) = MIN(ZZ0H(JI),PZREF(JI)*0.5)
 !
-  ZCHSTAR(JJ) = CHSTAR(ZMU(JJ))
-  ZPH(JJ)     = PH(ZMU(JJ))
+  ZWORK1(JI)=LOG( PUREF(JI)/ZZ0(JI) )
+  ZWORK2(JI)=PZREF(JI)/ZZ0H(JI)
+  ZWORK3(JI)=ZVMOD(JI)*ZVMOD(JI)
+  ZMU   (JI) = MAX(LOG(ZZ0(JI)/ZZ0H(JI)),0.0)
+  ZFH   (JI) = ZWORK1(JI) / LOG(ZWORK2(JI))
 !
-! 
-  ZCDN(JJ) = (XKARMAN/ZWORK1(JJ))**2.
+  ZCHSTAR(JI) = CHSTAR(ZMU(JI))
+  ZPH    (JI) = PH(ZMU(JI))
 !
-!
-  ZSTA(JJ) = PRI(JJ)*ZWORK3(JJ)
-  ZCDN_M98(JJ)= XKARMAN*XKARMAN/(LOG(PUREF(JJ)/ZZ0(JJ))*LOG(PZREF(JJ)/ZZ0(JJ)))
-   
-   
-  IF(HSNOWRES=='RIL' .OR. HSNOWRES=='RI1' .OR. HSNOWRES=='RI2' .OR. HSNOWRES=='DEF') THEN
-!
-      IF ( PRI(JJ) < 0.0 ) THEN
-        ZDI(JJ) = 1. / ( ZVMOD(JJ)                                  &
-                       +ZCHSTAR(JJ)*ZCDN(JJ)*15.                         &
-                                    *ZWORK2(JJ)**ZPH(JJ)  &
-                                    *ZFH(JJ) * SQRT(-ZSTA(JJ))           &
-                      ) 
-        PAC(JJ) = ZCDN(JJ) * (  ZVMOD(JJ)-15.* ZSTA(JJ)*ZDI(JJ)  )  *  ZFH(JJ) ! 1/ra = CDN * U * f_Ri
-
-
-      ELSE
-        ZDI(JJ) = SQRT(ZWORK3(JJ) + 5. * ZSTA(JJ) )
-        PAC(JJ) = ZCDN(JJ) *ZVMOD(JJ)/(1.+15.*ZSTA(JJ)*ZDI(JJ)  &  ! 1/ra = CDN * U * f_Ri
-                 / ZWORK3(JJ) /ZVMOD(JJ) )*ZFH(JJ)    
-
-      ENDIF
-
-      IF (PRESA_SV(JJ) == 0) THEN  ! In the open or O2F or FOR
-        PRA(JJ) = 1. / PAC(JJ) 
-      ELSE ! In the forest, resistance calculated in drag_svs2
-        PRA(JJ) = PRESA_SV(JJ)
-        PAC(JJ) = 1. / PRA(JJ) 
-      ENDIF
-
-      PCH(JJ) = 1. / (PRA(JJ) * ZVMOD(JJ))
-
-  ELSE IF (HSNOWRES=='M98')THEN
-  ! Martin and Lejeune 1998 ; Cluzet et al 2016
-    IF (PRI(JJ)<0.0) THEN
-        IF (ZCDN_M98(JJ)==0.) THEN
-            ZMARTIN(JJ)=1.
-        ELSE
-            ZMARTIN(JJ)= 1.  + (7./  ( 0.83*(ZCDN_M98(JJ))**(-0.62) )  ) &
-            *LOG(1.-0.83*(ZCDN_M98(JJ))**(-0.62)   *  PRI(JJ))
-        ENDIF
-           
-    ELSE
-        IF (PRI(JJ)<0.2) THEN
-            ZMARTIN(JJ) = MAX(0.75,( 1. - 5.*PRI(JJ))*(1. - 5. *PRI(JJ)))!
-            !Nota B. Cluzet : le min servait à empêcher le CH de remonter pour 
-            !des Ri >0.4 c'est une erreur car cela seuille le Ch dès Ri =0 au lieu de le faire dès Ri=0.026
-        ELSE
-            ZMARTIN(JJ)=MIN(MAX(0.75,( 1. - 5.*PRI(JJ))*(1. - 5. *PRI(JJ))),0.75)
-        ENDIF
-    ENDIF
-    
-
-
-    IF (PRESA_SV(JJ) == 0) THEN ! In the open or O2F or FOR
-      PCH(JJ) = ZMARTIN(JJ) * ZCDN_M98(JJ)
-      PRA(JJ)=1./(PCH(JJ)*ZVMOD(JJ))  ! Nota B. Cluzet : checked in noilhan and mahfouf seems ok
-    ELSE ! In the forest, resistance calculated in drag_svs2
-      PRA(JJ) = PRESA_SV(JJ)
-      PCH(JJ)=1./(PRA(JJ)*ZVMOD(JJ))  ! Nota B. Cluzet : checked in noilhan and mahfouf seems ok
-    ENDIF
-
-    PAC(JJ)=1./(PRA(JJ))
-
-  ENDIF
-
 ENDDO
+!
+IF(YSNOWRES=='RIL' .OR. YSNOWRES=='DEF' .OR. YSNOWRES=='RI1' .OR. YSNOWRES=='RI2') THEN
+!
+  DO JI=1,INI
+!
+     ZCDN(JI) = (XKARMAN/ZWORK1(JI))**2
+     ZSTA(JI) = PRI(JI)*ZWORK3(JI)
+!
+     IF (PRI(JI)< 0.0) THEN
+        ZDI(JI) = 1.0 / ( ZVMOD(JI)+ZCHSTAR(JI)*ZCDN(JI)*15.*ZWORK2(JI)**ZPH(JI)*ZFH(JI)*SQRT(-ZSTA(JI)) ) 
+        PAC(JI) = ZCDN(JI)*(ZVMOD(JI)-15.0*ZSTA(JI)*ZDI(JI))*  ZFH(JI)
+     ELSE
+        ZDI(JI) = SQRT(ZWORK3(JI) + 5.0* ZSTA(JI))
+        PAC(JI) = ZCDN(JI)*ZVMOD(JI)/(1.0+15.0*ZSTA(JI)*ZDI(JI)/ZWORK3(JI)/ZVMOD(JI))*ZFH(JI)    
+     ENDIF
+!
+     IF (PRESA_SV(JI) == 0) THEN  ! Use formulation from SURFEX
+        PRA(JI) = 1. / PAC(JI) 
+     ELSE ! Use resistance calculated outside SURFEX
+        PRA(JI) = PRESA_SV(JI)
+        PAC(JI) = 1. / PRA(JI) 
+     ENDIF
+     PCH(JI) = 1. / (PRA(JI) * ZVMOD(JI))
+!
+  ENDDO
+!
+ELSEIF (YSNOWRES=='M98')THEN
+!
+!   Martin and Lejeune 1998 ; Cluzet et al 2016
+!
+  DO JI=1,INI
+!
+     ZCDN_M98(JI)= XKARMAN*XKARMAN/(LOG(PUREF(JI)/ZZ0(JI))*LOG(PZREF(JI)/ZZ0(JI)))
+!
+     IF (PRI(JI)<0.0) THEN
+        IF (ZCDN_M98(JI)==0.) THEN
+           ZMARTIN(JI) = 1.0
+        ELSE
+           ZMARTIN(JI) = 1. + (7./  ( 0.83*(ZCDN_M98(JI))**(-0.62) )  ) &
+                       * LOG(1.-0.83*(ZCDN_M98(JI))**(-0.62)*PRI(JI))
+        ENDIF          
+     ELSE
+        IF (PRI(JI)<0.2) THEN
+           ZMARTIN(JI) = MAX(0.75,( 1. - 5.*PRI(JI))**2)!
+           !Nota B. Cluzet : le min servait à empêcher le CH de remonter pour 
+           !des Ri >0.4 c'est une erreur car cela seuille le Ch dès Ri =0 au lieu de le faire dès Ri=0.026
+        ELSE
+           ZMARTIN(JI) = 0.75
+        ENDIF
+     ENDIF
+!    
+    IF (PRESA_SV(JI) == 0) THEN ! Use formulation from SURFEX
+      PCH(JI) = ZMARTIN(JI) * ZCDN_M98(JI)
+      PRA(JI)=1./(PCH(JI)*ZVMOD(JI))  ! Nota B. Cluzet : checked in noilhan and mahfouf seems ok
+    ELSE ! In the forest, resistance calculated in drag_svs2
+      PRA(JI) = PRESA_SV(JI)
+      PCH(JI)=1./(PRA(JI)*ZVMOD(JI))  ! Nota B. Cluzet : checked in noilhan and mahfouf seems ok
+    ENDIF
+
+    PAC(JI) = 1./(PRA(JI))
+!
+  ENDDO
+!
+ENDIF
+!
 IF (LHOOK) CALL DR_HOOK('SURFACE_AERO_COND',1,ZHOOK_HANDLE)
 !
 !-------------------------------------------------------------------------------

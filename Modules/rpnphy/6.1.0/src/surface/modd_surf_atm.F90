@@ -1,6 +1,6 @@
 !SFX_LIC Copyright 1994-2014 CNRS, Meteo-France and Universite Paul Sabatier
 !SFX_LIC This is part of the SURFEX software governed by the CeCILL-C licence
-!SFX_LIC version 1. See LICENSE, CeCILL-C_V1-en.txt and CeCILL-C_V1-fr.txt  
+!SFX_LIC version 1. See LICENSE, CeCILL-C_V1-en.txt and CeCILL-C_V1-fr.txt
 !SFX_LIC for details. version 1.
 !     ####################
       MODULE MODD_SURF_ATM
@@ -38,6 +38,7 @@
 !!                             Delete LRW_PRECIP, LSAVE_PRECIP
 !!                             Vertical shift for LW and Precip
 !!      R. Séférian    03/2014 Adding key for decouple CO2 for photosynthesis (XCO2UNCPL) 
+!!                             Adding key to add fossil fuel to natural emission
 !
 IMPLICIT NONE
 !
@@ -58,6 +59,7 @@ LOGICAL    :: LVSHIFT_PRCP ! vertical shift for Precip
 LOGICAL    :: LVZIUSTAR0_ARP   ! activate aladin formulation for zoh over sea
 LOGICAL    :: LRRGUST_ARP      ! activate aladin formulation for CD CH, CDN, correction due to moist gustiness
 LOGICAL    :: LCPL_ARP         ! activate aladin formulation for Cp and L
+LOGICAL    :: LARP_PN          ! Activate ARPEGE PN values for Cv and TAU_ICE
 LOGICAL    :: LQVNPLUS         ! An option for the resolution of the surface temperature equation
 !
 LOGICAL    :: LCPL_GCM         ! Flag used to Read/Write some field from/into the restart file for coupling with ARPEGE/ALADIN
@@ -83,6 +85,7 @@ REAL       :: XRRGAMMA
 REAL       :: XUTILGUST
 !
 REAL       :: XCO2UNCPL ! uncoupled CO2 values (ppmv)
+LOGICAL    :: LCO2FOS   ! add fossil fuel to natural emission
 !
 !-----------------------------------------------------------------------------------------------------
 !

@@ -28,10 +28,14 @@ MODULE MODD_SURF_PAR
 !!    -------------
 !!      Original       02/2004
 !!      J.Escobar     06/2013  for REAL4/8 add EPSILON management
+!!      J.Escobar     06/2017  for REAL4 put greater value for XUNDEF=1.e+9  <-> elsif problem with X/YHAT value == XUNDEF
 !
 !*       0.   DECLARATIONS
 !             ------------
 !
+#ifdef SFX_MNH
+USE MODD_PRECISION, ONLY: MNHREAL
+#endif
 !
 IMPLICIT NONE
 !
@@ -42,16 +46,27 @@ INTEGER :: NBUGFIX   ! bugfix number of this version
 #ifndef SFX_MNH
 REAL,    PARAMETER :: XUNDEF = 1.E+20
 #else 
-#ifdef MNH_MPI_DOUBLE_PRECISION
-REAL,    PARAMETER :: XUNDEF = 1.E+20! HUGE(XUNDEF) ! Z'7FFFFFFFFFFFFFFF' !  undefined value
+#if (MNH_REAL == 8)
+REAL,    PARAMETER :: XUNDEF = 1.E+20_MNHREAL ! HUGE(XUNDEF) ! Z'7FFFFFFFFFFFFFFF' !  undefined value
+#elif (MNH_REAL == 4)
+REAL,    PARAMETER :: XUNDEF = 1.E+9_MNHREAL  ! HUGE(XUNDEF) ! Z'7FBFFFFF' ! undefined value
 #else
-REAL,    PARAMETER :: XUNDEF = 1.E+6 ! HUGE(XUNDEF) ! Z'7FBFFFFF' ! undefined value
+#error "Invalid MNH_REAL"
 #endif
 #endif
 INTEGER, PARAMETER :: NUNDEF = 1E+9   !  HUGE(NUNDEF) !  undefined value
 REAL,    PARAMETER :: XSURF_EPSILON = EPSILON(XSURF_EPSILON)  ! minimum 
 REAL,    PARAMETER :: XSURF_HUGE    = HUGE(XSURF_HUGE) 
 REAL,    PARAMETER :: XSURF_TINY    = TINY(XSURF_TINY) 
+#ifdef SFX_MNH
+INTEGER, PARAMETER :: LEN_HREC = MNH_LEN_HREC ! Length of record variable written in output files. 
+                                    ! !!!!!!!!!!!!!!!!!!!   WARNING. !!!!!!!!!!!!!!!!!!!!!!!!!!!
+                                    ! The use of 16 is forbidden for operational use. 
+                                    ! Developpers must restrict length of I/O
+                                    ! variable names to 12 as much as possible.
+#else
+INTEGER, PARAMETER :: LEN_HREC = 12
+#endif
 !-----------------------------------------------------------------------------------------------------
 !
 END MODULE MODD_SURF_PAR

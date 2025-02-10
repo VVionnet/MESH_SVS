@@ -16,7 +16,7 @@
 
       SUBROUTINE SNOW_INTERCEPTION_SVS2 (DT, TVEG, T, HU, PS, WIND_TOP, ISWR,  RHOA,    &
                      RR, SR, SNCMA, WRMAX_VH, SKYVIEW, ESUBSNC,SUBSNC_CUM, LAIVH, WTG, HM_CAN,   &
-                     VGH_DENS, SCAP, WR_VH, RR_VEG, SR_VEG,  FCANS, N)
+                     VGH_DENS, SCAP, WR_VH, RR_VEG, SR_VEG,UNLOAD_RATE, FCANS, N)
 
 
       use tdpack
@@ -32,7 +32,7 @@
       INTEGER N
 
 
-      REAL SNCMA(N), RR(N), SR(N),  RR_VEG(N), SR_VEG(N), ISWR(N)
+      REAL SNCMA(N), RR(N), SR(N),  RR_VEG(N), SR_VEG(N), UNLOAD_RATE(N), ISWR(N)
       REAL PS(N), RHOA(N), HU(N), WTG(N, svs2_tilesp1), SKYVIEW(N)
       REAL LAIVH(N), TVEG(N), WIND_TOP(N),VGH_DENS(N), T(N)
       REAL ESUBSNC(N), SUBSNC_CUM(N), SCAP(N), FCANS(N), HM_CAN(N)
@@ -82,7 +82,8 @@
 !             - Output
 !
 ! RR_VEG       liquid precipitation rate below high-vegetation [kg/m2/s]
-! SR_VEG       solid  precipitation rate below high-vegetation [kg/m2/s]
+! SR_VEG       solid  precipitation rate below high-vegetation from throufall [kg/m2/s]
+! UNLOAD_RATE  rate of solid unloading below high-vegetation [kg/m2/s]       
 ! FCANS        Canopy layer snowcover fractions from FSM2
 
       INTEGER I
@@ -92,6 +93,7 @@
 
       REAL, DIMENSION(N) :: DRIP_CPY ! Mass of liquid water dripping below the canopy (kg/m^2)
       REAL, DIMENSION(N) :: NET_SNOW ! Snow mass sent to the snowpack below the canopy  (kg/m^2)
+      REAL, DIMENSION(N) :: UNLOAD_MASS ! Solid mass unloading below the canopy  (kg/m^2)
       REAL, DIMENSION(N) :: PQSAT ! Specific humidity at saturation [kg kg-1]
       REAL, DIMENSION(N) :: PPSAT ! Vapor presure at saturation [Pa]
       REAL, DIMENSION(N) :: HM_CAN_INI !  Heat mass of the canopy at the beginning of the subroutine
@@ -121,8 +123,12 @@
       ! Initialize snowfall mass directly transfered through the canopy
       NET_SNOW(:) = 0.
 
+      ! Initialize mass of liquid water dripping below the canopy 
       DRIP_CPY(:) = 0.
 
+      ! Initialize solid mass unloading below the canopy
+      UNLOAD_MASS(:) = 0.
+      
       SNCMA_INI(:) = SNCMA(:)
 
       ! Compute specific humidity and vapor pressure at saturation
@@ -327,7 +333,9 @@
 
                   ENDIF
 
-                  NET_SNOW(I) = DIRECT_SNOW  + UNLOAD
+                  ! 
+                  NET_SNOW(I) = DIRECT_SNOW  ! Throughfall only
+                  UNLOAD_MASS(I) =  UNLOAD
 
                ELSE ! Open 2 Forest
                   !!!!!!!
@@ -338,7 +346,7 @@
                      DRIP_CPY(I) = MAX(0., WR_VH(I) - WRMAX_VH(I) )
                      WR_VH(I) = MIN(WR_VH(I), WRMAX_VH(I))
                      SNW_UNLOAD = 0.
-                  ELSE ! All unload is solid + refreezing of liquid intercepted waterto intercepted snow
+                  ELSE ! All unload is solid + refreezing of liquid intercepted water to intercepted snow
                      DRIP_CPY(I) = 0.    ! Unload considered as solid
                      SNW_UNLOAD = UNLOAD
                      SNCMA(I) = SNCMA(I) + WR_VH(I)
@@ -346,11 +354,11 @@
                   ENDIF
 
                   !!!! Update the total snow mass sent to the snowpack below
-                  !!!! high veg
-                  NET_SNOW(I) = DIRECT_SNOW + SNW_UNLOAD
+                  !!!! high veg via throughfall and unloading
+                  NET_SNOW(I) = DIRECT_SNOW
+                  UNLOAD_MASS(I) =  SNW_UNLOAD
 
                ENDIF
-
 
                ! Canopy layer snowcover fractions Boone
                IF (CANO_REF_FORCING .EQ.'ABV') THEN
@@ -360,10 +368,6 @@
                ELSE
                   FCANS(I) = 0. ! To avoid computation of sublimation from canopy energy balance in ebudget_svs2_oneprofile_skin
                ENDIF
-
-
-
-
 
             ENDIF
          ENDIF
@@ -380,15 +384,19 @@
             RR_VEG(I) = MAX(0., (WR_VH(I) - WRMAX_VH(I))/DT) + DRIP_CPY(I)/DT + SKYVIEW(I) * RR(I)
             WR_VH(I) = MIN(WR_VH(I), WRMAX_VH(I))
 
-            ! Snowfall rate below high vegetation
+            ! Snowfall rate below high vegetation via throughfall 
             SR_VEG(I) = NET_SNOW(I)/DT
 
+            ! Rate of solid unloading below high-vegetation 
+            UNLOAD_RATE(I) = UNLOAD_MASS(I)/DT
+            
          ELSE
             ! no high veg, no modification of rainfall and snowfall
 
             RR_VEG(I) = RR(I)
             SR_VEG(I) = SR(I)
-
+            UNLOAD_RATE(I) = 0.            
+            
          ENDIF
 
       ENDDO
