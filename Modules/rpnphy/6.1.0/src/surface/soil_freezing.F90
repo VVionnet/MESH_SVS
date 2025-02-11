@@ -404,9 +404,9 @@
             HFLUX(I,NL_SVS+1) = 0
         ENDIF
         
-        IF(SNODP(I) > 0) THEN ! Snow is present
-            WRITE(*,*) 'Fbase',HFLUX(I,NL_SVS+1), 'Tsoilk',TSOIL(I,NL_SVS),'Tbtm',TBTM(I), 'rth', RTH(I,NL_SVS+1), 'DBTM', DBTM(I), 'zlayer', ZLAYER(NL_SVS)
-        ENDIF
+        !IF(SNODP(I) > 0) THEN ! Snow is present
+        !    WRITE(*,*) 'Fbase',HFLUX(I,NL_SVS+1), 'Tsoilk',TSOIL(I,NL_SVS),'Tbtm',TBTM(I), 'rth', RTH(I,NL_SVS+1), 'DBTM', DBTM(I), 'zlayer', ZLAYER(NL_SVS)
+        !ENDIF
         !
       ENDDO
       !

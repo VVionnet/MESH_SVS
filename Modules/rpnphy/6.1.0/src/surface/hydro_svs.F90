@@ -209,12 +209,12 @@ SUBROUTINE HYDRO_SVS ( DT, &
   !    1: New param:  - in case of vertical redistribution, liquid water that flows to the next layer is limited by 
   !                       the effective porosity. Any water in excess is added to the lateral flow
   !                   - harmonic mean of the hydraulic conductivity  
-  WAT_REDIS = 0
+  WAT_REDIS = 1
 
   !    0: C1 and C2 originally implemented in SVS (see eq. 7 from Alavi et al. 2016)
   !    1: Modified C1 and C2 parameters to emulate simple exponential from Brooks et al (2004)
   !    2: Integrated double exponential function from Brooks et al. (2004) 
-  GRKSAT_OPT = 2
+  GRKSAT_OPT = 0
   
   !
   !-------------------------------------

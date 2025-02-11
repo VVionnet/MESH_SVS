@@ -162,7 +162,10 @@ subroutine inisoili_svs(ni, trnch)
             ts =263.15+ 2.*jj
             wunfrz_geo(i,k)     =  wunfrz_geo(i,k)+ wsat_geo(i,k)*(CHLF*(ts-273.15)/(ts*(-1.0*psisat_geo(i,k))*9.81))**(-1.0*usb)
         enddo
-        wunfrz_geo(i,k) =  wunfrz_geo(i,k)/5.   
+        wunfrz_geo(i,k) =  wunfrz_geo(i,k)/5.
+        IF( i==1 .and. k == 5 ) THEN
+             WRITE(*,*) 'residual',wunfrz_geo(i,k)
+        ENDIF
          
       enddo
    enddo

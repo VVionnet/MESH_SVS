@@ -380,6 +380,8 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
       endif
 
 !
+!
+
       CALL DRAG_SVS ( bus(x(TGROUND,1,1)), bus(x(TVEGE,1,1)),  &   
            bus(x(WSOIL ,1,1)) ,  &   
            bus(x(WVEG   ,1,1)), zthetaa,  &   
@@ -516,7 +518,8 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                 bus(x(wunfrz, 1,1)), &
                 N )
       ENDIF
-
+!
+!
       CALL HYDRO_SVS ( DT,      & 
            bus(x(eg      ,1,1)), bus(x(er      ,1,1)),&
            bus(x(etr     ,1,1)), rainrate_mm         ,&
