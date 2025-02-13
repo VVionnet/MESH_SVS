@@ -749,7 +749,7 @@ subroutine svs2(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
 !
 
-      CALL EBUDGET_SVS2_ONEPROFILE_SKIN(bus(x(TSA ,1,1)),  &
+      CALL EBUDGET_SVS2(bus(x(TSA ,1,1)),  &
                   bus(x(WSOIL     ,1,1)) , bus(x(ISOIL,1,1)),  &
                   bus(x(TGROUND   ,1,1)) , bus(x(TGROUND,1,2)), bus(x(TGROUNDV,1,1)),  &
                   bus(x(TVEGEL    ,1,1)) ,    &
