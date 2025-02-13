@@ -130,7 +130,7 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
 
    integer i,m, masklat50(n)
 
-   real,dimension(n) :: alva, cg, cvpa, del, dwaterdt
+   real,dimension(n) :: alva, cg, cvpa, del, dwaterdt_surf,dwaterdt_deep
    real,dimension(n) :: esnofrac, esvnofrac, eva, gamva, hrsurf
    real,dimension(n) :: leff, lesnofrac, lesvnofrac, rainrate_mm
    real,dimension(n) :: rgla, rhoa, snowrate_mm, stom_rs, stomra
@@ -378,10 +378,34 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
          ENDIF
       
       endif
+!
+      IF(LSOIL_FREEZING_SVS1) THEN
 
+              ! Optional activation of soil freezing
+
+              CALL SOIL_FREEZING(DT, &
+                bus(x(tpsoil   ,1,1)),bus(x(vegl    ,1,1)),&
+                bus(x(vegh    ,1,1)), bus(x(psngrvl ,1,1)),&
+                bus(x(psnvha  ,1,1)), bus(x(soilcondz,1,1)), &
+                bus( x(soilhcapz,1,1)), &
+                bus(x(tground, 1,1)), bus(x(tvege,1,1)), &
+                bus(x(wsoil   ,1,1)) , bus(x(isoil   ,1,1)), &
+                bus(x(snoro   ,1,1)) , bus(x(snodpl   ,1,1)), &
+                bus(x(tsnow   ,1,2)) , bus(x(tsnow   ,1,1)) ,  &
+                bus(x(snvro   ,1,1)) , bus(x(snvdp   ,1,1)), &
+                bus(x(tsnowveg   ,1,2)) , bus(x(tsnowveg   ,1,1)), bus(x(tperm, 1,1)),   &
+                bus(x(wunfrz, 1,1)), &
+                dwaterdt_surf,dwaterdt_deep, N )
+      ELSE
+              ! Set to zero the release of latent heat from soil freezing and
+              ! thawinf for the surface and deep layer of the FR scheme. 
+               DO I=1,N
+                  dwaterdt_surf(I) = 0.0
+                  dwaterdt_deep(I) = 0.0
+               ENDDO
+      ENDIF
 !
 !
-
       CALL DRAG_SVS ( bus(x(TGROUND,1,1)), bus(x(TVEGE,1,1)),  &   
            bus(x(WSOIL ,1,1)) ,  &   
            bus(x(WVEG   ,1,1)), zthetaa,  &   
@@ -421,8 +445,7 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                      DT, z0m, z0mland, bus(x(FCOR,1,1)),  &     
                      bus(x(zusl,1,1)), bus(x(ztsl,1,1)), &
                      bus(x (DLAT,1,1)), bus(x(PSNGRVL ,1,1)), N)     
-      if (phy_error_L) return
-!    
+      if (phy_error_L) return    
 !
       CALL SNOW_VEG ( bus(x(TSNOWVEG  ,1,1)), bus(x(TSNOWVEG,1,2)),  &  
                      bus(x(SNVRO     ,1,1)),   & 
@@ -448,7 +471,6 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                      bus(x(FCOR   ,1,1)), bus(x (DLAT,1,1)),  & 
                      bus(x(zusl,1,1)), bus(x(ztsl,1,1)), bus(x(PSNVHA ,1,1)), N)
       if (phy_error_L) return
-
 !
       CALL EBUDGET_SVS(bus(x(TSA ,1,1)),  &  
                   bus(x(WSOIL     ,1,1)) , bus(x(ISOIL,1,1)),  &   
@@ -491,34 +513,14 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
                   bus(x(FL         ,1,1)),  bus(x(EFLUX      ,1,1)) ,    &  
                   bus(x(BM         ,1,1)) , bus(x(FQ   ,1,1)),    &  
                   bus(x(bt, 1,indx_soil)) , bus(x(RESAEF,1,1)),   &  
-                  LEFF                    , DWATERDT,     & 
+                  LEFF                    , DWATERDT_SURF,    &
+                  DWATERDT_DEEP,     & 
                   bus(x(FTEMP,1,indx_soil)), BUS(x(FVAP,1,indx_soil)),   &   
                   bus(x(qsurf,1,indx_soil)), bus(x(frv ,1,indx_soil)),   &   
                   bus(x(ALFAT      ,1,1)) , bus(x(ALFAQ      ,1,1)) ,    &  
                   bus(x(ilmo  ,1,indx_soil)), bus(x(hst  ,1,indx_soil)), &   
                   TRAD, N )
       if (phy_error_L) return
-!
-!
-      IF(LSOIL_FREEZING_SVS1) THEN
-
-              ! Optional activation of soil freezing
-
-              CALL SOIL_FREEZING(DT, &
-                bus(x(tpsoil   ,1,1)),bus(x(vegl    ,1,1)),&
-                bus(x(vegh    ,1,1)), bus(x(psngrvl ,1,1)),&
-                bus(x(psnvha  ,1,1)), bus(x(soilcondz,1,1)), &
-                bus( x(soilhcapz,1,1)), &
-                bus(x(tground, 1,1)), bus(x(tvege,1,1)), &
-                bus(x(wsoil   ,1,1)) , bus(x(isoil   ,1,1)), &
-                bus(x(snoro   ,1,1)) , bus(x(snodpl   ,1,1)), &
-                bus(x(tsnow   ,1,2)) , bus(x(tsnow   ,1,1)) ,  &
-                bus(x(snvro   ,1,1)) , bus(x(snvdp   ,1,1)), &
-                bus(x(tsnowveg   ,1,2)) , bus(x(tsnowveg   ,1,1)), bus(x(tperm, 1,1)),   &
-                bus(x(wunfrz, 1,1)), &
-                N )
-      ENDIF
-!
 !
       CALL HYDRO_SVS ( DT,      & 
            bus(x(eg      ,1,1)), bus(x(er      ,1,1)),&
