@@ -1501,7 +1501,7 @@ ierr = 200
          end do
        endif
 
-       write(iout_svs1_soil, FMT_CSV, advance = 'no') 'TGROUND_1','TGROUND_2','TVEG_1','TVEG_2','ALBSFC','FC','FV','FL','RNET_S'
+       write(iout_svs1_soil, FMT_CSV, advance = 'no') 'TGROUND_1','TGROUND_2','TVEG_1','TVEG_2','ALBSFC','FC','FV','FL','RNET_S','SATSFC'
        write(iout_svs1_soil, *)
 
        open(iout_svs1_snow, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs1_snow_bulk_hourly.csv', action = 'write')
@@ -2049,7 +2049,8 @@ ierr = 200
               end if
               write(iout_svs1_soil, FMT_CSV, advance = 'no') busptr(vd%tground%i)%ptr(1:ni,trnch),busptr(vd%tground%i)%ptr((ni+1):2*ni, trnch), &
                       busptr(vd%tvege%i)%ptr(1:ni, trnch),busptr(vd%tvege%i)%ptr(ni+1:2*ni, trnch), &
-                      busptr(vd%alvis%i)%ptr(1:ni, trnch),busptr(vd%fc%i)%ptr(1:ni, trnch),busptr(vd%fv%i)%ptr(1:ni, trnch),busptr(vd%fl%i)%ptr(1:ni, trnch),busptr(vd%rnet_s%i)%ptr(1:ni, trnch)
+                      busptr(vd%alvis%i)%ptr(1:ni, trnch),busptr(vd%fc%i)%ptr(1:ni, trnch),busptr(vd%fv%i)%ptr(1:ni,trnch), &
+                      busptr(vd%fl%i)%ptr(1:ni, trnch),busptr(vd%rnet_s%i)%ptr(1:ni, trnch),busptr(vd%satsfc%i)%ptr(1:ni, trnch) 
               write(iout_svs1_soil, *)
 
               ! Write file containing bulk snow outputs

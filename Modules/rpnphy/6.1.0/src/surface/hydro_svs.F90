@@ -19,7 +19,7 @@ SUBROUTINE HYDRO_SVS ( DT, &
      WSAT, KSAT, PSISAT, BCOEF, FBCOF, WFCINT, GRKEF, &
      SNM, SVM, WR, WRT, WD, WDT, WF, WFT, &
      KSATC, KHC, PSI, GRKSAT, WFCDP, &
-     F, LATFLW, RUNOFF, N,  WATPND, MAXPND)
+     F, LATFLW, RUNOFF, SATSFC, N,  WATPND, MAXPND)
   !
   use sfc_options
   use svs_configs
@@ -63,6 +63,7 @@ SUBROUTINE HYDRO_SVS ( DT, &
   real, dimension(n,nl_svs+1):: f
   real, dimension(n,nl_svs) :: latflw
   real, dimension(n)        :: runoff 
+  real, dimension(n)        :: satsfc 
   real, dimension(n),optional :: watpnd, maxpnd
 
   !
@@ -163,7 +164,7 @@ SUBROUTINE HYDRO_SVS ( DT, &
   real, dimension(n,nl_svs)   :: delzvec
   real, dimension(n,nl_svs)   :: asatfc, wsatc, asat0, grkefl, ksatmean
   real, dimension(n,nl_svs)   :: etr_grid
-  real, dimension(n)          :: asat1, basflw, satsfc, subflw , pg, rveg
+  real, dimension(n)          :: asat1, basflw, subflw , pg, rveg
 
   real, dimension(n)          :: wrt_vl,wrt_vh,rveg_vl,rveg_vh
   real                        :: wat_down

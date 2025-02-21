@@ -331,6 +331,7 @@ module sfcbus_mod
       SFCVAR(rveg, 'rveg')
       SFCVAR(sand, 'sand')
       SFCVAR(sanden, 'sanden')
+      SFCVAR(satsfc, 'satsfc')
       SFCVAR(sfcwgt, 'sfcwgt')
       SFCVAR(skin_depth, 'skin_depth')
       SFCVAR(skin_inc, 'skin_inc')

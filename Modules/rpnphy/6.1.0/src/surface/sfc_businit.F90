@@ -104,7 +104,7 @@ subroutine sfc_businit(moyhr,ni,nk)
 
    !--------   Speficic parameter FOR SVS -----------------
 
-   integer :: wunfrz
+   integer :: wunfrz,satsfc
 
    !--------   Speficic parameter FOR SVS 2 -----------------
    character(len=2) :: ns
@@ -408,6 +408,7 @@ subroutine sfc_businit(moyhr,ni,nk)
       PHYVAR2D1(rveg,         'VN=rveg         ;ON=RVG ;VD=runoff from the vegetation (mm/s)                                 ;VB=p0')
       PHYVAR3D1(sand,         'VN=sand         ;ON=J1  ;VD=percentage of sand in soil                     ;VS=A*'//nstpl//'  ;VB=p0')
       PHYVAR3D1(sanden,       'VN=sanden       ;ON=2G  ;VD=perc. of sand in soil (E)                      ;VS=A*'//nstel//'  ;VB=e1;IN=J1  ;')
+      PHYVAR2D1(satsfc,       'VN=satsfc       ;ON=SATF;VD=fraction of saturated soil (0-1)                                  ;VB=p0')      
       PHYVAR2D1(skyview,      'VN=skyview      ;ON=SVF ;VD=sky view factor for tall vegetation                               ;VB=p0')
       PHYVAR2D1(slop,         'VN=slop         ;ON=SLOP;VD=average maximum subgrid-scale topo slope (nil)                    ;VB=p1')
       PHYVAR2D1(snoal,        'VN=snoal        ;ON=SNAL;VD=snow-over-low-veg/bare-ground albedo                              ;VB=p1        ;MIN=0')
