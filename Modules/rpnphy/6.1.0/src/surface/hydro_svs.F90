@@ -164,7 +164,7 @@ SUBROUTINE HYDRO_SVS ( DT, &
   real, dimension(n,nl_svs)   :: delzvec
   real, dimension(n,nl_svs)   :: asatfc, wsatc, asat0, grkefl, ksatmean
   real, dimension(n,nl_svs)   :: etr_grid
-  real, dimension(n)          :: asat1, basflw, subflw , pg, rveg
+  real, dimension(n)          :: asat1, basflw, subflw , pg, rveg, satsfc_in
 
   real, dimension(n)          :: wrt_vl,wrt_vh,rveg_vl,rveg_vh
   real                        :: wat_down
@@ -419,7 +419,7 @@ SUBROUTINE HYDRO_SVS ( DT, &
   !Call WATDRAIN to calculate baseflow
 
   CALL WATDRN_(DELZVEC(:,NL_SVS),BCOEF(:,NL_SVS),WSATC(:,NL_SVS),KSATC(:,NL_SVS), &
-       GRKEFL(:,NL_SVS),ASATFC(:,NL_SVS),ASAT0(:,NL_SVS),ASAT1,SUBFLW,BASFLW,SATSFC,N,1,N,DT)
+       GRKEFL(:,NL_SVS),ASATFC(:,NL_SVS),ASAT0(:,NL_SVS),ASAT1,SUBFLW,BASFLW,SATSFC_IN,N,1,N,DT)
 
   DO I=1,N
 
@@ -590,7 +590,7 @@ SUBROUTINE HYDRO_SVS ( DT, &
   DO K=1,NL_SVS   
 
      CALL WATDRN_(DELZVEC(:,K),BCOEF(:,K),WSATC(:,K),GRKSAT(:,K),GRKEFL(:,K), &
-          ASATFC(:,K),ASAT0(:,K),ASAT1,SUBFLW,BASFLW,SATSFC,N,1,N,DT)
+          ASATFC(:,K),ASAT0(:,K),ASAT1,SUBFLW,BASFLW,SATSFC_IN,N,1,N,DT)
 
      DO I=1,N
 
