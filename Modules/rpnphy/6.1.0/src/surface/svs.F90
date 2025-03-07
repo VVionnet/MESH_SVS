@@ -339,7 +339,7 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            ALVA, BUS(x(LAIVA  ,1,1)), CVPA, EVA, BUS(x(Z0HA ,1,1)),&
            BUS(x(Z0MVG,1,1)), RGLA, STOMRA,   &
            GAMVA, N,    &
-           BUS(x(SOILHCAPZ,1,1)), BUS(x(SOILCONDZ,1,1)), BUS(x(CONDDRY   ,1,1)), BUS(x(CONDSLD  ,1,1)) )
+           BUS(x(SOILHCAPZ,1,1)), BUS(x(SOILCONDZ,1,1)), BUS(x(CONDDRY   ,1,1)), BUS(x(CONDSLD  ,1,1)))
 !
 !     
 
@@ -541,8 +541,10 @@ subroutine svs(BUS, BUSSIZ, PTSURF, PTSURFSIZ, DT, KOUNT, TRNCH, N, M, NK)
            bus(x(psi     ,1,1)), bus(x(grksat  ,1,1)),&
            bus(x(wfcdp   ,1,1)), bus(x(watflow ,1,1)),&
            bus(x(latflw  ,1,1)), &
-           bus(x(runofftot ,1,indx_soil)), N,  bus(x(watpond ,1,1)), &
-           bus(x(maxpond ,1,1)))
+           bus(x(runofftot ,1,indx_soil)),           &
+           bus(x(satsfc  ,1,1)),N,  bus(x(watpond ,1,1)), &
+           bus(x(maxpond ,1,1)),&
+           bus(x(sand  ,1,1)),N,  bus(x(clay ,1,1)))
 
 
 

@@ -25,7 +25,7 @@
            WTA, CG, PSNGRVL,  & 
            Z0H, ALGR, EMGR, PSNVH, PSNVHA,   &
            ALVA, LAIVA, CVPA, EVA, Z0HA, Z0MVG, RGLA, STOMRA ,&  
-           GAMVA, N, SOILHCAPZ, SOILCONDZ, CONDDRY, CONDSLD )
+           GAMVA, N, SOILHCAPZ, SOILCONDZ, CONDDRY, CONDSLD)
          !
         use tdpack_const, only: PI
         use svs_configs
@@ -52,7 +52,7 @@
       REAL Z0HA(N), Z0MVG(N), RGLA(N), STOMRA(N), STOMRVH(N), STOMRVL(N)
       REAL GAMVL(N), GAMVH(N), GAMVA(N)
       REAL SOILHCAPZ(N,NL_SVS), SOILCONDZ(N,NL_SVS)
-      REAL CONDDRY(N,NL_SVS), CONDSLD(N,NL_SVS) 
+      REAL CONDDRY(N,NL_SVS), CONDSLD(N,NL_SVS)
       
 !Author
 !          S. Belair et al. (January 2009)
@@ -110,15 +110,14 @@
 ! EVER     fraction of high vegetation that is evergreen
 ! LAID     LAI of deciduous trees
 ! CONDSLD  Soilds thermal conductivity
-! CONDDRY  Dry thermal conductivit
+! CONDDRY  Dry thermal conductivity
 !
 !           - Output -
 ! WTA      Weights for SVS surface types as seen from SPACE
 ! CG       heat capacity of the bare soil
 ! PSNGRVL  fraction of the bare soil or low veg. covered by snow
 ! Z0H      agg. roughness length for heat transfer considering snow
-! ALGR     albedo of bare ground (soil)
-! EMGR     emissivity of bare ground (soil)
+! ALGR     albedo of bare ground (soil)GAMVAil)
 ! PSNVH    fraction of HIGH vegetation covered by snow
 ! PSNVHA   fraction of HIGH vegetation covered by snow as seen from
 !          the ATMOSPHERE 
@@ -697,11 +696,11 @@ include "isbapar.cdk"
     !                       Heat capacity (J m-3 K-1)
                  SOILHCAPZ(I,K) = (1. - WSAT(I,K)) * 2700. * 733. + WD(I,K) * CW * RHOW &
                                  + WF(I,K) * CI * RHOI
-
           
           END DO
 
        END DO
+
 
       RETURN
       END

@@ -72,6 +72,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_WSOIL = 'WSOIL'
     character(len = *), parameter, public :: VN_SVS_ISOIL = 'ISOIL'
     character(len = *), parameter, public :: VN_SVS_LATFL = 'LATFL'
+    character(len = *), parameter, public :: VN_SVS_KSATC = 'KSATC'
     character(len = *), parameter, public :: VN_SVS_WATFL = 'WATFL'
     character(len = *), parameter, public :: VN_SVS_KTHERMAL = 'KTHERMAL'
     character(len = *), parameter, public :: VN_SVS_TGROUND = 'TGROUND'
@@ -1486,7 +1487,8 @@ ierr = 200
            write(iout_svs1_soil, FMT_CSV, advance = 'no') &
                             trim(VN_SVS_ISOIL) // '_' // trim(adjustl(level)), &
                             trim(VN_SVS_WSOIL) // '_' // trim(adjustl(level)), &
-                            trim(VN_SVS_LATFL) // '_' // trim(adjustl(level))
+                            trim(VN_SVS_LATFL) // '_' // trim(adjustl(level)), &
+                            trim(VN_SVS_KSATC) // '_' // trim(adjustl(level))
        end do
        do j = 1, nl_svs+1
            write(level, FMT_GEN) j
@@ -1501,7 +1503,7 @@ ierr = 200
          end do
        endif
 
-       write(iout_svs1_soil, FMT_CSV, advance = 'no') 'TGROUND_1','TGROUND_2','TVEG_1','TVEG_2','ALBSFC','FC','FV','FL','RNET_S'
+       write(iout_svs1_soil, FMT_CSV, advance = 'no') 'TGROUND_1','TGROUND_2','TVEG_1','TVEG_2','ALBSFC','FC','FV','FL','RNET_S','SATSFC'
        write(iout_svs1_soil, *)
 
        open(iout_svs1_snow, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs1_snow_bulk_hourly.csv', action = 'write')
@@ -2034,11 +2036,12 @@ ierr = 200
                  write(iout_svs1_soil, FMT_CSV, advance = 'no') &
                      busptr(vd%isoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) , &
                      busptr(vd%wsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), & 
-                     busptr(vd%latflw%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+                     busptr(vd%latflw%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
+                     busptr(vd%ksatc%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
               end do
               do i = 1, nl_svs+1
                  write(iout_svs1_soil, FMT_CSV, advance = 'no') &
-                     busptr(vd%watflow%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+                     busptr(vd%watflow%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
               end do
               if(svs_mesh%vs%lsoil_freezing_svs1) then
                  do i = 1, nl_svs
@@ -2048,7 +2051,8 @@ ierr = 200
               end if
               write(iout_svs1_soil, FMT_CSV, advance = 'no') busptr(vd%tground%i)%ptr(1:ni,trnch),busptr(vd%tground%i)%ptr((ni+1):2*ni, trnch), &
                       busptr(vd%tvege%i)%ptr(1:ni, trnch),busptr(vd%tvege%i)%ptr(ni+1:2*ni, trnch), &
-                      busptr(vd%alvis%i)%ptr(1:ni, trnch),busptr(vd%fc%i)%ptr(1:ni, trnch),busptr(vd%fv%i)%ptr(1:ni, trnch),busptr(vd%fl%i)%ptr(1:ni, trnch),busptr(vd%rnet_s%i)%ptr(1:ni, trnch)
+                      busptr(vd%alvis%i)%ptr(1:ni, trnch),busptr(vd%fc%i)%ptr(1:ni, trnch),busptr(vd%fv%i)%ptr(1:ni,trnch), &
+                      busptr(vd%fl%i)%ptr(1:ni, trnch),busptr(vd%rnet_s%i)%ptr(1:ni, trnch),busptr(vd%satsfc%i)%ptr(1:ni, trnch) 
               write(iout_svs1_soil, *)
 
               ! Write file containing bulk snow outputs
