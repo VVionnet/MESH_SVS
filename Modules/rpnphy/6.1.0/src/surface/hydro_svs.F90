@@ -16,7 +16,7 @@
 SUBROUTINE HYDRO_SVS ( DT, &
      EG, ER, ETR, RR, RSNOW, RSNOWV, &
      IMPERVU, VEGL, VEGH, PSN, PSNVH, ACROOT, WRMAX, &
-     WSAT, KSAT, PSISAT, BCOEF, FBCOF, WFCINT, GRKEF, &
+     WSAT, WUNFRZ, KSAT, PSISAT, BCOEF, FBCOF, WFCINT, GRKEF, &
      SNM, SVM, WR, WRT, WD, WDT, WF, WFT, &
      KSATC, KHC, PSI, GRKSAT, WFCDP, &                              ! WMPFAC, KSATMPFAC,
      F, LATFLW, RUNOFF, SATSFC, N,  WATPND, MAXPND,&
@@ -29,17 +29,21 @@ SUBROUTINE HYDRO_SVS ( DT, &
 
   !
   INTEGER N,K
-  ! CONSTANTS for horizontal decay of GRKSAT
+  ! CONSTANTS for horizontal decay of GRKSAT and parameters (constants) for macropore activation threshold
   !
   REAL, PARAMETER :: GRKSAT_C1=10
   REAL, PARAMETER :: GRKSAT_C2=5
-
+  REAL, PARAMETER :: ALPHA_MP = 0.85
+  REAL, PARAMETER :: DELTA_MP = 3.64 !Weighted sand-to-clay ratio for the average tile over the GLSL domain
   REAL DT, W
 
   INTEGER KFICE ! Option for the correction factor for hydraulic conductivity
-  !    0: Correction factor taken from Zhang and Gray (1997). Same as CLASS 3.6
+  !    0: Correction factor taken from Zhao and Gray (1997). Used in CLASS 3.6 (see eq. 2 from Ganji et al., 2017)
   !    1: Impedance factor taken from SURFEX (Boone et al., 2000)
-  !    3: No modification of hydraulic conductivity in presence of ice
+  !    2: linear function for the impedance factor (Smirnova et al., 2000)
+  !    3: linear function for the impedance factor with respect to WSAT (Smirnova et al., 2000 modified)
+  !    4: degree 3 exponential function for the impedance factor (from Mao et al., 2007)
+  !    5: No modification of hydraulic conductivity in presence of ice
 
   INTEGER WAT_REDIS ! Option for the redistribution of water in case of over-saturation after the soil_fluxes solver
   !    0: Default param:
@@ -49,19 +53,18 @@ SUBROUTINE HYDRO_SVS ( DT, &
 
   INTEGER GRKSAT_OPT ! Option for the anisotropy of hydraulic conductivity of soil at saturation
   !    0: C1 and C2 originally implemented in SVS (see eq. 7 from Alavi et al. 2016)
-  !    1: Modified C1 and C2 parameters to emulate simple exponential from Brooks et al (2004)
-  !    2: Integrated double exponential function from Brooks et al. (2004)
+  !    1: Integrated double exponential function from Brooks et al. (2004)
+  !    2: Anisotropy factor based on Clay content of each layer (eq. B4 from Decharme et al. (2013) based on Fan et al. (2007))
 
   INTEGER MP_OPT ! Option for the presence of macropores
   !    0: No macropores
   !    1: Macropores are activated (change thehydraulic conductivity based on water content threshold)
 
-
   ! input
   real, dimension(n)        :: eg, er, etr, rr, impervu
   real, dimension(n)        :: psn, psnvh, vegh, vegl
   real, dimension(n,nl_svs) :: bcoef, fbcof, acroot, ksat
-  real, dimension(n,nl_svs) :: psisat, wfcint, wsat
+  real, dimension(n,nl_svs) :: psisat, wfcint, wsat, wunfrz
   real, dimension(n)        :: grkef, rsnow, rsnowv, wrmax, snm, svm  
   ! prognostic vars (I/0)
   real, dimension(n)        :: wr, wrt
@@ -123,6 +126,7 @@ SUBROUTINE HYDRO_SVS ( DT, &
   !          --- Soil characteristics ---
   !
   ! WSAT  (NL_SVS) volumetric water content at soil saturation per layer [m3/m3]
+  ! WUNFRZ(NL_SVS) unfrozen residual water content [m3/m3]
   ! KSAT  (NL_SVS) vertical hydraulic conductivity at saturation per layer [m/s]
   ! PSISAT(NL_SVS) value of soil water suction at air-entry (near saturation) per layer [m]
   ! BCOEF (NL_SVS) slope of the retention curve per layer
@@ -179,7 +183,7 @@ SUBROUTINE HYDRO_SVS ( DT, &
   real, dimension(n)          :: asat1, basflw, subflw , pg, rveg, satsfc_in
 
   real, dimension(n)          :: wrt_vl,wrt_vh,rveg_vl,rveg_vh
-  real                        :: wat_down, wmp, ksatmp
+  real                        :: wat_down, wmp, ksatmp, satsfc_th
   real, dimension(n,nl_svs-1) :: diag
 
   real, dimension(n)          :: abstract
@@ -202,31 +206,31 @@ SUBROUTINE HYDRO_SVS ( DT, &
      F(I,NL_SVS+1)=0.
   ENDDO
 
-  ! Option for soil freezing
+  ! Option for flow impedance due to soil freezing
   !    0: Correction factor taken from Zhao and Gray (1997). Used in CLASS 3.6 (see eq. 2 from Ganji et al., 2017)
   !    1: Impedance factor taken from SURFEX (Boone et al., 2000)
-  !    2: linear function for the impedance factor (Smirnova et al., 2000)
-  !    3: linear function for the impedance factor with respect to WSAT (Smirnova et al., 2000 modified)
-  !    4: degree 3 exponential function for the impedance factor (from Mao et al., 2007)
-  !    5: No modification of hydraulic conductivity in presence of ice
+  !    2: No modification of hydraulic conductivity in presence of ice
   KFICE = 0
-
-  !
+  
   ! Option for the redistribution of water in case of over-saturation after the soil_fluxes solver
   !    0: Default param:
   !    1: New param:  - in case of vertical redistribution, liquid water that flows to the next layer is limited by
   !                       the effective porosity. Any water in excess is added to the lateral flow
   !                   - harmonic mean of the hydraulic conductivity
-  WAT_REDIS = 0
+  WAT_REDIS = 1
 
   !    0: C1 and C2 originally impleme!nted in SVS (see eq. 7 from Alavi et al. 2016)
   !    1: Modified C1 and C2 parameters to emulate simple exponential from Brooks et al (2004)
   !    2: Integrated double exponential function from Brooks et al. (2004)
+  !    3: Anisotropy factor based on Clay content of each layer (eq. B4 from Decharme et al. (2013) based on Fan et al. (2007))
   GRKSAT_OPT = 0
   
   !    0: No macropores
   !    1: Macropores are activated (change thehydraulic conductivity based on water content threshold)
-  MP_OPT = 0
+  MP_OPT = 1
+
+  !    Fraction of  satsfc used for calculating runoff (If 0, the satsfc calculated from Watroute is not used).
+  SATSFC_TH = 0
 
   !
   !-------------------------------------
@@ -377,62 +381,43 @@ SUBROUTINE HYDRO_SVS ( DT, &
         ELSE IF (KFICE ==1) THEN
             FICE =  EXP(LOG(10.0)*(-6*WF(I,K)/(WF(I,K)+WD(I,K))))   ! Impedance factor taken from SURFEX (Boone et al., 2000)
         ELSE IF (KFICE ==2) THEN
-            FICE =  (1 - WF(I,K)/(WF(I,K)+WD(I,K)))   ! linear function for the impedance factor (Smirnova et al., 2000)
-        ELSE IF (KFICE ==3) THEN
-            FICE =  (1 - WF(I,K)/WSAT(I,K))   ! linear function for the impedance factor with respect to WSAT (Smirnova et al., 2000 modified)
-        ELSE IF (KFICE ==4) THEN
-            FICE =  (1 - WF(I,K))**3.   ! degree 3 exponential function for the impedance factor (from Mao et al., 2007)
-        ELSE IF (KFICE ==5) THEN
-            FICE = 1.   ! No modification of hydraulic conductivity in presence of ice
-        ELSE
-            FICE = 1.
+            FICE = 1.   ! No modification of hydraulic conductivity in presence of ice.
         ENDIF
         KSATC(I,K) = KSAT(I,K)*FICE
         WSATC(I,K)= MAX((WSAT(I,K)-WF(I,K)-0.00001), CRITWATER)
-        
+
         ! Calculate parameters needed for WATDRAIN
         ! ASAT0  bulk saturation at the begining of time step (WD/WDSAT)
-
         ASAT0 (I,K) = WD(I,K) / WSATC(I,K)
         ASATFC(I,K) = WFCINT(I,K)/ WSAT(I,K)
 
         ! Horizontal soil hydraulic conductivity decays with depth
         IF (GRKSAT_OPT == 0) THEN
             GRKSAT (I,K) = GRKSAT_C1 * EXP( GRKSAT_C2 *(DL_SVS(NL_SVS)-DL_SVS(K))/DL_SVS(NL_SVS))*KSATC(I,K)
-!            IF (MP_OPT == 1) THEN
-!                IF (WD(I,K) >= WMP) THEN
-!                    IF (K == 1) THEN
-!                        GRKSAT (I,K) = (-2 * (EXP( -5.5 * DL_SVS(K)) - 1) - 1.8 * (EXP( -50 * DL_SVS(K)) - 1))*KSATC(I,K)
-!                    ELSE
-!                        GRKSAT (I,K) = (-2 * (EXP( -5.5 * DL_SVS(K)) - EXP( -5.5 * DL_SVS(K-1))) - 1.8 * (EXP( -50 * DL_SVS(K)) - EXP( -50 * DL_SVS(K-1))))*KSATC(I,K)
-!                    ENDIF
-!                ENDIF
-!            ENDIF
+
+        !Brooks 2004    
         ELSE IF (GRKSAT_OPT == 1) THEN
-            GRKSAT (I,K) = 9.4e-7 * EXP( 16.5 *(DL_SVS(NL_SVS)-DL_SVS(K))/DL_SVS(NL_SVS))*KSATC(I,K)
-        ELSE IF (GRKSAT_OPT == 2) THEN
             IF (K == 1) THEN
-                GRKSAT (I,K) = (-2 * (EXP( -5.5 * DL_SVS(K)) - 1) - 1.8 * (EXP( -50 * DL_SVS(K)) - 1))*KSATC(I,K)
+                GRKSAT (I,K) = (-2 * (EXP( -5.5 * DL_SVS(K)) - 1) - 1.8 * (EXP( -50 * DL_SVS(K)) - 1))/(DELZ(K)*3600*24)
             ELSE
-                GRKSAT (I,K) = (-2 * (EXP( -5.5 * DL_SVS(K)) - EXP( -5.5 * DL_SVS(K-1))) - 1.8 * (EXP( -50 * DL_SVS(K)) - EXP( -50 * DL_SVS(K-1))))*KSATC(I,K)
+                GRKSAT (I,K) = (-2 * (EXP( -5.5 * DL_SVS(K)) - EXP( -5.5 * DL_SVS(K-1))) - 1.8 * (EXP( -50 * DL_SVS(K)) - EXP( -50 * DL_SVS(K-1))))/(DELZ(K)*3600*24)
+            ENDIF
+
+        !Decharme 2013 
+        ELSE IF (GRKSAT_OPT == 2) THEN
+            GRKSAT (I,K) = (1.55 + 0.3285*CLAY(I,K)+0.0065637*CLAY(I,K)**2)*KSATC(I,K)
+        ENDIF
+
+        !Macropore threshold water content and hydraulic conductivity
+        IF (MP_OPT == 1) THEN
+            !WMP = WSATC(I,K)*(0.85 - 0.0003*SAND(I,K) + 0.0015*CLAY(I,K))
+            WMP = WSATC(I,K)*(ALPHA_MP + (1-ALPHA_MP)*(CLAY(I,K)-SAND(I,K)/DELTA_MP)/100)
+            KSATMP = KSAT(I,K)*10**(2 - 0.0015*SAND(I,K) + 0.0015*CLAY(I,K)) 
+            IF (WD(I,K) >= WMP) THEN
+                KSATC(I,K) = KSATC(I,K) + KSATMP
             ENDIF
         ENDIF
         GRKEFL (I,K) = GRKEF(I)*GRKSAT(I,K)
-        
-        !Macropore threshold water content and hydraulic conductivity
-        IF (MP_OPT == 1) THEN
-            WMP = WSATC(I,K)*(0.8 - 0.0015*SAND(I,K) + 0.0015*CLAY(I,K))
-            KSATMP = KSAT(I,K)*10**(1.5 - 0.0015*SAND(I,K) + 0.0015*CLAY(I,K))
-            
-            IF (WD(I,K) >= WMP) THEN
-                KSATC(I,K) = KSATC(I,K) + KSATMP
-!             WRITE(*,*) 'WMP', WMP, 'WD', WD(I,K), 'Layer', K
-            ENDIF
-        ENDIF
-
-!        IF (I == 1 .AND. K == 1) THEN
-!            WRITE(*,*) 'KSATC', KSATC(I,K), 'GRKSAT', GRKSAT(I,K)
-!        ENDIF
 
      END DO
   END DO
@@ -447,9 +432,9 @@ SUBROUTINE HYDRO_SVS ( DT, &
 
   DO I=1,N
      !use ksat to calculate runoff (mm/s)
-     RUNOFF(I) = MAX( (SATSFC(I)*PG(I)+(1-SATSFC(I))*MAX(PG(I)-KSATC(I,1)*1000.,0.0)) , 0.0 )
+     RUNOFF(I) = MAX( (MIN(SATSFC_TH,SATSFC(I))*PG(I)+(1- MIN(SATSFC_TH,SATSFC(I)))*MAX(PG(I)-KSATC(I,1)*1000.,0.0)) , 0.0 )
 
-! EG_code related to ponding of water
+     ! EG_code related to ponding of water
      IF (lwater_ponding_svs) THEN
         abstract(I) = min( RUNOFF(I)*DT , (maxpnd(I)-watpnd(I))*1000.0 )
         RUNOFF(I) = RUNOFF(I) - abstract(I)/DT
@@ -469,10 +454,6 @@ SUBROUTINE HYDRO_SVS ( DT, &
 
      ENDIF
 
-     !WRITE(*,*) 'watpond',watpnd(I)
-     !WRITE(*,*) 'maxpond',maxpnd(I)
-
-
   END DO
 
 
@@ -487,7 +468,6 @@ SUBROUTINE HYDRO_SVS ( DT, &
   END DO
 
   !Call WATDRAIN to calculate baseflow
-
   CALL WATDRN_(DELZVEC(:,NL_SVS),BCOEF(:,NL_SVS),WSATC(:,NL_SVS),KSATC(:,NL_SVS), &
        GRKEFL(:,NL_SVS),ASATFC(:,NL_SVS),ASAT0(:,NL_SVS),ASAT1,SUBFLW,BASFLW,SATSFC_IN,N,1,N,DT)
 
@@ -522,7 +502,6 @@ SUBROUTINE HYDRO_SVS ( DT, &
 
   !Compute water fluxes between soil layers, find K AND PSI at the boundaries
   ! do it for all layers except NL_SVS (water flux is computed above from watdrain).
-
   IF (hydro_svs_method.EQ.0) THEN
      ! First-order forward method
      CALL SOIL_FLUXES( DT, &
@@ -584,41 +563,60 @@ SUBROUTINE HYDRO_SVS ( DT, &
   !if WDT is less than CRITWATER get water from the next layer
   !if WD is more than saturation, add eccess water to lateral flow or baseflow (F)
   !update water flow (f) of each layer based on the new soil moisture
-
   DO I=1,N
      DO K=1,NL_SVS
         IF (WDT(I,K).LT.CRITWATER)  THEN
-
            ! if we are in the last soil layer, soil water content of the layer below cannot be updated
            IF(K.NE.NL_SVS) WDT(I,K+1)=WDT(I,K+1)- &
                 (CRITWATER-WDT(I,K))*DELZ(K)/DELZ(K+1)
            F(I,K+1)=F(I,K+1)-(CRITWATER-WDT(I,K))*DELZ(K)
            WDT(I,K)=CRITWATER
 
-        ELSEIF (WDT(I,K).GT.WSATC(I,K))  THEN
-
+        ELSE IF (WDT(I,K).GT.WSATC(I,K))  THEN
            IF (K.NE.KHYD) THEN
-
               IF(WAT_REDIS==1) THEN
                     IF(K.NE.NL_SVS) THEN
-                         KSATMEAN(I,K)=KSATC(I,K)*KSATC(I,K+1)*(DELZ(K)+&
-                          DELZ(K+1))/(KSATC(I,K)*DELZ(K+1)+KSATC(I,K+1)*DELZ(K))
+                        IF (MP_OPT == 1) THEN !If macropores are activated  the Ksatmean between both layer is equal to the macropore ksat
+                            !WMP = WSATC(I,K)*(0.85 - 0.0003*SAND(I,K) + 0.0015*CLAY(I,K))
+                            WMP = WSATC(I,K)*(ALPHA_MP + (1-ALPHA_MP)*(CLAY(I,K)-SAND(I,K)/DELTA_MP)/100)
+                            IF (WD(I,K) >= WMP) THEN
+                                KSATMEAN(I,K) = KSATC(I,K)
+                            ELSE
+                                KSATMEAN(I,K)=KSATC(I,K)*KSATC(I,K+1)*(DELZ(K)+& 
+                                DELZ(K+1))/(KSATC(I,K)*DELZ(K+1)+KSATC(I,K+1)*DELZ(K))
+                            ENDIF
+                        ELSE
+                            KSATMEAN(I,K)=KSATC(I,K)*KSATC(I,K+1)*(DELZ(K)+& 
+                            DELZ(K+1))/(KSATC(I,K)*DELZ(K+1)+KSATC(I,K+1)*DELZ(K))
+                        ENDIF
                     ELSE
                       KSATMEAN(I,K) = KSATC(I,K)
                     ENDIF
               ELSE
                       KSATMEAN(I,K) = KSATC(I,K)
               ENDIF
-	      ! excess water removal via a combination of a downward and a lateral flux
+    	      
+              ! excess water removal via a combination of a downward and a lateral flux
               ! fraction of excess water going into layer below
               !VV W = KSATC(I,K)/(KSATC(I,K)+GRKEFL(I,K)*DELZ(K))
               W = KSATMEAN(I,K)/(KSATMEAN(I,K)+GRKEFL(I,K)*DELZ(K))
-
+              
               IF(WAT_REDIS==1) THEN
                   ! Downward liquid water flux is limited to avoid the saturation of the layer below
                   IF(K.NE.NL_SVS) THEN
-                     WAT_DOWN = MIN(W*(WDT(I,K)-WSATC(I,K))*DELZ(K),  &
-                                   MAX(0.,(WSATC(I,K+1)-WDT(I,K+1))*DELZ(K+1)) )
+                       IF (MP_OPT == 1) THEN !If the condition to activate the macropores for the layer below is respected, then don<t redistribute the water laterally (do Wat_redis = 0)
+                           !WMP = WSATC(I,K+1)*(0.85 - 0.0003*SAND(I,K+1) + 0.0015*CLAY(I,K+1)
+                           WMP = WSATC(I,K+1)*(ALPHA_MP + (1-ALPHA_MP)*(CLAY(I,K+1)-SAND(I,K+1)/DELTA_MP)/100)
+                           IF (WD(I,K+1) >= WMP) THEN
+                               WAT_DOWN = W*(WDT(I,K)-WSATC(I,K))*DELZ(K)
+                           ELSE
+                               WAT_DOWN = MIN(W*(WDT(I,K)-WSATC(I,K))*DELZ(K),  &
+                                          MAX(0.,(WSATC(I,K+1)-WDT(I,K+1))*DELZ(K+1)) )
+                           ENDIF
+                       ELSE
+                           WAT_DOWN = MIN(W*(WDT(I,K)-WSATC(I,K))*DELZ(K),  &
+                                      MAX(0.,(WSATC(I,K+1)-WDT(I,K+1))*DELZ(K+1)) )
+                       ENDIF
                   ELSE
                      WAT_DOWN = W*(WDT(I,K)-WSATC(I,K))*DELZ(K)
                   ENDIF
@@ -635,6 +633,7 @@ SUBROUTINE HYDRO_SVS ( DT, &
               ! if we are in the last soil layer, soil water content of the layer below cannot be updated
               !VV IF(K.NE.NL_SVS) WDT(I,K+1)=WDT(I,K+1)+W*(WDT(I,K)-WSATC(I,K))*DELZ(K)/DELZ(K+1)
               IF(K.NE.NL_SVS)  WDT(I,K+1)=WDT(I,K+1)+WAT_DOWN/DELZ(K+1)
+           
            ELSEIF (K.EQ.KHYD) THEN
               ! excess water removal via lateral flow
               LATFLW(I,K)=(WDT(I,K)-WSATC(I,K))*DELZ(K)

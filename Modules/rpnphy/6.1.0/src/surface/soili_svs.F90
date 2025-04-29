@@ -43,7 +43,7 @@
       REAL Z0(N)
       REAL CG(N), WTA(N,svs_tilesp1)
       REAL PSNGRVL(N)
-      REAL Z0H(N), ALGR(N), CLAY(N), SAND(N)
+      REAL Z0H(N), ALGR(N), CLAY(N,NL_SVS), SAND(N,NL_SVS)
       REAL DECI(N), EVER(N), LAID(N)
       REAL EMGR(N), PSNVH(N), PSNVHA(N),  LAIVH(N)
       REAL ALVA(N), LAIVA(N), CVPA(N), EVA(N)
@@ -104,8 +104,8 @@
 ! GAMVH    stomatal resistance param. for HIGH vegetation
 ! GAMVL    stomatal resistance param. for LOW  vegetation
 ! Z0       momentum roughness length (no snow)
-! CLAY     percentage of clay in soil (mean of 3 layers)
-! SAND     percentage of sand in soil (mean of 3 layers)  
+! CLAY     percentage of clay in soil (surface layer for computing the albedo and layer per layer for computing the thermal conductivity)
+! SAND     percentage of sand in soil (surface layer for computing the albedo and layer per layer for computing the thermal conductivity)  
 ! DECI     fraction of high vegetation that is deciduous
 ! EVER     fraction of high vegetation that is evergreen
 ! LAID     LAI of deciduous trees
@@ -161,19 +161,13 @@ include "isbapar.cdk"
 !***********************************************************************
 !
 !
-      OPT_SOILCOND = 4 ! Option for the Calculation of soil thermal conductivity 
+      OPT_SOILCOND = 1 ! Option for the Calculation of soil thermal conductivity 
                    ! 0: use the model from Peters-Lidard et al. (1998) for frozen soil that involve the Kersten number (Johanssen, 1975)
-                   ! 1: Use the model from Hansson et al. (2004) that adaps the empirical model from Campbell (1985) for frozen soil
-                   ! 2: Use the model from CLASS as described by Verseghy (1991)
-                   ! 3: Use the soil heat transport model from the cold regions LSM descrubed by Wang et al (2017) - see eq. 15 to 18
-                   ! 4: Use the model from Tian et al. (2016)
+                   ! 1: Use the model from Tian et al. (2016)
 !
       OPT_SNOWCOND = 0 ! Option to compute the effective thermal conductivity
                        ! 0: Use default option from Yen (1981) that depends on snow density
                        ! 1: Updated parameterization from Fourteau et al. (2021) that is tempearture and snow density dependant
-!
-!
-!
 !
 !                                    Define some constants for
 !                                    the ice
@@ -199,14 +193,7 @@ include "isbapar.cdk"
       EWETSAND = 0.98
       EDRYCLAY = 0.95
       EWETCLAY = 0.97
-!                       Parameters of the Hansson 2004 model (OPT_SOILCOND = 1)
-      C1 = 0.55
-      C2 = 0.8
-      C3 = 3.07
-      C4 = 0.13
-      C5 = 4
-      F1 = 13.05
-      F2 = 1.06
+
 !
 !
 !
@@ -277,12 +264,7 @@ include "isbapar.cdk"
             ENDIF
         ENDIF
 
-
-      
-!        LAMS(I) = LAMI * RHOS(I)**1.88
         ZCS(I) = 2.0 * SQRT( PI/( LAMS(I) * 1000* RHOS(I) *CI*DAY) )
-!
-!        LAMSV(I) = LAMI * RHOSV(I)**1.88
         ZCSV(I) = 2.0 * SQRT( PI/(LAMSV(I)* 1000*RHOSV(I) *CI*DAY) )
 !
       END DO    
@@ -519,8 +501,8 @@ include "isbapar.cdk"
 !
       DO I=1,N
 !                      A few constraints 
-         IF((CLAY(I)+SAND(I)).gt.0.0) THEN         
-            A(I)= SAND(I) / ( CLAY(I) + SAND(I) ) 
+         IF((CLAY(I,1)+SAND(I,1)).gt.0.0) THEN         
+            A(I)= SAND(I,1) / ( CLAY(I,1) + SAND(I,1) ) 
          ELSE         
             A(I) = 0.0           
          ENDIF
@@ -595,10 +577,8 @@ include "isbapar.cdk"
 
 !
 !
-!       10.      SOIL THERMAL PROPERTIES PROFILE using PL98
+!       10.      SOIL THERMAL PROPERTIES PROFILE (using PL98 or Tian 2016)
 !               ------------------------------------------
-!
-!
        LOG_CONDI = LOG(LAMI)
        LOG_CONDW = LOG(LAMW)
 
@@ -607,8 +587,7 @@ include "isbapar.cdk"
           DO K=1,NL_SVS
 
               IF (OPT_SOILCOND == 0) THEN     !!!!!!!!!!! PL 1998
-    
-    !                        Kersten parameter for thermal conductivity
+                 !Kersten parameter for thermal conductivity
                  XF = WF(I,K) / (WF(I,K) + MAX(WD(I,K),0.001))
                  XU = (1.0-XF) * WSAT(I,K)
     
@@ -620,52 +599,15 @@ include "isbapar.cdk"
                  SATDEG  = MIN(1.0,SATDEG)
                  KERSTEN  = LOG10(SATDEG) + 1.0               ! Kersten number
     
-    !                       Put in a smooth transition from thawed to frozen soils:
-    !                       simply linearly weight Kersten number by frozen fraction
-    !                       in soil:
+                 !Put in a smooth transition from thawed to frozen soils:
+                 !simply linearly weight Kersten number by frozen fraction
+                 !in soil:
                  KERSTEN  = (1.0-XF)*KERSTEN + XF *SATDEG
     
-    !                       Thermal conductivity
+                 !Thermal conductivity
                  SOILCONDZ(I,K) = KERSTEN*(CONDSAT-CONDDRY(I,K)) + CONDDRY(I,K)
-
-                  !IF(k == 1 ) THEN ! Snow is present
-                  !    WRITE(*,*) 'SoilK',SOILCONDZ(I,K)
-                  !ENDIF
-    !    
-              ELSE IF (OPT_SOILCOND == 1) THEN     !!!!!!!!!!! Hansson 2004
-                  !Adjustment factor for the presence of ice (F)
-                  F = 1 + F1*WF(I,K)**F2
-
-                  !Calculation of the empirical Lamda soil
-                  SOILCONDZ(I,K) = C1 + C2*(WD(I,K) + F*WF(I,K)) - (C1 - C4)*EXP(-(C3*(WD(I,K) + F*WF(I,K)))**C5)
-
-                  !IF(k == 1 ) THEN ! Snow is present
-                  !    WRITE(*,*) 'SoilK',SOILCONDZ(I,K)
-                  !ENDIF
-    !
-              ELSE IF (OPT_SOILCOND == 2) THEN     !!!!!!!!!!! Verseghy 1991
-
-                  WORK1 = LAMI**(WSAT(I,K)*(1-WD(I,K)/(WF(I,K)+WD(I,K))))
-                  WORK2 = LAMW**(WSAT(I,K)*(WD(I,K)/(WF(I,K)+WD(I,K))))
-                  WORK3 = CONDSLD(I,K)**(1.0 - WSAT(I,K))
-                  CONDSAT = WORK1*WORK2*WORK3
-                  
-                  SOILCONDZ(I,K) = (CONDSAT-CONDDRY(I,K))*(WF(I,K) + MAX(WD(I,K),0.001))/WSAT(I,K) + CONDDRY(I,K)
-
-                  !IF(k == 1) THEN ! Snow is present
-                  !    WRITE(*,*) 'SoilK',SOILCONDZ(I,K)
-                  !ENDIF
-
-              ELSE IF (OPT_SOILCOND == 3) THEN     !!!!!!!!!!! Wang 2017
-              
-                  SOILCONDZ(I,K) = CONDDRY(I,K) + (0.5**WSAT(I,K)*CONDSLD(I,K)**(1-WSAT(I,K))-CONDDRY(I,K))*EXP(0.36*(1-1/(WF(I,K) + MAX(WD(I,K),0.001))))+ WF(I,K)*LAMI
-
-
-                  !IF(k == 1 ) THEN ! Snow is present
-                  !    WRITE(*,*) 'SoilK',SOILCONDZ(I,K)
-                  !ENDIF
-
-              ELSE IF (OPT_SOILCOND == 4) THEN     !!!!!!!!!!! Tian 2016
+  
+              ELSE IF (OPT_SOILCOND == 1) THEN     !!!!!!!!!!! Tian 2016
                   IF (WD(I,K) > 0.2*WSAT(I,K)) THEN
                       LAM_ZERO = LAMW
                   ELSE
@@ -676,8 +618,8 @@ include "isbapar.cdk"
                       ENDIF
                   ENDIF
 
-                  k_min = 0.666666*(1+(CONDSLD(I,K)/LAM_ZERO-1)*(0.182*SAND(I)/100 + 0.00775*CLAY(I)/100 + 0.0534*(100 - SAND(I) - CLAY(I))/100))**-1 + &
-                          0.333333*(1+(CONDSLD(I,K)/LAM_ZERO-1)*(1-2*(0.182*SAND(I)/100 + 0.00775*CLAY(I)/100 + 0.0534*(100 - SAND(I) - CLAY(I))/100)))**-1
+                  k_min = 0.666666*(1+(CONDSLD(I,K)/LAM_ZERO-1)*(0.182*SAND(I,K)/100 + 0.00775*CLAY(I,K)/100 + 0.0534*(100 - SAND(I,K) - CLAY(I,K))/100))**-1 + &
+                          0.333333*(1+(CONDSLD(I,K)/LAM_ZERO-1)*(1-2*(0.182*SAND(I,K)/100 + 0.00775*CLAY(I,K)/100 + 0.0534*(100 - SAND(I,K) - CLAY(I,K))/100)))**-1
 
                   k_ice = 0.666666**(1+(LAMI/LAM_ZERO-1)*0.333*(1-WF(I,K)/WSAT(I,K)))**-1 + 0.333333*(1+(LAMI/LAM_ZERO-1)*(1-2*0.333*(1-WF(I,K)/WSAT(I,K))))**-1
                   
@@ -687,13 +629,9 @@ include "isbapar.cdk"
                   SOILCONDZ(I,K) = (WD(I,K)*LAMW + k_ice*WF(I,K)*LAMI + k_air*(WSAT(I,K) - WD(I,K) - WF(I,K))*0.025 + k_min*(1 - WSAT(I,K))*CONDSLD(I,K)) / &
                                   (WD(I,K) +k_ice*WF(I,K)+k_air*(WSAT(I,K)-WD(I,K)-WF(I,K))+k_min*(1-WSAT(I,K)))
 
-                 ! IF(k == 1 ) THEN ! Snow is present
-                 !     WRITE(*,*) 'SoilK',SOILCONDZ(I,K)
-                 ! ENDIF
-
               ENDIF
 
-    !                       Heat capacity (J m-3 K-1)
+                 !Heat capacity (J m-3 K-1)
                  SOILHCAPZ(I,K) = (1. - WSAT(I,K)) * 2700. * 733. + WD(I,K) * CW * RHOW &
                                  + WF(I,K) * CI * RHOI
           
