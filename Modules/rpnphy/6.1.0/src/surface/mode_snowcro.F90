@@ -41,8 +41,8 @@ SUBROUTINE SNOWNLFALL_UPGRID(PTSTEP,PSR,PTA,PVMOD,           &
                              PSNOWAGE,OSNOWFALL,PSNOWDZN,PSNOWRHOF,PSNOWDZF,     &
                              PSNOWDIAMOPTF,PSNOWSPHERIF,PSNOWHISTF,PSNOWAGEF,             &
                              PWETCOEF, PSNOWIMPURF,                                       &
-                             OMODIF_GRID,KNLVLS_USE,HSNOWDRIFT,HSNOWFPAPPUS,PZ0EFF,PUREF, &
-                             PBLOWSNW, HSNOWFALL,                         &
+                             OMODIF_GRID,KNLVLS_USE,HSNOWDRIFT,HSNOWFPAPPUS,HSNOWMETAMO,  &
+                             PZ0EFF,PUREF,PBLOWSNW, HSNOWFALL,                            &
                              PSNOWMAK, OSNOWMAK_BOOL, OSNOWMAK_PROP, KMAX_USE)
 !
 !!    PURPOSE
@@ -151,6 +151,15 @@ CHARACTER(4), INTENT(IN)            :: HSNOWFPAPPUS
 !
 CHARACTER(3), INTENT(IN)              :: HSNOWFALL   ! snowfall density scheme Cluzet et al 2016
 !
+CHARACTER(3), INTENT(IN)              :: HSNOWMETAMO 
+                                       !-----------------------
+                                       ! Metamorphism scheme
+                                       ! HSNOWMETAMO=C13 Carmagnola et al 2014
+                                       ! HSNOWMETAMO=T07 Taillandier et al 2007
+                                       ! HSNOWMETAMO=F06 Flanner et al 2006
+                                       ! HSNOWMETAMO=S-F Schlef et al 2014
+                                       ! HSNOWMETAMO=S-B Schlef et al 2014
+
 ! Snowmaking option by p.spandre 20160211
 REAL, DIMENSION (:), INTENT(IN)      :: PSNOWMAK
 LOGICAL, INTENT(IN)                  :: OSNOWMAK_BOOL, OSNOWMAK_PROP ! if MM Snow production
@@ -497,10 +506,17 @@ DO JJ = 1,SIZE(PSNOW(:))
     PSNOW     (JJ) = PSNOW(JJ) + ZSNOWFALL(JJ)
     PSNOWDZF  (JJ) = ZSNOWFALL(JJ)
     !
-    IF (  HSNOWDRIFT=='DFLT' ) THEN
+    IF (HSNOWMETAMO=='T07' ) THEN
+      ! If T07 option is used, force the SSA of fresh snow to be the same value as the SSA0 used in the 
+      ! equations of SSA evaolution of Tallandier et al. (2007). It ensusres a consistent time evolution 
+      ! of SSA.  
       PSNOWDIAMOPTF(JJ) = XVDIAM6
       PSNOWSPHERIF(JJ) = 0.5
-    ELSE IF ( HSNOWDRIFT=='GA01' ) THEN
+    ELSE
+     IF (  HSNOWDRIFT=='DFLT' ) THEN
+      PSNOWDIAMOPTF(JJ) = XVDIAM6
+      PSNOWSPHERIF(JJ) = 0.5
+     ELSE IF ( HSNOWDRIFT=='GA01' ) THEN
       ! 2nd Option : deposited grains have a thresold wind speed equal to
       ! the current 5m wind speed (cf Gallee et al, 2001)
       ZCOEF = MIN(MAX(2.868*EXP(-0.085*PVMOD(JJ))-1.,0.),1.)
@@ -509,7 +525,7 @@ DO JJ = 1,SIZE(PSNOW(:))
                       ( ZCOEF + ( 1.- ZCOEF ) * &
                                 ( 3.*PSNOWSPHERIF(JJ) + 4.*(1.-PSNOWSPHERIF(JJ)) ) )
       !
-    ELSE IF ( HSNOWDRIFT=='VI13' .OR. HSNOWFPAPPUS=='VI13' .OR. (HSNOWDRIFT== 'R21F') .OR. (HSNOWDRIFT=='R21W') .OR. (HSNOWDRIFT=='R21R') ) THEN
+     ELSE IF ( HSNOWDRIFT=='VI13' .OR. HSNOWFPAPPUS=='VI13' .OR. (HSNOWDRIFT== 'R21F') .OR. (HSNOWDRIFT=='R21W') .OR. (HSNOWDRIFT=='R21R') ) THEN
       ! 3rd Option : parameterization of Vionnet et al (2013) that allows
       ! simulatneous snow transport and snowfall for wind speed higher than 6 m/s
       !PSNOWSPHERIF(JJ) = MIN(MAX(0.14/4.*(ZWIND_GRAIN(JJ)-2.)+0.5,0.5),0.9)
@@ -520,13 +536,14 @@ DO JJ = 1,SIZE(PSNOW(:))
       PSNOWDIAMOPTF(JJ) = XVDIAM6 * &
                       ( ZCOEF + ( 1.- ZCOEF ) * &
                                 ( 3.*PSNOWSPHERIF(JJ) + 4.*(1.-PSNOWSPHERIF(JJ)) ) )
-    ELSE IF ( HSNOWDRIFT=='NONE' .OR. HSNOWDRIFT=='PAPP' .OR. HSNOWFPAPPUS=='GM98' ) THEN
+     ELSE IF ( HSNOWDRIFT=='NONE' .OR. HSNOWDRIFT=='PAPP' .OR. HSNOWFPAPPUS=='GM98' ) THEN
       PSNOWSPHERIF(JJ) = MIN( MAX( 0.0795*ZWIND_GRAIN(JJ)+0.38, 0.5), 0.9 )
       ZCOEF = MAX( MIN( -0.173*ZWIND_GRAIN(JJ)+1.29, 0.2 ), 1.)
       PSNOWDIAMOPTF(JJ) = XVDIAM6 * &
                       ( ZCOEF + ( 1.- ZCOEF ) * &
                                 ( 3.*PSNOWSPHERIF(JJ) + 4.*(1.-PSNOWSPHERIF(JJ)) ) )
-    END IF
+     END IF
+    END IF  
     !
     ! Additionnal boolean to use modified properties of machine made snow or not p.spandre 2014/07/15
     ! Weighted mean of snowfall + blowing snow + snow_making snow

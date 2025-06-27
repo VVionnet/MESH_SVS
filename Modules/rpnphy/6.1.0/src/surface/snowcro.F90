@@ -827,8 +827,8 @@ ZSNOWDZO(:,:) = PSNOWDZ(:,:)
                         ZSNOWDZN, ZSNOWRHOF, ZSNOWDZF,                &
                         ZSNOWDIAMOPTF, ZSNOWSPHERIF, ZSNOWHISTF,                &
                         ZSNOWAGEF,ZWETCOEF, ZSNOWIMPURF,GMODIF_MAILLAGE,INLVLS_USE,       &
-                        HSNOWDRIFT,HSNOWFPAPPUS,PZ0EFF,ZUREF,                   &
-                        PBLOWSNW, HSNOWFALL,                   &
+                        HSNOWDRIFT,HSNOWFPAPPUS,HSNOWMETAMO,            &
+                        PZ0EFF,ZUREF,PBLOWSNW, HSNOWFALL,                   &
                         PSNOWMAK, OSNOWMAK_BOOL, OSNOWMAK_PROP,IMAX_USE)
 !
 !***************************************DEBUG IN**********************************************
