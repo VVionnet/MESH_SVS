@@ -179,8 +179,15 @@ module svs_configs
   REAL, PARAMETER ::  MYOMEGA   = ( 2*PI )/ DAY
   REAL, PARAMETER ::  DT_12MIN = 12.*60. ! 12 min in sec
 
-! Minimum snow albedo
-  REAL, PARAMETER ::  ANSMIN  = 0.5
+! Parameters in snow albedo scheme
+  REAL, PARAMETER ::  ANSMIN  = 0.5 ! Minimum snow albedo
+  REAL, PARAMETER ::  ANSMAX  = 0.8 ! Minimum snow albedo
+  REAL, PARAMETER ::  WCRN_ALB = 10  ! Snow mass to refresh the surface albedo [kg/m2]
+
+! Parameters in snow compaction scheme
+  REAL, PARAMETER ::  TODRY   = 0.008 ! Inverse of time constant for compaction   
+  REAL, PARAMETER ::  RHOMIN  = 0.05  ! Minimal relative density
+  REAL, PARAMETER ::  RHOSDEF = 0.15  ! Default value for snowfall density
 
 ! Parameters for liquid water evolution in the snowpack  
   REAL, PARAMETER ::  CRMIN   = 0.03  ! Minimum liquid water content

@@ -94,8 +94,6 @@
 ! RHOSNO      density of snow (kg/m3) for output only
 ! RESA        aerodynamical surface resistance for snow
 !
-include "isbapar.cdk"
-
 !
       INTEGER I
 !
@@ -623,7 +621,7 @@ include "isbapar.cdk"
 !
            ALPHAST(I) = (ALPHAS(I)-ANSMIN)*EXP(-0.01*DT/3600.) &  
                 +  ANSMIN & 
-                +  SR(I)*DT/WCRN*(ANSMAX-ANSMIN)
+                +  SR(I)*DT/WCRN_ALB*(ANSMAX-ANSMIN)
 !
 !
         ELSE IF (SMT(I).GT.0.0.AND.DSNOWDT(I).GE.0.0) THEN
@@ -631,7 +629,7 @@ include "isbapar.cdk"
 !                                       when there is melting
 !
            ALPHAST(I) = ALPHAS(I) - TODRY*DT/DAY  &   
-                + SR(I)*DT/WCRN*(ANSMAX-ANSMIN)
+                + SR(I)*DT/WCRN_ALB*(ANSMAX-ANSMIN)
 !
 !
         ELSE
