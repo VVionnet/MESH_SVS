@@ -99,10 +99,7 @@
       INTEGER OPT_VEGCOND ! Option to compute the skin conductivity from the snow-free vegetation 
 
 
-      REAL LAMI, CICE, DAY, MYOMEGA 
       REAL LAM_VEGL_STAB, LAM_VEGH_STAB,LAM_VEGL_UNSTAB, LAM_VEGH_UNSTAB
-      REAL MFAC, RHONEW,Z0
-      REAL HSURF,HDEEP
 
       REAL HNET,HNETR,TTEST, TTEST2, UFWC,DFWC, FWCTEST, QLAT
       REAL RTH_GRND, RTH_SNO,RTH_SNV,FAC_SNW
@@ -149,20 +146,6 @@
               FAC_SNW = 1.0
       ENDIF                   
 
-
-      LAMI   = 2.22 ! Thermal conductivity of ice
-      DAY     = 86400.
-      CICE    = 2.106E3  ! specific heat of ice 
-      MYOMEGA   = ( 2*PI )/ DAY         
-
-      ! Option for Niu and Yang snow cover fraction
-      MFAC = 1.6
-      Z0 = 0.01
-      RHONEW=100.0
-
-      ! Depths for the computation of the net tendency of melting-freezing [m]
-      HSURF = 0.05
-      HDEEP = 1.0
 
       ! Define skin conductivity for low and high vegetation (W m-2 K-1)
       IF(OPT_VEGCOND==1) THEN 
@@ -248,10 +231,10 @@
               FRAC_SNWL(I) = 0.
               FRAC_SNWH(I) = 0.
               IF(  SNODP(I)>0.) THEN
-                  FRAC_SNWL(I) = TANH(SNODP(I)/(2.5*Z0*(RAUW*SNORO(I)/RHONEW)**MFAC))
+                  FRAC_SNWL(I) = TANH(SNODP(I)/(2.5*Z0_NIU*(RAUW*SNORO(I)/RHONEW)**MFAC))
               ENDIF
               IF( SNVDP(I)>0.) THEN
-                  FRAC_SNWH(I) = TANH(SNVDP(I)/(2.5*Z0*(RAUW*SNVRO(I)/RHONEW)**MFAC))
+                  FRAC_SNWH(I) = TANH(SNVDP(I)/(2.5*Z0_NIU*(RAUW*SNVRO(I)/RHONEW)**MFAC))
               ENDIF
         ENDIF        
        

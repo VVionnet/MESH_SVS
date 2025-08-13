@@ -144,8 +144,6 @@
 ! PSOILHCAPZ soil heat capacity
 !
 include "isbapar.cdk"
-include "svs2_par.cdk"
-
 
 !
       INTEGER I,K
@@ -157,7 +155,6 @@ include "svs2_par.cdk"
            zcs, zcsv, z0_snow_low
 
       REAL :: CVAMIN = 1.0E-5
-      REAL :: SNM_CRIT = 1. ! Threshold of SWE for snow fraction over bare ground (kg m-2)
 
       IF (URBAN_PARAMS_NEW) THEN
          CVAMIN = 0.3E-5   ! matches value of CVDAT(21) reset in inicover_svs.F90
@@ -203,10 +200,10 @@ include "svs2_par.cdk"
 !
       DO I=1,N
         LAMS(I) = LAMI * RHOS(I)**1.88
-        ZCS(I) = 2.0 * SQRT( PI/( LAMS(I) * 1000* RHOS(I) *CI*DAY) )
+        ZCS(I) = 2.0 * SQRT( PI/( LAMS(I) * 1000* RHOS(I) *CICE*DAY) )
 !
         LAMSV(I) = LAMI * RHOSV(I)**1.88
-        ZCSV(I) = 2.0 * SQRT( PI/(LAMSV(I)* 1000*RHOSV(I) *CI*DAY) )
+        ZCSV(I) = 2.0 * SQRT( PI/(LAMSV(I)* 1000*RHOSV(I) *CICE*DAY) )
 !
       END DO
 !
