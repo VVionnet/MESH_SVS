@@ -52,7 +52,7 @@
       use sfclayer_mod, only: sl_sfclayer,SL_OK
       use sfc_options
       use svs_configs
-      use canopy_csts, only: EMSNV, ABARK, ALSNV
+      use canopy_csts, only: EMSNV, ALSNV
       use svs2_tile_configs
 
       implicit none

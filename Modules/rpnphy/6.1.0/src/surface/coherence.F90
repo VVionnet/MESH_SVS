@@ -445,9 +445,9 @@ subroutine coherence3(ni, trnch)
                zsnodpl(i) = 0.0
                zsnoma(i)  = 0.0
                zwsnow(i)  = 0.0
-               zsnoro(i)  = rhosdef
-               zsnoden(i) = rhosdef * rauw
-               zsnoal(i)  = ansmax
+               zsnoro(i)  = rhosdef_svs
+               zsnoden(i) = rhosdef_svs * rauw
+               zsnoal(i)  = ansmax_svs
             else
                zsnoro(i)  = min(  max(100.,zsnoden(i)) / rauw  , 0.9 )
             endif
@@ -456,9 +456,9 @@ subroutine coherence3(ni, trnch)
                zsnvdp(i)  = 0.0
                zsnvma(i)  = 0.0
                zwsnv(i)   = 0.0
-               zsnvro(i)  = rhosdef
-               zsnvden(i) = rhosdef*rauw
-               zsnval(i)  = ansmax
+               zsnvro(i)  = rhosdef_svs
+               zsnvden(i) = rhosdef_svs*rauw
+               zsnval(i)  = ansmax_svs
             else
                zsnvro(i)  =  min(  max(100.,zsnvden(i)) / rauw  , 0.9 )
             endif

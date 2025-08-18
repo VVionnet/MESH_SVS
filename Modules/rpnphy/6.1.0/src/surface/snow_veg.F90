@@ -142,8 +142,8 @@
          IF (VEGH(I).GE.EPSILON_SVS) THEN
 
             IF (SM(I).LT.CRITSNOWMASS) THEN
-               ALPHAS(I)   = ANSMAX
-               RHOSL(I)    = RHOSDEF
+               ALPHAS(I)   = ANSMAX_SVS
+               RHOSL(I)    = RHOSDEF_SVS
                !                             For snow temperature, set it to AIR temperature
                !                             capped at the triple point of water
                TSNS(I)     = MIN(T(I),TRPL)
@@ -162,8 +162,8 @@
 
          ELSE
             ! no high veg, so snow under high veg does not exist... reset all snow variables
-            ALPHAS(I)   = ANSMAX
-            RHOSL(I)    = RHOSDEF
+            ALPHAS(I)   = ANSMAX_SVS
+            RHOSL(I)    = RHOSDEF_SVS
             TSNS(I)     = MIN(T(I),TRPL)
             TSND(I)     = MIN(T(I),TRPL)
             SNODP(I)    = 0.
@@ -391,7 +391,7 @@
          else
             freez_l1(i)=0.0
             melt_l1(I)=0.0
-            rhomax(I)=RHOSDEF
+            rhomax(I)=RHOSDEF_SVS
          endif
          !
          ! layer 2
@@ -671,26 +671,26 @@
 !
 !                                       when there is freezing
 !
-           ALPHAST(I) = (ALPHAS(I)-ANSMIN)*EXP(-0.01*DT/3600.) &  
-                +  ANSMIN & 
-                +  SR(I)*DT/WCRN_ALB*(ANSMAX-ANSMIN)
+           ALPHAST(I) = (ALPHAS(I)-ANSMIN_SVS)*EXP(-0.01*DT/3600.) &  
+                +  ANSMIN_SVS & 
+                +  SR(I)*DT/WCRN_ALB_SVS*(ANSMAX_SVS-ANSMIN_SVS)
 !
 !
         ELSE IF (SMT(I).GT.0.0.AND.DSNOWDT(I).GE.0.0) THEN
 !
 !                                       when there is melting
 !
-           ALPHAST(I) = ALPHAS(I) - TODRY*DT/DAY  &   
-                + SR(I)*DT/WCRN_ALB*(ANSMAX-ANSMIN)
+           ALPHAST(I) = ALPHAS(I) - TODRY_SVS*DT/DAY  &   
+                + SR(I)*DT/WCRN_ALB_SVS*(ANSMAX_SVS-ANSMIN_SVS)
 !
 !
         ELSE
-           ALPHAST(I) = ANSMAX
+           ALPHAST(I) = ANSMAX_SVS
         ENDIF
 !                                       limits of the albedo
 !
-        ALPHAST(I) = MAX( ANSMIN, ALPHAST(I) )       
-        ALPHAST(I) = MIN( ANSMAX, ALPHAST(I) )
+        ALPHAST(I) = MAX( ANSMIN_SVS, ALPHAST(I) )       
+        ALPHAST(I) = MIN( ANSMAX_SVS, ALPHAST(I) )
 !
 
       END DO
@@ -707,9 +707,9 @@
         IF (SMT(I).GT.0.0) THEN
            RHOSFALL(I) = 109. + 6.*(T2M(I)-TRPL) +   &
                               26.*(U10M(I)**2+V10M(I)**2)**0.25
-           RHOSFALL(I) = MIN(MAX((RHOSFALL(I)*0.001),RHOMIN), 0.250)
+           RHOSFALL(I) = MIN(MAX((RHOSFALL(I)*0.001),RHOMIN_SVS), 0.250)
         ELSE
-           RHOSFALL(I) = RHOSDEF
+           RHOSFALL(I) = RHOSDEF_SVS
         END IF
       END DO
 
@@ -734,7 +734,7 @@
                         + (SR(I)*DT) * RHOSFALL(I)) / SMX(I)
          ELSE
             ! default
-            RHOSLT(I) = RHOSDEF
+            RHOSLT(I) = RHOSDEF_SVS
          END IF
       END DO
 !
@@ -757,7 +757,7 @@
                         / ( SMT(I) + FREEZ_L1(I) * DT )
 !                          Make sure within bounds 
           RHOSLT(I) = MIN( RHOICE, RHOSLT(I) )
-          RHOSLT(I) = MAX( RHOMIN, RHOSLT(I) )
+          RHOSLT(I) = MAX( RHOMIN_SVS, RHOSLT(I) )
 
         END IF
       END DO
@@ -797,8 +797,8 @@
          IF (VEGH(I).GE.EPSILON_SVS) THEN
 
             IF (SM(I).LT.CRITSNOWMASS) THEN
-               ALPHAS(I)   = ANSMAX
-               RHOSL(I)    = RHOSDEF
+               ALPHAS(I)   = ANSMAX_SVS
+               RHOSL(I)    = RHOSDEF_SVS
                RHOSNO(I)   = RHOSLT(I)*RAUW
                TSNS(I)     = 300.0
                TSND(I)     = 300.0
@@ -821,8 +821,8 @@
 
          ELSE
             ! no high veg, so snow under high veg does not exist... reset all snow variables
-            ALPHAS(I)   = ANSMAX
-            RHOSL(I)    = RHOSDEF
+            ALPHAS(I)   = ANSMAX_SVS
+            RHOSL(I)    = RHOSDEF_SVS
             RHOSNO(I)   = RHOSLT(I)*RAUW
             TSNS(I)     = 300.0
             TSND(I)     = 300.0
