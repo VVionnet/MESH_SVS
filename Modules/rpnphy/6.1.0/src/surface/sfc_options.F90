@@ -534,6 +534,7 @@ module sfc_options
    namelist /surface_cfgs/ lsnowdrift_sublim
 
    ! Option for the metamorphism scheme for Crocus
+   !    HSNOWMETAMO=B25  Braun et al. (2025)
    !    HSNOWMETAMO=B21 Correction of C13 to correctly handle the conversion from 
    !                     dendricity/sphericity/grain size to optical diameter/sphericity (Default in SVS2)
    !    HSNOWMETAMO=T07 Taillandier et al 2007
@@ -542,10 +543,11 @@ module sfc_options
    !    HSNOWMETAMO=S-B Schlef et al 2014
    character(len=16) :: hsnowmetamo = 'B21'
    namelist /surface_cfgs/ hsnowmetamo
-   character(len=*), parameter :: HSNOWMETAMO_OPT(5) = (/ &
+   character(len=*), parameter :: HSNOWMETAMO_OPT(6) = (/ &
         'T07',  &  
         'F06',  &  
         'B21',  &
+        'B25',  &
         'S-F',  &
         'S-B'   &  
          /)

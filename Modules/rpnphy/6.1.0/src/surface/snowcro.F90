@@ -959,7 +959,7 @@ IF (.NOT. OMEB) THEN
   CALL SNOWCROGETSSA(PSNOWDIAMOPT,INLVLS_USE,ZSNOWSSA_BEFORE)
   !
   CALL SNOWCROMETAMO(PSNOWDZ,PSNOWDIAMOPT,PSNOWSPHERI,PSNOWHIST,ZSNOWTEMP,   &
-                     PSNOWLIQ,PTSTEP,PSNOWSWE,INLVLS_USE,PSNOWAGE,HSNOWMETAMO)
+                     PSNOWLIQ,PTSTEP,PSNOWSWE,INLVLS_USE,PSNOWAGE,HSNOWMETAMO, OFOREST)
   !
   CALL SNOWCROGETSSA(PSNOWDIAMOPT,INLVLS_USE,ZSNOWSSA_AFTER)
   !
@@ -1574,7 +1574,7 @@ IF (OMEB) THEN
   CALL SNOWCROGETSSA(PSNOWDIAMOPT,INLVLS_USE,ZSNOWSSA_BEFORE)
   !
   CALL SNOWCROMETAMO(PSNOWDZ,PSNOWDIAMOPT,PSNOWSPHERI,PSNOWHIST,ZSNOWTEMP,     &
-                     PSNOWLIQ,PTSTEP,PSNOWSWE,INLVLS_USE,PSNOWAGE,HSNOWMETAMO  )
+                     PSNOWLIQ,PTSTEP,PSNOWSWE,INLVLS_USE,PSNOWAGE,HSNOWMETAMO,OFOREST  )
   !
   CALL SNOWCROGETSSA(PSNOWDIAMOPT,INLVLS_USE,ZSNOWSSA_AFTER)
   !
@@ -2246,7 +2246,7 @@ END SUBROUTINE SNOWCROCOMPACTN
 !####################################################################
 SUBROUTINE SNOWCROMETAMO(PSNOWDZ,PSNOWDIAMOPT, PSNOWSPHERI,         &
                          PSNOWHIST, PSNOWTEMP, PSNOWLIQ, PTSTEP, &
-                         PSNOWSWE,INLVLS_USE, PSNOWAGE, HSNOWMETAMO)
+                         PSNOWSWE,INLVLS_USE, PSNOWAGE, HSNOWMETAMO, LFOREST)
 !
 
 !     SNOW METAMORPHISM
@@ -2297,7 +2297,7 @@ SUBROUTINE SNOWCROMETAMO(PSNOWDZ,PSNOWDIAMOPT, PSNOWSPHERI,         &
 !        04/23: M Lafaysse       - conversion of historical param in integer to remove instabilities
 !                                  due to inappropriate comparisons real / integer
 USE MODD_SNOW_METAMO
-USE MODD_CSTS, ONLY : XTT, XPI, XRHOLW, XRHOLI
+USE MODD_CSTS, ONLY : XTT, XPI, XRHOLW, XRHOLI, XRV, XESTT, XLSTT
 USE MODD_SURF_PAR, ONLY : XUNDEF
 !
 USE MODE_SNOW3L
@@ -2314,6 +2314,8 @@ REAL, INTENT(IN)                    :: PTSTEP
 INTEGER, DIMENSION(:), INTENT(IN)   :: INLVLS_USE
 !
 REAL, DIMENSION(:,:), INTENT(IN)    :: PSNOWAGE
+
+LOGICAL :: LFOREST
 !
 CHARACTER(3), INTENT(IN)              :: HSNOWMETAMO ! metamorphism scheme
 !
@@ -2330,6 +2332,7 @@ REAL :: ZDANGL, ZSSA, ZSSA0, ZA, ZB, ZC, &
         ZA2, ZB2, ZC2, ZOPTR, ZOPTR0, ZDRDT, ZDSPHESURDT
 REAL :: ZVDENT1 (SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2)), ZVDENT2(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2)),&
          ZCOEF_SPH(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2))
+REAL ::  ZVTG, ZVEQ, ZKLDL, ZVKIN, ZSIGH, ZBETA, ZRHOVS, ZSSA_INI, ZAA
 REAL :: ZDENOM1, ZDENOM2, ZFACT1, ZFACT2
 REAL :: Z4PI ,ZONETHIRD,ZSIXOFXRHOLI,ZTSTEPHOUR !RAFIFE RENOMMER
 INTEGER :: JST,JJ                                !Loop controls
@@ -2466,7 +2469,7 @@ END DO
       END IF
     END DO
   END DO
-! Evolution of optical diameter for all cases with B21 options and for wet metamorphism with FO6, S-F, T07 options
+! Evolution of optical diameter for all cases with B21 options and for wet metamorphism with FO6, S-F, T07 and B25 options
   DO JST = 1,IMAX_USE
     !
     DO JJ = 1,SIZE(PSNOWRHO,1)
@@ -2621,6 +2624,73 @@ ELSEIF (HSNOWMETAMO=='F06'  .OR. HSNOWMETAMO=='S-F')THEN
       END IF
     END DO
   END DO
+
+!---------------------------------
+!    Braun et al. 2025 (B25)
+!
+! -> Evolution of optical diameter for dry snow 
+!    Evolution for wet snow is handled by the 
+!---------------------------------
+ELSEIF (HSNOWMETAMO=='B25') THEN
+  !
+  DO JST = 1,IMAX_USE
+    DO JJ = 1,SIZE(PSNOWRHO,1)
+      IF (INLVLS_USE(JJ) == 0) CYCLE
+      IF (  JST<=INLVLS_USE(JJ) .AND. PSNOWLIQ(JJ,JST)<=XUEPSI) THEN
+
+          ! Compute SSA [m2 kg-1]
+          ZSSA = 6./( XRHOLI*PSNOWDIAMOPT(JJ,JST) ) 
+
+          ZSSA_INI = ZSSA
+
+          ! Compute kinetic velocity [m s-1]
+          ZVKIN = ( XRV * PSNOWTEMP(JJ,JST) /(2*XPI))**0.5
+
+          ! Compute saturated vapor concentration [kg m-3] following the integrated form of Clausius-Clapeyron
+          ZRHOVS = XESTT/ (XRV * PSNOWTEMP(JJ,JST)) * EXP(XLSTT/XRV*(1./XTT - 1./PSNOWTEMP(JJ,JST)))  
+
+          ! Compute derivative of saturated vapor concentration with respect to temperature 
+          ZBETA = XESTT/ (XRV * PSNOWTEMP(JJ,JST)**3.) * (XLSTT/XRV - PSNOWTEMP(JJ,JST)) * &
+                     EXP(XLSTT/XRV*(1./XTT - 1./PSNOWTEMP(JJ,JST)))
+          
+          ! Compute standard deviation of the curvature [m-2]
+          ZSIGH = ((ZSSA * XRHOLI)* XRHOLI/PSNOWRHO(JJ,JST))*2. 
+
+          ! Parameter AA used in the TG term
+          !ZAA = XAA*MAX(0.,TANH(0.1*(ZSSA-XSSA_MIN)))
+          ZAA = XAA
+
+          ! Compute contribution of TG metamorphism to SSA evolution 
+          ZVTG = ZAA  * ZGRADT(JJ,JST) * ZBETA
+
+          ! Compute contribution of isothermal metamorphism to SSA evolution 
+          ZVEQ = XAB  * ZRHOVS * XD0 * ZSIGH**1.5
+
+          ! Compute transition coefficient between kinetic limited to diffusion limited regime
+          ZKLDL = 1. +  (XDV*ZSSA) / ( XALP * ZVKIN * XAL)
+          
+          ! Increment SSA
+          ZSSA = ZSSA - 2 * PTSTEP * ZSSA * (XDV/XRHOLI) * ( ZVTG + ZVEQ )/ ZKLDL
+
+          IF( (.NOT. LFOREST) .AND. JST== INLVLS_USE(JJ)) THEN
+          !IF( (.NOT. LFOREST) .AND. JST== 1) THEN
+                  WRITE(*,*) '-----------------------------------'
+                  WRITE(*,*) 'SSA INI',ZSSA_INI,'Fin',ZSSA
+                  WRITE(*,*) 'Terms TG',ZVTG,'EQ',ZVEQ   
+                  WRITE(*,*) 'Terms EG',ZRHOVS,ZSIGH**1.5
+                  WRITE(*,*) 'Terms_TG',ZBETA, ZAA,MAX(0.,TANH(0.25*(ZSSA-XSSA_MIN)))
+                  WRITE(*,*) 'Temp',PSNOWTEMP(JJ,JST),'Grad',ZGRADT(JJ,JST)                   
+          ENDIF
+
+          ZSSA = MAX( ZSSA, XSSA_MIN )
+
+          ! Compute updated value of optical diameter 
+          PSNOWDIAMOPT(JJ,JST) = 6./( XRHOLI*ZSSA )          
+
+      END IF
+    END DO
+  END DO
+              
   !
 END IF
 IF ( HSNOWMETAMO=='S-F'.OR. HSNOWMETAMO=='S-B')THEN
