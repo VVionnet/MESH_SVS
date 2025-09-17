@@ -2654,7 +2654,7 @@ ELSEIF (HSNOWMETAMO=='B25') THEN
                      EXP(XLSTT/XRV*(1./XTT - 1./PSNOWTEMP(JJ,JST)))
           
           ! Compute standard deviation of the curvature [m-2]
-          ZSIGH = ((ZSSA * XRHOLI)* XRHOLI/PSNOWRHO(JJ,JST))*2. 
+          ZSIGH = ((ZSSA * XRHOLI)* XRHOLI/PSNOWRHO(JJ,JST))**2. 
 
           ! Parameter AA used in the TG term
           !ZAA = XAA*MAX(0.,TANH(0.1*(ZSSA-XSSA_MIN)))
