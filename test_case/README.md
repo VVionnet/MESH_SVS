@@ -1,6 +1,6 @@
 # Test case for MESH-SVS in point mode
 
-This folder contains a setup for a test of MESH-SVS in  point mode at the Col de Porte experimental catchment in the French Alps. Detailed instructions to configure and run the model in point mode are given [here](https://wiki.usask.ca/pages/viewpage.action?pageId=1716094475). 
+This folder contains a setup for a test of MESH-SVS in  point mode at the Col de Porte experimental catchment in the French Alps. Detailed instructions to configure and run the model in point mode are given [here](https://mesh-model.atlassian.net/wiki/spaces/USER/pages/6390475/How+to+configure+MESH-SVS+for+point+mode+1D+including+SVS2). 
 
 # Configuration files
 
@@ -18,8 +18,11 @@ This folder contains a setup for a test of MESH-SVS in  point mode at the Col de
 
 **obs_insitu_cdp_1994_2014.nc** Evaluation data from the [ESM-Snow MIP dataset](https://doi.pangaea.de/10.1594/PANGAEA.897575)
 
-# Routines 
+# Output files 
 
+**ouput/out_svs2.nc** An example of SVS2 output file in NetCDF format. Used by the Jupyter notebook `generate_plots_svs2_snowProfiles.ipynb`. 
+
+# Routines 
 
 **generate_nc_output.py**
 
@@ -46,14 +49,21 @@ This folder contains a setup for a test of MESH-SVS in  point mode at the Col de
 
 *Usage:* `python generate_nc_surfex.py`
 
-* Python routine to generate a NetCDF file with a format (variable names, dimensions, ..) that corresponds to the format of the Crocus output in SURFEX. 
+* Python routine to generate a NetCDF file with a format (variable names, dimensions, ..) that corresponds to the format of the output of SURFEX/Crocus. 
 * Need to be executed after `generate_nc_output.py`
-* This script allows to use the proreader visialization tools, part of the [snowtools](https://opensource.umr-cnrm.fr/projects/snowtools_git/wiki/Graphical_User_Interface) package developped at CEN in Grenoble (France). 
+* This script allows to use the proreader visialization tools, part of the [snowtools](https://github.com/UMR-CNRM/snowtools) package developped at CEN in Grenoble (France). 
 * Requires the package xarray and pandas. `snowtools` requires extra packages (see the dedicated webpage). 
 
+# Notebook
 
-On the ECCC collaboration server **GPSCC**, you need to load a specific version of python that contins all the package that are needed:  
+**generate_plots_svs2_snowProfiles.ipynb**
+
+* Jupyter notebook that contains many example to plot output of internal snowpack properties simulated by SVS2/Crocus. 
+
+# ECCC collaboration server
+
+On the ECCC collaboration server **GPSCC**, you need to load a specific version of python that contains all the packages that are needed by the different routines and the Jupyter notebook:  
 
 ```
-. ssmuse-sh -p /fs/ssm/eccc/cmd/cmds/env/python/latest
+. ssmuse-sh -p /fs/ssm/eccc/cmd/cmds/env/python/cmds_python_latest
 ```
