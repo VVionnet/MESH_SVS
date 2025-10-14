@@ -159,13 +159,13 @@ REAL, DIMENSION(:,:,:), POINTER :: XDRDT0,XTAU,XKAPPA   ! field read
 !
 ! Parameters for param of SSA evolution from Braun et al. (2025)
 !
-REAL, PARAMETER                 :: XAA   = 1320     ! m-1
-REAL, PARAMETER                 :: XAB   = 1.52E-2  ! [-]
-REAL, PARAMETER                 :: XAL   = 1.09E-2  ! [-]
+! Without minimal ssa
+REAL, PARAMETER                 :: XAA   = 563.35     ! m-1
+! With minimal ssa
+!REAL, PARAMETER                 :: XAA   = 1060.55     ! m-1
 
-!REAL, PARAMETER                 :: XAA   = 134.8     ! m-1
-!REAL, PARAMETER                 :: XAB   = 19.0  ! [-]
-!REAL, PARAMETER                 :: XAL   = 1.13E-2  ! [-]
+REAL, PARAMETER                 :: XAB   = 8.01E-2    ! [-]
+REAL, PARAMETER                 :: XAL   = 948        ! [-]
 
 REAL, PARAMETER                 :: XDV   = 2E-5     ! diffusion coefficient of vapor in air  [m2 s-1]  
 REAL, PARAMETER                 :: XALP  = 0.1      ! sticking coefficient of water molecules on the ice surface [-]

@@ -2330,6 +2330,7 @@ REAL :: ZSPHE(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2)),ZVAP,ZSNOWSIZE
 !       ZSNOWSIZE = snow grain size in the 'Brun92' formalism ( m )
 REAL :: ZDANGL, ZSSA, ZSSA0, ZA, ZB, ZC, &
         ZA2, ZB2, ZC2, ZOPTR, ZOPTR0, ZDRDT, ZDSPHESURDT
+REAL :: ZSSAM, ZSSAV, ZSSAV_MIN
 REAL :: ZVDENT1 (SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2)), ZVDENT2(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2)),&
          ZCOEF_SPH(SIZE(PSNOWRHO,1),SIZE(PSNOWRHO,2))
 REAL ::  ZVTG, ZVEQ, ZKLDL, ZVKIN, ZSIGH, ZBETA, ZRHOVS, ZSSA_INI, ZAA
@@ -2639,9 +2640,14 @@ ELSEIF (HSNOWMETAMO=='B25') THEN
       IF (  JST<=INLVLS_USE(JJ) .AND. PSNOWLIQ(JJ,JST)<=XUEPSI) THEN
 
           ! Compute SSA [m2 kg-1]
-          ZSSA = 6./( XRHOLI*PSNOWDIAMOPT(JJ,JST) ) 
+          ZSSAM = 6./( XRHOLI*PSNOWDIAMOPT(JJ,JST) )
+          ZSSA_INI = ZSSAM
 
-          ZSSA_INI = ZSSA
+          !  Compute ssa per unit of totatl volume (including ice and air phases)
+          ZSSAV =  ZSSAM * PSNOWRHO(JJ,JST)
+
+          ! Compute minimal ssa value per unit of total volume 
+          ZSSAV_MIN = XSSA_MIN * PSNOWRHO(JJ,JST)
 
           ! Compute kinetic velocity [m s-1]
           ZVKIN = ( XRV * PSNOWTEMP(JJ,JST) /(2*XPI))**0.5
@@ -2654,10 +2660,10 @@ ELSEIF (HSNOWMETAMO=='B25') THEN
                      EXP(XLSTT/XRV*(1./XTT - 1./PSNOWTEMP(JJ,JST)))
           
           ! Compute standard deviation of the curvature [m-2]
-          ZSIGH = ((ZSSA * XRHOLI)* XRHOLI/PSNOWRHO(JJ,JST))**2. 
+          ZSIGH = ((ZSSAM * XRHOLI))**2. 
 
           ! Parameter AA used in the TG term
-          !ZAA = XAA*MAX(0.,TANH(0.1*(ZSSA-XSSA_MIN)))
+          !ZAA = XAA*MAX(0.,TANH(0.3*(ZSSA-XSSA_MIN)))
           ZAA = XAA
 
           ! Compute contribution of TG metamorphism to SSA evolution 
@@ -2667,25 +2673,31 @@ ELSEIF (HSNOWMETAMO=='B25') THEN
           ZVEQ = XAB  * ZRHOVS * XD0 * ZSIGH**1.5
 
           ! Compute transition coefficient between kinetic limited to diffusion limited regime
-          ZKLDL = 1. +  (XDV*ZSSA) / ( XALP * ZVKIN * XAL)
+          ZKLDL = 1. +  (XDV*ZSSAV) / ( XALP * ZVKIN * XAL)
           
-          ! Increment SSA
-          ZSSA = ZSSA - 2 * PTSTEP * ZSSA * (XDV/XRHOLI) * ( ZVTG + ZVEQ )/ ZKLDL
+          ! Increment SSA per unit of total volume as Eq 17 in Braun et al. (2025)
+          ZSSAV = ZSSAV - 2 * PTSTEP * ZSSAV * (XDV/XRHOLI) * ( ZVTG + ZVEQ )/ ZKLDL
+
+          ! Alternative formulation including a minimal SSA value for TG metamorphism
+          !ZSSAV = ZSSAV - 2 * PTSTEP * (XDV/XRHOLI) / ZKDL * ( ZVTG (ZSSAV - ZSSAV_MIN) + ZVEQ *ZSSAV )
+
+          ! Increment SSA per unit of mass
+          ZSSAM = ZSSAV /  PSNOWRHO(JJ,JST)
 
           IF( (.NOT. LFOREST) .AND. JST== INLVLS_USE(JJ)) THEN
           !IF( (.NOT. LFOREST) .AND. JST== 1) THEN
                   WRITE(*,*) '-----------------------------------'
-                  WRITE(*,*) 'SSA INI',ZSSA_INI,'Fin',ZSSA
+                  WRITE(*,*) 'SSA INI',ZSSA_INI,'Fin',ZSSAM
                   WRITE(*,*) 'Terms TG',ZVTG,'EQ',ZVEQ   
                   WRITE(*,*) 'Terms EG',ZRHOVS,ZSIGH**1.5
-                  WRITE(*,*) 'Terms_TG',ZBETA, ZAA,MAX(0.,TANH(0.25*(ZSSA-XSSA_MIN)))
+                  WRITE(*,*) 'Terms_TG',ZBETA, ZAA,MAX(0.,TANH(0.25*(ZSSAM-XSSA_MIN)))
                   WRITE(*,*) 'Temp',PSNOWTEMP(JJ,JST),'Grad',ZGRADT(JJ,JST)                   
           ENDIF
 
-          ZSSA = MAX( ZSSA, XSSA_MIN )
+          ZSSAM = MAX( ZSSAM, XSSA_MIN )
 
           ! Compute updated value of optical diameter 
-          PSNOWDIAMOPT(JJ,JST) = 6./( XRHOLI*ZSSA )          
+          PSNOWDIAMOPT(JJ,JST) = 6./( XRHOLI*ZSSAM )          
 
       END IF
     END DO
