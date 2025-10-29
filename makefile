@@ -134,7 +134,7 @@ ifeq ($(shell test $$(gcc -dumpversion | cut -d '.' -f 1) -gt 5; echo $$?), 0)
 endif
 LFLAG=-c -g -fbacktrace
 CFLAG=
-FTN90PP=-x f95 -cpp -ffree-form -ffree-line-length-none -fcray-pointer
+FTN90PP=-x f95 -cpp -ffree-form -ffree-line-length-none -fcray-pointer -fallow-argument-mismatch
 FTN90PPOPT=
 endif
 
