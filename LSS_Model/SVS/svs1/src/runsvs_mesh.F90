@@ -1869,6 +1869,7 @@ ierr = 200
 
         !> Modules.
    use inichamp, only: inichamp4
+   use sfc_calcdiag, only: sfc_calcdiag3
 
         type(ShedGridParams) :: shd
         type(fl_ids) :: fls
@@ -2341,6 +2342,11 @@ ierr = 200
             call program_abort()
         end if
 
+!lacchr = (mod(step_driver-1, acchr) == 0)
+!step_driver=moyhr=acchr=0 (reset every time-step, MESH handles aggregations)
+   call sfc_calcdiag3(pvars, 0, 0, delt, kount, 0, ni)
+   if (phy_error_L) return
+
         !> Copy bus variable.
         call runsvs_mesh_copy_bus_to_vs()
 
@@ -2450,9 +2456,9 @@ ierr = 200
         end do
 
         ! Cumulate surface runoff for land surface tile
-         pvars(vd%runofftotaf%idxv)%data(((indx_soil - 1)*ni + 1):indx_soil*ni) =   &
-                           pvars(vd%runofftotaf%idxv)%data(((indx_soil - 1)*ni + 1):indx_soil*ni)   + &
-                           pvars(vd%runofftot%idxv)%data(((indx_soil - 1)*ni + 1):indx_soil*ni)
+!         pvars(vd%runofftotaf%idxv)%data(((indx_soil - 1)*ni + 1):indx_soil*ni) =   &
+!                           pvars(vd%runofftotaf%idxv)%data(((indx_soil - 1)*ni + 1):indx_soil*ni)   + &
+!                           pvars(vd%runofftot%idxv)%data(((indx_soil - 1)*ni + 1):indx_soil*ni)
 
     end subroutine
 
