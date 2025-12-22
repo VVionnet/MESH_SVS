@@ -378,7 +378,7 @@ module runsvs_mesh
    use wb_itf_mod
    use cnv_options
    use phy_options
-   use phy_status, only: phy_error_L, PHY_OK
+   use phy_status, only: phy_error_L, PHY_OK, physeterror
    use phybusidx
    use ens_perturb, only: ptp_nc, spp_nc, ens_nc2d
    use microphy_utils, only: mp_phybusinit
@@ -847,7 +847,7 @@ module runsvs_mesh
     subroutine runsvs_mesh_init(shd, fls, cm)
 
         !> For RPN/physics status.
-        use phy_status, only: phy_error_L
+        use phy_status, only: phy_error_L, physeterror
 
         !> For surface layer configuration.
    use phymem
@@ -1860,7 +1860,7 @@ ierr = 200
         use mu_jdate_mod, only: jdate_from_cmc
 
         !> For RPN/physics status.
-        use phy_status, only: phy_error_L
+        use phy_status, only: phy_error_L, physeterror
 
         !> For constants.
         use tdpack_const, only: rgasd, grav, cappa, tcdk
