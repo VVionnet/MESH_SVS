@@ -23,6 +23,9 @@ module runsvs_mesh
 
     use str_mod, only: str_concat
 
+!phybus-6.3:
+    use phymem, only: phyvar, phymem_get_slabvars
+
     implicit none
 
     character(len=1024) :: msg_S
@@ -69,6 +72,9 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_SAND = 'SAND'
     character(len = *), parameter, public :: VN_SVS_CLAY = 'CLAY'
     character(len = *), parameter, public :: VN_SVS_SOC = 'SOC'
+!phybus-6.1:soc
+!phybus-6.3:fsoc=soc/100.0
+    character(len = *), parameter, public :: VN_SVS_FSOC = 'FSOC'
     character(len = *), parameter, public :: VN_SVS_WSOIL = 'WSOIL'
     character(len = *), parameter, public :: VN_SVS_ISOIL = 'ISOIL'
     character(len = *), parameter, public :: VN_SVS_LATFL = 'LATFL'
@@ -204,6 +210,9 @@ module runsvs_mesh
         real, dimension(:, :), allocatable :: sand
         real, dimension(:, :), allocatable :: clay
         real, dimension(:, :), allocatable :: soc
+!phybus-6.1:soc
+!phybus-6.3:fsoc=soc/100.0
+        real, dimension(:, :), allocatable :: fsoc
         real, dimension(:, :), allocatable :: wsoil
         real, dimension(:, :), allocatable :: isoil
         real, dimension(:, :), allocatable :: tpsoil ! For svs2 and svs1 (with soil freezing)
@@ -324,6 +333,8 @@ module runsvs_mesh
     integer, parameter, private :: trnch = 1
     integer, private :: ni = 0
     integer, parameter, private :: nk = 1
+!phybus-6.3:
+    type(phyvar), pointer, contiguous :: pvars(:)
 
     !> Constants.
     real, parameter, private :: deg2rad = acos(-1.0)/180.0, rad2deg = 180.0/acos(-1.0)
@@ -360,74 +371,103 @@ module runsvs_mesh
     subroutine phy_businit(ni, nk)
 
         !> For RPN/physics status.
-        use phy_status, only: phy_error_L
+!        use phy_status, only: phy_error_L
 
         !> Modules.
+   use bus_builder, only: bb_keylist, bb_n
+   use wb_itf_mod
    use cnv_options
-        use phy_options
-        use phybus
+   use phy_options
+   use phy_status, only: phy_error_L, PHY_OK, physeterror
+   use phybusidx
+   use ens_perturb, only: ptp_nc, spp_nc, ens_nc2d
+   use microphy_utils, only: mp_phybusinit
+   use phymem, only: phymem_init, phymem_add, phymem_find, phymem_alloc
+   use phymem, only: nphyvars
+   use phygridmap, only: phy_lcl_ni, phy_lcl_nj, phydim_ni, phydim_nj, phydim_nk
 
         !> Input/output variables.
         integer, intent(in) :: ni, nk
 
         !> Local variables.
-        character(len = 6) :: nag, ntp, nmar, wwz, nuv, isss
-   logical :: lcn_mpx, lcn_my2, lcn_p3i1, lcn_p3i2, lcn_p3i3, lcn_p3i4, lcn_none
+#include <rmnlib_basics.hf>
+   include "surface.cdk"
+
+   character(len=2), parameter :: E1 = 'e1'
+   character(len=2), parameter :: D1 = 'd1'
+   character(len=2), parameter :: P0 = 'p0'
+   character(len=2), parameter :: P1 = 'p1'
+   character(len=2), parameter :: V0 = 'v0'
+   character(len=2), parameter :: U0 = 'u0'
+
+   character(len=4), parameter :: LVLA = 'A'
+   character(len=4), parameter :: LVLA4= 'A*4'
+   character(len=4), parameter :: LVLE = 'E'
+   character(len=4), parameter :: LVLM = 'M'
+   character(len=4), parameter :: LVLM2= 'M*2'
+   character(len=4), parameter :: LVLT = 'T'
+
+   character(len=6)  :: nag, nmar, dwwz, nuv, psss, nccl
+   integer :: ier, iverb, nsurf, nextra, i
    logical :: lbourg3d, lbourg
-   logical :: lrslp
    logical :: lkfbe, lshal, lshbkf, lmid
-   logical :: ladvtke, nadvtke, lmoistke
+   logical :: lmoistke, lrpnint
    logical :: lmoyhr, lmoyhrkf, lmoykfsh, lmoymid
-   logical :: lgwdsm
+   logical :: lgwdsm, lgwd, ltofd
    logical :: lccc2
    logical :: lghg, ltrigtau
    logical :: liuv
    logical :: lmoyhroz, lmoyhrgh, llinozout, llinghout, llinozage
-   logical :: lcndsm
-   logical :: lcons, lmoycons
+   logical :: lmoycons
    logical :: lhn_init, lsfcflx
-   logical :: lsurfonly
+   logical :: lsurfonly, lwindgust
+   logical :: lpcp_frac, ladvzn, ls2, lmp, lcsun
 
-        !> Includes.
-        include "mcica.cdk"
-
-        !> Variables from 'ens_perturb'.
-        integer ptp_nc, spp_nc, ens_nc2d
-
-        !> From 'phy_init'.
-        ptp_nc = 0
-        spp_nc = 0
-        ens_nc2d = max(ptp_nc + spp_nc, 1)
+   ier = phymem_init()
+   if (.not.RMN_IS_OK(ier)) then
+      call physeterror('phybusinit', 'Problem with phymem module init')
+      return
+   endif
+   nagrege = nsurf + 1
 
    !# nagg is the dimension of aggregrated variables ('nagrege').
-   write(nag,'(a,i2)') 'A*', nsurf + 1
+!   write(nag,'(a,i2)') 'A*', nsurf + 1
+   write(nag,'(a,i2)') 'A*', nagrege
 
    !# nipt is the number of tau/cloud top pressure bins in ISCCP histograms
-   write(ntp,'(a,i2)') 'A*', ntau*nptop
+!   write(ntp,'(a,i2)') 'A*', ntau*nptop
    write(nuv,'(a,i2)') 'A*', RAD_NUVBRANDS
+   write(nccl,'(a,i2)') 'A*', RAD_TCCL
 
    !# nmar is the number of 2d Markov fields
+!phy_init:
+      ptp_nc = 0
+      ens_nc2d = max(ptp_nc + spp_nc, 1)
    write(nmar,'(a,i2)') 'A*', ens_nc2d
 
-   lcn_mpx  = (stcond(1:2) == 'MP')
-   lcn_none = .not.lcn_mpx
-   lcn_my2  = (stcond(1:6) == 'MP_MY2')
-   lcn_p3i1 = (stcond == 'MP_P3' .and. p3_ncat >= 1)
-   lcn_p3i2 = (stcond == 'MP_P3' .and. p3_ncat >= 2)
-   lcn_p3i3 = (stcond == 'MP_P3' .and. p3_ncat >= 3)
-   lcn_p3i4 = (stcond == 'MP_P3' .and. p3_ncat == 4)
+   ! Retrieve bus requirements for microphysics scheme
+   if (mp_phybusinit() /= PHY_OK) then
+      call physeterror('phybusinit', &
+           'Cannot retrieve microphysics bus information')
+      return
+   endif
+
+!   lcn_mpx  = (stcond(1:2) == 'MP')
+!   lcn_none = .not.lcn_mpx
+!   lcn_my2  = (stcond(1:6) == 'MP_MY2')
+!   lcn_p3i1 = (stcond == 'MP_P3' .and. p3_ncat >= 1)
+!   lcn_p3i2 = (stcond == 'MP_P3' .and. p3_ncat >= 2)
+!   lcn_p3i3 = (stcond == 'MP_P3' .and. p3_ncat >= 3)
+!   lcn_p3i4 = (stcond == 'MP_P3' .and. p3_ncat == 4)
 
    lbourg3d= (pcptype == 'BOURGE3D')
-   lgwdsm  = (sgo_tdfilter > 0.)
-   lrslp   = radslope
-   ladvtke = advectke
-   nadvtke = .not.ladvtke
+   lgwdsm  = (gwdrag /= 'NIL' .and. sgo_tdfilter > 0.)
+   lgwd    = (gwdrag /= 'NIL')
    lmoyhr  = (moyhr > 0 .or. dynout)
    lkfbe   = any(convec == (/ &
         'BECHTOLD', &
         'KFC     ', &
-        'KFC2    ', &
-        'KFC3    '  &
+        'KFC2    ' &
         /))
    lshal   = (conv_shal /= 'NIL')
    lshbkf  = (conv_shal == 'BECHTOLD')
@@ -436,29 +476,46 @@ module runsvs_mesh
    lmoymid= (lmoyhr .and. lmid)
    lmoykfsh= (lmoyhr .and. lshbkf .and. bkf_lshalm)
    lbourg  = any(pcptype == (/&
-        'BOURGE', &
-        'NIL   '  &
+        'BOURGE ', &
+        'NIL    ', &
+        'SPS_W19', &
+        'SPS_FRC', &
+        'SPS_H13'  &
         /))
-   lmoistke= (fluvert == 'MOISTKE')
+   lrpnint = (fluvert == 'RPNINT')
+   lmoistke = (fluvert == 'MOISTKE')
+   ladvzn  = (advectke .and. lrpnint)
    lccc2   = (radia == 'CCCMARAD2')
    lghg    = (lccc2 .and. radghg_L)
-   llinozage = (llinoz .and. age_linoz)              ! age of air tracer off
-   llinozout = (llinoz .and. out_linoz)
-   llinghout = (llingh .and. out_linoz)
-   lmoyhroz =(lmoyhr .and. llinoz .and. out_linoz)
-   lmoyhrgh =(lmoyhr .and. llingh .and. out_linoz)
-   lcndsm  = (cond_infilter > 0.)
-   ltrigtau = (kfctrigtau > 0.)
-   liuv    = (any(radia == (/&
-        'CCCMARAD ', &
-        'CCCMARAD2'  &
-        /)) .and. kntraduv_S /= '')
+   ls2     = (stcond == 'S2')
+   lcsun   = (stcond == 'CONSUN')
+   lmp     = (stcond(1:3) == 'MP_')
 
-        wwz = '1'
-        lsurfonly = (fluvert == 'SURFACE')
-        if (lsurfonly) wwz = '0'
-        isss = '0'
-        if (tofd /= 'NIL') isss = '1'
+   dwwz = 'd1'
+   lsurfonly = (fluvert == 'SURFACE')
+   if (lsurfonly) dwwz = 'd0'
+   psss = 'p0'
+   if (tofd /= 'NIL') psss = 'p1'
+   ltofd = (tofd /= 'NIL')
+   lpcp_frac = lsurfonly .and. (pcptype == 'SPS_FRC')
+
+   ! Activate energy budget diagnostics only if outputs are requested by the user
+   ebdiag = .false.
+
+   ! Activate ECMWF diagnostics only if outputs are requested by the user
+   ecdiag = .false.
+
+   ! Activate final-state screen-level diagnostics only if outputs are requested by the user
+   fsdiag = .false.
+
+   ! Activate wind gust estimate only if outputs are requested by the user
+   lwindgust = .false.
+
+   ! Activate lightning diagnostics only if outputs are requested by the user
+   llight = .false.
+
+   ! Activate refractivity diagnostics only if outputs are requested by the user
+   lrefract = .false.
 
    ! Activate energy budget diagnostics only if outputs are requested by the user
    lcons = .false.
@@ -467,11 +524,67 @@ module runsvs_mesh
    lhn_init = (lhn /= 'NIL')
    lsfcflx = (sfcflx_filter_order > 0)
 
+   etccdiag = .false.
+
+   lhn_init = (lhn /= 'NIL')
+   lsfcflx = (sfcflx_filter_order > 0)
+
+   cmt_comp_diag = .false.
+
+!phy_init
+      phydim_ni = ni
+      phydim_nj = 1
+
+!?      call mapping2drivergrid()
+
+      !# Establish physics v-grid information
+      phydim_nk = nk
+
+#include "phymkptr.hf"
 #include "phyvar.hf"
         if (phy_error_L) then
             call print_error("An error occurred initializing the physics bus variable.")
             call program_abort()
         end if
+
+   call sfc_businit(moyhr,ni,nk)
+   if (phy_error_L) return
+
+   !#NOTE: phymem_alloc must be done before any call to phymem_find
+!phy_init
+      nphyoutlist = -1
+!      ier = wb_get_meta('itf_phy/PHYOUT', type1, sizeof1, nphyoutlist, options1)
+!      if (.not.WB_IS_OK(ier)) nphyoutlist = -1
+      nextra = 0
+!      if (ptp_L) nextra = 3
+      allocate(phyoutlist_S(max(1,nphyoutlist+nextra)))
+      phyoutlist_S(:) = ' '
+   if (debug_alldiag_L .or. nphyoutlist < 0) then
+      ier = phymem_alloc(debug_mem_L, (/'*'/))
+   else
+      ier = phymem_alloc(debug_mem_L, phyoutlist_S)
+   endif
+   if (.not.RMN_IS_OK(ier)) &
+        call physeterror('phybusinit', 'problem in phymem_alloc')
+   if (phy_error_L .or. .not.RMN_IS_OK(ier)) return
+
+#undef PHYMKPTR
+#define PHYPTRGETIDX
+#include "phymkptr.hf"
+#include "phyvar.hf"
+   if (phy_error_L) return   
+
+   sigw = sigt
+
+   if (lbourg3d) then
+      fip = fip3d
+      fneige = fneige3d
+   endif
+
+   if (qcmoinsmp > 0) qcmoins = qcmoinsmp
+   if (qcphytdmp > 0) qcphytd = qcphytdmp
+   if (qcplusmp > 0) qcplus = qcplusmp
+   if (qrphytdmp > 0) qrphytd = qrphytdmp
 
     end subroutine
 
@@ -479,6 +592,10 @@ module runsvs_mesh
 
         !> For constants.
         use tdpack_const, only: omega
+
+        !> Modules.
+   use inisoili_svs_mod, only: inisoili_svs
+   use inisoili_svs2_mod, only: inisoili_svs2
 
         ! For Crocus debug mode
         use mode_crodebug
@@ -546,12 +663,18 @@ module runsvs_mesh
             do i = 1, nl_svs
                 if (allocated(svs_mesh%vs%sand)) svs_bus(a2(sand, i - 1):z2(sand, i - 1)) = svs_mesh%vs%sand(:, i)
                 if (allocated(svs_mesh%vs%clay)) svs_bus(a2(clay, i - 1):z2(clay, i - 1)) = svs_mesh%vs%clay(:, i)
-                if (allocated(svs_mesh%vs%soc)) svs_bus(a2(soc, i - 1):z2(soc, i - 1)) = svs_mesh%vs%soc(:, i)
+!phybus-6.1:soc
+!phybus-6.3:fsoc=soc/100.0
+                if (allocated(svs_mesh%vs%fsoc)) then
+                    svs_bus(a2(fsoc, i - 1):z2(fsoc, i - 1)) = svs_mesh%vs%fsoc(:, i)
+                else if (allocated(svs_mesh%vs%soc)) then
+                    svs_bus(a2(fsoc, i - 1):z2(fsoc, i - 1)) = svs_mesh%vs%soc(:, i)/100.0
+                end if
             end do
             if (svs_mesh%vs%schmsol=='SVS') then
-                call inisoili_svs(ni, trnch)
+                call inisoili_svs(pvars, ni)
             else if (svs_mesh%vs%schmsol=='SVS2') then
-                call inisoili_svs2(ni, trnch)
+                call inisoili_svs2(pvars, ni)
             endif
         else
             write(*,*) 'val stp',nl_stp,size( svs_mesh%vs%sand,2)
@@ -724,10 +847,11 @@ module runsvs_mesh
     subroutine runsvs_mesh_init(shd, fls, cm)
 
         !> For RPN/physics status.
-        use phy_status, only: phy_error_L
+        use phy_status, only: phy_error_L, physeterror
 
         !> For surface layer configuration.
-        use sfclayer_mod, only: sl_put, SL_OK
+   use phymem
+        use sfclayer, only: sl_put, SL_OK
 
         !> For rmnlib constant 'RMN_IS_OK'.
 #include <rmnlib_basics.hf>
@@ -839,14 +963,16 @@ module runsvs_mesh
         icemelt = .true.
         icelac = .false.
         diusst = 'FAIRALL'
-        diusst_warmlayer = .true.
-        diusst_coolskin = .true.
+!phybus-6.1        diusst_warmlayer = .true.
+!phybus-6.1        diusst_coolskin = .true.
         diusst_warmlayer_lakes = .true.
-        diusst_coolskin_lakes = .true.
+!phybus-6.1        diusst_coolskin_lakes = .true.
         z0mtype = 'BELJAARS'
         z0ttype = 'DEACU12'
         salty_qsat = .true.
-        urban_params_new = .true.
+!phybus-6.1        urban_params_new = .true.
+!phybus-6.3
+        svs_urban_params = .true.
         kount_reset = 12
 
         !> Update the number of active surface layers for the physics bus.
@@ -919,9 +1045,9 @@ module runsvs_mesh
         endif
 
         ! Activate or not the canopy module for snow under the canopy
-        if(svs_mesh%vs%schmsol=='SVS2') then
-                lcano_svs2 = svs_mesh%vs%lcano_svs2
-        endif
+!?sps-a16        if(svs_mesh%vs%schmsol=='SVS2') then
+!?sps-a16                lcano_svs2 = svs_mesh%vs%lcano_svs2
+!?sps-a16        endif
 
         ! Activate or not the use of user-entered height of low veg.
         if(svs_mesh%vs%schmsol=='SVS2') then
@@ -1009,12 +1135,21 @@ module runsvs_mesh
         !> Initialize the physics bus.
         call phy_businit(ni, nk)
 
+!physlb-6.3:
+      nullify(pvars)
+      ierr = phymem_get_slabvars(pvars, F_trnch = 1)
+      if (.not.(RMN_IS_OK(ierr) .and. associated(pvars))) then
+         call physeterror('physlb1', 'Problem getting slab vars pointers')
+         return
+      endif
+
         !> Initialize the surface bus in the physics library.
-        call sfc_businit(moyhr, ni, nk)
-        if (phy_error_L) then
-            call print_error("An error occurred initializing the surface bus variable.")
-            call program_abort()
-        end if
+!moved:phy_businit
+!        call sfc_businit(moyhr, ni, nk)
+!        if (phy_error_L) then
+!            call print_error("An error occurred initializing the surface bus variable.")
+!            call program_abort()
+!        end if
 
         !> Initialize the surface variable pointers.
         ierr = sfcbus_init()
@@ -1113,8 +1248,10 @@ module runsvs_mesh
             vl(vd%sand%i)%mul = nl_stp
             vd%clay%mul = nl_stp
             vl(vd%clay%i)%mul = nl_stp
-            vd%soc%mul = nl_stp
-            vl(vd%soc%i)%mul = nl_stp
+!phybus-6.1:soc
+!phybus-6.3:fsoc=soc/100.0
+            vd%fsoc%mul = nl_stp
+            vl(vd%fsoc%i)%mul = nl_stp
         else
 
             !> Overwrite the default input level set by the unknown 'soiltext' type.
@@ -1165,12 +1302,28 @@ print*,vl(i)%n,vl(i)%niveaux,vl(i)%mul,vl(i)%mosaik
             allocate(phy_bus(bus_length, trnch))
             phy_bus = 0.0
 
+!6.1:
+! This macro only gets pointer address to pass as an argument to calling function --- to MANIPULATE VARIABLE, USE MACROS  MK... below
+! def-6.1 (NAME2) busptr(vd%NAME2%i)%ptr(1,trnch)
+! Assign local variables below
+! def-6.1 (NAME1,NAME2) nullify(NAME1); if (vd%NAME2%i > 0 .and. associated(busptr(vd%NAME2%i)%ptr)) NAME1(1:ni) => busptr(vd%NAME2%i)%ptr(:,trnch)
+! def-6.1 (NAME1,NAME2) nullify(NAME1); if (vd%NAME2%i > 0 .and. associated(busptr(vd%NAME2%i)%ptr)) NAME1(1:ni,1:vd%NAME2%mul*vd%NAME2%niveaux) => busptr(vd%NAME2%i)%ptr(:,trnch)
+!6.3:
+! This macro only gets pointer address to pass as an argument to calling function --- to MANIPULATE VARIABLE, USE MACROS  MK... below
+! def-6.3 (NAME2) pvars(vd%NAME2%idxv)%data(:)
+! Assign local variables below
+! def-6.3 (NAME1,NAME2) nullify(NAME1); if (vd%NAME2%idxv > 0) NAME1(1:ni) => pvars(vd%NAME2%idxv)%data(:)
+! def-6.3 (NAME1,NAME2) nullify(NAME1); if (vd%NAME2%idxv > 0) NAME1(1:ni,1:vd%NAME2%mul*vd%NAME2%niveaux) => pvars(vd%NAME2%idxv)%data(:)
+
             !> Manually assign the surface pointer.
+!surface/copybus:
             do i = 1, nvarsurf
-                if (associated(busptr(i)%ptr)) then
-                    nullify(busptr(i)%ptr)
+                if (vl(i)%niveaux <= 0 .or. .not.vl(i)%doagg_L) cycle
+                if (vl(i)%idxv <= 0) cycle
+                if (associated(pvars(vl(i)%idxv)%data)) then
+                    nullify(pvars(vl(i)%idxv)%data)
                 end if
-                busptr(i)%ptr => phy_bus(bus_ptr(i):(bus_ptr(i) + vl(i)%niveaux*vl(i)%mul*vl(i)%mosaik*ni - 1), :)
+                pvars(vl(i)%idxv)%data => phy_bus(bus_ptr(i):(bus_ptr(i) + vl(i)%niveaux*vl(i)%mul*vl(i)%mosaik*ni - 1), trnch)
             end do
 
             !> Associate the 1D and 2D bus variables.
@@ -1261,8 +1414,10 @@ print*,vl(i)%n,vl(i)%niveaux,vl(i)%mul,vl(i)%mosaik
             write(line, "('PERMEABLE LAYERS: ', i3)") khyd
             call print_message('SOIL TEXTURE:')
             call print_message('             % SAND    % CLAY    % SOC')
+!phybus-6.1:soc
+!phybus-6.3:fsoc=soc/100.0
             do i = 1, nl_svs ! model layers
-                write(line, "(' LAYER ', i3, ': ', 999(f8.3, 3x))") i, svs_bus(a2(sand, i - 1)), svs_bus(a2(clay, i - 1)), svs_bus(a2(soc, i - 1))
+                write(line, "(' LAYER ', i3, ': ', 999(f8.3, 3x))") i, svs_bus(a2(sand, i - 1)), svs_bus(a2(clay, i - 1)), svs_bus(a2(fsoc, i - 1))*100.0
                 call print_message(line)
             end do
             call print_message('SOIL MOISTURE:')
@@ -1705,12 +1860,16 @@ ierr = 200
         use mu_jdate_mod, only: jdate_from_cmc
 
         !> For RPN/physics status.
-        use phy_status, only: phy_error_L
+        use phy_status, only: phy_error_L, physeterror
 
         !> For constants.
         use tdpack_const, only: rgasd, grav, cappa, tcdk
 
         use tdpack, only: fotvt
+
+        !> Modules.
+   use inichamp, only: inichamp4
+   use sfc_calcdiag, only: sfc_calcdiag3
 
         type(ShedGridParams) :: shd
         type(fl_ids) :: fls
@@ -1747,20 +1906,20 @@ ierr = 200
         if(svs_mesh%vs%schmsol=='SVS2') then
 
            ! Compute variable for water mass balance
-           preacc_tot = preacc_tot +  1000.*sum(busptr(vd%rainrate%i)%ptr(:, trnch))*ic%dts +  1000.*sum(busptr(vd%snowrate%i)%ptr(:,trnch))*ic%dts
+           preacc_tot = preacc_tot +  1000.*sum(pvars(vd%rainrate%idxv)%data(:))*ic%dts +  1000.*sum(pvars(vd%snowrate%idxv)%data(:))*ic%dts
            call layer_thickness()
            wsoil_tot=0.
            isoil_tot=0.
            do j = 1, svs_mesh%vs%khyd
-               wsoil_tot = wsoil_tot + 1000.0*busptr(vd%wsoil%i)%ptr(j, trnch)*delz(j) !mm
-               isoil_tot = isoil_tot + 1000.0*busptr(vd%isoil%i)%ptr(j, trnch)*delz(j) !mm
+               wsoil_tot = wsoil_tot + 1000.0*pvars(vd%wsoil%idxv)%data(j)*delz(j) !mm
+               isoil_tot = isoil_tot + 1000.0*pvars(vd%isoil%idxv)%data(j)*delz(j) !mm
            end do
-           snow_tot = busptr(vd%snoma%i)%ptr(1, trnch)* (1.-busptr(vd%vegh%i)%ptr(1, trnch)) + & ! busptr(vd%svs_wtg%i)%ptr(5, trnch) +  & ! busptr(vd%vegl%i)%ptr(1, trnch) + &
-                      busptr(vd%snvma%i)%ptr(1, trnch)*busptr(vd%vegh%i)%ptr(1, trnch)
+           snow_tot = pvars(vd%snoma%idxv)%data(1)* (1.-pvars(vd%vegh%idxv)%data(1)) + & ! pvars(vd%svs_wtg%idxv)%data(5) +  & ! pvars(vd%vegl%idxv)%data(1) + &
+                      pvars(vd%snvma%idxv)%data(1)*pvars(vd%vegh%idxv)%data(1)
 
-           veg_tot =  busptr(vd%wveg_vl%i)%ptr(1, trnch)*busptr(vd%svs_wtg%i)%ptr(3, trnch) +  & ! Weight of vl
-                      busptr(vd%wveg_vh%i)%ptr(1, trnch) *busptr(vd%vegh%i)%ptr(1, trnch) +  &
-                      busptr(vd%sncma%i)%ptr(1, trnch) *busptr(vd%vegh%i)%ptr(1, trnch) 
+           veg_tot =  pvars(vd%wveg_vl%idxv)%data(1)*pvars(vd%svs_wtg%idxv)%data(3) +  & ! Weight of vl
+                      pvars(vd%wveg_vh%idxv)%data(1) *pvars(vd%vegh%idxv)%data(1) +  &
+                      pvars(vd%sncma%idxv)%data(1) *pvars(vd%vegh%idxv)%data(1) 
 
 
            !if (ic%now%hour /= ic%next%hour) then !last time-step of hour
@@ -1772,39 +1931,39 @@ ierr = 200
               write(iout_soil, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
               do i = 1, nl_svs
                  write(iout_soil, FMT_CSV, advance = 'no') &
-                     busptr(vd%isoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) , &
-                     busptr(vd%wsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                     busptr(vd%tpsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+                     pvars(vd%isoil%idxv)%data(((i - 1)*ni + 1):i*ni) , &
+                     pvars(vd%wsoil%idxv)%data(((i - 1)*ni + 1):i*ni), &
+                     pvars(vd%tpsoil%idxv)%data(((i - 1)*ni + 1):i*ni)
               end do
               if(.not. svs_mesh%vs%lunique_profile_svs2) then
                 do i = 1, nl_svs
                    write(iout_soil, FMT_CSV, advance = 'no') &
-                     busptr(vd%tpsoilv%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+                     pvars(vd%tpsoilv%idxv)%data(((i - 1)*ni + 1):i*ni)
                 end do
               endif
-              write(iout_soil, FMT_CSV, advance = 'no') busptr(vd%tvegel%i)%ptr(1:ni, trnch),busptr(vd%tvegeh%i)%ptr(1:ni,trnch), &
-                      busptr(vd%tground%i)%ptr(1:ni, trnch) , busptr(vd%tgroundv%i)%ptr(1:ni, trnch), &
-                      busptr(vd%wveg_vl%i)%ptr(1, trnch) , busptr(vd%wveg_vh%i)%ptr(1, trnch)
+              write(iout_soil, FMT_CSV, advance = 'no') pvars(vd%tvegel%idxv)%data(1:ni),pvars(vd%tvegeh%idxv)%data(1:ni), &
+                      pvars(vd%tground%idxv)%data(1:ni) , pvars(vd%tgroundv%idxv)%data(1:ni), &
+                      pvars(vd%wveg_vl%idxv)%data(1) , pvars(vd%wveg_vh%idxv)%data(1)
               write(iout_soil, *)
 
               ! Write file containing bulk snow outputs
               write(iout_snow_bulk, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
-              write(iout_snow_bulk, FMT_CSV, advance = 'no') busptr(vd%snoma%i)%ptr(:, trnch),busptr(vd%snodpl%i)%ptr(:, trnch), &
-                        busptr(vd%snoden%i)%ptr(:, trnch), busptr(vd%snoal%i)%ptr(:, trnch),busptr(vd%wsnow%i)%ptr(:, trnch), &
-                        busptr(vd%tsnow_svs%i)%ptr(1:ni, trnch),busptr(vd%rsnows_acc%i)%ptr(:, trnch),  &
-                        busptr(vd%rainrate%i)%ptr(:, trnch),busptr(vd%snowrate%i)%ptr(:, trnch),busptr(vd%PSNGRVL%i)%ptr(:, trnch)
+              write(iout_snow_bulk, FMT_CSV, advance = 'no') pvars(vd%snoma%idxv)%data(:),pvars(vd%snodpl%idxv)%data(:), &
+                        pvars(vd%snoden%idxv)%data(:), pvars(vd%snoal%idxv)%data(:),pvars(vd%wsnow%idxv)%data(:), &
+                        pvars(vd%tsnow_svs%idxv)%data(1:ni),pvars(vd%rsnows_acc%idxv)%data(:),  &
+                        pvars(vd%rainrate%idxv)%data(:),pvars(vd%snowrate%idxv)%data(:),pvars(vd%PSNGRVL%idxv)%data(:)
               write(iout_snow_bulk, *)
 
               if( svs_mesh%vs%lout_snow_enbal) then
                  ! Write file containing snow energy balance outputs
                   write(iout_snow_enbal, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
-                  write(iout_snow_enbal, FMT_CSV, advance = 'no') busptr(vd%rnetsa%i)%ptr(:, trnch),busptr(vd%swnetsa%i)%ptr(:, trnch), &
-                       busptr(vd%lwnetsa%i)%ptr(:, trnch), -1.0*busptr(vd%lfluxsa%i)%ptr(:, trnch), -1.0*busptr(vd%hfluxsa%i)%ptr(:, trnch), &
-                       busptr(vd%subldrifta%i)%ptr(:, trnch), -1.0*busptr(vd%gfluxsa%i)%ptr(:, trnch), busptr(vd%hpsa%i)%ptr(:, trnch), busptr(vd%esa%i)%ptr(:, trnch)
+                  write(iout_snow_enbal, FMT_CSV, advance = 'no') pvars(vd%rnetsa%idxv)%data(:),pvars(vd%swnetsa%idxv)%data(:), &
+                       pvars(vd%lwnetsa%idxv)%data(:), -1.0*pvars(vd%lfluxsa%idxv)%data(:), -1.0*pvars(vd%hfluxsa%idxv)%data(:), &
+                       pvars(vd%subldrifta%idxv)%data(:), -1.0*pvars(vd%gfluxsa%idxv)%data(:), pvars(vd%hpsa%idxv)%data(:), pvars(vd%esa%idxv)%data(:)
                   if( svs_mesh%vs%lout_snow_vegh) then
-                          write(iout_snow_enbal, FMT_CSV, advance = 'no') busptr(vd%lwca%i)%ptr(:, trnch),busptr(vd%swca%i)%ptr(:,trnch) , &
-                           busptr(vd%tca%i)%ptr(:, trnch),busptr(vd%qca%i)%ptr(:, trnch),busptr(vd%vca%i)%ptr(:, trnch),  &
-                           -1.0*busptr(vd%lfluxsv%i)%ptr(:, trnch), -1.0*busptr(vd%HFLUXSV%i)%ptr(:, trnch) 
+                          write(iout_snow_enbal, FMT_CSV, advance = 'no') pvars(vd%lwca%idxv)%data(:),pvars(vd%swca%idxv)%data(:) , &
+                           pvars(vd%tca%idxv)%data(:),pvars(vd%qca%idxv)%data(:),pvars(vd%vca%idxv)%data(:),  &
+                           -1.0*pvars(vd%lfluxsv%idxv)%data(:), -1.0*pvars(vd%HFLUXSV%idxv)%data(:) 
                   endif
                   write(iout_snow_enbal, *)
               end if
@@ -1812,12 +1971,12 @@ ierr = 200
               if( svs_mesh%vs%lout_snow_vegh) then
                ! Write file containing bulk snow outputs
                  write(iout_snow_bulk_vegh, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
-                 write(iout_snow_bulk_vegh, FMT_CSV, advance = 'no') busptr(vd%snvma%i)%ptr(:, trnch),busptr(vd%snvdp%i)%ptr(:, trnch), &
-                        busptr(vd%snvden%i)%ptr(:, trnch), busptr(vd%snval%i)%ptr(:, trnch),busptr(vd%wsnv%i)%ptr(:, trnch), &
-                        busptr(vd%tsnowv_svs%i)%ptr(1:ni, trnch),busptr(vd%rsnowsv_acc%i)%ptr(:, trnch),  &
-                        busptr(vd%rainrate_vgh%i)%ptr(:, trnch),busptr(vd%snowrate_vgh%i)%ptr(:,trnch),busptr(vd%vca_drift%i)%ptr(:, trnch)
+                 write(iout_snow_bulk_vegh, FMT_CSV, advance = 'no') pvars(vd%snvma%idxv)%data(:),pvars(vd%snvdp%idxv)%data(:), &
+                        pvars(vd%snvden%idxv)%data(:), pvars(vd%snval%idxv)%data(:),pvars(vd%wsnv%idxv)%data(:), &
+                        pvars(vd%tsnowv_svs%idxv)%data(1:ni),pvars(vd%rsnowsv_acc%idxv)%data(:),  &
+                        pvars(vd%rainrate_vgh%idxv)%data(:),pvars(vd%snowrate_vgh%idxv)%data(:),pvars(vd%vca_drift%idxv)%data(:)
                  if( svs_mesh%vs%lsnow_interception_svs2) then
-                      write(iout_snow_bulk_vegh, FMT_CSV, advance = 'no')  busptr(vd%sncma%i)%ptr(:, trnch),busptr(vd%esnc%i)%ptr(:, trnch), busptr(vd%esncaf%i)%ptr(:, trnch)
+                      write(iout_snow_bulk_vegh, FMT_CSV, advance = 'no')  pvars(vd%sncma%idxv)%data(:),pvars(vd%esnc%idxv)%data(:), pvars(vd%esncaf%idxv)%data(:)
                  endif
                  write(iout_snow_bulk_vegh, *)
               endif
@@ -1829,28 +1988,28 @@ ierr = 200
                 write(iout_snow_profile, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
                 do i = 1, nsl
                    write(iout_snow_profile, FMT_CSV, advance = 'no') &
-                       busptr(vd%snoma_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) , &
-                       busptr(vd%snoden_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                       busptr(vd%snoage_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                       busptr(vd%snodiamopt_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) , &
-                       busptr(vd%snospheri_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                       busptr(vd%snohist_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                       busptr(vd%tsnow_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                       busptr(vd%wsnow_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                       busptr(vd%snotype_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+                       pvars(vd%snoma_svs%idxv)%data(((i - 1)*ni + 1):i*ni) , &
+                       pvars(vd%snoden_svs%idxv)%data(((i - 1)*ni + 1):i*ni), &
+                       pvars(vd%snoage_svs%idxv)%data(((i - 1)*ni + 1):i*ni), &
+                       pvars(vd%snodiamopt_svs%idxv)%data(((i - 1)*ni + 1):i*ni) , &
+                       pvars(vd%snospheri_svs%idxv)%data(((i - 1)*ni + 1):i*ni), &
+                       pvars(vd%snohist_svs%idxv)%data(((i - 1)*ni + 1):i*ni), &
+                       pvars(vd%tsnow_svs%idxv)%data(((i - 1)*ni + 1):i*ni), &
+                       pvars(vd%wsnow_svs%idxv)%data(((i - 1)*ni + 1):i*ni), &
+                       pvars(vd%snotype_svs%idxv)%data(((i - 1)*ni + 1):i*ni)
                 end do
                 if( svs_mesh%vs%lout_snow_vegh) then
                   do i = 1, nsl
                      write(iout_snow_profile, FMT_CSV, advance = 'no') &
-                       busptr(vd%snomav_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) , &
-                       busptr(vd%snodenv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                       busptr(vd%snoagev_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                       busptr(vd%snodiamoptv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) , &
-                       busptr(vd%snospheriv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                       busptr(vd%snohistv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                       busptr(vd%tsnowv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                       busptr(vd%wsnowv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), &
-                       busptr(vd%snotypev_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+                       pvars(vd%snomav_svs%idxv)%data(((i - 1)*ni + 1):i*ni) , &
+                       pvars(vd%snodenv_svs%idxv)%data(((i - 1)*ni + 1):i*ni), &
+                       pvars(vd%snoagev_svs%idxv)%data(((i - 1)*ni + 1):i*ni), &
+                       pvars(vd%snodiamoptv_svs%idxv)%data(((i - 1)*ni + 1):i*ni) , &
+                       pvars(vd%snospheriv_svs%idxv)%data(((i - 1)*ni + 1):i*ni), &
+                       pvars(vd%snohistv_svs%idxv)%data(((i - 1)*ni + 1):i*ni), &
+                       pvars(vd%tsnowv_svs%idxv)%data(((i - 1)*ni + 1):i*ni), &
+                       pvars(vd%wsnowv_svs%idxv)%data(((i - 1)*ni + 1):i*ni), &
+                       pvars(vd%snotypev_svs%idxv)%data(((i - 1)*ni + 1):i*ni)
                   end do
                 endif
                 write(iout_snow_profile, *)
@@ -1860,9 +2019,9 @@ ierr = 200
               ! Write file containing water balance information
               if(svs_mesh%vs%lout_svs2_watbal) then
                  write(iout_svs2_watbal, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
-                 write(iout_svs2_watbal, FMT_CSV, advance = 'no') preacc_tot,busptr(vd%accevap%i)%ptr(:, trnch)
-                 write(iout_svs2_watbal, FMT_CSV, advance = 'no') busptr(vd%latflaf%i)%ptr(:, trnch),busptr(vd%drainaf%i)%ptr(:,trnch)
-                 write(iout_svs2_watbal, FMT_CSV, advance = 'no') busptr(vd%runofftotaf%i)%ptr(1, trnch),busptr(vd%runofftot%i)%ptr(1, trnch)
+                 write(iout_svs2_watbal, FMT_CSV, advance = 'no') preacc_tot,pvars(vd%accevap%idxv)%data(:)
+                 write(iout_svs2_watbal, FMT_CSV, advance = 'no') pvars(vd%latflaf%idxv)%data(:),pvars(vd%drainaf%idxv)%data(:)
+                 write(iout_svs2_watbal, FMT_CSV, advance = 'no') pvars(vd%runofftotaf%idxv)%data(1),pvars(vd%runofftot%idxv)%data(1)
                  write(iout_svs2_watbal, FMT_CSV, advance = 'no') wsoil_tot,isoil_tot,snow_tot,veg_tot
                  write(iout_svs2_watbal, *)
               end if
@@ -1871,138 +2030,138 @@ ierr = 200
         if(nstep_now == nstep_tot-1 .and. svs_mesh%vs%lwrite_restart) then
           write(*,*) 'Write restart file'
 
-          write(iout_svs2_restart, FMT_GEN, advance = 'no') 'wveg_vl',busptr(vd%wveg_vl%i)%ptr(:, trnch)
+          write(iout_svs2_restart, FMT_GEN, advance = 'no') 'wveg_vl',pvars(vd%wveg_vl%idxv)%data(:)
           write(iout_svs2_restart, *)
 
-          write(iout_svs2_restart, FMT_GEN, advance = 'no') 'wveg_vh',busptr(vd%wveg_vh%i)%ptr(:, trnch)
+          write(iout_svs2_restart, FMT_GEN, advance = 'no') 'wveg_vh',pvars(vd%wveg_vh%idxv)%data(:)
           write(iout_svs2_restart, *)
 
-          write(iout_svs2_restart, FMT_GEN, advance = 'no') 'SNCMA',busptr(vd%sncma%i)%ptr(:, trnch)
+          write(iout_svs2_restart, FMT_GEN, advance = 'no') 'SNCMA',pvars(vd%sncma%idxv)%data(:)
           write(iout_svs2_restart, *)
 
-          write(iout_svs2_restart, FMT_GEN, advance = 'no') 'tground', busptr(vd%tground%i)%ptr(:, trnch) 
+          write(iout_svs2_restart, FMT_GEN, advance = 'no') 'tground', pvars(vd%tground%idxv)%data(:) 
           write(iout_svs2_restart, *)
 
-          write(iout_svs2_restart, FMT_GEN, advance = 'no') 'tgroundv', busptr(vd%tgroundv%i)%ptr(:, trnch) 
+          write(iout_svs2_restart, FMT_GEN, advance = 'no') 'tgroundv', pvars(vd%tgroundv%idxv)%data(:) 
           write(iout_svs2_restart, *)
 
-          write(iout_svs2_restart, FMT_GEN, advance = 'no') 'tvegel', busptr(vd%tvegel%i)%ptr(:, trnch)
+          write(iout_svs2_restart, FMT_GEN, advance = 'no') 'tvegel', pvars(vd%tvegel%idxv)%data(:)
           write(iout_svs2_restart, *)
 
-          write(iout_svs2_restart, FMT_GEN, advance = 'no') 'tvegeh', busptr(vd%tvegeh%i)%ptr(:, trnch)
+          write(iout_svs2_restart, FMT_GEN, advance = 'no') 'tvegeh', pvars(vd%tvegeh%idxv)%data(:)
           write(iout_svs2_restart, *)
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'tpsoil'
           do i = 1, nl_svs
-               write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%tpsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+               write(iout_svs2_restart, FMT_GEN, advance = 'no') pvars(vd%tpsoil%idxv)%data(((i - 1)*ni + 1):i*ni)
           end do                
           write(iout_svs2_restart, *)
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'wsoil'
           do i = 1, nl_svs
-               write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%wsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+               write(iout_svs2_restart, FMT_GEN, advance = 'no') pvars(vd%wsoil%idxv)%data(((i - 1)*ni + 1):i*ni)
           end do  
           write(iout_svs2_restart, *)
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'isoil'
           do i = 1, nl_svs
-               write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%isoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+               write(iout_svs2_restart, FMT_GEN, advance = 'no') pvars(vd%isoil%idxv)%data(((i - 1)*ni + 1):i*ni)
           end do  
           write(iout_svs2_restart, *)
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snoma_ml'
           do i = 1, nsl
-               write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snoma_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+               write(iout_svs2_restart, FMT_GEN, advance = 'no') pvars(vd%snoma_svs%idxv)%data(((i - 1)*ni + 1):i*ni) 
           end do  
           write(iout_svs2_restart, *)
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snoden_ml'
           do i = 1, nsl
-               write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snoden_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+               write(iout_svs2_restart, FMT_GEN, advance = 'no') pvars(vd%snoden_svs%idxv)%data(((i - 1)*ni + 1):i*ni) 
           end do  
           write(iout_svs2_restart, *)
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snoage_ml'
           do i = 1, nsl
-               write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snoage_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+               write(iout_svs2_restart, FMT_GEN, advance = 'no') pvars(vd%snoage_svs%idxv)%data(((i - 1)*ni + 1):i*ni) 
           end do  
           write(iout_svs2_restart, *)
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snodopt_ml'
           do i = 1, nsl
-               write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snodiamopt_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+               write(iout_svs2_restart, FMT_GEN, advance = 'no') pvars(vd%snodiamopt_svs%idxv)%data(((i - 1)*ni + 1):i*ni) 
           end do  
           write(iout_svs2_restart, *)
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snosph_ml'
           do i = 1, nsl
-               write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snospheri_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+               write(iout_svs2_restart, FMT_GEN, advance = 'no') pvars(vd%snospheri_svs%idxv)%data(((i - 1)*ni + 1):i*ni) 
           end do  
           write(iout_svs2_restart, *)
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snohist_ml'
           do i = 1, nsl
-               write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snohist_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+               write(iout_svs2_restart, FMT_GEN, advance = 'no') pvars(vd%snohist_svs%idxv)%data(((i - 1)*ni + 1):i*ni) 
           end do  
           write(iout_svs2_restart, *)
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'tsnow_ml'
           do i = 1, nsl
-               write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%tsnow_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+               write(iout_svs2_restart, FMT_GEN, advance = 'no') pvars(vd%tsnow_svs%idxv)%data(((i - 1)*ni + 1):i*ni) 
           end do  
           write(iout_svs2_restart, *)
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'wsnow_ml'
           do i = 1, nsl
-               write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%wsnow_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+               write(iout_svs2_restart, FMT_GEN, advance = 'no') pvars(vd%wsnow_svs%idxv)%data(((i - 1)*ni + 1):i*ni) 
           end do  
           write(iout_svs2_restart, *)
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snomav_ml'
           do i = 1, nsl
-               write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snomav_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+               write(iout_svs2_restart, FMT_GEN, advance = 'no') pvars(vd%snomav_svs%idxv)%data(((i - 1)*ni + 1):i*ni) 
           end do  
           write(iout_svs2_restart, *)
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snodenv_ml'
           do i = 1, nsl
-               write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snodenv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+               write(iout_svs2_restart, FMT_GEN, advance = 'no') pvars(vd%snodenv_svs%idxv)%data(((i - 1)*ni + 1):i*ni) 
           end do  
           write(iout_svs2_restart, *)
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snoagev_ml'
           do i = 1, nsl
-               write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snoagev_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+               write(iout_svs2_restart, FMT_GEN, advance = 'no') pvars(vd%snoagev_svs%idxv)%data(((i - 1)*ni + 1):i*ni) 
           end do  
           write(iout_svs2_restart, *)
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snodoptv_ml'
           do i = 1, nsl
-               write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snodiamoptv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+               write(iout_svs2_restart, FMT_GEN, advance = 'no') pvars(vd%snodiamoptv_svs%idxv)%data(((i - 1)*ni + 1):i*ni) 
           end do  
           write(iout_svs2_restart, *)
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snosphv_ml'
           do i = 1, nsl
-               write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snospheriv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+               write(iout_svs2_restart, FMT_GEN, advance = 'no') pvars(vd%snospheriv_svs%idxv)%data(((i - 1)*ni + 1):i*ni) 
           end do  
           write(iout_svs2_restart, *)
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'snohistv_ml'
           do i = 1, nsl
-               write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%snohistv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+               write(iout_svs2_restart, FMT_GEN, advance = 'no') pvars(vd%snohistv_svs%idxv)%data(((i - 1)*ni + 1):i*ni) 
           end do  
           write(iout_svs2_restart, *)
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'tsnowv_ml'
           do i = 1, nsl
-               write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%tsnowv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+               write(iout_svs2_restart, FMT_GEN, advance = 'no') pvars(vd%tsnowv_svs%idxv)%data(((i - 1)*ni + 1):i*ni) 
           end do  
           write(iout_svs2_restart, *)
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'wsnowv_ml'
           do i = 1, nsl
-               write(iout_svs2_restart, FMT_GEN, advance = 'no') busptr(vd%wsnowv_svs%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+               write(iout_svs2_restart, FMT_GEN, advance = 'no') pvars(vd%wsnowv_svs%idxv)%data(((i - 1)*ni + 1):i*ni) 
           end do  
           write(iout_svs2_restart, *)                  
 
@@ -2011,18 +2170,18 @@ ierr = 200
        else if(svs_mesh%vs%schmsol=='SVS') then
 
            ! Compute variable for water mass balance
-           preacc_tot = preacc_tot +  1000.*sum(busptr(vd%rainrate%i)%ptr(:, trnch))*ic%dts +  1000.*sum(busptr(vd%snowrate%i)%ptr(:,trnch))*ic%dts 
+           preacc_tot = preacc_tot +  1000.*sum(pvars(vd%rainrate%idxv)%data(:))*ic%dts +  1000.*sum(pvars(vd%snowrate%idxv)%data(:))*ic%dts 
            call layer_thickness()
            wsoil_tot=0.
            isoil_tot=0.
            do j = 1, svs_mesh%vs%khyd
-               wsoil_tot = wsoil_tot + 1000.0*busptr(vd%wsoil%i)%ptr(j, trnch)*delz(j) !mm
-               isoil_tot = isoil_tot + 1000.0*busptr(vd%isoil%i)%ptr(j, trnch)*delz(j) !mm
+               wsoil_tot = wsoil_tot + 1000.0*pvars(vd%wsoil%idxv)%data(j)*delz(j) !mm
+               isoil_tot = isoil_tot + 1000.0*pvars(vd%isoil%idxv)%data(j)*delz(j) !mm
            end do
-           snow_tot = (busptr(vd%snoma%i)%ptr(1, trnch)+busptr(vd%wsnow%i)%ptr(1, trnch))*(1 - busptr(vd%vegh%i)%ptr(1, trnch)) +  &
-                      (busptr(vd%snvma%i)%ptr(1, trnch)+busptr(vd%wsnv%i)%ptr(1, trnch))*busptr(vd%vegh%i)%ptr(1, trnch)
+           snow_tot = (pvars(vd%snoma%idxv)%data(1)+pvars(vd%wsnow%idxv)%data(1))*(1 - pvars(vd%vegh%idxv)%data(1)) +  &
+                      (pvars(vd%snvma%idxv)%data(1)+pvars(vd%wsnv%idxv)%data(1))*pvars(vd%vegh%idxv)%data(1)
               
-           veg_tot =  busptr(vd%wveg%i)%ptr(1, trnch) * (busptr(vd%vegh%i)%ptr(1, trnch) + busptr(vd%vegl%i)%ptr(1, trnch))
+           veg_tot =  pvars(vd%wveg%idxv)%data(1) * (pvars(vd%vegh%idxv)%data(1) + pvars(vd%vegl%idxv)%data(1))
 
 
            if (ic%now%mins ==0) then! Full hour
@@ -2033,42 +2192,42 @@ ierr = 200
               write(iout_svs1_soil, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
               do i = 1, nl_svs
                  write(iout_svs1_soil, FMT_CSV, advance = 'no') &
-                     busptr(vd%isoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) , &
-                     busptr(vd%wsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch), & 
-                     busptr(vd%latflw%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+                     pvars(vd%isoil%idxv)%data(((i - 1)*ni + 1):i*ni) , &
+                     pvars(vd%wsoil%idxv)%data(((i - 1)*ni + 1):i*ni), & 
+                     pvars(vd%latflw%idxv)%data(((i - 1)*ni + 1):i*ni) 
               end do
               do i = 1, nl_svs+1
                  write(iout_svs1_soil, FMT_CSV, advance = 'no') &
-                     busptr(vd%watflow%i)%ptr(((i - 1)*ni + 1):i*ni, trnch) 
+                     pvars(vd%watflow%idxv)%data(((i - 1)*ni + 1):i*ni) 
               end do
               if(svs_mesh%vs%lsoil_freezing_svs1) then
                  do i = 1, nl_svs
                     write(iout_svs1_soil, FMT_CSV, advance = 'no') &
-                       busptr(vd%tpsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+                       pvars(vd%tpsoil%idxv)%data(((i - 1)*ni + 1):i*ni)
                  end do
               end if
-              write(iout_svs1_soil, FMT_CSV, advance = 'no') busptr(vd%tground%i)%ptr(1:ni,trnch),busptr(vd%tground%i)%ptr((ni+1):2*ni, trnch), &
-                      busptr(vd%tvege%i)%ptr(1:ni, trnch),busptr(vd%tvege%i)%ptr(ni+1:2*ni, trnch), &
-                      busptr(vd%alvis%i)%ptr(1:ni, trnch),busptr(vd%fc%i)%ptr(1:ni, trnch),busptr(vd%fv%i)%ptr(1:ni,trnch), &
-                      busptr(vd%fl%i)%ptr(1:ni, trnch),busptr(vd%rnet_s%i)%ptr(1:ni, trnch),busptr(vd%satsfc%i)%ptr(1:ni, trnch) 
+              write(iout_svs1_soil, FMT_CSV, advance = 'no') pvars(vd%tground%idxv)%data(1:ni),pvars(vd%tground%idxv)%data((ni+1):2*ni), &
+                      pvars(vd%tvege%idxv)%data(1:ni),pvars(vd%tvege%idxv)%data(ni+1:2*ni), &
+                      pvars(vd%alvis%idxv)%data(1:ni),pvars(vd%fc%idxv)%data(1:ni),pvars(vd%fv%idxv)%data(1:ni), &
+                      pvars(vd%fl%idxv)%data(1:ni),pvars(vd%rnet_s%idxv)%data(1:ni),0.0 !removed-6.3:pvars(vd%satsfc%idxv)%data(1:ni) 
               write(iout_svs1_soil, *)
 
               ! Write file containing bulk snow outputs
               write(iout_svs1_snow, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
-              write(iout_svs1_snow, FMT_CSV, advance = 'no') busptr(vd%snoma%i)%ptr(:, trnch),busptr(vd%snodpl%i)%ptr(:, trnch), &
-                        busptr(vd%snoden%i)%ptr(:, trnch), busptr(vd%snoal%i)%ptr(:, trnch),busptr(vd%wsnow%i)%ptr(:, trnch), &
-                        busptr(vd%tsnow%i)%ptr(1:ni, trnch),busptr(vd%tsnow%i)%ptr((ni+1):2*ni, trnch)
-              write(iout_svs1_snow, FMT_CSV, advance = 'no') busptr(vd%snvma%i)%ptr(:, trnch),busptr(vd%snvdp%i)%ptr(:, trnch), &
-                        busptr(vd%snvden%i)%ptr(:, trnch), busptr(vd%snval%i)%ptr(:, trnch),busptr(vd%wsnv%i)%ptr(:, trnch), &
-                        busptr(vd%tsnowveg%i)%ptr(1:ni, trnch),busptr(vd%tsnowveg%i)%ptr((ni+1):2*ni, trnch)
+              write(iout_svs1_snow, FMT_CSV, advance = 'no') pvars(vd%snoma%idxv)%data(:),pvars(vd%snodpl%idxv)%data(:), &
+                        pvars(vd%snoden%idxv)%data(:), pvars(vd%snoal%idxv)%data(:),pvars(vd%wsnow%idxv)%data(:), &
+                        pvars(vd%tsnow%idxv)%data(1:ni),pvars(vd%tsnow%idxv)%data((ni+1):2*ni)
+              write(iout_svs1_snow, FMT_CSV, advance = 'no') pvars(vd%snvma%idxv)%data(:),pvars(vd%snvdp%idxv)%data(:), &
+                        pvars(vd%snvden%idxv)%data(:), pvars(vd%snval%idxv)%data(:),pvars(vd%wsnv%idxv)%data(:), &
+                        pvars(vd%tsnowveg%idxv)%data(1:ni),pvars(vd%tsnowveg%idxv)%data((ni+1):2*ni)
               write(iout_svs1_snow, *)
 
               ! Write file containing bulk snow outputs
               if(svs_mesh%vs%lout_svs1_watbal) then 
                  write(iout_svs1_watbal, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
-                 write(iout_svs1_watbal, FMT_CSV, advance = 'no') preacc_tot,busptr(vd%accevap%i)%ptr(:, trnch)
-                 write(iout_svs1_watbal, FMT_CSV, advance = 'no') busptr(vd%latflaf%i)%ptr(:, trnch),busptr(vd%drainaf%i)%ptr(:,trnch)
-                 write(iout_svs1_watbal, FMT_CSV, advance = 'no') busptr(vd%runofftotaf%i)%ptr(1, trnch),busptr(vd%runofftot%i)%ptr(1, trnch)
+                 write(iout_svs1_watbal, FMT_CSV, advance = 'no') preacc_tot,pvars(vd%accevap%idxv)%data(:)
+                 write(iout_svs1_watbal, FMT_CSV, advance = 'no') pvars(vd%latflaf%idxv)%data(:),pvars(vd%drainaf%idxv)%data(:)
+                 write(iout_svs1_watbal, FMT_CSV, advance = 'no') pvars(vd%runofftotaf%idxv)%data(1),pvars(vd%runofftot%idxv)%data(1)
                  write(iout_svs1_watbal, FMT_CSV, advance = 'no') wsoil_tot,isoil_tot,snow_tot,veg_tot
                  write(iout_svs1_watbal, *)
               end if
@@ -2081,18 +2240,18 @@ ierr = 200
         if (ic%ts_count == 1 .or. (ic%now%hour == kount_reset .and. ic%now%mins == 0)) then
             call runsvs_mesh_copy_vs_to_bus()
             kount = 0
-            call inichamp4(kount, trnch, ni, nk)
+            call inichamp4(pvars, kount, ni, nk)
 
             ! Update roughness length for high and low veg. to be consistent with information provided by the users in
             ! MESH_paramter.txt
             if (allocated(svs_mesh%vs%z0v)) then
-                    call aggveghigh(busptr(vd%vegf%i)%ptr(:, trnch), log(svs_mesh%c%Z0DAT_UP), log(svs_mesh%c%Z0DAT_UP), busptr(vd%z0mvh%i)%ptr(:, trnch), &
-                    busptr(vd%dlat%i)%ptr(:, trnch), ni, NCLASS)
-                    busptr(vd%z0mvh%i)%ptr(:, trnch) = EXP(busptr(vd%z0mvh%i)%ptr(:, trnch))
+                    call aggveghigh(pvars(vd%vegf%idxv)%data(:), log(svs_mesh%c%Z0DAT_UP), log(svs_mesh%c%Z0DAT_UP), pvars(vd%z0mvh%idxv)%data(:), &
+                    pvars(vd%dlat%idxv)%data(:), ni, NCLASS)
+                    pvars(vd%z0mvh%idxv)%data(:) = EXP(pvars(vd%z0mvh%idxv)%data(:))
 
-                    call aggveglow(busptr(vd%vegf%i)%ptr(:, trnch), log(svs_mesh%c%Z0DAT_UP), log(svs_mesh%c%Z0DAT_UP), busptr(vd%z0mvl%i)%ptr(:, trnch), &
-                    busptr(vd%dlat%i)%ptr(:, trnch), ni, NCLASS)
-                    busptr(vd%z0mvl%i)%ptr(:, trnch) = EXP(busptr(vd%z0mvl%i)%ptr(:, trnch))
+                    call aggveglow(pvars(vd%vegf%idxv)%data(:), log(svs_mesh%c%Z0DAT_UP), log(svs_mesh%c%Z0DAT_UP), pvars(vd%z0mvl%idxv)%data(:), &
+                    pvars(vd%dlat%idxv)%data(:), ni, NCLASS)
+                    pvars(vd%z0mvl%idxv)%data(:) = EXP(pvars(vd%z0mvl%idxv)%data(:))
             endif
 
             ! Compute beginning date of simulation
@@ -2131,33 +2290,33 @@ ierr = 200
 
         !> Transfer driving variables.
         if (associated(vs%tile%prern) .and. associated(vs%tile%presno)) then
-            busptr(vd%rainrate%i)%ptr(:, trnch) = vs%tile%prern/1000.0
-            busptr(vd%snowrate%i)%ptr(:, trnch) = vs%tile%presno/1000.0
+            pvars(vd%rainrate%idxv)%data(:) = vs%tile%prern/1000.0
+            pvars(vd%snowrate%idxv)%data(:) = vs%tile%presno/1000.0
         else
             where (vs%tile%ta > tcdk)
-                busptr(vd%rainrate%i)%ptr(:, trnch) = vs%tile%pre/1000.0
-                busptr(vd%snowrate%i)%ptr(:, trnch) = 0.0
+                pvars(vd%rainrate%idxv)%data(:) = vs%tile%pre/1000.0
+                pvars(vd%snowrate%idxv)%data(:) = 0.0
             elsewhere
-                busptr(vd%rainrate%i)%ptr(:, trnch) = 0.0
-                busptr(vd%snowrate%i)%ptr(:, trnch) = vs%tile%pre/1000.0
+                pvars(vd%rainrate%idxv)%data(:) = 0.0
+                pvars(vd%snowrate%idxv)%data(:) = vs%tile%pre/1000.0
             end where
         end if
-        busptr(vd%flusolis%i)%ptr(:, trnch) = vs%tile%fsin
-        busptr(vd%fdsi%i)%ptr(:, trnch) = vs%tile%flin
-        busptr(vd%tmoins%i)%ptr(:, trnch) = vs%tile%ta
-        busptr(vd%humoins%i)%ptr(:, trnch) = vs%tile%qa
-        busptr(vd%umoins%i)%ptr(:, trnch) = vs%tile%uv
-        busptr(vd%vmoins%i)%ptr(:, trnch) = 0.0
+        pvars(vd%flusolis%idxv)%data(:) = vs%tile%fsin
+        pvars(vd%fdsi%idxv)%data(:) = vs%tile%flin
+        pvars(vd%tmoins%idxv)%data(:) = vs%tile%ta
+        pvars(vd%humoins%idxv)%data(:) = vs%tile%qa
+        pvars(vd%umoins%idxv)%data(:) = vs%tile%uv
+        pvars(vd%vmoins%idxv)%data(:) = 0.0
         if (associated(vs%tile%uu) .and. associated(vs%tile%vv)) then
-            busptr(vd%umoins%i)%ptr(:, trnch) = vs%tile%uu
-            busptr(vd%vmoins%i)%ptr(:, trnch) = vs%tile%vv
+            pvars(vd%umoins%idxv)%data(:) = vs%tile%uu
+            pvars(vd%vmoins%idxv)%data(:) = vs%tile%vv
         end if
-        busptr(vd%pmoins%i)%ptr(:, trnch) = vs%tile%pres
+        pvars(vd%pmoins%idxv)%data(:) = vs%tile%pres
 
         ! Compute virtual tempertaure needed when computing forcing height
         do i = il1,il2
-             tt = busptr(vd%tmoins%i)%ptr(i, trnch)
-             hu = busptr(vd%humoins%i)%ptr(i, trnch)
+             tt = pvars(vd%tmoins%idxv)%data(i)
+             hu = pvars(vd%humoins%idxv)%data(i)
              tve(i) = FOTVT(tt,hu)
         end do
 
@@ -2168,7 +2327,7 @@ ierr = 200
         end if
 
         !> Required to replace the calculation in 'phystepinit'.
-        busptr(vd%thetaa%i)%ptr(:, trnch) = svs_mesh%vs%sigma_t**(-cappa)*busptr(vd%tmoins%i)%ptr(:, trnch)
+        pvars(vd%thetaa%idxv)%data(:) = svs_mesh%vs%sigma_t**(-cappa)*pvars(vd%tmoins%idxv)%data(:)
 
 
 
@@ -2183,100 +2342,123 @@ ierr = 200
             call program_abort()
         end if
 
+!lacchr = (mod(step_driver-1, acchr) == 0)
+!step_driver=moyhr=acchr=0 (reset every time-step, MESH handles aggregations)
+   call sfc_calcdiag3(pvars, 0, 0, delt, kount, 0, ni)
+   if (phy_error_L) return
+
         !> Copy bus variable.
         call runsvs_mesh_copy_bus_to_vs()
 
 !ierr = 200
 !!do i = 1, 26
-!!write(ierr, *) busptr(vd%vegf%i)%ptr(((i - 1)*ni + 1):i*ni, trnch); ierr = ierr + 1
+!!write(ierr, *) pvars(vd%vegf%idxv)%data(((i - 1)*ni + 1):i*ni); ierr = ierr + 1
 !!end do
-!write(ierr, *) busptr(vd%accevap%i)%ptr(:, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%fvapliqaf%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) pvars(vd%accevap%idxv)%data(:); ierr = ierr + 1
+!write(ierr, *) pvars(vd%fvapliqaf%idxv)%data(:); ierr = ierr + 1
 !do i = 1, nl_svs
-!write(ierr, *) busptr(vd%wsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch); ierr = ierr + 1
+!write(ierr, *) pvars(vd%wsoil%idxv)%data(((i - 1)*ni + 1):i*ni); ierr = ierr + 1
 !end do
-!write(ierr, *) busptr(vd%fl%i)%ptr(:, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%fq%i)%ptr(:, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%fv%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%eflux%i)%ptr(:, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%eg%i)%ptr(:, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%er%i)%ptr(:, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%etr%i)%ptr(:, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%fc%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%resaef%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) pvars(vd%fl%idxv)%data(:); ierr = ierr + 1
+!write(ierr, *) pvars(vd%fq%idxv)%data(:); ierr = ierr + 1
+!write(ierr, *) pvars(vd%fv%idxv)%data(((indx_soil - 1)*ni + 1):indx_soil*ni); ierr = ierr + 1
+!write(ierr, *) pvars(vd%eflux%idxv)%data(:); ierr = ierr + 1
+!write(ierr, *) pvars(vd%eg%idxv)%data(:); ierr = ierr + 1
+!write(ierr, *) pvars(vd%er%idxv)%data(:); ierr = ierr + 1
+!write(ierr, *) pvars(vd%etr%idxv)%data(:); ierr = ierr + 1
+!write(ierr, *) pvars(vd%fc%idxv)%data(((indx_soil - 1)*ni + 1):indx_soil*ni); ierr = ierr + 1
+!write(ierr, *) pvars(vd%resaef%idxv)%data(:); ierr = ierr + 1
 !
 !
-!write(ierr, *) busptr(vd%z0%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%z0ha%i)%ptr(:, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%z0mvh%i)%ptr(:, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%z0mvl%i)%ptr(:, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%ztsl%i)%ptr(:, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%z0t%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%zusl%i)%ptr(:, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%resagr%i)%ptr(:, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%resavg%i)%ptr(:, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%snoal%i)%ptr(:, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%snoden%i)%ptr(:, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%snodpl%i)%ptr(:, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%snval%i)%ptr(:, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%snvden%i)%ptr(:, trnch); ierr = ierr + 1
-!write(ierr, *) busptr(vd%snvdp%i)%ptr(:, trnch); ierr = ierr + 1
+!write(ierr, *) pvars(vd%z0%idxv)%data(((indx_soil - 1)*ni + 1):indx_soil*ni); ierr = ierr + 1
+!write(ierr, *) pvars(vd%z0ha%idxv)%data(:); ierr = ierr + 1
+!write(ierr, *) pvars(vd%z0mvh%idxv)%data(:); ierr = ierr + 1
+!write(ierr, *) pvars(vd%z0mvl%idxv)%data(:); ierr = ierr + 1
+!write(ierr, *) pvars(vd%ztsl%idxv)%data(:); ierr = ierr + 1
+!write(ierr, *) pvars(vd%z0t%idxv)%data(((indx_soil - 1)*ni + 1):indx_soil*ni); ierr = ierr + 1
+!write(ierr, *) pvars(vd%zusl%idxv)%data(:); ierr = ierr + 1
+!write(ierr, *) pvars(vd%resagr%idxv)%data(:); ierr = ierr + 1
+!write(ierr, *) pvars(vd%resavg%idxv)%data(:); ierr = ierr + 1
+!write(ierr, *) pvars(vd%snoal%idxv)%data(:); ierr = ierr + 1
+!write(ierr, *) pvars(vd%snoden%idxv)%data(:); ierr = ierr + 1
+!write(ierr, *) pvars(vd%snodpl%idxv)%data(:); ierr = ierr + 1
+!write(ierr, *) pvars(vd%snval%idxv)%data(:); ierr = ierr + 1
+!write(ierr, *) pvars(vd%snvden%idxv)%data(:); ierr = ierr + 1
+!write(ierr, *) pvars(vd%snvdp%idxv)%data(:); ierr = ierr + 1
 !do i = 1, 2
-!write(ierr, *) busptr(vd%tsnow%i)%ptr(((i - 1)*ni + 1):i*ni, trnch); ierr = ierr + 1
+!write(ierr, *) pvars(vd%tsnow%idxv)%data(((i - 1)*ni + 1):i*ni); ierr = ierr + 1
 !end do
 !do i = 1, 2
-!write(ierr, *) busptr(vd%tsnowveg%i)%ptr(((i - 1)*ni + 1):i*ni, trnch); ierr = ierr + 1
+!write(ierr, *) pvars(vd%tsnowveg%idxv)%data(((i - 1)*ni + 1):i*ni); ierr = ierr + 1
 !end do
 
 
         !> Transfer variables.
-        vs%tile%et = busptr(vd%wflux%i)%ptr(:, trnch)
-        vs%tile%ovrflw = max(0.0, busptr(vd%runofftot%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch))/ic%dts
+        vs%tile%et = pvars(vd%wflux%idxv)%data(:)
+        vs%tile%ovrflw = max(0.0, pvars(vd%runofftot%idxv)%data(((indx_soil - 1)*ni + 1):indx_soil*ni))/ic%dts
         do i = 1, khyd
-            vs%tile%latflw(:, i) = max(0.0, busptr(vd%latflw%i)%ptr(((i - 1)*ni + 1):i*ni, trnch))/ic%dts
+            vs%tile%latflw(:, i) = max(0.0, pvars(vd%latflw%idxv)%data(((i - 1)*ni + 1):i*ni))/ic%dts
         end do
-        vs%tile%drainsol = max(0.0, busptr(vd%watflow%i)%ptr((khyd*ni + 1):(khyd + 1)*ni, trnch))/ic%dts
+        vs%tile%drainsol = max(0.0, pvars(vd%watflow%idxv)%data((khyd*ni + 1):(khyd + 1)*ni))/ic%dts
 
-        vs%tile%qacan = busptr(vd%qsurf%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch)
-        vs%tile%lqwscan = busptr(vd%wveg%i)%ptr(:, trnch)
-        vs%tile%tacan = busptr(vd%tsurf%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch)
+        vs%tile%qacan = pvars(vd%qsurf%idxv)%data(((indx_soil - 1)*ni + 1):indx_soil*ni)
+!svs1? idxv=-1 with svs2
+!print*,'wveg',vd%wveg%idxv
+      if (vd%wveg%idxv > -1) then
+        vs%tile%lqwscan = pvars(vd%wveg%idxv)%data(:)
+      else
+        vs%tile%lqwscan = 0.0
+      end if
+        vs%tile%tacan = pvars(vd%tsurf%idxv)%data(((indx_soil - 1)*ni + 1):indx_soil*ni)
+!print*,'tvege',vd%tvege%idxv
+!print*,'tsnowveg',vd%tsnowveg%idxv
+      if (vd%tvege%idxv > -1) then
         vs%tile%tcan = &
-            busptr(vd%tvege%i)%ptr(1:ni, trnch)*0.25 + &
-            busptr(vd%tvege%i)%ptr((ni + 1):, trnch)*0.25 + &
-            busptr(vd%tsnowveg%i)%ptr(1:ni, trnch)*0.25 + &
-            busptr(vd%tsnowveg%i)%ptr((ni + 1):, trnch)*0.25
-        vs%tile%sno = busptr(vd%snoma%i)%ptr(:, trnch)
+            pvars(vd%tvege%idxv)%data(1:ni)*0.25 + &
+            pvars(vd%tvege%idxv)%data((ni + 1):)*0.25 + &
+            pvars(vd%tsnowveg%idxv)%data(1:ni)*0.25 + &
+            pvars(vd%tsnowveg%idxv)%data((ni + 1):)*0.25
+      else
+        vs%tile%tcan = &
+!            pvars(vd%tvege%idxv)%data(1:ni)*0.25 + &
+!            pvars(vd%tvege%idxv)%data((ni + 1):)*0.25 + &
+            pvars(vd%tsnowveg%idxv)%data(1:ni)*0.5 + &
+            pvars(vd%tsnowveg%idxv)%data((ni + 1):)*0.5
+      end if
+        vs%tile%sno = pvars(vd%snoma%idxv)%data(:)
         vs%tile%albsno = &
-            busptr(vd%snoal%i)%ptr(:, trnch)*0.5 + &
-            busptr(vd%snval%i)%ptr(:, trnch)*0.5
+            pvars(vd%snoal%idxv)%data(:)*0.5 + &
+            pvars(vd%snval%idxv)%data(:)*0.5
         vs%tile%rhosno = ( &
-            busptr(vd%snoro%i)%ptr(:, trnch)*0.5 + &
-            busptr(vd%snvro%i)%ptr(:, trnch)*0.5)*900.0
+            pvars(vd%snoro%idxv)%data(:)*0.5 + &
+            pvars(vd%snvro%idxv)%data(:)*0.5)*900.0
         vs%tile%tsno = &
-            busptr(vd%tsnow%i)%ptr(1:ni, trnch)*0.5 + &
-            busptr(vd%tsnow%i)%ptr((ni + 1):, trnch)*0.5
-        where (busptr(vd%snoma%i)%ptr(:, trnch) > 0.0)
-            vs%tile%lqwssno = busptr(vd%wsnow%i)%ptr(:, trnch)
+            pvars(vd%tsnow%idxv)%data(1:ni)*0.5 + &
+            pvars(vd%tsnow%idxv)%data((ni + 1):)*0.5
+        where (pvars(vd%snoma%idxv)%data(:) > 0.0)
+            vs%tile%lqwssno = pvars(vd%wsnow%idxv)%data(:)
         elsewhere
             vs%tile%lqwssno = 0.0
         end where
-        vs%tile%qevp = busptr(vd%fv%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch)
-        vs%tile%qsens = busptr(vd%fc%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch)
-        vs%tile%thicsol(:, 1) = busptr(vd%isoil%i)%ptr(1:ni, trnch)
-        vs%tile%thlqsol(:, 1) = busptr(vd%wsoil%i)%ptr(1:ni, trnch)
-        vs%tile%thlqsol(:, 2) = busptr(vd%wsoil%i)%ptr((ni + 1):2*ni, trnch)
+        vs%tile%qevp = pvars(vd%fv%idxv)%data(((indx_soil - 1)*ni + 1):indx_soil*ni)
+        vs%tile%qsens = pvars(vd%fc%idxv)%data(((indx_soil - 1)*ni + 1):indx_soil*ni)
+        vs%tile%thicsol(:, 1) = pvars(vd%isoil%idxv)%data(1:ni)
+        vs%tile%thlqsol(:, 1) = pvars(vd%wsoil%idxv)%data(1:ni)
+        vs%tile%thlqsol(:, 2) = pvars(vd%wsoil%idxv)%data((ni + 1):2*ni)
         do i = 3, nl_svs
-            vs%tile%thlqsol(:, i) = busptr(vd%wsoil%i)%ptr(((i - 1)*ni + 1):i*ni, trnch)
+            vs%tile%thlqsol(:, i) = pvars(vd%wsoil%idxv)%data(((i - 1)*ni + 1):i*ni)
         end do
-        vs%tile%tsol(:, 1) = busptr(vd%tground%i)%ptr(1:ni, trnch)
+        vs%tile%tsol(:, 1) = pvars(vd%tground%idxv)%data(1:ni)
         do i = 2, 2
-            vs%tile%tsol(:, i) = busptr(vd%tground%i)%ptr((ni + 1):, trnch)
+!6.3:tground doesn't have second dimension
+!            vs%tile%tsol(:, i) = pvars(vd%tground%idxv)%data((ni + 1):)
+            vs%tile%tsol(:, i) = pvars(vd%tground%idxv)%data(1:ni)
         end do
 
         ! Cumulate surface runoff for land surface tile
-         busptr(vd%runofftotaf%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch) =   &
-                           busptr(vd%runofftotaf%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch)   + &
-                           busptr(vd%runofftot%i)%ptr(((indx_soil - 1)*ni + 1):indx_soil*ni, trnch)
+!         pvars(vd%runofftotaf%idxv)%data(((indx_soil - 1)*ni + 1):indx_soil*ni) =   &
+!                           pvars(vd%runofftotaf%idxv)%data(((indx_soil - 1)*ni + 1):indx_soil*ni)   + &
+!                           pvars(vd%runofftot%idxv)%data(((indx_soil - 1)*ni + 1):indx_soil*ni)
 
     end subroutine
 

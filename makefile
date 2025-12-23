@@ -134,7 +134,7 @@ ifeq ($(shell test $$(gcc -dumpversion | cut -d '.' -f 1) -gt 5; echo $$?), 0)
 endif
 LFLAG=-c -g -fbacktrace
 CFLAG=
-FTN90PP=-x f95 -cpp -ffree-form -ffree-line-length-none -fcray-pointer
+FTN90PP=-x f95 -cpp -ffree-form -ffree-line-length-none -fcray-pointer -fallow-argument-mismatch
 FTN90PPOPT=
 endif
 
@@ -165,10 +165,10 @@ OUT=sa_mesh
 # If MPI is enabled, switch to OMPI compiler and rename output.
 # Otherwise add MPI stub to 'OBJECTS'.
 ifeq ($(MPI),ompi)
-ifeq (,$(shell which mpifort))
-FC=mpif90
-else
+ifeq (,$(shell which mpif90))
 FC=mpifort
+else
+FC=mpif90
 endif
 CC=mpicc
 OUT=mpi_sa_mesh
@@ -212,12 +212,27 @@ EF_Module.o: EF_ParseUtilities.o
 # Files renamed for SVS.
 runsvs_mod.o: runsvs_mod_sa_mesh.ftn90
 	$(FC) $(FTN90PP) $(LFLAG) $(INC_DIRS) $(DFLAG) -o runsvs_mod.o $(FTN90PPOPT)$<
+SPS_BASE_DIR=..
+SPS_DIR=$(SPS_BASE_DIR)/sps
+SPS_BUILD_DIR=$(SPS_BASE_DIR)/sps_build
+runsvs_mesh.o: runsvs_mesh.F90
+	$(FC) $(FTN90PP) $(LFLAG) $(GFLAG) \
+	-I$(SPS_DIR)/src/modelutils/include \
+	-I$(SPS_DIR)/src/rpnphy/src/utils \
+	-I$(SPS_DIR)/src/rpnphy/src/base \
+	-I$(SPS_DIR)/src/rpnphy/src/surface \
+	-I$(SPS_BUILD_DIR)/src/rpnphy/rpnphy/modules \
+	-I$(SPS_BUILD_DIR)/src/modelutils/modelutils/modules \
+	-I$(SPS_BUILD_DIR)/src/tdpack/include $<
 
 # ======================================================================
 # Make target: all
 # Deletes object and modules files unless 'DEBUG' has a value.
 all: ${OBJECTS}
-	$(FC) $(OBJECTS) -o $(OUT) $(LLINK) $(LIBNCL)
+	$(FC) $(OBJECTS) -o $(OUT) $(LLINK) $(LIBNCL) \
+	-L$(SPS_BUILD_DIR)/src/rpnphy/rpnphy -lrpnphy \
+	-L$(SPS_BUILD_DIR)/src/modelutils/modelutils -lmodelutils -lmodelutils_tmg_stubs \
+	-lrmn -ltdpack -lrpncomm -liomp5 -lpthread
 	$(CLEANUP)
 
 # ======================================================================

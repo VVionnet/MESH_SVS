@@ -2690,6 +2690,9 @@ module mesh_io
         !> Local variables.
         integer i, time_order, iwarn, ierr
 
+        !> Status.
+        error_status = 0
+
         !> Map dimensions and transfer the time order to a local variable (for diagnostic output).
         time_order = 0
         iwarn = 0

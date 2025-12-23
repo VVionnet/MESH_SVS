@@ -114,41 +114,41 @@ OBJECTS+=	RUNCLASS36_variables.o RUNCLASS36_save_output.o \
 #DFLAG=-DRUNSVS
 
 # RMNLIB
-VPATH+=$(DIR_REPO)/Modules/librmn/19.7.0/base: \
-	$(DIR_REPO)/Modules/librmn/19.7.0/primitives: \
-	$(DIR_REPO)/Modules/librmn/19.7.0/template_utils/gmm:
-INC_DIRS+=-I$(DIR_REPO)/Modules/librmn/19.7.0/CUSTOM_INCLUDES \
-	-I$(DIR_REPO)/Modules/librmn/19.7.0/primitives
+#sps:VPATH+=$(DIR_REPO)/Modules/librmn/19.7.0/base: \
+#sps:	$(DIR_REPO)/Modules/librmn/19.7.0/primitives: \
+#sps:	$(DIR_REPO)/Modules/librmn/19.7.0/template_utils/gmm:
+#sps:INC_DIRS+=-I$(DIR_REPO)/Modules/librmn/19.7.0/CUSTOM_INCLUDES \
+#sps:	-I$(DIR_REPO)/Modules/librmn/19.7.0/primitives
 #OBJECTS+=datec.o moduledate.o set_user_lock.o \
 #	up2low.o getenvc.o isort.o msg.o ftn2c_helper_c.o clib_interface.o
-OBJECTS+=ftn2c_helper_c.o clib_interface.o isort.o msg.o datec.o set_user_lock.o up2low.o getenvc.o moduledate.o gmm_internals.o gmm_keys.o
+#sps:OBJECTS+=ftn2c_helper_c.o clib_interface.o isort.o msg.o datec.o set_user_lock.o up2low.o getenvc.o moduledate.o gmm_internals.o gmm_keys.o
 # Core routines.
 #OBJECTS+=runsvs_mod_sa_mesh.o runsvs_utils.o \
 #	runsvs_init_mesh.o \
 
 # Prerequisites.
-VPATH+=$(DIR_REPO)/Modules/modelutils/1.6.0/src/base: \
-	$(DIR_REPO)/Modules/modelutils/1.6.0/src/tdpack: \
-	$(DIR_REPO)/Modules/modelutils/1.6.0/src/tmg_stubs: \
-	$(DIR_REPO)/Modules/modelutils/1.6.0/src/utils: \
-	$(DIR_REPO)/Modules/modelutils/1.6.0/src/CUSTOM_ADDINS:
-INC_DIRS+=-I$(DIR_REPO)/Modules/modelutils/1.6.0/include\
-          -DCROCUS_EXT
+#sps:VPATH+=$(DIR_REPO)/Modules/modelutils/1.6.0/src/base: \
+#sps:	$(DIR_REPO)/Modules/modelutils/1.6.0/src/tdpack: \
+#sps:	$(DIR_REPO)/Modules/modelutils/1.6.0/src/tmg_stubs: \
+#sps:	$(DIR_REPO)/Modules/modelutils/1.6.0/src/utils: \
+#sps:	$(DIR_REPO)/Modules/modelutils/1.6.0/src/CUSTOM_ADDINS:
+#sps:INC_DIRS+=-I$(DIR_REPO)/Modules/modelutils/1.6.0/include\
+#sps:          -DCROCUS_EXT
 #OBJECTS+=clib_itf_mod.o tdpack_const.o tdpack.o mu_jdate_c.o cmcdate.o \
 #	mu_jdate.o vslog.o vscos.o vssin.o
-OBJECTS+=clib_itf_mod.o tdpack_const.o tdpack.o cmcdate.o mu_jdate_c.o mu_jdate.o vslog.o str_mod.o str_split.o tracers_attributes.o gmmx_name.o tmg_stubs.o libopenmp_stub.o vscos.o vssin.o difuvd2.o
+#sps:OBJECTS+=clib_itf_mod.o tdpack_const.o tdpack.o cmcdate.o mu_jdate_c.o mu_jdate.o vslog.o str_mod.o str_split.o tracers_attributes.o gmmx_name.o tmg_stubs.o libopenmp_stub.o vscos.o vssin.o difuvd2.o
 # SPS routines.
-VPATH+=$(DIR_REPO)/Modules/rpnphy/6.1.0/src/base:
-VPATH+=$(DIR_REPO)/Modules/rpnphy/6.1.0/src/api:
+#sps:VPATH+=$(DIR_REPO)/Modules/rpnphy/6.1.0/src/base:
+#sps:VPATH+=$(DIR_REPO)/Modules/rpnphy/6.1.0/src/api:
 #	$(DIR_REPO)/Modules/rpnphy/6.1.0/src/cpl_stubs:
-VPATH+=$(DIR_REPO)/Modules/rpnphy/6.1.0/src/utils: \
-	$(DIR_REPO)/Modules/rpnphy/6.1.0/src/surface:
-INC_DIRS+=-I$(DIR_REPO)/Modules/rpnphy/6.1.0/src/base \
-	-I$(DIR_REPO)/Modules/rpnphy/6.1.0/src/utils \
-	-I$(DIR_REPO)/Modules/rpnphy/6.1.0/src/surface
-OBJECTS+=phy_status.o phy_typedef_mod.o phybus.o phygridmap.o bvstrip.o phygetvarlist.o phygetindx.o phygetmetaplus.o sfclayer_funcs.o sfclayer_mod.o sfc_options.o compz0.o sfcbus_mod.o svs_configs.o
-OBJECTS+=cnv_options.o phy_options.o splitst.o physeterror.o gesdict.o sfc_businit.o timing_start.o lacs.o interpveg.o aggcovernat.o inicover.o coherence.o inisoili.o aggveghigh.o aggveglow.o veglowhigh_ccilceco.o inicover_svs_ccilceco.o veglowhigh.o inicover_svs.o inisoili_svs.o initown.o inisurf.o radcons.o equivmount.o timing_stop.o inichamp.o iniptsurf.o copybus.o
-OBJECTS+=suncos.o soili_svs.o vegi_svs.o drag_svs.o snow_alone.o snow_veg.o ebudget_svs.o watdrn_.o soil_fluxes.o hydro_svs.o phtsyn_svs_ccilceco.o phtsyn_svs.o update_svs.o fillagg.o soil_freezing.o svs.o
+#sps:VPATH+=$(DIR_REPO)/Modules/rpnphy/6.1.0/src/utils: \
+#sps:	$(DIR_REPO)/Modules/rpnphy/6.1.0/src/surface:
+#sps:INC_DIRS+=-I$(DIR_REPO)/Modules/rpnphy/6.1.0/src/base \
+#sps:	-I$(DIR_REPO)/Modules/rpnphy/6.1.0/src/utils \
+#sps:	-I$(DIR_REPO)/Modules/rpnphy/6.1.0/src/surface
+#sps:OBJECTS+=phy_status.o phy_typedef_mod.o phybus.o phygridmap.o bvstrip.o phygetvarlist.o phygetindx.o phygetmetaplus.o sfclayer_funcs.o sfclayer_mod.o sfc_options.o compz0.o sfcbus_mod.o svs_configs.o
+#sps:OBJECTS+=cnv_options.o phy_options.o splitst.o physeterror.o gesdict.o sfc_businit.o timing_start.o lacs.o interpveg.o aggcovernat.o inicover.o coherence.o inisoili.o aggveghigh.o aggveglow.o veglowhigh_ccilceco.o inicover_svs_ccilceco.o veglowhigh.o inicover_svs.o inisoili_svs.o initown.o inisurf.o radcons.o equivmount.o timing_stop.o inichamp.o iniptsurf.o copybus.o
+#sps:OBJECTS+=suncos.o soili_svs.o vegi_svs.o drag_svs.o snow_alone.o snow_veg.o ebudget_svs.o watdrn_.o soil_fluxes.o hydro_svs.o phtsyn_svs_ccilceco.o phtsyn_svs.o update_svs.o fillagg.o soil_freezing.o svs.o
 #OBJECTS+=phy_status.o phy_typedef_mod.o phybus.o phygridmap.o \
 #	bvstrip.o phygetvarlist.o phygetindx.o phygetmetaplus.o \
 #	sfclayer_funcs.o sfclayer_mod.o sfc_options.o compz0.o \
@@ -180,15 +180,15 @@ OBJECTS+=suncos.o soili_svs.o vegi_svs.o drag_svs.o snow_alone.o snow_veg.o ebud
 
 # ======================================================================
 # SVS2
-OBJECTS+= parkind1.o yomhook.o
-OBJECTS+= modd_csts.o modd_snow_par.o modd_prep_snow.o modd_const_atm.o  modd_surf_par.o modd_type_date_surf.o modd_const_tartes.o modd_reprod_oper.o modd_convparexp.o modd_meb_par.o modd_snow_metamo.o modd_surf_atm.o modd_blowsnw_surf.o
-OBJECTS+= modi_abor1_sfx.o modi_bld_e_budget.o modi_surface_ri.o  modi_snowcro_diag.o modi_snowcro.o  modi_ini_csts.o  modi_sunpos.o   modi_ini_surf_csts.o   modi_surface_aero_cond.o  modi_tridiag_ground.o modi_surface_cd.o  modi_snow3l.o modi_wind_threshold.o
-OBJECTS+= mode_thermos.o
-OBJECTS+= wind_threshold.o tridiag_ground_snowcro.o surface_aero_cond.o  surface_cd.o  surface_ri.o inicover_svs2.o
-OBJECTS+= mode_crodebug.o mode_snow3l.o mode_snowcro.o  mode_tartes.o
-OBJECTS+= inisoili_svs2.o ini_csts.o ini_surf_csts.o svs2_tile_configs.o canopy_csts.o 
-OBJECTS+= phase_changes.o tridiag_ground.o snowcro_diag.o snowcro.o snow3l.o 
-OBJECTS+= snow_interception_svs2.o canopy_met_svs2.o watsurf_budget_svs2.o hydro_svs2.o update_svs2.o soili_svs2.o vegi_svs2.o drag_svs2.o ebudget_svs2.o snow_svs2.o svs2.o
+#sps:OBJECTS+= parkind1.o yomhook.o
+#sps:OBJECTS+= modd_csts.o modd_snow_par.o modd_prep_snow.o modd_const_atm.o  modd_surf_par.o modd_type_date_surf.o modd_const_tartes.o modd_reprod_oper.o modd_convparexp.o modd_meb_par.o modd_snow_metamo.o modd_surf_atm.o modd_blowsnw_surf.o
+#sps:OBJECTS+= modi_abor1_sfx.o modi_bld_e_budget.o modi_surface_ri.o  modi_snowcro_diag.o modi_snowcro.o  modi_ini_csts.o  modi_sunpos.o   modi_ini_surf_csts.o   modi_surface_aero_cond.o  modi_tridiag_ground.o modi_surface_cd.o  modi_snow3l.o modi_wind_threshold.o
+#sps:OBJECTS+= mode_thermos.o
+#sps:OBJECTS+= wind_threshold.o tridiag_ground_snowcro.o surface_aero_cond.o  surface_cd.o  surface_ri.o inicover_svs2.o
+#sps:OBJECTS+= mode_crodebug.o mode_snow3l.o mode_snowcro.o  mode_tartes.o
+#sps:OBJECTS+= inisoili_svs2.o ini_csts.o ini_surf_csts.o svs2_tile_configs.o canopy_csts.o 
+#sps:OBJECTS+= phase_changes.o tridiag_ground.o snowcro_diag.o snowcro.o snow3l.o 
+#sps:OBJECTS+= snow_interception_svs2.o canopy_met_svs2.o watsurf_budget_svs2.o hydro_svs2.o update_svs2.o soili_svs2.o vegi_svs2.o drag_svs2.o ebudget_svs2.o snow_svs2.o svs2.o
 
 
 
