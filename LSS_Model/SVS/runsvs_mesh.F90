@@ -71,10 +71,8 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_KHYD = 'KHYD'
     character(len = *), parameter, public :: VN_SVS_SAND = 'SAND'
     character(len = *), parameter, public :: VN_SVS_CLAY = 'CLAY'
-    character(len = *), parameter, public :: VN_SVS_SOC = 'SOC'
-!phybus-6.1:soc
-!phybus-6.3:fsoc=soc/100.0
-    character(len = *), parameter, public :: VN_SVS_FSOC = 'FSOC'
+    character(len = *), parameter, public :: VN_SVS_OC = 'OC'
+    character(len = *), parameter, public :: VN_SVS_BULKSOIL = 'BULKSOIL'
     character(len = *), parameter, public :: VN_SVS_WSOIL = 'WSOIL'
     character(len = *), parameter, public :: VN_SVS_ISOIL = 'ISOIL'
     character(len = *), parameter, public :: VN_SVS_LATFL = 'LATFL'
@@ -168,7 +166,8 @@ module runsvs_mesh
     !> SVS variables names for I/O (modifiers/special conditions).
     character(len = *), parameter, public :: VN_SVS_SAND_N = 'SAND_N'
     character(len = *), parameter, public :: VN_SVS_CLAY_N = 'CLAY_N'
-    character(len = *), parameter, public :: VN_SVS_SOC_N = 'SOC_N'
+    character(len = *), parameter, public :: VN_SVS_OC_N = 'OC_N'
+    character(len = *), parameter, public :: VN_SVS_BULKSOIL_N = 'BULKSOIL_N'
     character(len = *), parameter, public :: VN_SVS_WSOIL_N = 'WSOIL_N'
     character(len = *), parameter, public :: VN_SVS_ISOIL_N = 'ISOIL_N'
     character(len = *), parameter, public :: VN_SVS_TGROUND_N = 'TGROUND_N'
@@ -218,10 +217,8 @@ module runsvs_mesh
         integer :: khyd = 6
         real, dimension(:, :), allocatable :: sand
         real, dimension(:, :), allocatable :: clay
-        real, dimension(:, :), allocatable :: soc
-!phybus-6.1:soc
-!phybus-6.3:fsoc=soc/100.0
-        real, dimension(:, :), allocatable :: fsoc
+        real, dimension(:, :), allocatable :: bulksoil
+        real, dimension(:, :), allocatable :: oc
         real, dimension(:, :), allocatable :: wsoil
         real, dimension(:, :), allocatable :: isoil
         real, dimension(:, :), allocatable :: tpsoil ! For svs2 and svs1 (with soil freezing)
@@ -678,13 +675,9 @@ module runsvs_mesh
             do i = 1, nl_svs
                 if (allocated(svs_mesh%vs%sand)) svs_bus(a2(sand, i - 1):z2(sand, i - 1)) = svs_mesh%vs%sand(:, i)
                 if (allocated(svs_mesh%vs%clay)) svs_bus(a2(clay, i - 1):z2(clay, i - 1)) = svs_mesh%vs%clay(:, i)
-!phybus-6.1:soc
-!phybus-6.3:fsoc=soc/100.0
-                if (allocated(svs_mesh%vs%fsoc)) then
-                    svs_bus(a2(fsoc, i - 1):z2(fsoc, i - 1)) = svs_mesh%vs%fsoc(:, i)
-                else if (allocated(svs_mesh%vs%soc)) then
-                    svs_bus(a2(fsoc, i - 1):z2(fsoc, i - 1)) = svs_mesh%vs%soc(:, i)/100.0
-                end if
+                if (allocated(svs_mesh%vs%oc)) svs_bus(a2(oc, i - 1):z2(oc, i - 1)) = svs_mesh%vs%oc(:, i)
+                if (allocated(svs_mesh%vs%bulksoil)) svs_bus(a2(bulksoil, i - 1):z2(bulksoil, i - 1)) = svs_mesh%vs%bulksoil(:, i)
+
             end do
             if (svs_mesh%vs%schmsol=='SVS') then
                 call inisoili_svs(pvars, ni)
@@ -1283,10 +1276,10 @@ module runsvs_mesh
             vl(vd%sand%i)%mul = nl_stp
             vd%clay%mul = nl_stp
             vl(vd%clay%i)%mul = nl_stp
-!phybus-6.1:soc
-!phybus-6.3:fsoc=soc/100.0
-            vd%fsoc%mul = nl_stp
-            vl(vd%fsoc%i)%mul = nl_stp
+            vd%oc%mul = nl_stp
+            vl(vd%oc%i)%mul = nl_stp
+            vd%bulksoil%mul = nl_stp
+            vl(vd%bulksoil%i)%mul = nl_stp
         else
 
             !> Overwrite the default input level set by the unknown 'soiltext' type.
@@ -1448,11 +1441,9 @@ print*,vl(i)%n,vl(i)%niveaux,vl(i)%mul,vl(i)%mosaik
             end do
             write(line, "('PERMEABLE LAYERS: ', i3)") khyd
             call print_message('SOIL TEXTURE:')
-            call print_message('             % SAND    % CLAY    % SOC')
-!phybus-6.1:soc
-!phybus-6.3:fsoc=soc/100.0
+            call print_message('             % SAND    % CLAY    % OC   %BULKSOIL')
             do i = 1, nl_svs ! model layers
-                write(line, "(' LAYER ', i3, ': ', 999(f8.3, 3x))") i, svs_bus(a2(sand, i - 1)), svs_bus(a2(clay, i - 1)), svs_bus(a2(fsoc, i - 1))*100.0
+                write(line, "(' LAYER ', i3, ': ', 999(f8.3, 3x))") i, svs_bus(a2(sand, i - 1)), svs_bus(a2(clay, i -1)),svs_bus(a2(oc, i - 1)), svs_bus(a2(bulksoil, i - 1))
                 call print_message(line)
             end do
             call print_message('SOIL MOISTURE:')
