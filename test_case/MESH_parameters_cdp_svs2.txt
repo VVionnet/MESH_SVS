@@ -41,11 +41,17 @@ soiltext                 NIL !NIL: required to use soil_levels.txt as-is
 sand            60.0    60.0    60.0 !%
 clay            30.0    30.0    30.0 !%
 soc             0.0     0.0      0.0 !%, soil organic content
+!bulksoil        1160    1160    1330   1440   1551.78  1590  1590
+!oc              9.54    9.54  	4.205  3.145  2.74392    3.82  3.82
 wsoil          0.083   0.086   0.098 !vol. content
 isoil            0.0     0.0     0.0 !vol. content
 tpsoil         280.0   280.0   280.0 ! soil temperature below bg/lv  (K)
 
 tperm      280.0 ! (Deep soil temperature)
+
+!>  Activate soil organic content  in SVS2
+!>  if false, silt, gravel, bulksoil, and oc can be put to 0
+read_oc .true. 
 
 !> Activate single soil column in SVS2
 lunique_profile_svs2 .true. 
@@ -78,6 +84,12 @@ wveg_vh             0.0 !kg m**-2
 tvegel          285.7
 !> npoints   ----- 1
 wveg_vl             0.0 !kg m**-2
+
+!> Forest litter layer 
+lforlit .false.
+!tfl 278
+!wfl 0.2
+!wfl_ice 0.
 
 !> Ground below high veg (Skin only)
 !> nlayers   ----- 1
