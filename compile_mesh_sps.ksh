@@ -16,7 +16,7 @@ git checkout $branch_sps
 git submodule update --init --recursive
 
 # Load compiler
-. .eccc_setup_intel_2022.1.2
+. .eccc_setup_intel
 
 # Go to build dir
 cd ../sps_build
