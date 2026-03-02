@@ -1,6 +1,6 @@
 # Load compiler
 cd ../sps
-. .eccc_setup_intel_2022.1.2
+. .eccc_setup_intel
 
 # Go to sps build dir
 cd ../sps_build
