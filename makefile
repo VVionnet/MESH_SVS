@@ -36,36 +36,45 @@ include makefile.def
 
 # ======================================================================
 # Pre-configured targets: Compiler options.
-ifeq ($(filter gfortran,$(MAKECMDGOALS)),gfortran)
-DIST=
-MPI=
-else ifeq ($(filter ifort,$(MAKECMDGOALS)),ifort)
-DIST=intel
-MPI=
-else ifeq ($(filter mingw_static,$(MAKECMDGOALS)),mingw_static)
-DIST=mingw
-MPI=
-else ifeq ($(filter mpi_gcc,$(MAKECMDGOALS)),mpi_gcc)
-DIST=
-MPI=ompi
-else ifeq ($(filter mpi_intel,$(MAKECMDGOALS)),mpi_intel)
-DIST=intel
-MPI=ompi
+ifeq ($(filter gfortran, $(MAKECMDGOALS)), gfortran)
+  DIST ?=
+  MPI ?=
+else ifeq ($(filter ifort, $(MAKECMDGOALS)), ifort)
+  DIST ?= intel
+  MPI ?=
+else ifeq ($(filter mingw_static, $(MAKECMDGOALS)), mingw_static)
+  DIST ?= mingw
+  MPI ?=
+else ifeq ($(filter mpi_gcc, $(MAKECMDGOALS)), mpi_gcc)
+  DIST ?=
+  MPI ?= ompi
+else ifeq ($(filter mpi_intel, $(MAKECMDGOALS)), mpi_intel)
+  DIST ?= intel
+  MPI ?= ompi
 endif
 
 # ======================================================================
 # Pre-configured targets: Debug symbols.
-ifeq ($(filter debug,$(MAKECMDGOALS)),debug)
-SYMBOLS=yes
-DEBUG=yes
-else ifeq ($(filter symbols,$(MAKECMDGOALS)),symbols)
-SYMBOLS=yes
+ifeq ($(filter debug, $(MAKECMDGOALS)), debug)
+  SYMBOLS ?= yes
+  DEBUG ?= yes
+else ifeq ($(filter symbols, $(MAKECMDGOALS)), symbols)
+  SYMBOLS ?= yes
 endif
 
 # ======================================================================
 # Pre-configured targets: Double precision (where supported).
-ifeq ($(filter double,$(MAKECMDGOALS)),double)
-DOUBLE=yes
+ifeq ($(filter double, $(MAKECMDGOALS)), double)
+  DOUBLE ?= yes
+endif
+
+# Summary.
+ifdef SUMMARY
+  $(info DIST    = $(DIST))
+  $(info MPI     = $(MPI))
+  $(info SYMBOLS = $(SYMBOLS))
+  $(info DEBUG   = $(DEBUG))
+  $(info DOUBLE  = $(DOUBLE))
 endif
 
 # ======================================================================
@@ -73,9 +82,21 @@ endif
 # This target will call 'nf-config' via the active shell.
 # However, if the netCDF library is installed,
 # 'nf-config' should be installed as well.
-ifeq ($(filter netcdf,$(MAKECMDGOALS)),netcdf)
-LIBNCO=$(shell nf-config --fflags) -DNETCDF
-LIBNCL=$(shell nf-config --flibs)
+ifeq ($(filter netcdf, $(MAKECMDGOALS)), netcdf)
+  ifeq (, $(shell which nf-config))
+    $(error The 'netcdf' target is specified but 'nf-config' cannot be found)
+  else
+    LIBNCO = $(shell nf-config --fflags) -DNETCDF
+  endif
+  ifeq (, $(shell which nc-config))
+    $(error The 'netcdf' target is specified but 'nc-config' cannot be found)
+  else
+    LIBNCL = $(shell nf-config --flibs)
+  endif
+  ifdef SUMMARY
+    $(info LIBNCO = $(LIBNCO))
+    $(info LIBNCL = $(LIBNCL))
+  endif
 endif
 
 # ======================================================================
@@ -91,6 +112,15 @@ double: all
 netcdf: all
 
 # ======================================================================
+# Compiler overrides.
+ifdef FC_OVERRIDE
+  FC = FC_OVERRIDE
+endif
+ifdef CC_OVERRIDE
+  CC = CC_OVERRIDE
+endif
+
+# ======================================================================
 # Compiler check (if not the 'clean' or 'veryclean' targets).
 # Minimum requirement.
 # Intel 16+ (15+):
@@ -100,113 +130,140 @@ netcdf: all
 # GNU/gcc 5+:
 #   - GNU/gcc 4 does not implement the necessary Fortran 2003 features.
 ifeq ($(filter clean veryclean, $(MAKECMDGOALS)), )
-  ifeq ($(DIST),intel)
-    ifeq ($(shell test $$(icc -dumpversion | cut -d '.' -f 1) -lt 16; echo $$?), 0)
-      $(error The code requires Intel compiler version 16 or higher)
+  ifeq ($(DIST), intel)
+    ifneq (, $(shell which ifx))
+    else ifneq (, $(shell which icc))
+      ifeq ($(shell test $$(icc -dumpversion | cut -d '.' -f 1) -lt 16; echo $$?), 0)
+        $(error The code requires Intel compiler version 16 or higher)
+      endif
+    else
+      $(error The 'intel' compiler cannot be found)
     endif
   else
-    ifeq ($(shell test $$(gcc -dumpversion | cut -d '.' -f 1) -lt 5; echo $$?), 0)
-      $(error The code requires GNU/gcc and GNU/gfortran version 5 or higher)
+    ifneq (, $(shell which gcc))
+      ifeq ($(shell test $$(gcc -dumpversion | cut -d '.' -f 1) -lt 5; echo $$?), 0)
+        $(error The code requires GNU/gcc and GNU/gfortran version 5 or higher)
+      endif
+    else
+      $(error The 'gnu' compiler cannot be found)
     endif
   endif
 endif
 
 # ======================================================================
 # Compiler and options.
-# 'FTN90PP' and 'FTN90PPOPT' required to compile 'ftn90' files.
-ifeq ($(DIST),intel)
-FC=ifort
-CC=icc
-GFLAG=-check bounds -fpe0 #-stand f03 #-assume realloc-lhs #-check all
-LFLAG=-c -g -traceback -fp-model source
-CFLAG=
-ifeq ($(shell test $$(icc -dumpversion | cut -d '.' -f 1) -lt 17; echo $$?), 0)
-  CFLAG+= -no-multibyte-chars
-endif
-FTN90PP=-fpp -free
-FTN90PPOPT=-Tf
+ifeq ($(DIST), intel)
+  ifneq (, $(shell which ifx))
+    FC = ifx
+    CC = icx
+  else
+    FC = ifort
+    CC = icc
+  endif
+  LFLAG = -c -g -O0 -traceback
+  FFLAG = -fpp -check bounds -fpe0 -fp-model source
+  CFLAG =
+  ifeq ($(shell test $$($(CC) -dumpversion | cut -d '.' -f 1) -lt 17; echo $$?), 0)
+    CFLAG += -no-multibyte-chars
+  endif
 else
-FC=gfortran
-CC=gcc
-GFLAG=-fbounds-check -ffpe-trap=invalid,zero,overflow -Wconversion -Wsurprising -Wintrinsic-shadow -Wtarget-lifetime #-std=f2003 #-fcheck=all -ftrapv
-ifeq ($(shell test $$(gcc -dumpversion | cut -d '.' -f 1) -gt 5; echo $$?), 0)
-  GFLAG+= -Winteger-division
-endif
-LFLAG=-c -g -fbacktrace
-CFLAG=
-FTN90PP=-x f95 -cpp -ffree-form -ffree-line-length-none -fcray-pointer -fallow-argument-mismatch
-FTN90PPOPT=
+  FC = gfortran
+  CC = gcc
+  LFLAG = -c -g -fbacktrace
+  FFLAG = -cpp -ffree-form -ffree-line-length-none -fcray-pointer -fbounds-check -ffpe-trap=invalid,zero,overflow -Wconversion -Wsurprising -Wintrinsic-shadow -Wtarget-lifetime
+  ifeq ($(shell test $$($(CC) -dumpversion | cut -d '.' -f 1) -gt 5; echo $$?), 0)
+    FFLAG += -Winteger-division
+  endif
+  CFLAG =
 endif
 
 # Override debugging options if 'DEBUG' not enabled.
 ifndef DEBUG
-GFLAG=
-ifndef SYMBOLS
-LFLAG=-c -O2
-ifeq ($(DIST),intel)
-LFLAG=-c -O2 -fp-model precise
-endif
-endif
-CLEANUP=@$(MAKE) -s clean DIST=$(DIST)
+  ifeq ($(DIST), intel)
+    FFLAG = -fpp -fp-model precise
+  else
+    FFLAG = -cpp -ffree-form -ffree-line-length-none -fcray-pointer
+  endif
+  ifndef SYMBOLS
+    LFLAG = -c -O2
+  endif
+  CLEANUP = @$(MAKE) -s clean DIST=$(DIST)
 endif
 
 # Override compile options if 'DOUBLE' enabled.
 ifdef DOUBLE
-ifeq ($(DIST),intel)
-LFLAG+=-r8
-else
-LFLAG+=-fdefault-double-8 -fdefault-real-8
-endif
+  ifeq ($(DIST), intel)
+    FFLAG += -r8
+  else
+    FFLAG += -fdefault-double-8 -fdefault-real-8
+  endif
 endif
 
 # Output: sa_mesh.
-OUT=sa_mesh
+ifneq ($(MPI), ompi)
+  OUT ?= sa_mesh
+else
+  OUT ?= mpi_sa_mesh
+endif
 
 # If MPI is enabled, switch to OMPI compiler and rename output.
 # Otherwise add MPI stub to 'OBJECTS'.
-ifeq ($(MPI),ompi)
-ifeq (,$(shell which mpif90))
-FC=mpifort
+ifeq ($(MPI), ompi)
+  ifneq (, $(shell which mpiifx))
+    FC = mpiifx
+  else ifneq (, $(shell which mpif90))
+    FC = mpif90
+  else ifneq (, $(shell which mpifort))
+    FC = mpifort
+  else
+    $(error The 'mpi' Fortran compiler cannot be found)
+  endif
+  ifneq (, $(shell which mpiicx))
+    CC = mpiicx
+  else ifneq (, $(shell which mpicc))
+    CC = mpicc
+  else
+    $(error The 'mpi' C compiler cannot be found)
+  endif
 else
-FC=mpif90
-endif
-CC=mpicc
-OUT=mpi_sa_mesh
-else
-OBJECTS:=	mpi_stub.o $(OBJECTS)
+  OBJECTS := mpi_stub.o $(OBJECTS)
 endif
 
 # Override 'rm' with 'del' and add static option for MinGW.
-ifeq ($(DIST),mingw)
-BIN_DEL=del
-LLINK=-static
-FC=gfortran
-CC=gcc
-OUT=sa_mesh_static
+ifeq ($(DIST), mingw)
+  BIN_DEL = del
+  LLINK = -static
+  FC = gfortran
+  CC = gcc
+  OUT = sa_mesh_static
 else
-BIN_DEL=rm
+  BIN_DEL = rm
+endif
+
+# Summary.
+ifdef SUMMARY
+  $(info FC         = $(FC))
+  $(info CC         = $(CC))
+  $(info LFLAG      = $(LFLAG))
+  $(info FFLAG      = $(FFLAG))
+  $(info CFLAG      = $(CFLAG))
+  $(info OUT        = $(OUT))
+  $(info CLEANUP    = $(CLEANUP))
+  $(info BIN_DEL    = $(BIN_DEL))
 endif
 
 # ======================================================================
 # General rules.
 %.o: %.f
-	$(FC) $(LFLAG) $(GFLAG) $(LIBNCO) $<
+	$(FC) $(LFLAG) $(FFLAG) $(LIBNCO) $<
 %.o: %.F90
-	$(FC) $(FTN90PP) $(LFLAG) $(GFLAG) $(INC_DIRS) $(DFLAG) $(LIBNCO) $(FTN90PPOPT) $<
+	$(FC) $(LFLAG) $(FFLAG) $(INC_DIRS) $(DFLAG) $(LIBNCO) $<
 %.o: %.f90
-	$(FC) $(FTN90PP) $(LFLAG) $(GFLAG) $(LIBNCO) $<
+	$(FC) $(LFLAG) $(FFLAG) $(LIBNCO) $<
 %.o: %.for
-	$(FC) $(LFLAG) $(GFLAG) $(LIBNCO) $<
+	$(FC) $(LFLAG) $(FFLAG) $(LIBNCO) $<
 %.o: %.c
 	$(CC) $(LFLAG) $(CFLAG) $(INC_DIRS) $<
-
-# ======================================================================
-# Special rules.
-EF_Module.o: EF_ParseUtilities.o
-%.o: %.ftn90
-	$(FC) $(FTN90PP) $(LFLAG) $(INC_DIRS) $(DFLAG) $(FTN90PPOPT)$<
-%.o: %.cdk90
-	$(FC) $(FTN90PP) $(LFLAG) $(INC_DIRS) $(DFLAG) $(FTN90PPOPT)$<
 
 # ======================================================================
 # Files renamed for SVS.
