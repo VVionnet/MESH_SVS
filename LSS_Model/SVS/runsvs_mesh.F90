@@ -158,6 +158,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_HVEGLPOL = 'HVEGLPOL' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_LWRITE_RESTART = 'LWRITE_RESTART' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LFORLIT = 'LFORLIT' ! For svs2 only
+    character(len = *), parameter, public :: VN_SVS_READ_OC = 'READ_OC' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_LREAD_RESTART = 'LREAD_RESTART' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LVAR_LMIN_STABLE = 'LVAR_LMIN_STABLE '
     character(len = *), parameter, public :: VN_SVS_LMO_WINTER = 'LMO_WINTER'  ! Used if LVAR_LMIN_STABLE == 'VAR'
@@ -284,6 +285,7 @@ module runsvs_mesh
         logical :: lout_svs2_watbal = .false.
         logical :: lwrite_restart = .false.
         logical :: lforlit = .false.
+        logical :: read_oc = .false.
         logical :: lread_restart = .false.
         logical :: lout_svs1_watbal = .false.
         integer :: nprofile_day = 4 !
@@ -1067,6 +1069,7 @@ module runsvs_mesh
 
         if(svs_mesh%vs%schmsol=='SVS2') then
                 lforlit = svs_mesh%vs%lforlit
+                read_oc = svs_mesh%vs%read_oc
         endif
         ! Activate or not the canopy module for snow under the canopy
 !?sps-a16        if(svs_mesh%vs%schmsol=='SVS2') then
