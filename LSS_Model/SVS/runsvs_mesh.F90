@@ -422,7 +422,8 @@ module runsvs_mesh
    character(len=4), parameter :: LVLT = 'T'
 
    character(len=6)  :: nag, nmar, dwwz, nuv, psss, nccl
-   integer :: ier, iverb, nsurf, nextra, i
+   !integer :: ier, iverb, nsurf, nextra, i
+   integer :: ier, iverb, nextra, i
    logical :: lbourg3d, lbourg
    logical :: lkfbe, lshal, lshbkf, lmid
    logical :: lmoistke, lrpnint

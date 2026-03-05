@@ -272,8 +272,18 @@ runsvs_mod.o: runsvs_mod_sa_mesh.ftn90
 SPS_BASE_DIR=..
 SPS_DIR=$(SPS_BASE_DIR)/sps
 SPS_BUILD_DIR=$(SPS_BASE_DIR)/sps_build
+#runsvs_mesh.o: runsvs_mesh.F90
+#	$(FC) $(FTN90PP) $(LFLAG) $(GFLAG) \
+	-I$(SPS_DIR)/src/modelutils/include \
+	-I$(SPS_DIR)/src/rpnphy/src/utils \
+	-I$(SPS_DIR)/src/rpnphy/src/base \
+	-I$(SPS_DIR)/src/rpnphy/src/surface \
+	-I$(SPS_BUILD_DIR)/src/rpnphy/rpnphy/modules \
+	-I$(SPS_BUILD_DIR)/src/modelutils/modelutils/modules \
+	-I$(SPS_BUILD_DIR)/src/tdpack/include $<
+
 runsvs_mesh.o: runsvs_mesh.F90
-	$(FC) $(FTN90PP) $(LFLAG) $(GFLAG) \
+	$(FC) $(LFLAG) $(shell $(SPS_BUILD_DIR)/rpnphy-config --fflags) \
 	-I$(SPS_DIR)/src/modelutils/include \
 	-I$(SPS_DIR)/src/rpnphy/src/utils \
 	-I$(SPS_DIR)/src/rpnphy/src/base \

@@ -29,5 +29,6 @@ make rpnphy -j4
 cd ../MESH_SVS
 make clean
 make mpi_intel debug
+make mpi_intel
 
 
