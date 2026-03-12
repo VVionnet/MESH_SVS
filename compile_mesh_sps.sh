@@ -1,6 +1,7 @@
 
 tag_sps=6.3.0-a20
-#branch_sps=630a20
+system=Science # Science | GPSCC
+activate_debug=true
 
 # Change dir
 cd ../
@@ -10,9 +11,15 @@ mkdir sps sps_build
 
 # Extract sps code from gitlab
 cd sps
-git clone --no-checkout git@gitlab.science.gc.ca:continental-surface-hydrology/sps-dev.git .
+
+# Clone based on system
+if [ "$system" = "Science" ]; then
+    git clone --no-checkout git@gitlab.science.gc.ca:continental-surface-hydrology/sps-dev.git .
+else
+    git clone --branch 6.3 git@github.com:VVionnet/sps_dev.git .
+fi
+
 git checkout $tag_sps
-#git checkout $branch_sps
 git submodule update --init --recursive
 
 # Load compiler
@@ -28,5 +35,10 @@ make rpnphy -j4
 # Compile MESH
 cd ../MESH_SVS
 make clean
-make mpi_intel debug
-#make mpi_intel
+
+if [ "$activate_debug" = true ]; then
+   make mpi_intel debug
+else
+   make mpi_intel
+fi
+
