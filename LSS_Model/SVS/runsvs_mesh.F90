@@ -430,7 +430,7 @@ module runsvs_mesh
    logical :: lmoyhr, lmoyhrkf, lmoykfsh, lmoymid
    logical :: lgwdsm, lgwd, ltofd
    logical :: lccc2
-   logical :: lghg, ltrigtau
+   logical :: lghg, ltrigtau, ltrigtauw
    logical :: liuv
    logical :: lmoyhroz, lmoyhrgh, llinozout, llinghout, llinozage
    logical :: lmoycons
@@ -505,6 +505,9 @@ module runsvs_mesh
    ls2     = (stcond == 'S2')
    lcsun   = (stcond == 'CONSUN')
    lmp     = (stcond(1:3) == 'MP_')
+
+   ltrigtau = (kfctrigtau > 0.)
+   ltrigtauw = (deep_wavg .or. mid_wavg)
 
    dwwz = 'd1'
    lsurfonly = (fluvert == 'SURFACE')
