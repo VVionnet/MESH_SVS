@@ -19,7 +19,6 @@ module runsvs_mesh
     use sfcbus_mod
     use sfc_options
     use svs_configs
-    USE MODD_SNOW_PAR,  ONLY : XVAGING_NOGLACIER
 
     use str_mod, only: str_concat
 
@@ -57,6 +56,7 @@ module runsvs_mesh
     real preacc_tot,wsoil_tot,isoil_tot,snow_tot,veg_tot     
 
     !> SVS variables names for I/O (direct variables).
+    character(len = *), parameter, public :: VN_SVS_AGINGCOEF = 'AGINGCOEF' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_DEGLAT = 'DEGLAT'
     character(len = *), parameter, public :: VN_SVS_DEGLNG = 'DEGLNG'
     character(len = *), parameter, public :: VN_SVS_OBSERVED_FORCING = 'OBSERVED_FORCING'
@@ -118,7 +118,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_HSNOWHOLD = 'HSNOWHOLD' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_HSNOWRES = 'HSNOWRES' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_LSNOWDRIFT_SUBLIM = 'LSNOWDRIFT_SUBLIM' ! For svs2 only
-    character(len = *), parameter, public :: VN_SVS_XVAGING_NOGLACIER = 'XVAGING_NOGLACIER' ! For svs2 only
+    character(len = *), parameter, public :: VN_SVS_LSNOWAGING_VAR = 'LSNOWAGING_VAR' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_SNOMA = 'SNOMA'
     character(len = *), parameter, public :: VN_SVS_SNVMA = 'SNVMA'
     character(len = *), parameter, public :: VN_SVS_SNOMA_SVS = 'SNOMA_ML'
@@ -252,6 +252,7 @@ module runsvs_mesh
         real, dimension(:), allocatable :: wsnv
         real, dimension(:), allocatable :: sncma ! For svs2 only
         real, dimension(:), allocatable :: tperm ! For svs2 only
+        real, dimension(:), allocatable :: agingcoef ! For svs2 only
         integer :: nsl = 12 ! For svs2 only
         real, dimension(:,:), allocatable :: snoma_svs
         real, dimension(:,:), allocatable :: snoden_svs
@@ -279,6 +280,7 @@ module runsvs_mesh
         character(len = DEFAULT_FIELD_LENGTH) :: hsnowcomp = 'B92'
         character(len = DEFAULT_FIELD_LENGTH) :: hsnowres = 'RIL'
         logical :: lsnowdrift_sublim = .true.
+        logical :: lsnowaging_var = .false.
         logical :: lout_snow_profile = .false.
         logical :: lout_snow_enbal = .false.
         logical :: lout_snow_vegh = .false.
@@ -298,7 +300,6 @@ module runsvs_mesh
         logical :: lsnow_interception_svs2 = .false.
         character(len = DEFAULT_FIELD_LENGTH) :: cano_ref_forcing = 'FOR'
         logical :: lcano_svs2 = .false.
-        real :: xvaging_noglacier = -1
         real, dimension(:), allocatable :: vgh_dens
         real, dimension(:), allocatable :: hveglpol
         logical :: read_hveglpol = .true.
@@ -754,6 +755,10 @@ module runsvs_mesh
            if (allocated(svs_mesh%vs%hveglpol)) svs_bus(a1(hveglpol):z1(hveglpol)) = svs_mesh%vs%hveglpol
         endif
 
+        if(svs_mesh%vs%schmsol=='SVS2' .and. svs_mesh%vs%lsnowaging_var) then
+           if (allocated(svs_mesh%vs%agingcoef)) svs_bus(a1(agingcoef):z1(agingcoef)) = svs_mesh%vs%agingcoef              
+        endif
+
         if(svs_mesh%vs%schmsol=='SVS' .and. svs_mesh%vs%lsoil_freezing_svs1) then
            do i = 1, nl_svs
                 if (allocated(svs_mesh%vs%tpsoil))  svs_bus(a2(tpsoil, i - 1):z2(tpsoil, i - 1)) = svs_mesh%vs%tpsoil(:, i)
@@ -1092,6 +1097,7 @@ module runsvs_mesh
              hsnowscheme =  svs_mesh%vs%hsnowscheme
              hsnowdrift_cro = svs_mesh%vs%hsnowdrift_cro
              lsnowdrift_sublim = svs_mesh%vs%lsnowdrift_sublim
+             lsnowaging_var = svs_mesh%vs%lsnowaging_var
              hsnowcomp =  svs_mesh%vs%hsnowcomp
              hsnowcond =  svs_mesh%vs%hsnowcond
              hsnowrad =  svs_mesh%vs%hsnowrad
@@ -1159,9 +1165,9 @@ module runsvs_mesh
         call ini_csts
 
         ! Update physical parameters for Crocus using values provided in MESH_parameter.txt
-        if(svs_mesh%vs%xvaging_noglacier>0.) then
-               xvaging_noglacier=svs_mesh%vs%xvaging_noglacier
-        end if
+        !if(svs_mesh%vs%xvaging_noglacier>0.) then
+        !       xvaging_noglacier=svs_mesh%vs%xvaging_noglacier
+        !end if
 
         !> Initialize the physics bus.
         call phy_businit(ni, nk)

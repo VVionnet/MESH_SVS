@@ -97,11 +97,9 @@ hsnowhold B92     ! Option for the liquid water content scheme for Crocus
 hsnowcomp B92     ! Option for the compaction scheme for Crocus
 hsnowres RIL      ! Option for the turbulent fluxes in Crocus
 
-lout_snow_profile  .true.  ! Create output file containing detailed information on snowpack layering.
-lout_snow_vegh .true.
-nprofile_day     4          ! Number of snow profiles per day (can be  1, 2, 4, 6, 12, 24)
-lout_snow_enbal  .false.    ! Create output file containing information about the snowpack energy and mass budget
-lout_svs2_watbal  .true.  ! Create output file containing water budget variables
+!> Albedo scheme of Gaillard et al. (2025)
+lsnowaging_var .false.
+agingcoef 60.  ! Aging coefficient (in days) used for albedo calculation in visible range (see modd_snow_par)
 
 !> Canopy module SVS
 lsnow_interception_svs2  .false. ! Use interception
@@ -118,13 +116,17 @@ VGH_DENS    0.
 ! Only useful for Arctic options in Crocus
 !HVEGLPOL    0.2
 
-lwrite_restart .true.      ! Option to write a restart file for SVS2 at the end of the simulation
-lread_restart  .false.      ! Option to read restart information for SVS2/Crocus in MESH_paramater.txt.        
-
 ! Specify how to manage the minimum MO length under stable conditions (CST, VAR, NON)
 lvar_lmin_stable CST
 lmin_stable 20.  ! Only used if lvar_lmin_stable = CST
 ! lmo_winter -1. ! Only used if lvar_lmin_stable = VAR
 
-!> Physical constant for snowpack scheme (uncomment to use)
-!>xvaging_noglacier  60 ! Aging coefficient (in days) used for albedo calculation in visible range (see modd_snow_par)
+! Outputs
+lout_snow_profile  .true.  ! Create output file containing detailed information on snowpack layering.
+lout_snow_vegh .true.
+nprofile_day     4          ! Number of snow profiles per day (can be  1, 2, 4, 6, 12, 24)
+lout_snow_enbal  .false.    ! Create output file containing information about the snowpack energy and mass budget
+lout_svs2_watbal  .true.  ! Create output file containing water budget variables
+
+lwrite_restart .true.      ! Option to write a restart file for SVS2 at the end of the simulation
+lread_restart  .false.      ! Option to read restart information for SVS2/Crocus in MESH_paramater.txt.        

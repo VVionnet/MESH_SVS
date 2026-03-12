@@ -270,13 +270,13 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
                     call assign_line_args(svs_mesh%vs%nsl, args(2), istat)
                 end if
 
-            case (VN_SVS_XVAGING_NOGLACIER)
-                if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS') then
-                    istat = istat + radix(istat)**pstat%INACTIVE
-                else
-                    p = 1
-                    call assign_line_args(svs_mesh%vs%xvaging_noglacier, args(2), istat)
-                end if
+            !case (VN_SVS_XVAGING_NOGLACIER)
+            !    if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS') then
+            !        istat = istat + radix(istat)**pstat%INACTIVE
+            !    else
+            !        p = 1
+            !        call assign_line_args(svs_mesh%vs%xvaging_noglacier, args(2), istat)
+            !    end if
 
             case (VN_SVS_HSNOWSCHEME)
                 if (.not. svs_mesh%PROCESS_ACTIVE  .or. svs_mesh%vs%schmsol=='SVS') then
@@ -348,6 +348,13 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
                     p = 1
                     call assign_line_args(svs_mesh%vs%lsnowdrift_sublim, args(2), istat)
                 end if
+            case (VN_SVS_LSNOWAGING_VAR)
+                if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS' ) then
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    p = 1
+                    call assign_line_args(svs_mesh%vs%lsnowaging_var, args(2), istat)
+                end if                
             case (VN_SVS_LOUT_SNOW_PROFILE)
                 if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS' ) then
                     istat = istat + radix(istat)**pstat%INACTIVE
@@ -759,6 +766,18 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
                     call assign_line_args(svs_mesh%vs%tperm, p, args(2:), istat)
                 end if
 
+            case (VN_SVS_AGINGCOEF)
+                if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol == 'SVS') then
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    if (SHDFILEFMT == 2) then
+                        p = shd%lc%NML
+                    else
+                        p = shd%lc%NTYPE
+                    end if
+                    call assign_line_args(svs_mesh%vs%agingcoef, p, args(2:), istat)
+                end if
+                
             case (VN_SVS_SNOSPHERI_SVS)
                 if (.not. svs_mesh%PROCESS_ACTIVE .or.  svs_mesh%vs%schmsol == 'SVS' .or. .not. svs_mesh%vs%lread_restart ) then
                     istat = istat + radix(istat)**pstat%INACTIVE
