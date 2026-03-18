@@ -364,7 +364,7 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
                 end if
 
             case (VN_SVS_LOUT_SNOW_ENBAL)
-                if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS' ) then
+                if (.not. svs_mesh%PROCESS_ACTIVE) then
                     istat = istat + radix(istat)**pstat%INACTIVE
                 else
                     p = 1

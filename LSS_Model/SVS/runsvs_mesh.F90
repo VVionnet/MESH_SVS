@@ -52,6 +52,7 @@ module runsvs_mesh
     integer :: iout_svs1_soil = 160
     integer :: iout_svs1_snow = 161
     integer :: iout_svs1_watbal = 162
+    integer :: iout_svs1_snow_enbal = 163
 
     real preacc_tot,wsoil_tot,isoil_tot,snow_tot,veg_tot     
 
@@ -1712,6 +1713,16 @@ ierr = 200
           write(iout_svs1_watbal, *)
        endif
 
+       if(svs_mesh%vs%lout_snow_enbal) then
+           open(iout_svs1_snow_enbal, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs1_snow_enbal_hourly.csv', action = 'write')
+           write(iout_svs1_snow_enbal, FMT_CSV, advance = 'no') 'YEAR', 'JDAY', 'HOUR', 'MINS'
+           write(iout_svs1_snow_enbal, FMT_CSV, advance = 'no') 'SNO_RNET','SNO_LE','SNO_H','SNO_MELT_AC','SNO_MELTR_AC'
+           if(svs_mesh%vs%lout_snow_vegh) then
+                   write(iout_svs1_snow_enbal, FMT_CSV, advance = 'no') 'SNV_RNET','SNV_LE','SNV_H'
+           endif
+           write(iout_svs1_snow_enbal, *)
+       endif       
+
 
    endif
 
@@ -2288,6 +2299,17 @@ ierr = 200
                  write(iout_svs1_watbal, *)
               end if
 
+              if( svs_mesh%vs%lout_snow_enbal) then
+                 ! Write file containing snow energy balance outputs
+                  write(iout_svs1_snow_enbal, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
+                  write(iout_svs1_snow_enbal, FMT_CSV, advance = 'no') pvars(vd%rnetsa%idxv)%data(:),-1.0*pvars(vd%les%idxv)%data(:), &
+                        -1.0*pvars(vd%hfluxsa%idxv)%data(:), pvars(vd%melts%idxv)%data(:),pvars(vd%meltsr%idxv)%data(:)
+                  if( svs_mesh%vs%lout_snow_vegh) then
+                          write(iout_svs1_snow_enbal, FMT_CSV, advance = 'no') pvars(vd%rnetsv%idxv)%data(:),-1.0*pvars(vd%lesv%idxv)%data(:), &
+                        -1.0*pvars(vd%hfluxsv%idxv)%data(:)
+                  endif
+                  write(iout_svs1_snow_enbal, *)
+              end if
            end if
 
         end if
@@ -2381,6 +2403,7 @@ ierr = 200
             svs_bus(a1(zusl):z1(zusl)) = -rgasd/grav*log(svs_mesh%vs%sigma_u)*tve(:)  !*dat(ic%ts_count)
             svs_bus(a1(ztsl):z1(ztsl)) = -rgasd/grav*log(svs_mesh%vs%sigma_t)*tve(:)  !*dat(ic%ts_count)
         end if
+
 
         !> Required to replace the calculation in 'phystepinit'.
         pvars(vd%thetaa%idxv)%data(:) = svs_mesh%vs%sigma_t**(-cappa)*pvars(vd%tmoins%idxv)%data(:)
