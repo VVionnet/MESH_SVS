@@ -1619,7 +1619,8 @@ ierr = 200
            if(svs_mesh%vs%lout_snow_vegh) then
                    write(iout_snow_enbal, FMT_CSV, advance = 'no') 'LW_DCA','SW_DCA','TA_CA','HU_CA','WS_CA','SNV_LE','SNV_H' 
               if(svs_mesh%vs%lsnow_interception_svs2) then
-                   write(iout_snow_enbal, FMT_CSV, advance = 'no') 'ESNC','ESNCAF','INTSNC','INTSNCAF','DRPSNC','DRPSNCAF','UNLSNC','UNLSNCAF'
+                   write(iout_snow_enbal, FMT_CSV, advance = 'no') 'ESNC','ESNCAF','INTSNC','INTSNCAF','DRPSNC','DRPSNCAF','UNLSNC','UNLSNCAF', &
+                   'MFSNC','MFSNCAF'
               endif
            endif
            write(iout_snow_enbal, *)
@@ -2027,10 +2028,10 @@ ierr = 200
                            pvars(vd%tca%idxv)%data(:), pvars(vd%qca%idxv)%data(:), pvars(vd%vca%idxv)%data(:),  &
                            -1.0*pvars(vd%lfluxsv%idxv)%data(:), -1.0*pvars(vd%HFLUXSV%idxv)%data(:)
                      if( svs_mesh%vs%lsnow_interception_svs2) then                    
-                          write(iout_snow_enbal, FMT_CSV, advance = 'no')  pvars(vd%esnc%idxv)%data(:), &
-                           pvars(vd%esncaf%idxv)%data(:),pvars(vd%intsnc%idxv)%data(:),pvars(vd%intsncaf%idxv)%data(:),          &
-                           pvars(vd%drpsnc%idxv)%data(:),pvars(vd%drpsncaf%idxv)%data(:),pvars(vd%unlsnc%idxv)%data(:),          &
-                           pvars(vd%unlsncaf%idxv)%data(:) 
+                          write(iout_snow_enbal, FMT_CSV, advance = 'no')  -1.0*pvars(vd%esnc%idxv)%data(:), &
+                           -1.0*pvars(vd%esncaf%idxv)%data(:),pvars(vd%intsnc%idxv)%data(:),pvars(vd%intsncaf%idxv)%data(:),          &
+                           -1.0*pvars(vd%drpsnc%idxv)%data(:),-1.0*pvars(vd%drpsncaf%idxv)%data(:),-1.0*pvars(vd%unlsnc%idxv)%data(:),          &
+                           -1.0*pvars(vd%unlsncaf%idxv)%data(:),-1.0*pvars(vd%mfsnc%idxv)%data(:),-1.0*pvars(vd%mfsncaf%idxv)%data(:) 
                      endif
                   endif
                   write(iout_snow_enbal, *)
