@@ -1607,7 +1607,7 @@ ierr = 200
           write(iout_snow_bulk_vegh, FMT_CSV, advance = 'no') 'SNVMA',   &
           'SNVDP','SNVDEN','SNVALB','WSNV','TSNV_SURF','RSNV_AC','RAINRATE_VGH', 'SNOWRATE_VGH','WDRIFT_VGH'
           if(svs_mesh%vs%lsnow_interception_svs2) then
-              write(iout_snow_bulk_vegh, FMT_CSV, advance = 'no') 'SNCMA', 'ESNC','ESNCAF'
+              write(iout_snow_bulk_vegh, FMT_CSV, advance = 'no') 'SNCMA'
           endif
           write(iout_snow_bulk_vegh, *)
       endif
@@ -1617,7 +1617,10 @@ ierr = 200
            write(iout_snow_enbal, FMT_CSV, advance = 'no') 'YEAR', 'JDAY', 'HOUR', 'MINS'
            write(iout_snow_enbal, FMT_CSV, advance = 'no') 'SNO_RNET', 'SNO_SWNET','SNO_LWNET','SNO_LE','SNO_H','SNO_BSUBL','SNO_G', 'SNO_HRAIN', 'SUBLIM_LV'
            if(svs_mesh%vs%lout_snow_vegh) then
-                   write(iout_snow_enbal, FMT_CSV, advance = 'no') 'LW_DCA','SW_DCA','TA_CA','HU_CA','WS_CA','SNV_LE','SNV_H'
+                   write(iout_snow_enbal, FMT_CSV, advance = 'no') 'LW_DCA','SW_DCA','TA_CA','HU_CA','WS_CA','SNV_LE','SNV_H' 
+              if(svs_mesh%vs%lsnow_interception_svs2) then
+                   write(iout_snow_enbal, FMT_CSV, advance = 'no') 'ESNC','ESNCAF','INTSNC','INTSNCAF','DRPSNC','DRPSNCAF','UNLSNC','UNLSNCAF'
+              endif
            endif
            write(iout_snow_enbal, *)
        endif
@@ -2012,6 +2015,7 @@ ierr = 200
                         pvars(vd%rainrate%idxv)%data(:),pvars(vd%snowrate%idxv)%data(:),pvars(vd%PSNGRVL%idxv)%data(:)
               write(iout_snow_bulk, *)
 
+
               if( svs_mesh%vs%lout_snow_enbal) then
                  ! Write file containing snow energy balance outputs
                   write(iout_snow_enbal, FMT_CSV, advance = 'no') ic%now%year, ic%now%jday, ic%now%hour, ic%now%mins
@@ -2019,9 +2023,15 @@ ierr = 200
                        pvars(vd%lwnetsa%idxv)%data(:), -1.0*pvars(vd%lfluxsa%idxv)%data(:), -1.0*pvars(vd%hfluxsa%idxv)%data(:), &
                        pvars(vd%subldrifta%idxv)%data(:), -1.0*pvars(vd%gfluxsa%idxv)%data(:), pvars(vd%hpsa%idxv)%data(:), pvars(vd%esa%idxv)%data(:)
                   if( svs_mesh%vs%lout_snow_vegh) then
-                          write(iout_snow_enbal, FMT_CSV, advance = 'no') pvars(vd%lwca%idxv)%data(:),pvars(vd%swca%idxv)%data(:) , &
-                           pvars(vd%tca%idxv)%data(:),pvars(vd%qca%idxv)%data(:),pvars(vd%vca%idxv)%data(:),  &
-                           -1.0*pvars(vd%lfluxsv%idxv)%data(:), -1.0*pvars(vd%HFLUXSV%idxv)%data(:) 
+                          write(iout_snow_enbal, FMT_CSV, advance = 'no') pvars(vd%lwca%idxv)%data(:),pvars(vd%swca%idxv)%data(:), &
+                           pvars(vd%tca%idxv)%data(:), pvars(vd%qca%idxv)%data(:), pvars(vd%vca%idxv)%data(:),  &
+                           -1.0*pvars(vd%lfluxsv%idxv)%data(:), -1.0*pvars(vd%HFLUXSV%idxv)%data(:)
+                     if( svs_mesh%vs%lsnow_interception_svs2) then                    
+                          write(iout_snow_enbal, FMT_CSV, advance = 'no')  pvars(vd%esnc%idxv)%data(:), &
+                           pvars(vd%esncaf%idxv)%data(:),pvars(vd%intsnc%idxv)%data(:),pvars(vd%intsncaf%idxv)%data(:),          &
+                           pvars(vd%drpsnc%idxv)%data(:),pvars(vd%drpsncaf%idxv)%data(:),pvars(vd%unlsnc%idxv)%data(:),          &
+                           pvars(vd%unlsncaf%idxv)%data(:) 
+                     endif
                   endif
                   write(iout_snow_enbal, *)
               end if
@@ -2034,7 +2044,7 @@ ierr = 200
                         pvars(vd%tsnowv_svs%idxv)%data(1:ni),pvars(vd%rsnowsv_acc%idxv)%data(:),  &
                         pvars(vd%rainrate_vgh%idxv)%data(:),pvars(vd%snowrate_vgh%idxv)%data(:),pvars(vd%vca_drift%idxv)%data(:)
                  if( svs_mesh%vs%lsnow_interception_svs2) then
-                      write(iout_snow_bulk_vegh, FMT_CSV, advance = 'no')  pvars(vd%sncma%idxv)%data(:),pvars(vd%esnc%idxv)%data(:), pvars(vd%esncaf%idxv)%data(:)
+                      write(iout_snow_bulk_vegh, FMT_CSV, advance = 'no')  pvars(vd%sncma%idxv)%data(:)
                  endif
                  write(iout_snow_bulk_vegh, *)
               endif
