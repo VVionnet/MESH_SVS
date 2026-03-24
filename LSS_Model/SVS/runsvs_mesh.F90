@@ -401,6 +401,7 @@ module runsvs_mesh
    use phymem, only: phymem_init, phymem_add, phymem_find, phymem_alloc
    use phymem, only: nphyvars
    use phygridmap, only: phy_lcl_ni, phy_lcl_nj, phydim_ni, phydim_nj, phydim_nk
+   use sfc_businit_mod, only: sfc_businit
 
         !> Input/output variables.
         integer, intent(in) :: ni, nk
@@ -1751,6 +1752,7 @@ ierr = 200
 
     subroutine runsvs_mesh_copy_bus_to_vs()
 
+
         !> Local variables.
         integer i
 
@@ -1926,8 +1928,13 @@ ierr = 200
         use tdpack, only: fotvt
 
         !> Modules.
-   use inichamp, only: inichamp4
-   use sfc_calcdiag, only: sfc_calcdiag3
+        use inichamp, only: inichamp4
+        use sfc_calcdiag, only: sfc_calcdiag3
+        use svs2_mod, only: svs2
+        use svs_mod, only: svs
+        use aggveghigh_mod, only: aggveghigh
+        use aggveglow_mod, only: aggveglow
+
 
         type(ShedGridParams) :: shd
         type(fl_ids) :: fls
