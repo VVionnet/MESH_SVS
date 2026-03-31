@@ -146,7 +146,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_NPROFILE_DAY = 'NPROFILE_DAY' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_LOUT_SVS2_WATBAL = 'LOUT_SVS2_WATBAL ' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_LSOIL_FREEZING_SVS1 = 'LSOIL_FREEZING_SVS1' ! For svs1 only
-    character(len = *), parameter, public :: VN_SVS_LMACROPORES_SVS1 = 'LMACROPORES_SVS1' ! For svs1 only
+    character(len = *), parameter, public :: VN_SVS_LMACROPORES_SVS = 'LMACROPORES_SVS' ! For svs1 only
     character(len = *), parameter, public :: VN_SVS_LPHASE_CHANGE_EFF_SVS1 = 'LPHASE_CHANGE_EFF_SVS1' ! For svs1 only
     character(len = *), parameter, public :: VN_SVS_LWATER_PONDING_SVS = 'LWATER_PONDING_SVS' ! For svs1 and svs2
     character(len = *), parameter, public :: VN_SVS_LUNIQUE_PROFILE_SVS2 = 'LUNIQUE_PROFILE_SVS2' ! For svs2 only
@@ -293,7 +293,7 @@ module runsvs_mesh
         logical :: lout_svs1_watbal = .false.
         integer :: nprofile_day = 4 !
         logical :: lsoil_freezing_svs1 = .false.
-        logical :: lmacropores_svs1 = .false.
+        logical :: lmacropores_svs = .false.
         logical :: lphase_change_eff_svs1 = .false.
         logical :: lwater_ponding_svs = .false.
         logical :: lunique_profile_svs2 = .true.
@@ -1046,8 +1046,8 @@ module runsvs_mesh
         endif
 
         ! Activate or not the macropores in SVS1
-        if(svs_mesh%vs%schmsol=='SVS') then
-                lmacropores_svs1 = svs_mesh%vs%lmacropores_svs1
+        if(svs_mesh%vs%schmsol=='SVS' .or. svs_mesh%vs%schmsol=='SVS2') then
+                lmacropores_svs = svs_mesh%vs%lmacropores_svs
         endif
 
         ! Activate or not the phase change efficiency in SVS1
