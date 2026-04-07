@@ -5,12 +5,25 @@
 system=GPSCC # Science | GPSCC | Other
 
 # Tag of SPS version or name of SPS branch to be extracted from reference SPS repository on Gitlab or Gitbub
-#tag_sps=6.3.0-a20
-tag_sps=6.3.0-a20_newSubmodules # To be used for Github
+# If tag_sps_user is not speficied, the most recent branch is used as a default. 
+#tag_sps_user=6.3.0-a20
 #
 
 # Compile in debug mode
 activate_debug=true
+
+###### No changes required below this line
+
+# Select tag of branch name to be used
+if [[ -n $tag_sps_user ]]; then
+   tag_sps=$tag_sps_user
+else
+  if [ "$system" = "Science" ]; then
+    tag_sps=6.3.0-a20
+  elif [ "$system" = "Other" ] || [ "$system" = "GPSCC"  ]; then	
+    tag_sps=6.3.0-a20_newSubmodules 
+  fi
+fi
 
 # Change dir
 cd ../
