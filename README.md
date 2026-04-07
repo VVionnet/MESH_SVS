@@ -1,36 +1,66 @@
 # MESH model with SVS 1.0 and 2.0 
 
-This repository contains the version of the MESH model that includes the land surface scheme SVS2. 
+This repository contains the version of the MESH model compatible with the latest versions of the land surface scheme Soil Vegetation and Snow (SVS) version 1.0 and 2.0.  
 
-# Installation
+# Installation and compilation
 
+Create first a repository where the necessary code will be downloaded and compiled: 
+
+```
+mkdir example_install
+cd example_install
+```
 To get the code, use `git clone`:
 
 ```
 git clone https://github.com/VVionnet/MESH_SVS.git
 ```
-Infomation about the compilation of MESH are provided in file README.txt. Several compilers are supported (ifort, gfortran, ..).
 
-To compile with ifort, execute the command `make ifort` in the main directory. A debug option is availalbe using the command: `make ifort debug`. 
+To compile the code, the user needs to edit the script `compile_mesh_sps.sh` in the `MESH_SVS` directory. 
 
-To compile with gfortran, execute the command `make gfortran` in the main directory. A debug option is availalbe using the command: `make gfortran debug`. 
+First, the user needs to specify the type of machine used to run MESH-SVS:
 
-On the contained of ECCC collaboration server **GPSCC** (`inter-c-eccc-ubuntu2204.collab.science.gc.ca`), load the Intel compiler ifort using the following command: 
+- `Science`: internal ECCC network
+- `GPSCC`: ECCC collaboration server
+- `Other`: other machine
+
+When specifying `GPSCC` or `Other`, the SVS code is obtained from the developement repository of the ECCC Surface Prediction System on Github (https://github.com/VVionnet/sps_dev). This repository is a fork from the main official SPS repo on Github (https://github.com/ECCC-ASTD-MRD/sps). When specifying `Science`, the SVS code is obtained from the SPS developement repository on the ECCC internal Gitlab.  
+
+The user can also specify the specific branch or tag that they want to compile from the SPS repository (key `tag_sps_user`). If this branch is not specified, the more recent branch is used as a default.  
+
+Finally, the user can choose to compile the MESH-SVS code with or without a debug option by setting the key `activate_debug` to True or False. 
+
+Once `compile_mesh_sps.sh` has been edited, the user can run the script. It will create two repositories: 
+
+- `sps`: it contains the routines of the ECCC Surface Prediction System, including the SVS code. 
+- `sps_build`: used when compiling SPS.
+
+  The compilation will generate the executable: `mpi_sa_mesh`
+
+# Code modification and new compilation 
+
+The code can be modified at several places: 
+
+- `/MESH_SVS/LSS_Model/SVS/runsvs_mesh.F90` contains the interfaces routines between the MESH code and the SVS code (useful to modify the outputs)
+- `/sps/src/rpnphy/src/surface` contains the SVS 1.0 and SVS 2.0 code.
+- `/sps/src/rpnphy/src/surface/from_surfex* includes the part of the code in common with the SURFEX platform, including the detailed snowpack scheme Crocus.
+
+Once the code has been modified, it needs to be recompiled using the script `recompile_mesh_svs.sh` located in the `MESH_SVS` directory. The user needs to edit this script to specify the type of machine used to run MESH-SVS (see above for `compile_mesh_svs.sh`). 
+
+# (Optional) Link MESH-SVS with a locally existing SPS repository
+
+It is possible to link MESH-SVS with other versions of the ECCC Surface Prediction System installed locally. For exemple, if the user wants to run MESH-SVS with a locally existing version of SPS in the repo `sps_versionA`, the following bash commands can be typed:
 
 ```
-. r.load.dot  /fs/ssm/eccc/mrd/rpn/code-tools/20250826/env/ubuntu-22.04-amd64-64@inteloneapi-2023.2.0
-
+mv sps sps_versionB #change the name of the repo sps to sps_versionB
+ln -s your_path/sps_versionA sps # create a symbolic link names sps to the repo sps_versionA 
 ```
 
-and then compile the code with `make ifort`. 
+In this case, the user runs the script `recompile_mesh_svs.sh` that points toward the `sps` symbolic link linked to `sps_versionA`.
 
-# General information
+# More information
 
 Information about MESH are provided on the [MESH wiki](https://mesh-model.atlassian.net/wiki/spaces/USER/overview?mode=global). Specific information on the use of SVS 1.0 and 2.0 in MESH are detailed [here](https://mesh-model.atlassian.net/wiki/spaces/USER/pages/6390037/Soil-Vegetation-Snow+SVS). In particular, the instructions to configure the model in point-scale mode are given [here](https://mesh-model.atlassian.net/wiki/spaces/USER/pages/6390475/How+to+configure+MESH-SVS+for+point+mode+1D+including+SVS2)
-
-# Code organization
-* */Modules/rpnphy/6.1.0/src/surface* contains the codes of SVS 1.0 and 2.0 (including the code of the snowpack models Crocus and ES). 
-* *LSS_Model/SVS/svs1/src* contains the interface routine between MESH and SVS (useful to modify the outputs)
 
 # Test case 
 The directory *test_case* contains an example of a MESH-SVS experiment in point-scale mode. 
