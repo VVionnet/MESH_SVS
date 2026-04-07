@@ -47,6 +47,17 @@ The code can be modified at several places:
 
 Once the code has been modified, it needs to be recompiled using the script `recompile_mesh_svs.sh` located in the `MESH_SVS` directory. The user needs to edit this script to specify the type of machine used to run MESH-SVS (see above for `compile_mesh_svs.sh`). 
 
+# (Optional) Link MESH-SVS with a locally existing SPS repository
+
+It is possible to link MESH-SVS with other versions of the ECCC Surface Prediction System installed locally. For exemple, if the user wants to run MESH-SVS with a locally existing version of SPS in the repo `sps_versionA`, the following bash commands can be typed:
+
+```
+mv sps sps_versionB #change the name of the repo sps to sps_versionB
+ln -s your_path/sps_versionA sps # create a symbolic link names sps to the repo sps_versionA 
+```
+
+In this case, the user runs the script `recompile_mesh_svs.sh` that points toward the `sps` symbolic link linked to `sps_versionA`.
+
 # More information
 
 Information about MESH are provided on the [MESH wiki](https://mesh-model.atlassian.net/wiki/spaces/USER/overview?mode=global). Specific information on the use of SVS 1.0 and 2.0 in MESH are detailed [here](https://mesh-model.atlassian.net/wiki/spaces/USER/pages/6390037/Soil-Vegetation-Snow+SVS). In particular, the instructions to configure the model in point-scale mode are given [here](https://mesh-model.atlassian.net/wiki/spaces/USER/pages/6390475/How+to+configure+MESH-SVS+for+point+mode+1D+including+SVS2)
