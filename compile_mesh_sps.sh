@@ -1,6 +1,15 @@
+# Name of the system where MESH-SVS is compiled
+# Science: internal ECCC network (use ECCC Gitlab to retrieve SVS and SVS2 code)
+# GPSCC: ECCC collaboration server (use Github to retrieve SVS and SVS2 code)
+# Other: other machine (use Github to retrieve SVS and SVS2 code)
+system=GPSCC # Science | GPSCC | Other
 
-tag_sps=6.3.0-a20
-system=Science # Science | GPSCC
+# Tag of SPS version or name of SPS branch to be extracted from reference SPS repository on Gitlab or Gitbub
+#tag_sps=6.3.0-a20
+tag_sps=6.3.0-a20_newSubmodules # To be used for Github
+#
+
+# Compile in debug mode
 activate_debug=true
 
 # Change dir
@@ -15,15 +24,22 @@ cd sps
 # Clone based on system
 if [ "$system" = "Science" ]; then
     git clone --no-checkout git@gitlab.science.gc.ca:continental-surface-hydrology/sps-dev.git .
-else
+elif [ "$system" = "Other" ] || [ "$system" = "GPSCC"  ]; then	
     git clone --branch 6.3 git@github.com:VVionnet/sps_dev.git .
+else
+    echo "$system is an unvalid machine name. Please choose among: 'Scicence', 'GPSCC' and 'Other'"	
+    exit
 fi
 
 git checkout $tag_sps
 git submodule update --init --recursive
 
 # Load compiler
-. .eccc_setup_intel
+if [ "$system" = "Science" ] || [ "$system" = "GPSCC"  ]; then	
+   . .eccc_setup_intel
+elif [ "$system" = "Other" ]; then
+   . .common_setup gnu	
+fi
 
 # Go to build dir
 cd ../sps_build
@@ -37,8 +53,16 @@ cd ../MESH_SVS
 make clean
 
 if [ "$activate_debug" = true ]; then
-   make mpi_intel debug
+   if [ "$system" = "Science" ] || [ "$system" = "GPSCC"  ]; then		
+       make mpi_intel debug
+   elif [ "$system" = "Other" ]; then
+       make mpi_gcc debug
+   fi
 else
-   make mpi_intel
+   if [ "$system" = "Science" ] || [ "$system" = "GPSCC"  ]; then		
+      make mpi_intel
+   elif [ "$system" = "Other" ]; then
+       make mpi_gcc
+   fi
 fi
 
