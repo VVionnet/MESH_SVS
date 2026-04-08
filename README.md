@@ -43,7 +43,7 @@ The code can be modified at several places:
 
 - `/MESH_SVS/LSS_Model/SVS/runsvs_mesh.F90` contains the interfaces routines between the MESH code and the SVS code (useful to modify the outputs)
 - `/sps/src/rpnphy/src/surface` contains the SVS 1.0 and SVS 2.0 code.
-- `/sps/src/rpnphy/src/surface/from_surfex* includes the part of the code in common with the SURFEX platform, including the detailed snowpack scheme Crocus.
+- `/sps/src/rpnphy/src/surface/from_surfex` includes the part of the code in common with the SURFEX platform, including the detailed snowpack scheme Crocus.
 
 Once the code has been modified, it needs to be recompiled using the script `recompile_mesh_svs.sh` located in the `MESH_SVS` directory. The user needs to edit this script to specify the type of machine used to run MESH-SVS (see above for `compile_mesh_svs.sh`). 
 
