@@ -34,6 +34,9 @@ tperm      280.0 ! (Deep soil temperature K)
 lwater_ponding_svs  .false.    ! Activate water ponding in SVS1 
 watpond 0  ! Heigh in m of ponded water
 
+! Macropore scheme
+lmacropores_svs .false.
+
 !> Soils.
 soiltext                 NIL !NIL: required to use soil_levels.txt as-is
 !> By default, values for 3 layers are required and only read. The values of the third layer are applied to all deeper layers.

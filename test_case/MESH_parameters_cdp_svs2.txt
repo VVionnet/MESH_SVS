@@ -28,7 +28,10 @@ schmsol  SVS2
 
 ! Water ponding scheme
 lwater_ponding_svs  .false.    ! Activate water ponding in SVS2 
-watpond 0  ! Heigh in m of ponded water
+watpond 0  ! Height in m of ponded water
+
+ ! Macropore scheme
+lmacropores_svs .false.
 
 !> Soils.
 soiltext                 NIL !NIL: required to use soil_levels.txt as-is
@@ -40,15 +43,11 @@ soiltext                 NIL !NIL: required to use soil_levels.txt as-is
 !> nlayers   ----- 1 ----- 2 ----- 3 ----- 4 ----- 5 ----- 6 ----- 7
 sand            60.0    60.0    60.0 !%
 clay            30.0    30.0    30.0 !%
-soc             0.0     0.0      0.0 !%, soil organic content
 wsoil          0.083   0.086   0.098 !vol. content
 isoil            0.0     0.0     0.0 !vol. content
 tpsoil         280.0   280.0   280.0 ! soil temperature below bg/lv  (K)
 
 tperm      280.0 ! (Deep soil temperature)
-
-!> Activate single soil column in SVS2
-lunique_profile_svs2 .true. 
 
 !> lower boundary condition for heat diffusion in SVS2: TPERM or 0FLUX
 lbcheat_svs2 TPERM !% 0FLUX ; TPERM
@@ -66,9 +65,9 @@ tground       284.8  284.8 !Kelvin, only 2 values for svs1
 vf               0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     1.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0 !fraction
 z0v              0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.02    0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0 !roughness length
 
-!> High veg (FR scheme)
-!> nlayers   ----- 1 ----- 2
-tvegeh          285.7   285.7 !Kelvin
+!> High veg (Skin only)
+!> nlayers   ----- 1 
+tvegeh          285.7   
 !> npoints   ----- 1
 wveg_vh             0.0 !kg m**-2
 
@@ -88,7 +87,7 @@ nsl     20   ! Number of snow layers
 hsnowscheme  CRO ! Selection among CRO and ES
 
 hsnowdrift_cro  VI13 ! Option for the snowdrift scheme for Crocus: Mechanical transformation of snow grain and compaction and effect of wind  on falling snow properties
-lsnowdrift_sublim  .false. !# Activate mass loss due to blowing snow sublimation in ES and Crocus
+lsnowdrift_sublim  .false. !# Activate mass loss due to blowing snow sublimation in ES and Crocus (default TRUE in SVS2)
 hsnowmetamo B21  ! Option for the metamorphism scheme for Crocus
 hsnowrad  B92     ! Option for the radiative transfer scheme for Crocus
 hsnowfall V12     ! Option for the falling snow density for Crocus
@@ -102,8 +101,7 @@ lsnowaging_var .false.
 agingcoef 60.  ! Aging coefficient (in days) used for albedo calculation in visible range (see modd_snow_par)
 
 !> Canopy module SVS
-lsnow_interception_svs2  .false. ! Use interception
-lcano_svs2 .false.     ! Use canopy module of SVS1 (false) or SVS2 (true)
+lsnow_interception_svs2  .true. ! Use interception scheme in SVS2
 
 !> Provenance of met forcing for canopy module in SVS2: FOR (forest below canopy)
 ! or O2F (from open below canopy height transfered to forest below canopy) or ABV (above canopy)
