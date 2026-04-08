@@ -1593,7 +1593,10 @@ ierr = 200
                             trim(VN_SVS_TPSOILV) // '_' // trim(adjustl(level))
          end do
        endif
-       write(iout_soil, FMT_CSV, advance = 'no') 'TVEGL','TVEGH','TGROUND','TGROUNDV', 'TFL', 'WVEGL','WVEGH', 'WFL', 'WFL_ICE'
+       write(iout_soil, FMT_CSV, advance = 'no') 'TVEGL','TVEGH','TGROUND','TGROUNDV','WVEGL','WVEGH'
+       if(svs_mesh%vs%lforlit) then
+              write(iout_soil, FMT_CSV, advance = 'no') 'TFL','WFL', 'WFL_ICE'
+       endif
        write(iout_soil, *)
 
 
@@ -2011,8 +2014,11 @@ ierr = 200
                 end do
               endif
               write(iout_soil, FMT_CSV, advance = 'no') pvars(vd%tvegel%idxv)%data(1:ni),pvars(vd%tvegeh%idxv)%data(1:ni), &
-                      pvars(vd%tground%idxv)%data(1:ni) , pvars(vd%tgroundv%idxv)%data(1:ni), pvars(vd%tfl%idxv)%data(1:ni),&
-                      pvars(vd%wveg_vl%idxv)%data(1), pvars(vd%wveg_vh%idxv)%data(1), pvars(vd%wfl%idxv)%data(1), pvars(vd%wfl_ice%idxv)%data(1)
+                      pvars(vd%tground%idxv)%data(1:ni) , pvars(vd%tgroundv%idxv)%data(1:ni),&
+                      pvars(vd%wveg_vl%idxv)%data(1), pvars(vd%wveg_vh%idxv)%data(1)
+              if(svs_mesh%vs%lforlit) then
+                    write(iout_soil, FMT_CSV, advance = 'no')  pvars(vd%tfl%idxv)%data(1:ni), pvars(vd%wfl%idxv)%data(1), pvars(vd%wfl_ice%idxv)%data(1)
+              endif
               write(iout_soil, *)
 
               ! Write file containing bulk snow outputs
