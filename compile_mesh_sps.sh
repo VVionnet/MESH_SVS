@@ -38,7 +38,7 @@ cd sps
 if [ "$system" = "Science" ]; then
     git clone --no-checkout git@gitlab.science.gc.ca:continental-surface-hydrology/sps-dev.git .
 elif [ "$system" = "Other" ] || [ "$system" = "GPSCC"  ]; then	
-    git clone --branch 6.3 git@github.com:VVionnet/sps_dev.git .
+    git clone --branch 6.3 https://github.com/VVionnet/sps_dev.git .
 else
     echo "$system is an unvalid machine name. Please choose among: 'Scicence', 'GPSCC' and 'Other'"	
     exit
@@ -68,7 +68,7 @@ fi
 cd ../sps_build
 
 # Compile rpn physics
-cmake ../sps
+cmake --debug-trycompile ../sps
 make rpnphy -j4
 
 # Compile MESH
