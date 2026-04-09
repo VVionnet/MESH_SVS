@@ -18,7 +18,7 @@ if [[ -n $tag_sps_user ]]; then
    tag_sps=$tag_sps_user
 else
   if [ "$system" = "Science" ]; then
-    tag_sps=630a20_vvi001_surface_fora22
+    tag_sps=630a20_bbo001_frzdepth_fora22
   elif [ "$system" = "Other" ] || [ "$system" = "GPSCC"  ]; then	
     tag_sps=6.3.0-a20_newSubmodules 
   fi

@@ -87,6 +87,8 @@ wsnow            0.0 !kg m**-2
 
 !> Output
 lout_svs1_watbal .true. ! Add water balance output for SVS1.
+lout_snow_enbal  .true. ! Add snowpack energy balance output for SVS1
+lout_snow_vegh  .true.  ! Add snowpack below high vegetation energy balance to svs1_snow_enbal_hourly.csv
 
 ! Specify how to manage the minimum MO length under stable conditions (CST, VAR, NON)
 lvar_lmin_stable NON
