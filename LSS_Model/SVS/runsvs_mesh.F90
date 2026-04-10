@@ -1586,13 +1586,6 @@ ierr = 200
                             trim(VN_SVS_WSOIL) // '_' // trim(adjustl(level)), &
                             trim(VN_SVS_TPSOIL) // '_' // trim(adjustl(level))
        end do
-       if(.not. svs_mesh%vs%lunique_profile_svs2) then
-         do j = 1, nl_svs
-           write(level, FMT_GEN) j
-           write(iout_soil, FMT_CSV, advance = 'no') &
-                            trim(VN_SVS_TPSOILV) // '_' // trim(adjustl(level))
-         end do
-       endif
        write(iout_soil, FMT_CSV, advance = 'no') 'TVEGL','TVEGH','TGROUND','TGROUNDV','WVEGL','WVEGH'
        if(svs_mesh%vs%lforlit) then
               write(iout_soil, FMT_CSV, advance = 'no') 'TFL','WFL', 'WFL_ICE'
@@ -1669,6 +1662,16 @@ ierr = 200
           write(iout_svs2_watbal, FMT_CSV, advance = 'no') 'YEAR', 'JDAY', 'HOUR', 'MINS'
           write(iout_svs2_watbal, FMT_CSV, advance = 'no') 'PCP_AC','EVP_AC', 'LAT_AC', 'DRA_AC', 'ROF_AC','ROF_INS'
           write(iout_svs2_watbal, FMT_CSV, advance = 'no') 'WSOIL_TOT','ISOIL_TOT','SNOW_TOT','VEG_TOT'
+          do j = 1, nl_svs+1
+              write(level, FMT_GEN) j
+              write(iout_svs2_watbal, FMT_CSV, advance = 'no') &
+                               trim(VN_SVS_WATFL) // '_' // trim(adjustl(level))
+              if (j < nl_svs+1) then
+                  write(level, FMT_GEN) j
+                  write(iout_svs2_watbal, FMT_CSV, advance = 'no') &
+                                  trim(VN_SVS_LATFL) // '_' // trim(adjustl(level))
+              endif
+          end do
           write(iout_svs2_watbal, *)
        endif
 
@@ -2017,12 +2020,6 @@ ierr = 200
                      pvars(vd%wsoil%idxv)%data(((i - 1)*ni + 1):i*ni), &
                      pvars(vd%tpsoil%idxv)%data(((i - 1)*ni + 1):i*ni)
               end do
-              if(.not. svs_mesh%vs%lunique_profile_svs2) then
-                do i = 1, nl_svs
-                   write(iout_soil, FMT_CSV, advance = 'no') &
-                     pvars(vd%tpsoilv%idxv)%data(((i - 1)*ni + 1):i*ni)
-                end do
-              endif
               write(iout_soil, FMT_CSV, advance = 'no') pvars(vd%tvegel%idxv)%data(1:ni),pvars(vd%tvegeh%idxv)%data(1:ni), &
                       pvars(vd%tground%idxv)%data(1:ni) , pvars(vd%tgroundv%idxv)%data(1:ni),&
                       pvars(vd%wveg_vl%idxv)%data(1), pvars(vd%wveg_vh%idxv)%data(1)
@@ -2115,6 +2112,14 @@ ierr = 200
                  write(iout_svs2_watbal, FMT_CSV, advance = 'no') pvars(vd%latflaf%idxv)%data(:),pvars(vd%drainaf%idxv)%data(:)
                  write(iout_svs2_watbal, FMT_CSV, advance = 'no') pvars(vd%runofftotaf%idxv)%data(1),pvars(vd%runofftot%idxv)%data(1)
                  write(iout_svs2_watbal, FMT_CSV, advance = 'no') wsoil_tot,isoil_tot,snow_tot,veg_tot
+                 do i = 1, nl_svs+1
+                     write(iout_svs2_watbal, FMT_CSV, advance = 'no') &
+                        pvars(vd%watflow%idxv)%data(((i - 1)*ni + 1):i*ni)
+                     if (i < nl_svs+1) then
+                        write(iout_svs2_watbal, FMT_CSV, advance = 'no') &
+                            pvars(vd%latflw%idxv)%data(((i - 1)*ni + 1):i*ni)
+                     endif
+                 end do
                  write(iout_svs2_watbal, *)
               end if
         end if
