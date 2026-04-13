@@ -509,6 +509,17 @@ module runsvs_mesh
    lcsun   = (stcond == 'CONSUN')
    lmp     = (stcond(1:3) == 'MP_')
 
+!phybusinit:
+   ! Compute linoz diags only on demand
+   out_linoz = .false.
+   out_linoz = (out_linoz .and. fluvert /= 'SURFACE')
+
+   llinozage = .false. !(llinoz .and. age_linoz)              ! age of air tracer off 
+   llinozout = (llinoz .and. out_linoz)
+   llinghout = (llingh .and. out_linoz)
+   lmoyhroz =(lmoyhr .and. llinoz .and. out_linoz)
+   lmoyhrgh =(lmoyhr .and. llingh .and. out_linoz)
+
    ltrigtau = (kfctrigtau > 0.)
    ltrigtauw = (deep_wavg .or. mid_wavg)
 
