@@ -425,6 +425,7 @@ module runsvs_mesh
    character(len=4), parameter :: LVLT = 'T'
 
    character(len=6)  :: nag, nmar, dwwz, nuv, psss, nccl
+   character(len=2)  :: o3p01   
    !integer :: ier, iverb, nsurf, nextra, i
    integer :: ier, iverb, nextra, i
    logical :: lbourg3d, lbourg
@@ -439,7 +440,7 @@ module runsvs_mesh
    logical :: lmoycons
    logical :: lhn_init, lsfcflx
    logical :: lsurfonly, lwindgust
-   logical :: lpcp_frac, ladvzn, ls2, lmp, lcsun
+   logical :: lpcp_frac, ladvzn, ls2, lmp, lcsun, lpblderooy
 
    ier = phymem_init()
    if (.not.RMN_IS_OK(ier)) then
@@ -508,6 +509,7 @@ module runsvs_mesh
    ls2     = (stcond == 'S2')
    lcsun   = (stcond == 'CONSUN')
    lmp     = (stcond(1:3) == 'MP_')
+   lpblderooy = (pbl_nonloc == 'DEROOY22')
 
 !phybusinit:
    ! Compute linoz diags only on demand
@@ -522,6 +524,12 @@ module runsvs_mesh
 
    ltrigtau = (kfctrigtau > 0.)
    ltrigtauw = (deep_wavg .or. mid_wavg)
+   liuv    = (any(radia == (/&
+        'CCCMARAD ', &
+        'CCCMARAD2'  &
+        /)) .and. kntraduv_S /= '')      
+   o3p01 = P0
+   if (llinoz) o3p01 = P1   
 
    dwwz = 'd1'
    lsurfonly = (fluvert == 'SURFACE')
