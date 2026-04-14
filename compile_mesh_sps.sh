@@ -2,11 +2,12 @@
 # Science: internal ECCC network (use ECCC Gitlab to retrieve SVS and SVS2 code)
 # GPSCC: ECCC collaboration server (use Github to retrieve SVS and SVS2 code)
 # Other: other machine (use Github to retrieve SVS and SVS2 code)
-system=Science # Science | GPSCC | Other
+system=Other # Science | GPSCC | Other
 
 # Tag of SPS version or name of SPS branch to be extracted from reference SPS repository on Gitlab or Gitbub
 # If tag_sps_user is not speficied, the most recent branch is used as a default. 
 #tag_sps_user=630a20_vvi001_surface_fora22
+tag_sps_user=6.3
 
 # Compile in debug mode
 activate_debug=true
@@ -18,9 +19,9 @@ if [[ -n $tag_sps_user ]]; then
    tag_sps=$tag_sps_user
 else
   if [ "$system" = "Science" ]; then
-    tag_sps=630a20_vvi001_surface_fora22
+    tag_sps=630-a22
   elif [ "$system" = "Other" ] || [ "$system" = "GPSCC"  ]; then	
-    tag_sps=6.3.0-a20_newSubmodules 
+    tag_sps=6.3 
   fi
 fi
 
@@ -44,6 +45,16 @@ else
 fi
 
 git checkout $tag_sps
+
+# Adjust relative path in .gitsubmodule
+if [ "$system" = "Other" ] || [ "$system" = "GPSCC"  ]; then
+    git config submodule.cmake_rpn.url https://github.com/ECCC-ASTD-MRD/cmake_rpn
+    git config submodule."src/rpn-si/vgrid".url https://github.com/ECCC-ASTD-MRD/vgrid
+    git config submodule."src/rpn-si/rpncomm".url https://github.com/ECCC-ASTD-MRD/rpncomm
+    git config submodule."src/rpn-si/rmn".url https://github.com/ECCC-ASTD-MRD/librmn
+    git config submodule."src/rpn-si/tdpack".url https://github.com/ECCC-ASTD-MRD/tdpack
+fi	
+
 git submodule update --init --recursive
 
 # Load compiler
