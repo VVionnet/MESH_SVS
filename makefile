@@ -255,13 +255,13 @@ endif
 # ======================================================================
 # General rules.
 %.o: %.f
-	$(FC) $(LFLAG) $(FFLAG) $(LIBNCO) $<
+	$(FC) $(LFLAG) $<
 %.o: %.F90
 	$(FC) $(LFLAG) $(FFLAG) $(INC_DIRS) $(DFLAG) $(LIBNCO) $<
 %.o: %.f90
 	$(FC) $(LFLAG) $(FFLAG) $(LIBNCO) $<
 %.o: %.for
-	$(FC) $(LFLAG) $(FFLAG) $(LIBNCO) $<
+	$(FC) $(LFLAG) $<
 %.o: %.c
 	$(CC) $(LFLAG) $(CFLAG) $(INC_DIRS) $<
 
@@ -299,7 +299,11 @@ all: ${OBJECTS}
 	$(FC) $(OBJECTS) -o $(OUT) $(LLINK) $(LIBNCL) \
 	-L$(SPS_BUILD_DIR)/src/rpnphy/rpnphy -lrpnphy \
 	-L$(SPS_BUILD_DIR)/src/modelutils/modelutils -lmodelutils -lmodelutils_tmg_stubs \
-	-lrmn -ltdpack -lrpncomm -liomp5 -lpthread
+	-L$(SPS_BUILD_DIR)/src/rmn -lrmn \
+	-L$(SPS_BUILD_DIR)/src/rmn/App/src/lib -lApp \
+	-L$(SPS_BUILD_DIR)/src/tdpack -ltdpack \
+	-L$(SPS_BUILD_DIR)/src/rpncomm/src -lrpncomm \
+	-liomp5 -lpthread
 	$(CLEANUP)
 
 # ======================================================================
