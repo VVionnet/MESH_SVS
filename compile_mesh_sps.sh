@@ -19,7 +19,7 @@ if [[ -n $tag_sps_user ]]; then
    tag_sps=$tag_sps_user
 else
   if [ "$system" = "Science" ]; then
-    tag_sps=630-a22
+    tag_sps=6.3.0-a22
   elif [ "$system" = "Other" ] || [ "$system" = "GPSCC"  ]; then	
     tag_sps=6.3 
   fi
