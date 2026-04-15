@@ -266,22 +266,22 @@ endif
 	$(CC) $(LFLAG) $(CFLAG) $(INC_DIRS) $<
 
 # ======================================================================
-# Files renamed for SVS.
-runsvs_mod.o: runsvs_mod_sa_mesh.ftn90
-	$(FC) $(FTN90PP) $(LFLAG) $(INC_DIRS) $(DFLAG) -o runsvs_mod.o $(FTN90PPOPT)$<
+# Special rules for SPS/rpnphy (including SVS).
 SPS_BASE_DIR=..
 SPS_DIR=$(SPS_BASE_DIR)/sps
 SPS_BUILD_DIR=$(SPS_BASE_DIR)/sps_build
-#runsvs_mesh.o: runsvs_mesh.F90
-#	$(FC) $(FTN90PP) $(LFLAG) $(GFLAG) \
-	-I$(SPS_DIR)/src/modelutils/include \
-	-I$(SPS_DIR)/src/rpnphy/src/utils \
-	-I$(SPS_DIR)/src/rpnphy/src/base \
-	-I$(SPS_DIR)/src/rpnphy/src/surface \
-	-I$(SPS_BUILD_DIR)/src/rpnphy/rpnphy/modules \
-	-I$(SPS_BUILD_DIR)/src/modelutils/modelutils/modules \
-	-I$(SPS_BUILD_DIR)/src/tdpack/include $<
-
+LIBSPS = \
+  -L$(SPS_BUILD_DIR)/src/rpnphy/rpnphy -lrpnphy \
+  -L$(SPS_BUILD_DIR)/src/modelutils/modelutils -lmodelutils -lmodelutils_tmg_stubs \
+  -L$(SPS_BUILD_DIR)/src/rmn -lrmn \
+  -L$(SPS_BUILD_DIR)/src/rmn/App/src/lib -lApp \
+  -L$(SPS_BUILD_DIR)/src/tdpack -ltdpack \
+  -L$(SPS_BUILD_DIR)/src/rpncomm/src -lrpncomm
+  ifeq ($(DIST), intel)
+    LIBSPS += -liomp5 -lpthread
+  else
+    LIBSPS += -lgomp
+  endif
 runsvs_mesh.o: runsvs_mesh.F90
 	$(FC) $(LFLAG) $(shell $(SPS_BUILD_DIR)/rpnphy-config --fflags) \
 	-I$(SPS_DIR)/src/modelutils/include \
@@ -296,14 +296,7 @@ runsvs_mesh.o: runsvs_mesh.F90
 # Make target: all
 # Deletes object and modules files unless 'DEBUG' has a value.
 all: ${OBJECTS}
-	$(FC) $(OBJECTS) -o $(OUT) $(LLINK) $(LIBNCL) \
-	-L$(SPS_BUILD_DIR)/src/rpnphy/rpnphy -lrpnphy \
-	-L$(SPS_BUILD_DIR)/src/modelutils/modelutils -lmodelutils -lmodelutils_tmg_stubs \
-	-L$(SPS_BUILD_DIR)/src/rmn -lrmn \
-	-L$(SPS_BUILD_DIR)/src/rmn/App/src/lib -lApp \
-	-L$(SPS_BUILD_DIR)/src/tdpack -ltdpack \
-	-L$(SPS_BUILD_DIR)/src/rpncomm/src -lrpncomm \
-	-liomp5 -lpthread
+	$(FC) $(OBJECTS) -o $(OUT) $(LLINK) $(LIBNCL) $(LIBSPS)
 	$(CLEANUP)
 
 # ======================================================================
