@@ -977,8 +977,8 @@ module input_forcing
 
         !> Check and skip records if the simulation starts after the start of the forcing file.
         write(line, FMT_DATETIME_SLASHES_YMD) ic%start%year, ic%start%month, ic%start%day, ic%start%hour, ic%start%mins, 0
-        call print_message("The simulation starts at: " // trim(adjustl(line)))
-        call print_message("Checking the start dates of the input files...")
+        !call print_message("The simulation starts at: " // trim(adjustl(line)))
+        !call print_message("Checking the start dates of the input files...")
         call increase_tab()
         n = 0
         do i = 1, size(forcing_files)
@@ -1066,8 +1066,8 @@ module input_forcing
                 !> Skip records.
                 if (skip_count > 0) then
                     write(line, *) skip_count
-                    call print_message( &
-                        "Skipping " // trim(adjustl(line)) // " records in '" // trim(forcing_files(i)%file%full_path) // "'.")
+                    !call print_message( &
+                    !    "Skipping " // trim(adjustl(line)) // " records in '" // trim(forcing_files(i)%file%full_path) // "'.")
                     do j = 1, skip_count
                         call read_frame_from_file(forcing_files(i)%file, skip_data = .true., error_status = error_status)
                         if (error_status /= 0) exit
@@ -1100,7 +1100,7 @@ module input_forcing
 
         !> Print message if no records to skip.
         if (.not. DIAGNOSEMODE .and. n == 0) then
-            call print_message("All forcing files start from the simulation start date. No records to skip.")
+            !call print_message("All forcing files start from the simulation start date. No records to skip.")
         end if
 
     end subroutine

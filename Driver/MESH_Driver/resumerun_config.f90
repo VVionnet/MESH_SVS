@@ -28,7 +28,7 @@ subroutine resumerun_config(fls, shd, cm, ierr)
     ierr = 0
 
     !> Print messages.
-    call print_new_section('READING: Resume run configuration')
+    !call print_new_section('READING: Resume run configuration')
     call increase_tab()
 
     !> Assign the default options for RESUMEFLAG.
@@ -146,7 +146,7 @@ subroutine resumerun_config(fls, shd, cm, ierr)
         line = 'RESUMEFLAG' // trim(line)
         call print_message("RESUMEFLAG is ACTIVE: " // trim(line))
     else
-        call print_message("RESUMEFLAG is not active: RESUMEFLAG off")
+        !call print_message("RESUMEFLAG is not active: RESUMEFLAG off")
     end if
 
     !> Assign default options for SAVERESUMEFLAG.
@@ -271,7 +271,7 @@ subroutine resumerun_config(fls, shd, cm, ierr)
         line = 'SAVERESUMEFLAG' // trim(line)
         call print_message("SAVERESUMEFLAG is ACTIVE: " // trim(line))
     else
-        call print_message("SAVERESUMEFLAG is not active: SAVERESUMEFLAG off")
+        !call print_message("SAVERESUMEFLAG is not active: SAVERESUMEFLAG off")
     end if
 
 !temp

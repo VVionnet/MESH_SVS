@@ -229,7 +229,7 @@ subroutine READ_RUN_OPTIONS(fls, shd, cm, ierr)
 
     !> open the file and print an error if unable to open the file.
     call reset_tab()
-    call print_screen('READING: ' // trim(fls%fl(mfk%f53)%fn))
+    !call print_screen('READING: ' // trim(fls%fl(mfk%f53)%fn))
     call increase_tab()
     iun = fls%fl(mfk%f53)%iun
     open(iun, file = fls%fl(mfk%f53)%fn, status = 'old', action = 'read', iostat = ierr)

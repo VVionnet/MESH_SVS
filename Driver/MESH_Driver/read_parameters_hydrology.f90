@@ -63,7 +63,7 @@ subroutine READ_PARAMETERS_HYDROLOGY(shd, fls, ierr)
 
     !> Open the file.
     call reset_tab()
-    call print_message('READING: ' // trim(adjustl(fls%fl(mfk%f23)%fn)))
+    !call print_message('READING: ' // trim(adjustl(fls%fl(mfk%f23)%fn)))
     call increase_tab()
     iun = fls%fl(mfk%f23)%iun
     open(iun, file = fls%fl(mfk%f23)%fn, status = 'old', action = 'read', iostat = ierr)

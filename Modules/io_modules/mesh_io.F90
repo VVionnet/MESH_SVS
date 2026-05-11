@@ -349,7 +349,7 @@ module mesh_io
             !> Print a message (if not quiet).
             if (v) then
                 call reset_tab()
-                call print_message("READING: " // trim(input_file%full_path))
+                !call print_message("READING: " // trim(input_file%full_path))
                 call increase_tab()
             end if
         end if
@@ -1422,7 +1422,7 @@ module mesh_io
             end if
             if (n > 0) then
                 write(code, *) n
-                call print_message(trim(adjustl(code)) // " valid fields found in the file.")
+                !call print_message(trim(adjustl(code)) // " valid fields found in the file.")
             end if
         end if
         if (n == 0 .and. v) then

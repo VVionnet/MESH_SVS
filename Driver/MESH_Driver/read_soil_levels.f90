@@ -25,7 +25,7 @@ subroutine READ_SOIL_LEVELS(fls, shd, ierr)
 
     !> Open the file.
     call reset_tab()
-    call print_message('READING: ' // trim(fls%fl(mfk%f52)%fn))
+    !call print_message('READING: ' // trim(fls%fl(mfk%f52)%fn))
     call increase_tab()
     iun = fls%fl(mfk%f52)%iun
     open(iun, file = fls%fl(mfk%f52)%fn, status = 'old', action = 'read', iostat = ierr)

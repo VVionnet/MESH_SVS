@@ -339,7 +339,7 @@ subroutine READ_INITIAL_INPUTS(fls, shd, cm, release, ierr)
 !-            shd%AREA = 1.0; shd%FRAC=shd%AREA/shd%AL/shd%AL
 !-            shd%lc%ACLASS(:, shd%lc%NTYPE) = 1.0; shd%lc%ACLASS(:, shd%lc%NTYPE + 1) = 0.0
             call reset_tab()
-            call print_message("READING: (creating basin for point mode)")
+            !call print_message("READING: (creating basin for point mode)")
             call increase_tab()
             allocate(db)
             allocate(db%fields(10))
@@ -849,14 +849,14 @@ subroutine READ_INITIAL_INPUTS(fls, shd, cm, release, ierr)
 
     !> Print a summary of levels to file.
     write(line, FMT_GEN) shd%lc%IGND
-    call print_message('Number of soil layers: ' // trim(adjustl(line)))
+    !call print_message('Number of soil layers: ' // trim(adjustl(line)))
     if (DIAGNOSEMODE) then
         write(line, FMT_GEN) 'Level', 'Thickness (m)', 'Bottom (m)'
-        call print_message(line)
-        do i = 1, shd%lc%IGND
-            write(line, FMT_GEN) i, shd%lc%sl%DELZ(i), shd%lc%sl%ZBOT(i)
-            call print_message(line)
-        end do
+        !call print_message(line)
+        !do i = 1, shd%lc%IGND
+        !    write(line, FMT_GEN) i, shd%lc%sl%DELZ(i), shd%lc%sl%ZBOT(i)
+        !    call print_message(line)
+        !end do
     end if
 
     !> Allocate and initialize SA_MESH states.
@@ -947,7 +947,7 @@ subroutine READ_INITIAL_INPUTS(fls, shd, cm, release, ierr)
 
             !> Print message to screen.
             call reset_tab()
-            call print_message('SUBBASIN mask is ACTIVE.')
+            !call print_message('SUBBASIN mask is ACTIVE.')
             call increase_tab()
 
             !> Allocate and initialize local variables.
@@ -958,10 +958,10 @@ subroutine READ_INITIAL_INPUTS(fls, shd, cm, release, ierr)
             do l = 1, fms%stmg%n
                 SUBBASIN(fms%stmg%meta%rnk(l)) = l
             end do
-            if (DIAGNOSEMODE) then
-                write(line, FMT_GEN) fms%stmg%n
-                call print_message('Masking domains for ' // trim(adjustl(line)) // ' subbasins.')
-            end if
+            !if (DIAGNOSEMODE) then
+            !    write(line, FMT_GEN) fms%stmg%n
+            !    call print_message('Masking domains for ' // trim(adjustl(line)) // ' subbasins.')
+            !end if
 
             !> Mask grids upstream of gauge locations.
             i = 1
@@ -990,14 +990,14 @@ subroutine READ_INITIAL_INPUTS(fls, shd, cm, release, ierr)
 !?            where (SUBBASIN > 0) shd%FRAC = 0.0
 
             !> Print diagnostic information to screen.
-            if (DIAGNOSEMODE) then
-                write(line, FMT_GEN) 'SUBBASIN', 'GRIDS'
-                call print_message(line)
-                do l = 1, fms%stmg%n
-                    write(line, FMT_GEN) l, count(SUBBASIN == l)
-                    call print_message(line)
-                end do
-            end if
+            !if (DIAGNOSEMODE) then
+            !    write(line, FMT_GEN) 'SUBBASIN', 'GRIDS'
+            !    call print_message(line)
+            !    do l = 1, fms%stmg%n
+            !        write(line, FMT_GEN) l, count(SUBBASIN == l)
+            !        call print_message(line)
+            !    end do
+            !end if
         end if
     end if
 

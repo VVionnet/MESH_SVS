@@ -914,8 +914,8 @@ module runsvs_mesh
         if (.not. svs_mesh%PROCESS_ACTIVE) then
             return
         else
-            call print_new_section("RUNSVS is active: " // svs_mesh%vs%schmsol)
-            call increase_tab()
+            !call print_new_section("RUNSVS is active: " // svs_mesh%vs%schmsol)
+            !call increase_tab()
         end if
 
         !> Check for required variables.
@@ -1180,7 +1180,7 @@ module runsvs_mesh
 
         endif
 
-        write(*, nml = surface_cfgs)
+        !write(*, nml = surface_cfgs)
 
         !> Initialize snowpack constants for Crocus and ES
         call ini_csts
@@ -1348,7 +1348,7 @@ module runsvs_mesh
             vl(i)%niveaux = max(vl(i)%niveaux, 1)
             vl(i)%mul = max(vl(i)%mul, 1)
             vl(i)%mosaik = max(vl(i)%mosaik, 1)
-print*,vl(i)%n,vl(i)%niveaux,vl(i)%mul,vl(i)%mosaik
+            !print*,vl(i)%n,vl(i)%niveaux,vl(i)%mul,vl(i)%mosaik
 
             !> Increment the index count.
             bus_ptr(i) = bus_length
@@ -1403,139 +1403,139 @@ print*,vl(i)%n,vl(i)%niveaux,vl(i)%mul,vl(i)%mosaik
         call runsvs_mesh_copy_vs_to_bus()
 
         !> Diagnostic summary of inputs at the first tile.
-        if (DIAGNOSEMODE) then
-            call reset_tab()
-            call print_new_section('--------------------------------')
-            call print_message('SVS DIAGNOSTICS')
-            call print_message('--------------------------------')
-            write(line, "('TILE:             ', i8)") 1
-            call print_message(line)
-            call print_message('--------------------------------')
-            write(line, "('LATITUDE:         ', f10.1)") svs_bus(a1(dlat))*rad2deg
-            call print_message(line)
-            write(line, "('LONGITUDE:        ', f10.1)") svs_bus(a1(dlon))*rad2deg
-            call print_message(line)
-            call print_message('--------------------------------')
-            write(line, "('ROUGHNESS LENGTH: ', f8.3)") svs_bus(a1(z0))
-            call print_message(line)
-            if(svs_mesh%vs%schmsol=='SVS') then
-                write(line, "('VEGETATION TEMP.: ', 2f8.3)") svs_bus(a1(tvege)), svs_bus(a1(tvege) + ni)
-                call print_message(line)
-            else if(svs_mesh%vs%schmsol=='SVS2') then
-                write(line, "('LOW VEGETATION TEMP.: ', 2f8.3)") svs_bus(a1(tvegel))
-                call print_message(line)
-                write(line, "('HIGH VEGETATION TEMP.: ', 2f8.3)") svs_bus(a1(tvegeh)), svs_bus(a1(tvegeh) + ni)
-                call print_message(line)
-            endif
-            call print_message('VEGETATION COVER:')
-            do i = 1199, 1174, -1
-                write(line, "('% ', i5, '        ', f8.3)") i, svs_bus(a2(vegf, 1199 - i))*100.0
-                call print_message(line)
-            end do
-            call print_message('--------------------------------')
-            if (svs_mesh%vs%observed_forcing) then
-                write(line, "('FORCING LEVEL:    ', (a))") 'height'
-                call print_message(line)
-                write(line, "(' THERMO. HEIGHT:   ', f8.3)") svs_bus(a1(ztsl))
-                call print_message(line)
-                write(line, "(' MOMENTUM HEIGHT:  ', f8.3)") svs_bus(a1(zusl))
-                call print_message(line)
-            else
-                write(line, "('FORCING LEVEL:    ', (a))") 'sigma'
-                call print_message(line)
-                write(line, "(' THERMO. SIGMA:    ', f8.3)") svs_mesh%vs%sigma_t
-                call print_message(line)
-                write(line, "(' MOMENTUM SIGMA:   ', f8.3)") svs_mesh%vs%sigma_u
-                call print_message(line)
-            end if
-            call print_message('--------------------------------')
-            write(line, "('SLOPE:            ', f8.3)") svs_bus(a1(slop))
-            call print_message(line)
-            write(line, "('DRAIN.DENSITY     ', f8.3)") svs_bus(a1(draindens))
-            call print_message(line)
-            call print_message('--------------------------------')
-            call print_message('SOIL MAPPING:')
-            call print_message('DATABASE: ' // trim(soiltext))
-            call print_message('WEIGHTS [METERS]:')
-            do i = 1, nl_svs ! model layers
-                write(line, "(' LAYER ', i3, ' DEPTH: ', f8.3)") i, dl_svs(i)
-                call print_message(line)
-                do j = 1, nl_stp ! database layers
-                    if (soiltext == 'GSDE') then
-                        write(line, "('  ', (a), ' DEPTH: ', f8.3, ' WEIGHT: ', f8.3)") 'DB', dl_gsde(j), weights(i, j)
-                    else if (soiltext == 'SLC') then
-                        write(line, "('  ', (a), ' DEPTH: ', f8.3, ' WEIGHT: ', f8.3)") 'DB', dl_slc(j), weights(i, j)
-                    else if (soiltext == 'SOILGRIDS') then
-                        write(line, "('  ', (a), ' DEPTH: ', f8.3, ' WEIGHT: ', f8.3)") 'DB', dl_soilgrids(j), weights(i, j)
-                    else if (soiltext == 'NIL') then
-                        write(line, "('  ', (a), ' DEPTH: ', f8.3, ' WEIGHT: ', f8.3)") 'DB', dl_svs(j), weights(i, j)
-                    end if
-                    call print_message(line)
-                end do
-            end do
-            write(line, "('PERMEABLE LAYERS: ', i3)") khyd
-            call print_message('SOIL TEXTURE:')
-            call print_message('             % SAND    % CLAY    % OC   %BULKSOIL')
-            do i = 1, nl_svs ! model layers
-                write(line, "(' LAYER ', i3, ': ', 999(f8.3, 3x))") i, svs_bus(a2(sand, i - 1)), svs_bus(a2(clay, i -1)),svs_bus(a2(oc, i - 1)), svs_bus(a2(bulksoil, i - 1))
-                call print_message(line)
-            end do
-            call print_message('SOIL MOISTURE:')
-            call print_message('             LIQUID    FROZEN')
-            do i = 1, nl_svs ! permeable layers
-                write(line, "(' LAYER ', i3, ': ', 999(f8.3, 2x))") i, svs_bus(a2(wsoil, i - 1)), svs_bus(a2(isoil, i - 1))
-                call print_message(line)
-            end do
-            if(svs_mesh%vs%schmsol=='SVS') then
-                write(line, "('SOIL TEMPERATURE: ', 2f8.3)") svs_bus(a1(tground)), svs_bus(a1(tground) + ni)
-                call print_message(line)
-                if(svs_mesh%vs%lsoil_freezing_svs1) then
-                   call print_message('             Soil profile ')
-                   do i = 1, nl_svs ! permeable layers
-                      write(line, "(' LAYER ', i3, ': ', 999(f8.3, 1x))") i, svs_bus(a2(tpsoil, i - 1))
-                      call print_message(line)
-                   end do
-                endif
-            else if(svs_mesh%vs%schmsol=='SVS2') then
-               call print_message('             Soil profile ')
-               do i = 1, nl_svs ! permeable layers
-                   write(line, "(' LAYER ', i3, ': ', 999(f8.3, 1x))") i, svs_bus(a2(tpsoil, i - 1))
-                   call print_message(line)
-               end do
-            end if
-            if(svs_mesh%vs%schmsol=='SVS2') then
-               call print_message('             Bare ground/low veg    High veg.')
-               do i = 1, nsl ! snow
-                   write(line, "(' LAYER ', i3, ': ', 999(f8.3, 2x))") i, svs_bus(a2(snoden_svs, i - 1)), svs_bus(a2(snodenv_svs, i - 1))
-                   call print_message(line)
-               end do
-            end if
+        !if (DIAGNOSEMODE) then
+        !    call reset_tab()
+        !    call print_new_section('--------------------------------')
+        !    call print_message('SVS DIAGNOSTICS')
+        !    call print_message('--------------------------------')
+        !    write(line, "('TILE:             ', i8)") 1
+        !    call print_message(line)
+        !    call print_message('--------------------------------')
+        !    write(line, "('LATITUDE:         ', f10.1)") svs_bus(a1(dlat))*rad2deg
+        !    call print_message(line)
+        !    write(line, "('LONGITUDE:        ', f10.1)") svs_bus(a1(dlon))*rad2deg
+        !    call print_message(line)
+        !    call print_message('--------------------------------')
+        !    write(line, "('ROUGHNESS LENGTH: ', f8.3)") svs_bus(a1(z0))
+        !    call print_message(line)
+        !    if(svs_mesh%vs%schmsol=='SVS') then
+        !        write(line, "('VEGETATION TEMP.: ', 2f8.3)") svs_bus(a1(tvege)), svs_bus(a1(tvege) + ni)
+        !        call print_message(line)
+        !    else if(svs_mesh%vs%schmsol=='SVS2') then
+        !        write(line, "('LOW VEGETATION TEMP.: ', 2f8.3)") svs_bus(a1(tvegel))
+        !        call print_message(line)
+        !        write(line, "('HIGH VEGETATION TEMP.: ', 2f8.3)") svs_bus(a1(tvegeh)), svs_bus(a1(tvegeh) + ni)
+        !        call print_message(line)
+        !    endif
+        !    call print_message('VEGETATION COVER:')
+        !    do i = 1199, 1174, -1
+        !        write(line, "('% ', i5, '        ', f8.3)") i, svs_bus(a2(vegf, 1199 - i))*100.0
+        !        call print_message(line)
+        !    end do
+        !    call print_message('--------------------------------')
+        !    if (svs_mesh%vs%observed_forcing) then
+        !        write(line, "('FORCING LEVEL:    ', (a))") 'height'
+        !        call print_message(line)
+        !        write(line, "(' THERMO. HEIGHT:   ', f8.3)") svs_bus(a1(ztsl))
+        !        call print_message(line)
+        !        write(line, "(' MOMENTUM HEIGHT:  ', f8.3)") svs_bus(a1(zusl))
+        !        call print_message(line)
+        !    else
+        !        write(line, "('FORCING LEVEL:    ', (a))") 'sigma'
+        !        call print_message(line)
+        !        write(line, "(' THERMO. SIGMA:    ', f8.3)") svs_mesh%vs%sigma_t
+        !        call print_message(line)
+        !        write(line, "(' MOMENTUM SIGMA:   ', f8.3)") svs_mesh%vs%sigma_u
+        !        call print_message(line)
+        !    end if
+        !    call print_message('--------------------------------')
+        !    write(line, "('SLOPE:            ', f8.3)") svs_bus(a1(slop))
+        !    call print_message(line)
+        !    write(line, "('DRAIN.DENSITY     ', f8.3)") svs_bus(a1(draindens))
+        !    call print_message(line)
+        !    call print_message('--------------------------------')
+        !    call print_message('SOIL MAPPING:')
+        !    call print_message('DATABASE: ' // trim(soiltext))
+        !    call print_message('WEIGHTS [METERS]:')
+        !    do i = 1, nl_svs ! model layers
+        !        write(line, "(' LAYER ', i3, ' DEPTH: ', f8.3)") i, dl_svs(i)
+        !        call print_message(line)
+        !        do j = 1, nl_stp ! database layers
+        !            if (soiltext == 'GSDE') then
+        !                write(line, "('  ', (a), ' DEPTH: ', f8.3, ' WEIGHT: ', f8.3)") 'DB', dl_gsde(j), weights(i, j)
+        !            else if (soiltext == 'SLC') then
+        !                write(line, "('  ', (a), ' DEPTH: ', f8.3, ' WEIGHT: ', f8.3)") 'DB', dl_slc(j), weights(i, j)
+        !            else if (soiltext == 'SOILGRIDS') then
+        !                write(line, "('  ', (a), ' DEPTH: ', f8.3, ' WEIGHT: ', f8.3)") 'DB', dl_soilgrids(j), weights(i, j)
+        !            else if (soiltext == 'NIL') then
+        !                write(line, "('  ', (a), ' DEPTH: ', f8.3, ' WEIGHT: ', f8.3)") 'DB', dl_svs(j), weights(i, j)
+        !            end if
+        !            call print_message(line)
+        !        end do
+        !    end do
+        !    write(line, "('PERMEABLE LAYERS: ', i3)") khyd
+        !    call print_message('SOIL TEXTURE:')
+        !    call print_message('             % SAND    % CLAY    % OC   %BULKSOIL')
+        !    do i = 1, nl_svs ! model layers
+        !        write(line, "(' LAYER ', i3, ': ', 999(f8.3, 3x))") i, svs_bus(a2(sand, i - 1)), svs_bus(a2(clay, i -1)),svs_bus(a2(oc, i - 1)), svs_bus(a2(bulksoil, i - 1))
+        !        call print_message(line)
+        !    end do
+        !    call print_message('SOIL MOISTURE:')
+        !    call print_message('             LIQUID    FROZEN')
+        !    do i = 1, nl_svs ! permeable layers
+        !        write(line, "(' LAYER ', i3, ': ', 999(f8.3, 2x))") i, svs_bus(a2(wsoil, i - 1)), svs_bus(a2(isoil, i - 1))
+        !        call print_message(line)
+        !    end do
+        !    if(svs_mesh%vs%schmsol=='SVS') then
+        !        write(line, "('SOIL TEMPERATURE: ', 2f8.3)") svs_bus(a1(tground)), svs_bus(a1(tground) + ni)
+        !        call print_message(line)
+        !        if(svs_mesh%vs%lsoil_freezing_svs1) then
+        !           call print_message('             Soil profile ')
+        !           do i = 1, nl_svs ! permeable layers
+        !              write(line, "(' LAYER ', i3, ': ', 999(f8.3, 1x))") i, svs_bus(a2(tpsoil, i - 1))
+        !              call print_message(line)
+        !           end do
+        !        endif
+        !    else if(svs_mesh%vs%schmsol=='SVS2') then
+        !       call print_message('             Soil profile ')
+        !       do i = 1, nl_svs ! permeable layers
+        !           write(line, "(' LAYER ', i3, ': ', 999(f8.3, 1x))") i, svs_bus(a2(tpsoil, i - 1))
+        !           call print_message(line)
+        !       end do
+        !    end if
+        !    if(svs_mesh%vs%schmsol=='SVS2') then
+        !       call print_message('             Bare ground/low veg    High veg.')
+        !       do i = 1, nsl ! snow
+        !           write(line, "(' LAYER ', i3, ': ', 999(f8.3, 2x))") i, svs_bus(a2(snoden_svs, i - 1)), svs_bus(a2(snodenv_svs, i - 1))
+        !           call print_message(line)
+        !       end do
+        !    end if
 
-            call print_message('--------------------------------')
-            call print_message('GROUND/LOW VEG. SNOW:')
-            write(line, "(' SNOW TEMPERATURE:', 2f8.3)") svs_bus(a1(tsnow)), svs_bus(a1(tsnow) + ni)
-            call print_message(line)
-            write(line, "(' SNOW DEPTH:      ', 2f8.3)") svs_bus(a1(snodpl))
-            call print_message(line)
-            write(line, "(' SNOW DENSITY:    ', 2f8.3)") svs_bus(a1(snoden))
-            call print_message(line)
-            write(line, "(' SNOW ALBEDO:     ', 2f8.3)") svs_bus(a1(snoal))
-            call print_message(line)
-            write(line, "(' SNOW W/C:        ', 2f8.3)") svs_bus(a1(wsnow))
-            call print_message(line)
-            call print_message('HIGH VEG. SNOW:')
-            write(line, "(' SNOW TEMPERATURE:', 2f8.3)") svs_bus(a1(tsnowveg)), svs_bus(a1(tsnowveg) + ni)
-            call print_message(line)
-            write(line, "(' SNOW DEPTH:      ', 2f8.3)") svs_bus(a1(snvdp))
-            call print_message(line)
-            write(line, "(' SNOW DENSITY:    ', 2f8.3)") svs_bus(a1(snvden))
-            call print_message(line)
-            write(line, "(' SNOW ALBEDO:     ', 2f8.3)") svs_bus(a1(snval))
-            call print_message(line)
-            write(line, "(' SNOW W/C:        ', 2f8.3)") svs_bus(a1(wsnv))
-            call print_message(line)
-            call print_message('--------------------------------')
-        end if
+        !    call print_message('--------------------------------')
+        !    call print_message('GROUND/LOW VEG. SNOW:')
+        !    write(line, "(' SNOW TEMPERATURE:', 2f8.3)") svs_bus(a1(tsnow)), svs_bus(a1(tsnow) + ni)
+        !    call print_message(line)
+        !    write(line, "(' SNOW DEPTH:      ', 2f8.3)") svs_bus(a1(snodpl))
+        !    call print_message(line)
+        !    write(line, "(' SNOW DENSITY:    ', 2f8.3)") svs_bus(a1(snoden))
+        !    call print_message(line)
+        !    write(line, "(' SNOW ALBEDO:     ', 2f8.3)") svs_bus(a1(snoal))
+        !    call print_message(line)
+        !    write(line, "(' SNOW W/C:        ', 2f8.3)") svs_bus(a1(wsnow))
+        !    call print_message(line)
+        !    call print_message('HIGH VEG. SNOW:')
+        !    write(line, "(' SNOW TEMPERATURE:', 2f8.3)") svs_bus(a1(tsnowveg)), svs_bus(a1(tsnowveg) + ni)
+        !    call print_message(line)
+        !    write(line, "(' SNOW DEPTH:      ', 2f8.3)") svs_bus(a1(snvdp))
+        !    call print_message(line)
+        !    write(line, "(' SNOW DENSITY:    ', 2f8.3)") svs_bus(a1(snvden))
+        !    call print_message(line)
+        !    write(line, "(' SNOW ALBEDO:     ', 2f8.3)") svs_bus(a1(snval))
+        !    call print_message(line)
+        !    write(line, "(' SNOW W/C:        ', 2f8.3)") svs_bus(a1(wsnv))
+        !    call print_message(line)
+        !    call print_message('--------------------------------')
+        !end if
 
 
 
@@ -1694,7 +1694,7 @@ ierr = 200
           write(iout_svs2_watbal, *)
        endif
 
-       write(*,*) 'restart',svs_mesh%vs%lwrite_restart
+       !write(*,*) 'restart',svs_mesh%vs%lwrite_restart
        if(svs_mesh%vs%lwrite_restart) then        
             open(iout_svs2_restart, file = './' // trim(fls%GENDIR_OUT) // '/' // 'restart_svs2.csv', action = 'write')
        endif
@@ -2026,8 +2026,8 @@ ierr = 200
                       pvars(vd%sncma%idxv)%data(1) *pvars(vd%vegh%idxv)%data(1) 
 
 
-           !if (ic%now%hour /= ic%next%hour) then !last time-step of hour
-           if (ic%now%mins ==0) then! Full hour
+           if (ic%now%hour /= ic%next%hour) then !last time-step of hour
+           !if (ic%now%mins ==0) then! Full hour
 
               k=1 !>  Identity of the tile (offset relative to node-indexing).
 

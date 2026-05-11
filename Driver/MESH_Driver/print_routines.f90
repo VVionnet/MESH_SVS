@@ -202,7 +202,7 @@ module print_routines
         integer, intent(in), optional :: level
 
         !> Flush the message.
-        call print_message('WARNING: ' // trim(message), level)
+        !call print_message('WARNING: ' // trim(message), level)
 
     end subroutine
 
@@ -240,7 +240,7 @@ module print_routines
         integer, intent(in), optional :: level
 
         !> Flush the message.
-        call print_message('INFO: ' // trim(message), level)
+        !call print_message('INFO: ' // trim(message), level)
 
     end subroutine
 
@@ -305,7 +305,7 @@ module print_routines
         call reset_tab()
         if (present(leading_lines)) n = max(leading_lines, 0)
         do i = 1, n
-            call print_message('')
+            !call print_message('')
         end do
 
         !> Print to screen.

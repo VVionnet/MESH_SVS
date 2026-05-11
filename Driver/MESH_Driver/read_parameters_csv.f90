@@ -46,7 +46,7 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
 
     !> Open the file.
     call reset_tab()
-    call print_message('READING: ' // trim(adjustl(fname)))
+    !call print_message('READING: ' // trim(adjustl(fname)))
     call increase_tab()
     open(iun, file = fname, status = 'old', action = 'read', iostat = ierr)
     if (ierr /= 0) then
@@ -98,7 +98,7 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
         nargs = nargs - 1
 
         !> Assign and distribute the field.
-        if (DIAGNOSEMODE) call print_message('Reading parameter: ' // trim(adjustl(args(1))) // '.')
+        !if (DIAGNOSEMODE) call print_message('Reading parameter: ' // trim(adjustl(args(1))) // '.')
         select case (uppercase(args(1)))
 
             !> SVS (unique variables).
@@ -2149,7 +2149,7 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
                 end if
             end if
             if (btest(istat, pstat%OVERWRITING_FIELD) .and. DIAGNOSEMODE) then
-                call print_remark("Overwriting or updating the existing '" // trim(adjustl(args(1))) // "' value.")
+                !call print_remark("Overwriting or updating the existing '" // trim(adjustl(args(1))) // "' value.")
             end if
             if (btest(istat, pstat%MISMATCHED_PRECISION)) then
                 call print_warning( &
@@ -2173,7 +2173,7 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
 
     !> Print number of active parameters.
     write(line, FMT_GEN) n
-    call print_message('Active parameters in file: ' // trim(adjustl(line)))
+    !call print_message('Active parameters in file: ' // trim(adjustl(line)))
 
     !> Close the file to free the unit.
     close(iun)

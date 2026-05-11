@@ -662,18 +662,18 @@ module basin_utilities
         end if
 
         !> Print a summary.
-        write(code, *) ncell
-        call print_message("Total number of grids: " // trim(adjustl(code)))
-        write(code, *) ncell_active
-        call print_message("Total number of grids inside the basin: " // trim(adjustl(code)))
-        write(code, *) pj%nominal_side_length
-        call print_message("Side length of grid: " // trim(adjustl(code)) // " m")
-        if (ro%RUNLSS) then
-            write(code, *) ngru
-            call print_message("Number of GRUs: " // trim(adjustl(code)))
-            write(code, *) nlandtile
-            call print_message("Number of land-based tiles: " // trim(adjustl(code)))
-        end if
+        !write(code, *) ncell
+        !call print_message("Total number of grids: " // trim(adjustl(code)))
+        !write(code, *) ncell_active
+        !call print_message("Total number of grids inside the basin: " // trim(adjustl(code)))
+        !write(code, *) pj%nominal_side_length
+        !call print_message("Side length of grid: " // trim(adjustl(code)) // " m")
+        !if (ro%RUNLSS) then
+        !    write(code, *) ngru
+        !    call print_message("Number of GRUs: " // trim(adjustl(code)))
+        !    write(code, *) nlandtile
+        !    call print_message("Number of land-based tiles: " // trim(adjustl(code)))
+        !end if
         if (ro%RUNCHNL) then
             write(code, *) nrvr
             call print_message("Number of river classes: " // trim(adjustl(code)))

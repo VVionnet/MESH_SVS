@@ -220,9 +220,9 @@ program RUNMESH
     if (ipid > 0) ISHEADNODE = .false.
 
     !> Write MESH version to screen.
-    write(RELEASE_STRING, "('MESH ', (a), ' ---  (', (a), ')')") trim(RELEASE), trim(VERSION)
-    call print_screen(trim(RELEASE_STRING))
-    call print_screen('')
+    !write(RELEASE_STRING, "('MESH ', (a), ' ---  (', (a), ')')") trim(RELEASE), trim(VERSION)
+    !call print_screen(trim(RELEASE_STRING))
+    !call print_screen('')
 
     !> Check if any command line arguments are found.
     narg = command_argument_count()
@@ -938,11 +938,11 @@ program RUNMESH
     !> End of Initialization
     !> *********************************************************************
 
-    call print_screen('')
-    call print_screen('')
-    call print_screen('DONE INTITIALIZATION')
-    call print_screen('')
-    call print_screen('STARTING MESH')
+    !call print_screen('')
+    !call print_screen('')
+    !call print_screen('DONE INTITIALIZATION')
+    !call print_screen('')
+    !call print_screen('STARTING MESH')
 
     !> *********************************************************************
     !> Start of main loop that is run each half hour
@@ -1053,48 +1053,48 @@ program RUNMESH
             if (PRINTSIMSTATUS /= OUT_NONE) then
 
                 !> Daily.
-                if ((PRINTSIMSTATUS == OUT_JDATE_DLY .or. PRINTSIMSTATUS == OUT_DATE_DLY) .and. &
-                    ic%now%day /= ic%next%day) then
-                    select case (PRINTSIMSTATUS)
-                        case (OUT_DATE_DLY)
-                            write(line, "(i5, '/', i2.2, '/', i2.2)") ic%now%year, ic%now%month, ic%now%day
-                        case default
-                            write(line, '(i5, i4)') ic%now%year, ic%now%jday
-                    end select
-                    if (fms%stmg%n > 0) then
-                        do j = 1, fms%stmg%n
-                            if (fms%stmg%n > 0) write(line, '((a), f10.3)') trim(line), fms%stmg%qomeas%val(j)
-                            write(line, '((a), f10.3)') trim(line), out%d%grid%qo(fms%stmg%meta%rnk(j))
-                        end do
-                    end if
-                    if (ro%RUNBALWB .and. ro%RUNLSS) then
-                        write(line, '((a), 3(f10.3))') &
-                            trim(line), out%d%basin%prec(shd%NA), out%d%basin%et(shd%NA)*ic%dts, out%d%basin%rof(shd%NA)*ic%dts
-                    end if
-                    call print_screen(trim(line))
-                end if
+                !if ((PRINTSIMSTATUS == OUT_JDATE_DLY .or. PRINTSIMSTATUS == OUT_DATE_DLY) .and. &
+                !    ic%now%day /= ic%next%day) then
+                !    select case (PRINTSIMSTATUS)
+                !        case (OUT_DATE_DLY)
+                !            write(line, "(i5, '/', i2.2, '/', i2.2)") ic%now%year, ic%now%month, ic%now%day
+                !        case default
+                !            write(line, '(i5, i4)') ic%now%year, ic%now%jday
+                !    end select
+                !    if (fms%stmg%n > 0) then
+                !        do j = 1, fms%stmg%n
+                !            if (fms%stmg%n > 0) write(line, '((a), f10.3)') trim(line), fms%stmg%qomeas%val(j)
+                !            write(line, '((a), f10.3)') trim(line), out%d%grid%qo(fms%stmg%meta%rnk(j))
+                !        end do
+                !    end if
+                !    if (ro%RUNBALWB .and. ro%RUNLSS) then
+                !        write(line, '((a), 3(f10.3))') &
+                !            trim(line), out%d%basin%prec(shd%NA), out%d%basin%et(shd%NA)*ic%dts, out%d%basin%rof(shd%NA)*ic%dts
+                !    end if
+                !    call print_screen(trim(line))
+                !end if
 
                 !> Monthly.
-                if ((PRINTSIMSTATUS == OUT_JDATE_MLY .or. PRINTSIMSTATUS == OUT_DATE_MLY) .and. &
-                    ic%now%month /= ic%next%month) then
-                    select case (PRINTSIMSTATUS)
-                        case (OUT_DATE_MLY)
-                            write(line, "(i5, '/', i2.2, '/', i2.2)") ic%now%year, ic%now%month, ic%now%day
-                        case default
-                            write(line, '(i5, i4)') ic%now%year, ic%now%jday
-                    end select
-                    if (fms%stmg%n > 0) then
-                        do j = 1, fms%stmg%n
-                            if (fms%stmg%n > 0) write(line, '((a), f10.3)') trim(line), fms%stmg%qomeas%val(j)
-                            write(line, '((a), f10.3)') trim(line), out%d%grid%qo(fms%stmg%meta%rnk(j))
-                        end do
-                    end if
-                    if (ro%RUNBALWB .and. ro%RUNLSS) then
-                        write(line, '((a), 3(f10.3))') &
-                            trim(line), out%m%basin%prec(shd%NA), out%m%basin%et(shd%NA)*ic%dts, out%m%basin%rof(shd%NA)*ic%dts
-                    end if
-                    call print_screen(trim(line))
-                end if
+                !if ((PRINTSIMSTATUS == OUT_JDATE_MLY .or. PRINTSIMSTATUS == OUT_DATE_MLY) .and. &
+                !    ic%now%month /= ic%next%month) then
+                !    select case (PRINTSIMSTATUS)
+                !        case (OUT_DATE_MLY)
+                !            write(line, "(i5, '/', i2.2, '/', i2.2)") ic%now%year, ic%now%month, ic%now%day
+                !        case default
+                !            write(line, '(i5, i4)') ic%now%year, ic%now%jday
+                !    end select
+                !    if (fms%stmg%n > 0) then
+                !        do j = 1, fms%stmg%n
+                !            if (fms%stmg%n > 0) write(line, '((a), f10.3)') trim(line), fms%stmg%qomeas%val(j)
+                !            write(line, '((a), f10.3)') trim(line), out%d%grid%qo(fms%stmg%meta%rnk(j))
+                !        end do
+                !    end if
+                !    if (ro%RUNBALWB .and. ro%RUNLSS) then
+                !        write(line, '((a), 3(f10.3))') &
+                !            trim(line), out%m%basin%prec(shd%NA), out%m%basin%et(shd%NA)*ic%dts, out%m%basin%rof(shd%NA)*ic%dts
+                !    end if
+                !    call print_screen(trim(line))
+                !end if
             end if
 
             !> Save resume files.
@@ -1212,8 +1212,8 @@ program RUNMESH
     !> Run is now over, print final results to the screen and close files
     !> *********************************************************************
 
-    if (ENDDATA) call print_message('Reached end of forcing data.')
-    if (ENDDATE) call print_message('Reached simulation end date.')
+    !if (ENDDATA) call print_message('Reached end of forcing data.')
+    !if (ENDDATE) call print_message('Reached simulation end date.')
 
     if (ISHEADNODE .and. mtsflg%AUTOCALIBRATIONFLAG > 0) call stats_write(fls)
 
@@ -1420,34 +1420,34 @@ program RUNMESH
     end if
 
     !> Print basin vertical water balance totals.
-    if (ro%RUNBALWB) then
-        call print_new_section('Basin water balance end of run totals (mm)')
-        call increase_tab()
-        write(line, FMT_GEN) out%tot%basin%prec(shd%NA)
-        call print_message('Total precipitation              =' // trim(line))
-        write(line, FMT_GEN) out%tot%basin%et(shd%NA)*ic%dts
-        call print_message('Total evapotranspiration         =' // trim(line))
-        write(line, FMT_GEN) out%tot%basin%rof(shd%NA)*ic%dts
-        call print_message('Total runoff                     =' // trim(line))
-        call increase_tab()
-        write(line, FMT_GEN) out%tot%basin%ovrflw(shd%NA)*ic%dts
-        call print_message('Overland         =' // trim(line))
-        write(line, FMT_GEN) sum(out%tot%basin%latflw(shd%NA, :))*ic%dts
-        call print_message('Lateral          =' // trim(line))
-        write(line, FMT_GEN) out%tot%basin%drainsol(shd%NA)*ic%dts
-        call print_message('Drainage (soil)  =' // trim(line))
-        call decrease_tab()
-        write(line, FMT_GEN) out%tot%basin%dstgw(shd%NA)
-        call print_message('Change in storage                =' // trim(line))
-        call increase_tab()
-        write(line, FMT_GEN) out%tot%basin%stg0w(shd%NA)
-        call print_message('Initial          =' // trim(line))
-        write(line, FMT_GEN) out%tot%basin%stgw(shd%NA)
-        call print_message('Final            =' // trim(line))
-    end if
+    !if (ro%RUNBALWB) then
+    !    call print_new_section('Basin water balance end of run totals (mm)')
+    !    call increase_tab()
+    !    write(line, FMT_GEN) out%tot%basin%prec(shd%NA)
+    !    call print_message('Total precipitation              =' // trim(line))
+    !    write(line, FMT_GEN) out%tot%basin%et(shd%NA)*ic%dts
+    !    call print_message('Total evapotranspiration         =' // trim(line))
+    !    write(line, FMT_GEN) out%tot%basin%rof(shd%NA)*ic%dts
+    !    call print_message('Total runoff                     =' // trim(line))
+    !    call increase_tab()
+    !    write(line, FMT_GEN) out%tot%basin%ovrflw(shd%NA)*ic%dts
+    !    call print_message('Overland         =' // trim(line))
+    !    write(line, FMT_GEN) sum(out%tot%basin%latflw(shd%NA, :))*ic%dts
+    !    call print_message('Lateral          =' // trim(line))
+    !    write(line, FMT_GEN) out%tot%basin%drainsol(shd%NA)*ic%dts
+    !    call print_message('Drainage (soil)  =' // trim(line))
+    !    call decrease_tab()
+    !    write(line, FMT_GEN) out%tot%basin%dstgw(shd%NA)
+    !    call print_message('Change in storage                =' // trim(line))
+    !    call increase_tab()
+    !    write(line, FMT_GEN) out%tot%basin%stg0w(shd%NA)
+    !    call print_message('Initial          =' // trim(line))
+    !    write(line, FMT_GEN) out%tot%basin%stgw(shd%NA)
+    !    call print_message('Final            =' // trim(line))
+    !end if
 
     !> Normal end of run message.
-    call print_new_section('Program has terminated normally.', leading_lines = 2)
+    !call print_new_section('Program has terminated normally.', leading_lines = 2)
 
     !> Calculate and save program run time (to file only).
     call print_echo_txt('')
