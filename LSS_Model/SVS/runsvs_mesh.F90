@@ -433,7 +433,7 @@ module runsvs_mesh
    logical :: lmoistke, lrpnint
    logical :: lmoyhr, lmoyhrkf, lmoykfsh, lmoymid
    logical :: lgwdsm, lgwd, ltofd
-   logical :: lccc2
+   logical :: lccc2,lanu
    logical :: lghg, ltrigtau, ltrigtauw
    logical :: liuv
    logical :: lmoyhroz, lmoyhrgh, llinozout, llinghout, llinozage
@@ -505,6 +505,7 @@ module runsvs_mesh
    lmoistke = (fluvert == 'MOISTKE')
    ladvzn  = (advectke .and. lrpnint)
    lccc2   = (radia == 'CCCMARAD2')
+   lanu    = all(rad_anuexp >= 0.)   
    lghg    = (lccc2 .and. radghg_L)
    ls2     = (stcond == 'S2')
    lcsun   = (stcond == 'CONSUN')
