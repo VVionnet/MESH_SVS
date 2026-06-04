@@ -32,10 +32,14 @@ Finally, the user can choose to compile the MESH-SVS code with or without a debu
 
 Once `compile_mesh_sps.sh` has been edited, the user can run the script. It will create two repositories: 
 
-- `sps`: it contains the routines of the ECCC Surface Prediction System, including the SVS code. 
+- `sps`: it contains the routines of the ECCC Surface Prediction System, including the SVS1 and SVS2 codes. 
 - `sps_build`: used when compiling SPS.
 
   The compilation will generate the executable: `mpi_sa_mesh`
+
+# Librairies needed for compilation on `Other` machines 
+
+The librairies needed to compile the SVS1 and SVS2 codes within SPS are listed [here](https://github.com/ECCC-ASTD-MRD/sps#requirements-1). The user can also refer to this [Wiki page](https://mesh-model.atlassian.net/wiki/spaces/USER/pages/247595009/Necessary+packages+for+compiling+SPS+libraries+on+Linux). These additional librairies are not needed when compiling on `Science` or `GPSCC`. 
 
 # Code modification and new compilation 
 
