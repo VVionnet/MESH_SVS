@@ -21,7 +21,7 @@ ztsl             1.5 !m, for temperature/humidity
 !> Surface (WATDRN).
 !> npoints   ----- 1
 slop           0.005 !m m**-1
-draindens       50.0 !m m**-2
+draindens      0.002 !m m**-2
 
 ! > Select land surface scheme
 schmsol  SVS2
