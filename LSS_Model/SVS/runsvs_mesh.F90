@@ -1606,7 +1606,7 @@ ierr = 200
                             trim(VN_SVS_WSOIL) // '_' // trim(adjustl(level)), &
                             trim(VN_SVS_TPSOIL) // '_' // trim(adjustl(level))
        end do
-       write(iout_soil, FMT_CSV, advance = 'no') 'TVEGL','TVEGH','TGROUND','TGROUNDV','WVEGL','WVEGH'
+       write(iout_soil, FMT_CSV, advance = 'no') 'TVEGL','TVEGH','TGROUND','TGROUNDV','WVEGL','WVEGH','Qh','Qe'
        if(svs_mesh%vs%lforlit) then
               write(iout_soil, FMT_CSV, advance = 'no') 'TFL','WFL', 'WFL_ICE'
        endif
@@ -1725,7 +1725,7 @@ ierr = 200
          end do
        endif
 
-       write(iout_svs1_soil, FMT_CSV, advance = 'no') 'TGROUND_1','TGROUND_2','TVEG_1','TVEG_2','ALBSFC','FC','FV','FL','RNET_S'
+       write(iout_svs1_soil, FMT_CSV, advance = 'no') 'TGROUND_1','TGROUND_2','TVEG_1','TVEG_2','ALBSFC','Qh','Qe','FL','RNET_S'
        write(iout_svs1_soil, *)
 
        open(iout_svs1_snow, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs1_snow_bulk_hourly.csv', action = 'write')
@@ -2042,7 +2042,7 @@ ierr = 200
               end do
               write(iout_soil, FMT_CSV, advance = 'no') pvars(vd%tvegel%idxv)%data(1:ni),pvars(vd%tvegeh%idxv)%data(1:ni), &
                       pvars(vd%tground%idxv)%data(1:ni) , pvars(vd%tgroundv%idxv)%data(1:ni),&
-                      pvars(vd%wveg_vl%idxv)%data(1), pvars(vd%wveg_vh%idxv)%data(1)
+                      pvars(vd%wveg_vl%idxv)%data(1), pvars(vd%wveg_vh%idxv)%data(1),pvars(vd%fc%idxv)%data(1:ni),pvars(vd%fv%idxv)%data(1:ni)
               if(svs_mesh%vs%lforlit) then
                     write(iout_soil, FMT_CSV, advance = 'no')  pvars(vd%tfl%idxv)%data(1:ni), pvars(vd%wfl%idxv)%data(1), pvars(vd%wfl_ice%idxv)%data(1)
               endif
@@ -2333,7 +2333,7 @@ ierr = 200
               write(iout_svs1_soil, FMT_CSV, advance = 'no') pvars(vd%tground%idxv)%data(1:ni),pvars(vd%tground%idxv)%data((ni+1):2*ni), &
                       pvars(vd%tvege%idxv)%data(1:ni),pvars(vd%tvege%idxv)%data(ni+1:2*ni), &
                       pvars(vd%alvis%idxv)%data(1:ni),pvars(vd%fc%idxv)%data(1:ni),pvars(vd%fv%idxv)%data(1:ni), &
-                      pvars(vd%fl%idxv)%data(1:ni),pvars(vd%rnet_s%idxv)%data(1:ni) 
+                      pvars(vd%fl%idxv)%data(1:ni),pvars(vd%rnet_s%idxv)%data(1:ni)
               write(iout_svs1_soil, *)
 
               ! Write file containing bulk snow outputs
