@@ -1,3 +1,0 @@
-!
-!     fonction-formule
-      x(ptr,j,k) = ptr+(k-1)*surflen+j-1

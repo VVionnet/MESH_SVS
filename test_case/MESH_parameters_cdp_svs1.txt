@@ -21,18 +21,21 @@ ztsl             1.5 !m, for temperature/humidity
 !> Surface (WATDRN).
 !> npoints   ----- 1
 slop           0.005 !m m**-1
-draindens       50.0 !m m**-2
+draindens      0.002 !m m**-2
 
 ! > Select land surface scheme
 schmsol  SVS
 
 ! Soil freezing scheme 
-lsoil_freezing_svs1  .false.    ! Activate soil freezing and thawing in SVS1 
+lsoil_freezing_svs1  .true.    ! Activate soil freezing and thawing in SVS1 
 tperm      280.0 ! (Deep soil temperature K)
 
 ! Water ponding scheme
 lwater_ponding_svs  .false.    ! Activate water ponding in SVS1 
 watpond 0  ! Heigh in m of ponded water
+
+! Macropore scheme
+lmacropores_svs .false.
 
 !> Soils.
 soiltext                 NIL !NIL: required to use soil_levels.txt as-is
@@ -84,6 +87,8 @@ wsnow            0.0 !kg m**-2
 
 !> Output
 lout_svs1_watbal .true. ! Add water balance output for SVS1.
+lout_snow_enbal  .true. ! Add snowpack energy balance output for SVS1
+lout_snow_vegh  .true.  ! Add snowpack below high vegetation energy balance to svs1_snow_enbal_hourly.csv
 
 ! Specify how to manage the minimum MO length under stable conditions (CST, VAR, NON)
 lvar_lmin_stable NON
