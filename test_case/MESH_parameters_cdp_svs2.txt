@@ -100,14 +100,14 @@ lsnowaging_var .false.
 agingcoef 60.  ! Aging coefficient (in days) used for albedo calculation in visible range (see modd_snow_par)
 
 !> Canopy module SVS
-lsnow_interception_svs2  .true. ! Use interception scheme in SVS2
+lsnow_interception_svs2  .false. ! Use interception scheme in SVS2
 
 !> Provenance of met forcing for canopy module in SVS2: FOR (forest below canopy)
 ! or O2F (from open below canopy height transfered to forest below canopy) or ABV (above canopy)
 cano_ref_forcing O2F
 
-! Specify a canopy cover density (high vegetation)
-VGH_DENS    0.
+! Specify a canopy cover density (high vegetation). This key must be commented for experiments ouside the forest.
+!VGH_DENS    0.2
 
 ! Specify the height of polar low vegetation
 ! Only useful for Arctic options in Crocus
