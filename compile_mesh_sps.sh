@@ -7,7 +7,6 @@ system=Science # Science | GPSCC | Other
 # Tag of SPS version or name of SPS branch to be extracted from reference SPS repository on Gitlab or Gitbub
 # If tag_sps_user is not speficied, the most recent branch is used as a default. 
 #tag_sps_user=630a20_vvi001_surface_fora22
-tag_sps_user=6.3.0-b01
 
 # Compile in debug mode
 activate_debug=true
@@ -19,7 +18,7 @@ if [[ -n $tag_sps_user ]]; then
    tag_sps=$tag_sps_user
 else
   if [ "$system" = "Science" ]; then
-    tag_sps=6.3.0-a22
+    tag_sps=sps_6.3-branch
   elif [ "$system" = "Other" ] || [ "$system" = "GPSCC"  ]; then	
     tag_sps=6.3 
   fi
