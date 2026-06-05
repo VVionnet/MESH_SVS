@@ -1606,7 +1606,7 @@ ierr = 200
                             trim(VN_SVS_WSOIL) // '_' // trim(adjustl(level)), &
                             trim(VN_SVS_TPSOIL) // '_' // trim(adjustl(level))
        end do
-       write(iout_soil, FMT_CSV, advance = 'no') 'TVEGL','TVEGH','TGROUND','TGROUNDV','WVEGL','WVEGH','Qh','Qe'
+       write(iout_soil, FMT_CSV, advance = 'no') 'TVEGL','TVEGH','TGROUND','TGROUNDV','WVEGL','WVEGH','QH','QE'
        if(svs_mesh%vs%lforlit) then
               write(iout_soil, FMT_CSV, advance = 'no') 'TFL','WFL', 'WFL_ICE'
        endif
@@ -1725,7 +1725,7 @@ ierr = 200
          end do
        endif
 
-       write(iout_svs1_soil, FMT_CSV, advance = 'no') 'TGROUND_1','TGROUND_2','TVEG_1','TVEG_2','ALBSFC','Qh','Qe','FL','RNET_S'
+       write(iout_svs1_soil, FMT_CSV, advance = 'no') 'TGROUND_1','TGROUND_2','TVEG_1','TVEG_2','ALBSFC','QH','QE','FL','RNET_S'
        write(iout_svs1_soil, *)
 
        open(iout_svs1_snow, file = './' // trim(fls%GENDIR_OUT) // '/' // 'svs1_snow_bulk_hourly.csv', action = 'write')
