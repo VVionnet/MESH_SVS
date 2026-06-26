@@ -1624,6 +1624,45 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
                     b = svs_mesh%c%NLANDCLASS
                     call assign_line_args(svs_mesh%vs%z0v, p, b, args(3:), pkey%MAP_ASSIGN_ORDER2, istat, k)
                 end if
+            case (VN_SVS_LAI)
+                if (.not. svs_mesh%PROCESS_ACTIVE) then
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    if (SHDFILEFMT == 2) then
+                        if (shd%lc%NML /= 1) then
+                            field1 = adjustl(VN_SVS_LAI)
+                            field2 = adjustl(VN_SVS_LAI_N)
+                            field3 = 'points'
+                            icondition = 1
+                        end if
+                        p = shd%lc%NML
+                    else
+                        if (shd%lc%NTYPE /= 1) then
+                            field1 = adjustl(VN_SVS_LAI)
+                            field2 = adjustl(VN_SVS_LAI_N)
+                            field3 = 'GRUs'
+                            icondition = 1
+                        end if
+                        p = shd%lc%NTYPE
+                    end if
+                    b = svs_mesh%c%NLANDCLASS
+                    call assign_line_args(svs_mesh%vs%lai, p, b, args(2:), pkey%MAP_ASSIGN_ORDER2, istat)
+                end if
+            case (VN_SVS_LAI_N)
+                if (.not. svs_mesh%PROCESS_ACTIVE) then
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    call assign_line_args(k, args(2), istat)
+                    istat = radix(istat)**pstat%NORMAL_STATUS
+                    if (SHDFILEFMT == 2) then
+                        p = shd%lc%NML
+                    else
+                        p = shd%lc%NTYPE
+                    end if
+                    nargs = nargs - 1
+                    b = svs_mesh%c%NLANDCLASS
+                    call assign_line_args(svs_mesh%vs%lai, p, b, args(3:), pkey%MAP_ASSIGN_ORDER2, istat, k)
+                end if
             case (VN_SVS_LNZ0, 'ZP')
                 if (.not. svs_mesh%PROCESS_ACTIVE) then
                     istat = istat + radix(istat)**pstat%INACTIVE

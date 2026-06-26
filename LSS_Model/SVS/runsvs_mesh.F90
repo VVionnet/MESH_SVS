@@ -37,6 +37,14 @@ module runsvs_mesh
             0.2, 0.2, 0.1, 0.1, 0.15, 0.15, 0.35, 0.25, 0.1, 0.25, &
             5.0, 0.1, 0.1, 0.1, 1.75, 0.5 /)
         real,dimension(NCLASS) :: Z0DAT_UP
+        real, dimension(NCLASS) :: LAIDAT = (/ &
+                     0.00   , 0.00   , 0.00   , 4.00   , 6.00   , & 
+                    -99.    , -99.   , 6.00   , 4.00   , 3.00   , & 
+                    -99.    , 3.00   , 1.00   , -99.   , -99.   , &
+                    -99.    , -99.   , -99.   , -99.   , 1.00   , & 
+                     1.00   , -99.   , 4.00   , 0.00   , -99.   , & 
+                    -99.    /)
+        real,dimension(NCLASS) :: LAIDAT_UP
     end type
 
     !> SVS2 output
@@ -82,6 +90,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_TGROUND = 'TGROUND'
     character(len = *), parameter, public :: VN_SVS_TGROUNDV = 'TGROUNDV' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_VF = 'VF'
+    character(len = *), parameter, public :: VN_SVS_LAI = 'LAI'
     character(len = *), parameter, public :: VN_SVS_Z0V = 'Z0V'
     character(len = *), parameter, public :: VN_SVS_LNZ0 = 'LNZ0'
     character(len = *), parameter, public :: VN_SVS_TVEGE = 'TVEGE'
@@ -175,6 +184,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_TGROUND_N = 'TGROUND_N'
     character(len = *), parameter, public :: VN_SVS_TGROUNDV_N = 'TGROUNDV_N'
     character(len = *), parameter, public :: VN_SVS_VF_N = 'VF_N'
+    character(len = *), parameter, public :: VN_SVS_LAI_N = 'LAI_N'
     character(len = *), parameter, public :: VN_SVS_Z0V_N = 'Z0V_N'
     character(len = *), parameter, public :: VN_SVS_TVEGE_N = 'TVEGE_N'
     character(len = *), parameter, public :: VN_SVS_TVEGEL_N = 'TVEGEL_N'
@@ -230,6 +240,7 @@ module runsvs_mesh
         real, dimension(:),    allocatable :: tgroundv
         real, dimension(:, :), allocatable :: vf
         real, dimension(:, :), allocatable :: z0v
+        real, dimension(:, :), allocatable :: lai
         real, dimension(:), allocatable :: lnz0
         real, dimension(:, :), allocatable :: tvege
         real, dimension(:, :), allocatable :: tvegeh ! For svs2 only
@@ -635,8 +646,8 @@ module runsvs_mesh
         use tdpack_const, only: omega
 
         !> Modules.
-   use inisoili_svs_mod, only: inisoili_svs
-   use inisoili_svs2_mod, only: inisoili_svs2
+        use inisoili_svs_mod, only: inisoili_svs
+        use inisoili_svs2_mod, only: inisoili_svs2
 
         ! For Crocus debug mode
         use mode_crodebug
@@ -689,6 +700,13 @@ module runsvs_mesh
                 svs_bus(a1(z0):z1(z0)) = svs_bus(a1(z0):z1(z0)) + svs_mesh%vs%vf(:, 1200 - i)*svs_mesh%c%Z0DAT(1200 - i)
             end if
             sumvfz0 = sumvfz0 + svs_mesh%vs%vf(:, 1200 - i)
+            if (allocated(svs_mesh%vs%lai)) then
+                if(svs_mesh%vs%lai(1, 1200 - i)>0.) then
+                     svs_mesh%c%LAIDAT_UP(1200 - i) = svs_mesh%vs%lai(1, 1200 - i)
+                else
+                     svs_mesh%c%LAIDAT_UP(1200 - i) = svs_mesh%c%LAIDAT(1200 - i)
+                endif
+            endif
         end do
         where (sumvfz0 > 0.0)
             svs_bus(a1(z0):z1(z0)) = svs_bus(a1(z0):z1(z0))/sumvfz0
@@ -714,8 +732,6 @@ module runsvs_mesh
                 call inisoili_svs2(pvars, ni)
             endif
         else
-            write(*,*) 'val stp',nl_stp,size( svs_mesh%vs%sand,2)
-
             do i = 1, nl_stp
                 if (allocated(svs_mesh%vs%sand)) svs_bus(a2(sanden, i - 1):z2(sanden, i - 1)) = svs_mesh%vs%sand(:, i)
                 if (allocated(svs_mesh%vs%clay)) svs_bus(a2(clayen, i - 1):z2(clayen, i - 1)) = svs_mesh%vs%clay(:, i)
@@ -894,7 +910,7 @@ module runsvs_mesh
         use phy_status, only: phy_error_L, physeterror
 
         !> For surface layer configuration.
-   use phymem
+        use phymem
         use sfclayer, only: sl_put, SL_OK
 
         !> For rmnlib constant 'RMN_IS_OK'.
@@ -1110,6 +1126,14 @@ module runsvs_mesh
         ! Activate or not the use of user-entered height of low veg.
         if(svs_mesh%vs%schmsol=='SVS2') then
                 read_hveglpol = svs_mesh%vs%read_hveglpol
+        endif
+
+
+        ! Activate or not the use of user-entered LAI
+        if(svs_mesh%vs%schmsol=='SVS2') then
+            if (allocated(svs_mesh%vs%lai)) then
+               svs_read_laidat = .true.
+            endif
         endif
 
         ierr =0
@@ -2387,6 +2411,12 @@ ierr = 200
         if (ic%ts_count == 1 .or. (ic%now%hour == kount_reset .and. ic%now%mins == 0)) then
             call runsvs_mesh_copy_vs_to_bus()
             kount = 0
+
+            ! Update LAI for veg class to be consistent with information provided by the users in MESH_paramter.txt
+            if(svs_mesh%vs%schmsol=='SVS2' .and. allocated(svs_mesh%vs%lai)) then
+               svs_laidat = svs_mesh%c%LAIDAT_UP 
+            endif
+
             call inichamp4(pvars, kount, ni, nk)
 
             ! Update roughness length for high and low veg. to be consistent with information provided by the users in
