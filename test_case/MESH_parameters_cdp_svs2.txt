@@ -95,9 +95,8 @@ hsnowhold B92     ! Option for the liquid water content scheme for Crocus
 hsnowcomp B92     ! Option for the compaction scheme for Crocus
 hsnowres RIL      ! Option for the turbulent fluxes in Crocus
 
-!> Albedo scheme of Gaillard et al. (2025)
-lsnowaging_var .false.
-agingcoef 60.  ! Aging coefficient (in days) used for albedo calculation in visible range (see modd_snow_par)
+!> Albedo scheme of Gaillard et al. (2025) (Onlu used if HSNOWRAD = G25)
+!> agingcoef 60.  ! Aging coefficient (in days) used for albedo calculation in visible range (see modd_snow_par)
 
 !> Canopy module SVS
 lsnow_interception_svs2  .true. ! Use interception scheme in SVS2
