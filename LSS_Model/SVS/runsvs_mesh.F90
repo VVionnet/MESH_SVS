@@ -119,7 +119,6 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_HSNOWHOLD = 'HSNOWHOLD' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_HSNOWRES = 'HSNOWRES' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_LSNOWDRIFT_SUBLIM = 'LSNOWDRIFT_SUBLIM' ! For svs2 only
-    character(len = *), parameter, public :: VN_SVS_LSNOWAGING_VAR = 'LSNOWAGING_VAR' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_SNOMA = 'SNOMA'
     character(len = *), parameter, public :: VN_SVS_SNVMA = 'SNVMA'
     character(len = *), parameter, public :: VN_SVS_SNOMA_SVS = 'SNOMA_ML'
@@ -281,7 +280,6 @@ module runsvs_mesh
         character(len = DEFAULT_FIELD_LENGTH) :: hsnowcomp = 'B92'
         character(len = DEFAULT_FIELD_LENGTH) :: hsnowres = 'RIL'
         logical :: lsnowdrift_sublim = .true.
-        logical :: lsnowaging_var = .false.
         logical :: lout_snow_profile = .false.
         logical :: lout_snow_enbal = .false.
         logical :: lout_snow_vegh = .false.
@@ -777,7 +775,7 @@ module runsvs_mesh
            if (allocated(svs_mesh%vs%hveglpol)) svs_bus(a1(hveglpol):z1(hveglpol)) = svs_mesh%vs%hveglpol
         endif
 
-        if(svs_mesh%vs%schmsol=='SVS2' .and. svs_mesh%vs%lsnowaging_var) then
+        if(svs_mesh%vs%schmsol=='SVS2' .and. svs_mesh%vs%hsnowrad=='G25') then
            if (allocated(svs_mesh%vs%agingcoef)) svs_bus(a1(agingcoef):z1(agingcoef)) = svs_mesh%vs%agingcoef              
         endif
 
@@ -1119,7 +1117,6 @@ module runsvs_mesh
              hsnowscheme =  svs_mesh%vs%hsnowscheme
              hsnowdrift_cro = svs_mesh%vs%hsnowdrift_cro
              lsnowdrift_sublim = svs_mesh%vs%lsnowdrift_sublim
-             lsnowaging_var = svs_mesh%vs%lsnowaging_var
              hsnowcomp =  svs_mesh%vs%hsnowcomp
              hsnowcond =  svs_mesh%vs%hsnowcond
              hsnowrad =  svs_mesh%vs%hsnowrad
