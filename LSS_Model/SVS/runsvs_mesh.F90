@@ -776,7 +776,7 @@ module runsvs_mesh
         endif
 
         if(svs_mesh%vs%schmsol=='SVS2' .and. svs_mesh%vs%hsnowrad=='G25') then
-           if (allocated(svs_mesh%vs%agingcoef)) svs_bus(a1(agingcoef):z1(agingcoef)) = svs_mesh%vs%agingcoef              
+           if (allocated(svs_mesh%vs%agingcoef)) svs_bus(a1(agingcoef):z1(agingcoef)) = svs_mesh%vs%agingcoef
         endif
 
         if(svs_mesh%vs%schmsol=='SVS' .and. svs_mesh%vs%lsoil_freezing_svs1) then
@@ -1108,7 +1108,7 @@ module runsvs_mesh
         ! Activate or not the use of user-entered height of low veg.
         if(svs_mesh%vs%schmsol=='SVS2') then
                 read_hveglpol = svs_mesh%vs%read_hveglpol
-        endif
+        endif        
 
         ierr =0
         ! Initialize number of snow layers (for multilayer snowpack schemes in SVS2)
@@ -1175,8 +1175,18 @@ module runsvs_mesh
             if (ierr /= 0) then
                 call program_abort()
             end if
-
         endif
+        
+        ierr = 0
+        if(svs_mesh%vs%schmsol=='SVS2' .and. svs_mesh%vs%hsnowrad=='G25') then
+           if  (.not. allocated(svs_mesh%vs%agingcoef) .or. any(svs_mesh%vs%agingcoef .LE. 0.)) then
+               call print_error('A numerical value greater than 0 must be specified for agingcoef when using HSNOWRAD = G25.')
+               ierr = 1
+           end if
+           if (ierr /= 0) then
+               call program_abort()
+           end if
+        end if
 
         write(*, nml = surface_cfgs)
 
