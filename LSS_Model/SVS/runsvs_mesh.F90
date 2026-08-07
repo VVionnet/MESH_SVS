@@ -145,6 +145,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_LOUT_SVS1_WATBAL = 'LOUT_SVS1_WATBAL ' ! For svs1 only 
     character(len = *), parameter, public :: VN_SVS_NPROFILE_DAY = 'NPROFILE_DAY' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_LOUT_SVS2_WATBAL = 'LOUT_SVS2_WATBAL ' ! For svs2 only
+    character(len = *), parameter, public :: VN_SVS_LOUT_HALF_HOURLY = 'LOUT_HALF_HOURLY'
     character(len = *), parameter, public :: VN_SVS_LSOIL_FREEZING_SVS1 = 'LSOIL_FREEZING_SVS1' ! For svs1 only
     character(len = *), parameter, public :: VN_SVS_LMACROPORES_SVS = 'LMACROPORES_SVS' ! For svs1 only
     character(len = *), parameter, public :: VN_SVS_LPHASE_CHANGE_EFF_SVS1 = 'LPHASE_CHANGE_EFF_SVS1' ! For svs1 only
@@ -286,6 +287,7 @@ module runsvs_mesh
         logical :: lout_snow_enbal = .false.
         logical :: lout_snow_vegh = .false.
         logical :: lout_svs2_watbal = .false.
+        logical :: lout_half_hourly = .false.
         logical :: lwrite_restart = .false.
         logical :: lforlit = .false.
         logical :: read_oc = .false.
@@ -2028,7 +2030,11 @@ ierr = 200
 
 
            !if (ic%now%hour /= ic%next%hour) then !last time-step of hour
-           if (ic%now%mins ==0) then! Full hour
+           if (( &
+             svs_mesh%vs%lout_half_hourly .and. ic%now%mins == 30 &
+           ) .or. ( &
+             ic%now%mins == 0 & ! Full hour
+           )) then
 
               k=1 !>  Identity of the tile (offset relative to node-indexing).
 
