@@ -415,6 +415,14 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
                     call assign_line_args(svs_mesh%vs%lout_svs2_watbal, args(2), istat)
                 end if                
 
+            case (VN_SVS_LOUT_HALF_HOURLY)
+                if (.not. svs_mesh%PROCESS_ACTIVE) then
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    p = 1
+                    call assign_line_args(svs_mesh%vs%lout_half_hourly, args(2), istat)
+                end if
+
             case (VN_SVS_LSNOW_INTERCEPTION_SVS2)
                 if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol=='SVS' ) then
                     istat = istat + radix(istat)**pstat%INACTIVE
