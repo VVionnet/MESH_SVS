@@ -5,6 +5,7 @@ module parse_utilities
 
     !> 'strings': For 'compact', 'parse' and 'value' functions.
     use strings
+    use, intrinsic :: iso_fortran_env, only: real64
 
     implicit none
 
@@ -25,6 +26,7 @@ module parse_utilities
         module procedure check_allocated_real1d
         module procedure check_allocated_integer2d
         module procedure check_allocated_real2d
+        module procedure check_allocated_real64_2d
     end interface
 
     !> Description:
@@ -41,6 +43,7 @@ module parse_utilities
         module procedure allocate_variable_real1d
         module procedure allocate_variable_integer2d
         module procedure allocate_variable_real2d
+        module procedure allocate_variable_real64_2d
     end interface
 
     !> Description:
@@ -76,6 +79,7 @@ module parse_utilities
         module procedure assign_line_args_real1d
         module procedure assign_line_args_integer2d
         module procedure assign_line_args_real2d
+        module procedure assign_line_args_real64_2d
     end interface
 
     !> Description:
@@ -394,6 +398,39 @@ module parse_utilities
     end subroutine
 
     !> Description:
+    !>  'check_allocated' for 2D array of type real64.
+    subroutine check_allocated_real64_2d(field, size1, size2, istat)
+
+        !> Input variables.
+        real(real64), dimension(:, :), allocatable, intent(in) :: field
+
+        !> Input variables (optional).
+        integer, intent(in), optional :: size1, size2
+
+        !> Input/output variables.
+        integer istat
+
+        !> Check if the field is allocated.
+        if (allocated(field)) then
+
+            !> Check if the field is assigned.
+            if (all(field /= huge(field))) then
+                istat = istat + radix(istat)**pstat%ASSIGNED
+            end if
+
+            !> Check for mismatched bounds.
+            if (present(size1) .and. present(size2)) then
+                if (size(field, 1) /= size1 .or. size(field, 2) /= size2) then
+                    istat = istat + radix(istat)**pstat%MISMATCHED_BOUNDS
+                end if
+            end if
+        else
+            istat = istat + radix(istat)**pstat%NOT_ALLOCATED
+        end if
+
+    end subroutine
+
+    !> Description:
     !>  'allocate_variable' for 1D vector of type character.
     subroutine allocate_variable_character1d(field, size1, istat)
 
@@ -502,6 +539,31 @@ module parse_utilities
 
         !> Input/output variables.
         real, dimension(:, :), allocatable :: field
+        integer istat
+
+        !> Local variables.
+        integer z
+
+        !> Allocate the variable.
+        z = 0
+        allocate(field(size1, size2), stat = z)
+        if (z /= 0) then
+            istat = istat + radix(istat)**pstat%ALLOCATION_ERROR
+        else
+            field = huge(field)
+        end if
+
+    end subroutine
+
+    !> Description:
+    !>  'allocate_variable' for 2D array of type real64.
+    subroutine allocate_variable_real64_2d(field, size1, size2, istat)
+
+        !> Input variables.
+        integer, intent(in) :: size1, size2
+
+        !> Input/output variables.
+        real(real64), dimension(:, :), allocatable :: field
         integer istat
 
         !> Local variables.
@@ -1297,6 +1359,83 @@ module parse_utilities
                 end if
 
                 !> Assign the values.
+                do i = 1, min(size2, size(field, 2))
+                    if (present(element_id)) then
+                        field(min(max(element_id, 1), size1), min(i, size2)) = fval(min(i, n))
+                    else
+                        field(:, min(i, size2)) = fval(min(i, n))
+                    end if
+                end do
+            end if
+        end if
+
+    end subroutine
+
+    !> Description:
+    !>  'assign_line_args' for 2D array of type real64.
+    subroutine assign_line_args_real64_2d(field, size1, size2, values, map_order, istat, element_id)
+
+        !> strings: For 'value' function.
+        use strings
+
+        !> Input variables.
+        integer, intent(in) :: size1, size2, map_order
+        character(len = *), dimension(:), intent(in) :: values
+        integer, intent(in), optional :: element_id
+
+        !> Input/output variables.
+        real(real64), dimension(:, :), allocatable :: field
+
+        !> Output variables.
+        integer, intent(out) :: istat
+
+        !> Local variables.
+        real(real64), dimension(:), allocatable :: fval
+        integer n, i, z
+
+        !> Initialize return variable.
+        istat = radix(istat)**pstat%NORMAL_STATUS
+
+        !> Check to see if the variable is allocated and assigned.
+        call check_allocated(field, size1, size2, istat)
+        if (btest(istat, pstat%ASSIGNED)) then
+            istat = istat + radix(istat)**pstat%OVERWRITING_FIELD
+        end if
+        if (btest(istat, pstat%NOT_ALLOCATED)) then
+            call allocate_variable(field, size1, size2, istat)
+        end if
+
+        !> Extract the fields directly into real64 storage.
+        n = size(values)
+        z = 0
+        allocate(fval(n), stat = z)
+        if (z /= 0) then
+            istat = istat + radix(istat)**pstat%ALLOCATION_ERROR
+        else if (n >= 1) then
+            do i = 1, n
+                z = 0
+                call value(values(i), fval(i), z)
+                if (.not. btest(istat, pstat%CONVERSION_ERROR) .and. z /= 0) then
+                    istat = istat + radix(istat)**pstat%CONVERSION_ERROR
+                end if
+            end do
+
+            !> Check for mapping.
+            if (map_order == pkey%MAP_ASSIGN_ORDER1) then
+                if (n /= size1) then
+                    istat = istat + radix(istat)**pstat%COUNT_MISMATCH
+                end if
+                do i = 1, min(size1, size(field, 1))
+                    if (present(element_id)) then
+                        field(min(i, size1), min(max(element_id, 1), size2)) = fval(min(i, n))
+                    else
+                        field(min(i, size1), :) = fval(min(i, n))
+                    end if
+                end do
+            else
+                if (n /= size2) then
+                    istat = istat + radix(istat)**pstat%COUNT_MISMATCH
+                end if
                 do i = 1, min(size2, size(field, 2))
                     if (present(element_id)) then
                         field(min(max(element_id, 1), size1), min(i, size2)) = fval(min(i, n))

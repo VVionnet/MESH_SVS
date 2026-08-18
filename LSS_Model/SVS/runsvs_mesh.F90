@@ -1,5 +1,7 @@
 module runsvs_mesh
 
+    use, intrinsic :: iso_fortran_env, only: real64
+
     !> MESH modules.
     !*  mpi_module: Required for 'il1' and 'il2' indexing.
     !*  model_files_variables: Required for 'fls' object.
@@ -26,6 +28,12 @@ module runsvs_mesh
     use phymem, only: phyvar, phymem_get_slabvars
 
     implicit none
+
+    ! Preserve all significant digits when writing the double-precision soil
+    ! temperature state.  The legacy MESH formats are intentionally retained
+    ! for the remaining, single-precision variables.
+    character(len = *), parameter :: FMT_CSV_REAL64 = "(99999(es25.16e3, ','))"
+    character(len = *), parameter :: FMT_GEN_REAL64 = "(99999(es25.16e3, 1x))"
 
     character(len=1024) :: msg_S
 
@@ -222,7 +230,7 @@ module runsvs_mesh
         real, dimension(:, :), allocatable :: oc
         real, dimension(:, :), allocatable :: wsoil
         real, dimension(:, :), allocatable :: isoil
-        real, dimension(:, :), allocatable :: tpsoil ! For svs2 and svs1 (with soil freezing)
+        real(real64), dimension(:, :), allocatable :: tpsoil ! For svs2 and svs1 (with soil freezing)
         real, dimension(:, :), allocatable :: tpsoilv ! For svs2 only
         integer :: kthermal = 2
         real, dimension(:, :), allocatable :: tground
@@ -764,7 +772,8 @@ module runsvs_mesh
 
         if(svs_mesh%vs%schmsol=='SVS2') then
            do i = 1, nl_svs
-                if (allocated(svs_mesh%vs%tpsoil))  svs_bus(a2(tpsoil, i - 1):z2(tpsoil, i - 1)) = svs_mesh%vs%tpsoil(:, i)
+                if (allocated(svs_mesh%vs%tpsoil))  svs_bus(a2(tpsoil, i - 1):z2(tpsoil, i - 1)) = &
+                    real(svs_mesh%vs%tpsoil(:, i), kind = kind(svs_bus))
                 if (allocated(svs_mesh%vs%tpsoilv)) svs_bus(a2(tpsoilv, i - 1):z2(tpsoilv, i - 1)) = svs_mesh%vs%tpsoilv(:, i)
            end do
            if (allocated(svs_mesh%vs%tperm)) svs_bus(a1(tperm):z1(tperm)) = svs_mesh%vs%tperm
@@ -1898,7 +1907,8 @@ ierr = 200
             if (.not. allocated(svs_mesh%vs%hveglpol)) allocate(svs_mesh%vs%hveglpol(ni))
 
             do i = 1, nl_svs
-               svs_mesh%vs%tpsoil(:, i) = svs_bus(a2(tpsoil, i - 1):z2(tpsoil, i - 1))
+               ! TPSOIL is owned and updated directly in double precision by
+               ! MESH/SVS2.  Do not overwrite it from the R4 diagnostic bus.
                svs_mesh%vs%tpsoilv(:, i) = svs_bus(a2(tpsoilv, i - 1):z2(tpsoilv, i - 1))
             end do
 
@@ -2044,8 +2054,8 @@ ierr = 200
               do i = 1, nl_svs
                  write(iout_soil, FMT_CSV, advance = 'no') &
                      pvars(vd%isoil%idxv)%data(((i - 1)*ni + 1):i*ni) , &
-                     pvars(vd%wsoil%idxv)%data(((i - 1)*ni + 1):i*ni), &
-                     pvars(vd%tpsoil%idxv)%data(((i - 1)*ni + 1):i*ni)
+                     pvars(vd%wsoil%idxv)%data(((i - 1)*ni + 1):i*ni)
+                 write(iout_soil, FMT_CSV_REAL64, advance = 'no') svs_mesh%vs%tpsoil(:, i)
               end do
               write(iout_soil, FMT_CSV, advance = 'no') pvars(vd%tvegel%idxv)%data(1:ni),pvars(vd%tvegeh%idxv)%data(1:ni), &
                       pvars(vd%tground%idxv)%data(1:ni) , pvars(vd%tgroundv%idxv)%data(1:ni),&
@@ -2186,7 +2196,7 @@ ierr = 200
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'tpsoil'
           do i = 1, nl_svs
-               write(iout_svs2_restart, FMT_GEN, advance = 'no') pvars(vd%tpsoil%idxv)%data(((i - 1)*ni + 1):i*ni)
+               write(iout_svs2_restart, FMT_GEN_REAL64, advance = 'no') svs_mesh%vs%tpsoil(:, i)
           end do                
           write(iout_svs2_restart, *)
 
@@ -2490,7 +2500,8 @@ ierr = 200
         if(svs_mesh%vs%schmsol=='SVS') then
              call svs(svs_bus, bus_length, bus_ptr, nvarsurf, time_dt, kount, trnch, ni, ni, nk)
         else if(svs_mesh%vs%schmsol=='SVS2') then
-             call svs2(svs_bus, bus_length, bus_ptr, nvarsurf, time_dt, kount, trnch, ni, ni, nk)
+             call svs2(svs_bus, bus_length, bus_ptr, nvarsurf, time_dt, kount, trnch, ni, ni, nk, &
+                       svs_mesh%vs%tpsoil)
         end if
         if (phy_error_L) then
             call print_error("An error occurred during the iteration of the SVS time-step.")
