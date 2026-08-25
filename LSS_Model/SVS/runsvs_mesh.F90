@@ -2034,8 +2034,8 @@ ierr = 200
                       pvars(vd%sncma%idxv)%data(1) *pvars(vd%vegh%idxv)%data(1) 
 
 
-           !if (ic%now%hour /= ic%next%hour) then !last time-step of hour
-           if (ic%now%mins ==0) then! Full hour
+           if ( (svs_mesh%vs%lread_restart .and. ic%now%hour /= ic%next%hour) .or. &
+			(.not. svs_mesh%vs%lread_restart .and. ic%now%mins == 0) ) then
 
               k=1 !>  Identity of the tile (offset relative to node-indexing).
 
