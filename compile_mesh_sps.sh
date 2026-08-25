@@ -6,7 +6,7 @@ system=Science # Science | GPSCC | Other
 
 # Tag of SPS version or name of SPS branch to be extracted from reference SPS repository on Gitlab or Gitbub
 # If tag_sps_user is not speficied, the most recent branch is used as a default. 
-#tag_sps_user=630a20_vvi001_surface_fora22
+tag_sps_user=630b01_svs2_forb02
 
 # Compile in debug mode
 activate_debug=true
