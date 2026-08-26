@@ -206,6 +206,13 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
                     p = 1
                     call assign_line_args(svs_mesh%vs%schmsol, args(2), istat)
                 end if
+            case (VN_SVS_LTPSOIL_R8_STATE)
+                if (.not. svs_mesh%PROCESS_ACTIVE .or. svs_mesh%vs%schmsol == 'SVS') then
+                    istat = istat + radix(istat)**pstat%INACTIVE
+                else
+                    p = 1
+                    call assign_line_args(svs_mesh%vs%ltpsoil_r8_state, args(2), istat)
+                end if
             case (VN_SVS_KHYD)
                 if (.not. svs_mesh%PROCESS_ACTIVE) then
                     istat = istat + radix(istat)**pstat%INACTIVE
@@ -1429,7 +1436,13 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
                         p = shd%lc%NTYPE
                     end if
                     b = shd%lc%IGND
-                    call assign_line_args(svs_mesh%vs%tpsoil, p, b, args(2:), pkey%MAP_ASSIGN_ORDER2, istat)
+                    if (svs_mesh%vs%schmsol == 'SVS2' .and. svs_mesh%vs%ltpsoil_r8_state) then
+                        call assign_line_args(svs_mesh%vs%tpsoil_r8, p, b, args(2:), &
+                                              pkey%MAP_ASSIGN_ORDER2, istat)
+                    else
+                        call assign_line_args(svs_mesh%vs%tpsoil, p, b, args(2:), &
+                                              pkey%MAP_ASSIGN_ORDER2, istat)
+                    end if
                     b = ignd
                 end if
             case (VN_SVS_TPSOIL_N)
@@ -1445,7 +1458,13 @@ subroutine read_parameters_csv(shd, iun, fname, ierr)
                     end if
                     nargs = nargs - 1
                     b = shd%lc%IGND
-                    call assign_line_args(svs_mesh%vs%tpsoil, p, b, args(3:), pkey%MAP_ASSIGN_ORDER2, istat, k)
+                    if (svs_mesh%vs%schmsol == 'SVS2' .and. svs_mesh%vs%ltpsoil_r8_state) then
+                        call assign_line_args(svs_mesh%vs%tpsoil_r8, p, b, args(3:), &
+                                              pkey%MAP_ASSIGN_ORDER2, istat, k)
+                    else
+                        call assign_line_args(svs_mesh%vs%tpsoil, p, b, args(3:), &
+                                              pkey%MAP_ASSIGN_ORDER2, istat, k)
+                    end if
                     b = ignd
                 end if
             case (VN_SVS_TPSOILV)

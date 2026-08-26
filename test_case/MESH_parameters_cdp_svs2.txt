@@ -25,6 +25,7 @@ draindens      0.002 !m m**-2
 
 ! > Select land surface scheme
 schmsol  SVS2
+ltpsoil_r8_state .false. ! Retain the authoritative MESH TPSOIL state in R8
 
 ! Water ponding scheme
 lwater_ponding_svs  .false.    ! Activate water ponding in SVS2 
