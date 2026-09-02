@@ -1,5 +1,7 @@
 module runsvs_mesh
 
+    use, intrinsic :: iso_fortran_env, only: real64
+
     !> MESH modules.
     !*  mpi_module: Required for 'il1' and 'il2' indexing.
     !*  model_files_variables: Required for 'fls' object.
@@ -26,6 +28,11 @@ module runsvs_mesh
     use phymem, only: phyvar, phymem_get_slabvars
 
     implicit none
+
+    ! Preserve all significant digits when MESH writes its authoritative R8
+    ! soil-temperature state. Legacy formats remain in use for R4 fields.
+    character(len = *), parameter :: FMT_CSV_REAL64 = "(99999(es25.16e3, ','))"
+    character(len = *), parameter :: FMT_GEN_REAL64 = "(99999(es25.16e3, 1x))"
 
     character(len=1024) :: msg_S
 
@@ -160,7 +167,8 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_LWRITE_RESTART = 'LWRITE_RESTART' ! For svs2 only 
     character(len = *), parameter, public :: VN_SVS_LFORLIT = 'LFORLIT' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_READ_OC = 'READ_OC' ! For svs2 only
-    character(len = *), parameter, public :: VN_SVS_LREAD_RESTART = 'LREAD_RESTART' ! For svs2 only 
+    character(len = *), parameter, public :: VN_SVS_LREAD_RESTART = 'LREAD_RESTART' ! For svs2 only
+    character(len = *), parameter, public :: VN_SVS_LTPSOIL_R8_STATE = 'LTPSOIL_R8_STATE' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_LVAR_LMIN_STABLE = 'LVAR_LMIN_STABLE '
     character(len = *), parameter, public :: VN_SVS_LMO_WINTER = 'LMO_WINTER'  ! Used if LVAR_LMIN_STABLE == 'VAR'
     character(len = *), parameter, public :: VN_SVS_LMIN_STABLE = 'LMIN_STABLE' ! Used if LVAR_LMIN_STABLE == 'CST'
@@ -224,6 +232,7 @@ module runsvs_mesh
         real, dimension(:, :), allocatable :: wsoil
         real, dimension(:, :), allocatable :: isoil
         real, dimension(:, :), allocatable :: tpsoil ! For svs2 and svs1 (with soil freezing)
+        real(real64), dimension(:, :), allocatable :: tpsoil_r8 ! Optional authoritative MESH/SVS2 state
         real, dimension(:, :), allocatable :: tpsoilv ! For svs2 only
         integer :: kthermal = 2
         real, dimension(:, :), allocatable :: tground
@@ -290,6 +299,7 @@ module runsvs_mesh
         logical :: lforlit = .false.
         logical :: read_oc = .false.
         logical :: lread_restart = .false.
+        logical :: ltpsoil_r8_state = .false.
         logical :: lout_svs1_watbal = .false.
         integer :: nprofile_day = 4 !
         logical :: lsoil_freezing_svs1 = .false.
@@ -766,7 +776,14 @@ module runsvs_mesh
 
         if(svs_mesh%vs%schmsol=='SVS2') then
            do i = 1, nl_svs
-                if (allocated(svs_mesh%vs%tpsoil))  svs_bus(a2(tpsoil, i - 1):z2(tpsoil, i - 1)) = svs_mesh%vs%tpsoil(:, i)
+                if (svs_mesh%vs%ltpsoil_r8_state) then
+                    if (allocated(svs_mesh%vs%tpsoil_r8)) &
+                        svs_bus(a2(tpsoil, i - 1):z2(tpsoil, i - 1)) = &
+                        real(svs_mesh%vs%tpsoil_r8(:, i), kind = kind(svs_bus))
+                else
+                    if (allocated(svs_mesh%vs%tpsoil)) &
+                        svs_bus(a2(tpsoil, i - 1):z2(tpsoil, i - 1)) = svs_mesh%vs%tpsoil(:, i)
+                end if
                 if (allocated(svs_mesh%vs%tpsoilv)) svs_bus(a2(tpsoilv, i - 1):z2(tpsoilv, i - 1)) = svs_mesh%vs%tpsoilv(:, i)
            end do
            if (allocated(svs_mesh%vs%tperm)) svs_bus(a1(tperm):z1(tperm)) = svs_mesh%vs%tperm
@@ -2027,8 +2044,8 @@ ierr = 200
                       pvars(vd%sncma%idxv)%data(1) *pvars(vd%vegh%idxv)%data(1) 
 
 
-           !if (ic%now%hour /= ic%next%hour) then !last time-step of hour
-           if (ic%now%mins ==0) then! Full hour
+           if ( (svs_mesh%vs%lread_restart .and. ic%now%hour /= ic%next%hour) .or. &
+			(.not. svs_mesh%vs%lread_restart .and. ic%now%mins == 0) ) then
 
               k=1 !>  Identity of the tile (offset relative to node-indexing).
 
@@ -2037,8 +2054,13 @@ ierr = 200
               do i = 1, nl_svs
                  write(iout_soil, FMT_CSV, advance = 'no') &
                      pvars(vd%isoil%idxv)%data(((i - 1)*ni + 1):i*ni) , &
-                     pvars(vd%wsoil%idxv)%data(((i - 1)*ni + 1):i*ni), &
-                     pvars(vd%tpsoil%idxv)%data(((i - 1)*ni + 1):i*ni)
+                     pvars(vd%wsoil%idxv)%data(((i - 1)*ni + 1):i*ni)
+                 if (svs_mesh%vs%ltpsoil_r8_state) then
+                    write(iout_soil, FMT_CSV_REAL64, advance = 'no') svs_mesh%vs%tpsoil_r8(:, i)
+                 else
+                    write(iout_soil, FMT_CSV, advance = 'no') &
+                        pvars(vd%tpsoil%idxv)%data(((i - 1)*ni + 1):i*ni)
+                 end if
               end do
               write(iout_soil, FMT_CSV, advance = 'no') pvars(vd%tvegel%idxv)%data(1:ni),pvars(vd%tvegeh%idxv)%data(1:ni), &
                       pvars(vd%tground%idxv)%data(1:ni) , pvars(vd%tgroundv%idxv)%data(1:ni),&
@@ -2179,8 +2201,13 @@ ierr = 200
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'tpsoil'
           do i = 1, nl_svs
-               write(iout_svs2_restart, FMT_GEN, advance = 'no') pvars(vd%tpsoil%idxv)%data(((i - 1)*ni + 1):i*ni)
-          end do                
+               if (svs_mesh%vs%ltpsoil_r8_state) then
+                  write(iout_svs2_restart, FMT_GEN_REAL64, advance = 'no') svs_mesh%vs%tpsoil_r8(:, i)
+               else
+                  write(iout_svs2_restart, FMT_GEN, advance = 'no') &
+                      pvars(vd%tpsoil%idxv)%data(((i - 1)*ni + 1):i*ni)
+               end if
+          end do
           write(iout_svs2_restart, *)
 
           write(iout_svs2_restart, FMT_GEN, advance = 'no') 'wsoil'
@@ -2483,7 +2510,16 @@ ierr = 200
         if(svs_mesh%vs%schmsol=='SVS') then
              call svs(svs_bus, bus_length, bus_ptr, nvarsurf, time_dt, kount, trnch, ni, ni, nk)
         else if(svs_mesh%vs%schmsol=='SVS2') then
-             call svs2(svs_bus, bus_length, bus_ptr, nvarsurf, time_dt, kount, trnch, ni, ni, nk)
+             if (svs_mesh%vs%ltpsoil_r8_state) then
+                 if (.not. allocated(svs_mesh%vs%tpsoil_r8)) then
+                     call print_error("LTPSOIL_R8_STATE requires an allocated R8 TPSOIL profile.")
+                     call program_abort()
+                 end if
+                 call svs2(svs_bus, bus_length, bus_ptr, nvarsurf, time_dt, kount, trnch, ni, ni, nk, &
+                           svs_mesh%vs%tpsoil_r8)
+             else
+                 call svs2(svs_bus, bus_length, bus_ptr, nvarsurf, time_dt, kount, trnch, ni, ni, nk)
+             end if
         end if
         if (phy_error_L) then
             call print_error("An error occurred during the iteration of the SVS time-step.")
