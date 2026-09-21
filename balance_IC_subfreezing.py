@@ -1,6 +1,10 @@
 import pandas as pd
 import math
 
+try:
+    import numpy as np
+except ImportError:
+    np = None
 
 #Constants
 CHLF = 334000    #J K-1     #Latent heat of fusion for water
@@ -8,34 +12,48 @@ TRPL = 273.16   #K          #Triple point of water
 GRAV = 9.80616  #m s-2      #Gravitational constant
 
 
-def liquid_water_fraction(SAND, CLAY, TSOIL, TWC) -> float:
+def liquid_water_fraction(SAND:float, CLAY:float, TSOIL:float, TWC:float) -> float:
     """Calculate the fraction of liquid water in the soil."""
     #Soil texture-based parameters
     WSAT = -0.00126*SAND+0.489
     PSISAT = -0.01*(10**(-0.0131*SAND+1.88))
     b_coef = 0.137*CLAY+3.501
 
-    #Make sure that the total water content does not exceed water content at saturation
-    if (TWC > WSAT):
-        TWC = WSAT
+    if np is not None:
+        TWC = np.minimum(TWC, WSAT)
+        PSIMAX = np.minimum(PSISAT, CHLF * (TSOIL - TRPL) / (GRAV * TSOIL))
+        WORK = PSIMAX / PSISAT
+        WORKLOG = np.log(WORK) / b_coef
+        WSOLMAX = WSAT * np.exp(-WORKLOG)
+        WSOL = np.minimum(TWC, WSOLMAX)
+        
+        safe_twc = np.where(TWC > 0, TWC, 1.0)
+        LIQ_FRACTION = np.where(TWC > 0, WSOL / safe_twc, 0.0)
 
-    #Matric potential at TSOIL
-    PSIMAX = min(PSISAT, CHLF*(TSOIL-TRPL)/(GRAV*TSOIL))
+        return LIQ_FRACTION
 
-    #Max liquid water content at TSOIL
-    WORK = PSIMAX/PSISAT
-    WORKLOG = math.log(WORK)/b_coef
-    WSOLMAX = WSAT*math.exp(-WORKLOG)
-
-    #Liquid and Ice content
-    WSOL = float(min(TWC,WSOLMAX))
-
-    if TWC > 0:
-        LIQ_FRACTION = float(WSOL/TWC) 
     else:
-        LIQ_FRACTION = 0.0
+        #Make sure that the total water content does not exceed water content at saturation
+        if (TWC > WSAT):
+            TWC = WSAT
 
-    return LIQ_FRACTION
+        #Matric potential at TSOIL
+        PSIMAX = min(PSISAT, CHLF*(TSOIL-TRPL)/(GRAV*TSOIL))
+
+        #Max liquid water content at TSOIL
+        WORK = PSIMAX/PSISAT
+        WORKLOG = math.log(WORK)/b_coef
+        WSOLMAX = WSAT*math.exp(-WORKLOG)
+
+        #Liquid and Ice content
+        WSOL = float(min(TWC,WSOLMAX))
+
+        if TWC > 0:
+            LIQ_FRACTION = float(WSOL/TWC) 
+        else:
+            LIQ_FRACTION = 0.0
+
+        return LIQ_FRACTION
 
 
 def balance_soil_profile(soil_profile: pd.DataFrame) -> pd.DataFrame:
