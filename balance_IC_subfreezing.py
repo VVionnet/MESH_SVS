@@ -12,14 +12,20 @@ TRPL = 273.16   #K          #Triple point of water
 GRAV = 9.80616  #m s-2      #Gravitational constant
 
 
-def liquid_water_fraction(SAND:float, CLAY:float, TSOIL:float, TWC:float) -> float:
+def liquid_water_fraction(SAND, CLAY, TSOIL, TWC):
     """Calculate the fraction of liquid water in the soil."""
     #Soil texture-based parameters
     WSAT = -0.00126*SAND+0.489
     PSISAT = -0.01*(10**(-0.0131*SAND+1.88))
     b_coef = 0.137*CLAY+3.501
 
-    if np is not None:
+    # Check if inputs are NumPy arrays or array-like objects
+    is_vector = any(
+        hasattr(x, "__array__") or type(x).__module__ == "numpy"
+        for x in (SAND, CLAY, TSOIL, TWC)
+    )
+
+    if is_vector and np is not None:
         TWC = np.minimum(TWC, WSAT)
         PSIMAX = np.minimum(PSISAT, CHLF * (TSOIL - TRPL) / (GRAV * TSOIL))
         WORK = PSIMAX / PSISAT
