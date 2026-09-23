@@ -1,55 +1,117 @@
 import pandas as pd
 import math
 
-#Load the soil_profile.txt file
-soil_profile = pd.read_csv('soil_profile.txt', sep=r'\s+',index_col = 0)
+try:
+    import numpy as np
+except ImportError:
+    np = None
 
 #Constants
 CHLF = 334000    #J K-1     #Latent heat of fusion for water
 TRPL = 273.16   #K          #Triple point of water
 GRAV = 9.80616  #m s-2      #Gravitational constant
 
-wsol_profile = []
-isol_profile = []
-for lay in range(len(soil_profile)):
-    
-    SAND = soil_profile['Sand_%'].iloc[lay]
-    CLAY = soil_profile['Clay_%'].iloc[lay]
-    TSOIL = soil_profile['TSOIL_K'].iloc[lay]
-    TWC = soil_profile['Tot_wat_cont'].iloc[lay]
 
+def liquid_water_fraction(SAND, CLAY, TSOIL, TWC):
+    """Calculate the fraction of liquid water in the soil."""
     #Soil texture-based parameters
     WSAT = -0.00126*SAND+0.489
     PSISAT = -0.01*(10**(-0.0131*SAND+1.88))
     b_coef = 0.137*CLAY+3.501
 
-    #Make sure that the total water content does not exceed water content at saturation
-    if (TWC > WSAT):
-        TWC = WSAT
+    # Check if inputs are NumPy arrays or array-like objects
+    is_vector = any(
+        hasattr(x, "__array__") or type(x).__module__ == "numpy"
+        for x in (SAND, CLAY, TSOIL, TWC)
+    )
 
-    #Matric potential at TSOIL
-    PSIMAX = min(PSISAT, CHLF*(TSOIL-TRPL)/(GRAV*TSOIL))
+    if is_vector and np is not None:
+        TWC = np.minimum(TWC, WSAT)
+        PSIMAX = np.minimum(PSISAT, CHLF * (TSOIL - TRPL) / (GRAV * TSOIL))
+        WORK = PSIMAX / PSISAT
+        WORKLOG = np.log(WORK) / b_coef
+        WSOLMAX = WSAT * np.exp(-WORKLOG)
+        WSOL = np.minimum(TWC, WSOLMAX)
+        
+        safe_twc = np.where(TWC > 0, TWC, 1.0)
+        LIQ_FRACTION = np.where(TWC > 0, WSOL / safe_twc, 0.0)
 
-    #Max liquid water content at TSOIL
-    WORK = PSIMAX/PSISAT
-    WORKLOG = math.log(WORK)/b_coef
-    WSOLMAX = WSAT*math.exp(-WORKLOG)
+        return LIQ_FRACTION
 
-    #Liquid and Ice content
-    WSOL = float(min(TWC,WSOLMAX))
-    ISOL = float(TWC-WSOL)
+    else:
+        #Make sure that the total water content does not exceed water content at saturation
+        if (TWC > WSAT):
+            TWC = WSAT
 
-    wsol_profile.append(WSOL)
-    isol_profile.append(ISOL)
+        #Matric potential at TSOIL
+        PSIMAX = min(PSISAT, CHLF*(TSOIL-TRPL)/(GRAV*TSOIL))
 
-wsol_isol_profile = pd.concat([pd.DataFrame(wsol_profile),pd.DataFrame(isol_profile)],axis= 1)
-wsol_isol_profile.index = soil_profile.index
-     
-soil_profile = pd.concat([soil_profile, wsol_isol_profile], axis = 1)
-soil_profile.columns.values[-2:] = ['wsoil', 'isoil']
-soil_profile = soil_profile.T
+        #Max liquid water content at TSOIL
+        WORK = PSIMAX/PSISAT
+        WORKLOG = math.log(WORK)/b_coef
+        WSOLMAX = WSAT*math.exp(-WORKLOG)
 
-soil_profile.to_csv('soil_profile_balanced.txt', sep=' ', index=True)
+        #Liquid and Ice content
+        WSOL = float(min(TWC,WSOLMAX))
+
+        if TWC > 0:
+            LIQ_FRACTION = float(WSOL/TWC) 
+        else:
+            LIQ_FRACTION = 0.0
+
+        return LIQ_FRACTION
 
 
+def balance_soil_profile(soil_profile: pd.DataFrame) -> pd.DataFrame:
+    """ 
+    Balance the soil profile by calculating the liquid and ice water content. 
+    
+    Parameters
+    ----------
+    soil_profile : pd.DataFrame
+        Soil profile data containing columns: 'Sand_%', 'Clay_%', 'TSOIL_K', 'Tot_wat_cont'.
+    
+    Returns
+    -------
+    pd.DataFrame
+        Updated soil profile with additional columns for liquid water content ('wsoil') and ice water content ('isoil').
+    """
+    wsol_profile = []
+    isol_profile = []
+    for lay in range(len(soil_profile)):
+        
+        SAND = soil_profile['Sand_%'].iloc[lay]
+        CLAY = soil_profile['Clay_%'].iloc[lay]
+        TSOIL = soil_profile['TSOIL_K'].iloc[lay]
+        TWC = soil_profile['Tot_wat_cont'].iloc[lay]
 
+        LIQ_FRACTION = liquid_water_fraction(SAND, CLAY, TSOIL, TWC)
+
+        #Liquid and Ice content
+        WSOL = LIQ_FRACTION * TWC
+        ISOL = float(TWC-WSOL)
+
+        wsol_profile.append(WSOL)
+        isol_profile.append(ISOL)
+
+    wsol_isol_profile = pd.concat([pd.DataFrame(wsol_profile),pd.DataFrame(isol_profile)],axis= 1)
+    wsol_isol_profile.index = soil_profile.index
+        
+    soil_profile = pd.concat([soil_profile, wsol_isol_profile], axis = 1)
+    soil_profile.columns.values[-2:] = ['wsoil', 'isoil']
+    soil_profile = soil_profile.T
+
+    return soil_profile
+
+
+def main():
+    #Load the soil_profile.txt file
+    soil_profile = pd.read_csv('soil_profile.txt', sep=r'\s+',index_col = 0)
+
+    soil_profile = balance_soil_profile(soil_profile)
+
+    soil_profile.to_csv('soil_profile_balanced.txt', sep=' ', index=True)
+
+
+if __name__ == "__main__":
+    main()
