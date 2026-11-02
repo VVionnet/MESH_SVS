@@ -52,6 +52,14 @@ module runsvs_mesh
                      1.00   , -99.   , 4.00   , 0.00   , -99.   , & 
                     -99.    /)
         real,dimension(NCLASS) :: LAIDAT_UP
+        real, dimension(NCLASS) :: VEGDAT = (/ &
+                     0.00   , 0.00   , 0.00   , 0.90   , 0.99   , & 
+                     0.90   , 0.90   , 0.99   , 0.90   , 0.50   , & 
+                     0.50   , 0.50   , 0.7    , 0.30   , -99.   , & 
+                     -99.   , -99.   , -99.   , -99.   , 0.85   , & 
+                     0.80   , 0.50   , 0.60   , 0.00   , 0.90   , & 
+                     0.70   /)
+        real,dimension(NCLASS) :: VEGDAT_UP
     end type
 
     !> SVS2 output
@@ -98,6 +106,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_TGROUNDV = 'TGROUNDV' ! For svs2 only
     character(len = *), parameter, public :: VN_SVS_VF = 'VF'
     character(len = *), parameter, public :: VN_SVS_LAI = 'LAI'
+    character(len = *), parameter, public :: VN_SVS_VEGFRAC = 'VEGFRAC'
     character(len = *), parameter, public :: VN_SVS_Z0V = 'Z0V'
     character(len = *), parameter, public :: VN_SVS_LNZ0 = 'LNZ0'
     character(len = *), parameter, public :: VN_SVS_TVEGE = 'TVEGE'
@@ -192,6 +201,7 @@ module runsvs_mesh
     character(len = *), parameter, public :: VN_SVS_TGROUNDV_N = 'TGROUNDV_N'
     character(len = *), parameter, public :: VN_SVS_VF_N = 'VF_N'
     character(len = *), parameter, public :: VN_SVS_LAI_N = 'LAI_N'
+    character(len = *), parameter, public :: VN_SVS_VEGFRAC_N = 'VEGFRAC_N'
     character(len = *), parameter, public :: VN_SVS_Z0V_N = 'Z0V_N'
     character(len = *), parameter, public :: VN_SVS_TVEGE_N = 'TVEGE_N'
     character(len = *), parameter, public :: VN_SVS_TVEGEL_N = 'TVEGEL_N'
@@ -249,6 +259,7 @@ module runsvs_mesh
         real, dimension(:, :), allocatable :: vf
         real, dimension(:, :), allocatable :: z0v
         real, dimension(:, :), allocatable :: lai
+        real, dimension(:, :), allocatable :: vegfrac
         real, dimension(:), allocatable :: lnz0
         real, dimension(:, :), allocatable :: tvege
         real, dimension(:, :), allocatable :: tvegeh ! For svs2 only
@@ -715,6 +726,13 @@ module runsvs_mesh
                      svs_mesh%c%LAIDAT_UP(1200 - i) = svs_mesh%c%LAIDAT(1200 - i)
                 endif
             endif
+            if (allocated(svs_mesh%vs%vegfrac)) then
+                if(svs_mesh%vs%vegfrac(1, 1200 - i)>0.) then
+                     svs_mesh%c%VEGDAT_UP(1200 - i) = svs_mesh%vs%vegfrac(1, 1200 - i)
+                else
+                     svs_mesh%c%VEGDAT_UP(1200 - i) = svs_mesh%c%VEGDAT(1200 - i)
+                endif
+            endif
         end do
         where (sumvfz0 > 0.0)
             svs_bus(a1(z0):z1(z0)) = svs_bus(a1(z0):z1(z0))/sumvfz0
@@ -1150,6 +1168,14 @@ module runsvs_mesh
                svs_read_laidat = .true.
             endif
         endif
+
+        ! Activate or not the use of user-entered vegetation fraction (vegdat)
+        if(svs_mesh%vs%schmsol=='SVS2') then
+            if (allocated(svs_mesh%vs%vegfrac)) then
+               svs_read_vegdat = .true.
+            endif
+        endif
+
 
         ierr =0
         ! Initialize number of snow layers (for multilayer snowpack schemes in SVS2)
@@ -2439,6 +2465,15 @@ ierr = 200
             ! Update LAI for veg class to be consistent with information provided by the users in MESH_paramter.txt
             if(svs_mesh%vs%schmsol=='SVS2' .and. allocated(svs_mesh%vs%lai)) then
                svs_laidat = svs_mesh%c%LAIDAT_UP 
+            endif
+
+            ! Update VEGDAT for veg class to be consistent with information provided by the users in MESH_paramter.txt
+            if(svs_mesh%vs%schmsol=='SVS2' .and. allocated(svs_mesh%vs%vegfrac)) then
+               svs_vegdat = svs_mesh%c%VEGDAT_UP
+               if (maxval(svs_vegdat) .GE. 1.0) then
+                   call print_error("The vegetation fraction must be lower than 1")
+                   call program_abort()
+               end if
             endif
 
             call inichamp4(pvars, kount, ni, nk)

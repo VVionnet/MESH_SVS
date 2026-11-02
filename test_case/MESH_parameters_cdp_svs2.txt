@@ -59,6 +59,8 @@ tperm      280.0 ! (Deep soil temperature) Kelvin
 !>               sea glacier in-lake ever-nl ever-bl deci-nl deci-bl trop-bl  dry-tr ever-sh deci-sh thor-sh shor-gr long-gr   crops    rice   sugar   maize  cotton  irr-cr   urban  tundra   swamp  desert mx-tree   mx-sh
 vf               0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     1.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0 !fraction
 z0v              0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.02    0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0 !roughness length
+lai              0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0 !leaf area index
+vegfrac          0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.7     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0 !vegetation fraction
 
 !> High veg (Skin only)
 !> nlayers   ----- 1 
