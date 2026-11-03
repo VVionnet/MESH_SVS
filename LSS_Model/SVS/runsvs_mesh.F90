@@ -2470,8 +2470,8 @@ ierr = 200
             ! Update VEGDAT for veg class to be consistent with information provided by the users in MESH_paramter.txt
             if(svs_mesh%vs%schmsol=='SVS2' .and. allocated(svs_mesh%vs%vegfrac)) then
                svs_vegdat = svs_mesh%c%VEGDAT_UP
-               if (maxval(svs_vegdat) .GE. 1.0) then
-                   call print_error("The vegetation fraction must be lower than 1")
+               if (maxval(svs_vegdat(MAXLOC(svs_mesh%vs%vf, MASK=(svs_mesh%vs%vf == 1)))) > 1.0) then
+                   call print_error("Vegetation fraction must not exceed 1.")
                    call program_abort()
                end if
             endif
